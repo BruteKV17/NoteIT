@@ -192,6 +192,9 @@ export const generateStudyAssets = async (
     
     Active Mode: ${mode}
     
+    CRITICAL GROUNDING INSTRUCTION:
+    Throughout the markdown text of the summary, notes, and flashcard answers, you MUST integrate inline citations referencing the source timestamps or pages in brackets where appropriate (e.g. '[Source: Timestamp 01:30]' or '[Source: Page 3]'). This is essential for verification.
+    
     1. Generate a structured knowledge document representing the summary of the lecture in clean Markdown format, containing exactly 10 headers:
        ### Executive Overview
        [Strategic high-level overview of the subject]
@@ -623,4 +626,126 @@ export const generateAdditionalQuizQuestions = async (
     return fallbacks;
   }
 };
+
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../firebaseConfig';
+
+export const retrieveGroundingChunks = async (
+  uid: string,
+  sourceId: string,
+  sourceType: 'lecture' | 'source',
+  queryText: string
+): Promise<any[]> => {
+  try {
+    const colName = sourceType === 'lecture' ? 'lectures' : 'sources';
+    const chunksRef = collection(db, 'users', uid, colName, sourceId, 'chunks');
+    const snapshot = await getDocs(chunksRef);
+    const chunks: any[] = [];
+    snapshot.forEach(docSnap => {
+      chunks.push(docSnap.data());
+    });
+
+    if (chunks.length === 0) return [];
+
+    // Simple keyword matching RAG
+    const queryKeywords = queryText.toLowerCase().match(/\b[a-z]{4,}\b/g) || [];
+    if (queryKeywords.length === 0) {
+      return chunks.slice(0, 5);
+    }
+
+    const scoredChunks = chunks.map(chunk => {
+      const keywords = chunk.keywords || [];
+      const contentLower = chunk.content.toLowerCase();
+      let score = 0;
+      queryKeywords.forEach(kw => {
+        if (keywords.includes(kw)) score += 3;
+        if (contentLower.includes(kw)) score += 1;
+      });
+      return { chunk, score };
+    });
+
+    scoredChunks.sort((a, b) => b.score - a.score);
+    return scoredChunks
+      .filter(sc => sc.score > 0)
+      .map(sc => sc.chunk)
+      .slice(0, 6);
+  } catch (err) {
+    console.error('[RAG] Error retrieving chunks:', err);
+    return [];
+  }
+};
+
+export const askLectureAI = async (
+  uid: string,
+  lectureId: string,
+  sourceType: 'lecture' | 'source',
+  question: string,
+  chatHistory: { sender: 'user' | 'ai'; text: string }[] = []
+): Promise<{ answer: string; citations: any[] }> => {
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+  if (!apiKey) {
+    throw new Error("Gemini API key is not configured.");
+  }
+
+  // 1. Retrieve relevant chunks
+  const chunks = await retrieveGroundingChunks(uid, lectureId, sourceType, question);
+  const contextText = chunks.map((c, i) => `[Chunk #${i + 1} ${c.timestamp ? `Timestamp ${c.timestamp}` : c.page ? `Page ${c.page}` : ''}]: ${c.content}`).join('\n\n');
+
+  // 2. Build history context
+  const historyText = chatHistory.map(h => `${h.sender === 'user' ? 'Student' : 'Professor'}: ${h.text}`).join('\n');
+
+  const prompt = `
+    You are an expert academic professor. Answer the Student's question using the provided lecture context chunks and conversation history.
+    
+    Lecture Context Chunks:
+    ${contextText || 'No source chunks found.'}
+    
+    Conversation History:
+    ${historyText || 'No previous conversation.'}
+    
+    Student Question:
+    ${question}
+    
+    Instructions:
+    1. Base your answer strictly on the provided context chunks.
+    2. Cite the source chunks you used at the end of relevant sentences or paragraphs using inline citation brackets, specifying the exact page or timestamp (e.g. '[Source: Timestamp 01:15]' or '[Source: Page 4]').
+    3. If the answer cannot be determined from the chunks, politely say so.
+    
+    Return the response as a JSON object containing:
+    - "answer": the text response with inline citations
+    - "citationsUsed": array of citation objects used. Each must have:
+      - "text": the snippet of text used
+      - "sourceId": "${lectureId}"
+      - "page": number or null
+      - "timestamp": string or null
+  `;
+
+  const schema = {
+    type: 'OBJECT',
+    properties: {
+      answer: { type: 'STRING' },
+      citationsUsed: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          properties: {
+            text: { type: 'STRING' },
+            sourceId: { type: 'STRING' },
+            page: { type: 'INTEGER' },
+            timestamp: { type: 'STRING' }
+          },
+          required: ['text', 'sourceId']
+        }
+      }
+    },
+    required: ['answer', 'citationsUsed']
+  };
+
+  const res = await executeGeminiCall(prompt, apiKey, undefined, schema);
+  return {
+    answer: res.answer || "I'm sorry, I couldn't process the answer.",
+    citations: res.citationsUsed || []
+  };
+};
+
 

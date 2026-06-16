@@ -38,7 +38,7 @@ import {
   Volume2,
   Info
 } from 'lucide-react';
-import { db } from '../firebaseConfig';
+import { db, auth } from '../firebaseConfig';
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { generateLectureContentFromText } from '../services/gemini';
 import { getAzureUploadSasUrl, uploadBlobToAzure, extractTextFromDocument, extractTextFromUrl } from '../services/azure';
@@ -308,6 +308,30 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
         podcastScript: script
       });
 
+      // Call grounding engine
+      try {
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          const idToken = await currentUser.getIdToken(true);
+          const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3002';
+          await fetch(`${backendUrl}/api/storage/ground-source`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${idToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              sourceId: docRef.id,
+              sourceType: 'source',
+              text: extractedText
+            })
+          });
+          console.log('[RAG] Grounding completed for uploaded document');
+        }
+      } catch (ragErr) {
+        console.error('[RAG] Grounding failed for uploaded document:', ragErr);
+      }
+
       // Reload
       const updatedSnapshot = await getDocs(query(collection(db, 'users', userId, 'sources'), orderBy('createdAt', 'desc')));
       const updatedList: any[] = [];
@@ -400,6 +424,30 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
       }
 
       await updateDoc(doc(db, 'users', userId, 'sources', docRef.id), updatePayload);
+
+      // Call grounding engine
+      try {
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          const idToken = await currentUser.getIdToken(true);
+          const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3002';
+          await fetch(`${backendUrl}/api/storage/ground-source`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${idToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              sourceId: docRef.id,
+              sourceType: 'source',
+              text: text
+            })
+          });
+          console.log('[RAG] Grounding completed for URL');
+        }
+      } catch (ragErr) {
+        console.error('[RAG] Grounding failed for URL:', ragErr);
+      }
 
       // Reload list
       const updatedSnapshot = await getDocs(query(collection(db, 'users', userId, 'sources'), orderBy('createdAt', 'desc')));

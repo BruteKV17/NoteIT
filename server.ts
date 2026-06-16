@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { initializeApp, cert } from 'firebase-admin';
 import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
 import { 
   BlobServiceClient, 
   StorageSharedKeyCredential, 
@@ -272,6 +273,255 @@ async function streamToBuffer(readableStream: any): Promise<Buffer> {
     readableStream.on('error', reject);
   });
 }
+
+// In-memory cache for dynamic image search results
+const imageCache = new Map<string, string[]>();
+
+// Chunker helper for RAG source grounding
+function performChunking(text: string, sourceType: string) {
+  const chunks: Array<{
+    content: string;
+    page?: number;
+    timestamp?: string;
+    chapter?: string;
+    keywords: string[];
+  }> = [];
+
+  const extractKeywords = (str: string): string[] => {
+    const words = str.match(/\b[A-Za-z]{4,}\b/g) || [];
+    const unique = Array.from(new Set(words.map(w => w.toLowerCase())));
+    const stopWords = new Set(['this', 'that', 'with', 'from', 'have', 'they', 'them', 'your', 'their', 'there', 'about', 'would', 'could', 'should', 'these', 'those', 'basic', 'under', 'after', 'before']);
+    return unique.filter(w => !stopWords.has(w)).slice(0, 8);
+  };
+
+  if (sourceType === 'lecture' || text.includes('[')) {
+    const timestampRegex = /(\[\d{1,2}:\d{2}\])/g;
+    const parts = text.split(timestampRegex);
+    let currentTimestamp = '00:00';
+    
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i].trim();
+      if (timestampRegex.test(part)) {
+        currentTimestamp = part.replace(/[\[\]]/g, '');
+      } else if (part.length > 50) {
+        chunks.push({
+          content: part,
+          timestamp: currentTimestamp,
+          keywords: extractKeywords(part)
+        });
+      }
+    }
+  }
+
+  if (chunks.length === 0) {
+    const paragraphs = text.split(/\n\s*\n/).map(p => p.trim()).filter(p => p.length > 40);
+    let currentPage = 1;
+    
+    paragraphs.forEach((p) => {
+      const pageMatch = p.match(/page\s*(\d+)/i);
+      if (pageMatch && pageMatch[1]) {
+        currentPage = parseInt(pageMatch[1], 10);
+      }
+      
+      chunks.push({
+        content: p,
+        page: currentPage,
+        keywords: extractKeywords(p)
+      });
+    });
+  }
+
+  if (chunks.length === 0) {
+    const words = text.split(/\s+/).filter(Boolean);
+    const chunkSize = 250;
+    const overlap = 50;
+    
+    for (let i = 0; i < words.length; i += (chunkSize - overlap)) {
+      const chunkWords = words.slice(i, i + chunkSize);
+      if (chunkWords.length > 20) {
+        const content = chunkWords.join(' ');
+        chunks.push({
+          content,
+          keywords: extractKeywords(content)
+        });
+      }
+    }
+  }
+
+  return chunks;
+}
+
+// Endpoint to split document/lecture into chunks for RAG grounding
+app.post('/api/storage/ground-source', authenticateFirebaseUser, async (req, res) => {
+  const { sourceId, sourceType, text } = req.body;
+  if (!sourceId || !sourceType || !text) {
+    res.status(400).json({ error: 'Missing required parameters: sourceId, sourceType, text' });
+    return;
+  }
+
+  try {
+    const user = req.body.user;
+    const uid = user.uid;
+    const chunks = performChunking(text, sourceType);
+    
+    const adminDb = getFirestore();
+    const collectionName = sourceType === 'lecture' ? 'lectures' : 'sources';
+    const chunksRef = adminDb.collection('users').doc(uid).collection(collectionName).doc(sourceId).collection('chunks');
+    
+    // Clean old chunks
+    const existing = await chunksRef.get();
+    const batch = adminDb.batch();
+    existing.forEach(docSnap => batch.delete(docSnap.ref));
+    await batch.commit();
+    
+    // Batch write chunks (limit 500 per batch)
+    let currentBatch = adminDb.batch();
+    let count = 0;
+    
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      const docRef = chunksRef.doc(`chunk-${i}`);
+      currentBatch.set(docRef, {
+        chunkId: `chunk-${i}`,
+        sourceId,
+        content: chunk.content,
+        page: chunk.page || null,
+        timestamp: chunk.timestamp || null,
+        chapter: chunk.chapter || null,
+        keywords: chunk.keywords,
+        createdAt: new Date()
+      });
+      count++;
+      
+      if (count === 400) {
+        await currentBatch.commit();
+        currentBatch = adminDb.batch();
+        count = 0;
+      }
+    }
+    
+    if (count > 0) {
+      await currentBatch.commit();
+    }
+    
+    console.log(`[RAG] Ingested ${chunks.length} chunks for ${sourceType} ${sourceId}`);
+    res.json({ success: true, count: chunks.length });
+  } catch (error: any) {
+    console.error('[RAG] Grounding failed:', error);
+    res.status(500).json({ error: error.message || 'Grounding engine failed.' });
+  }
+});
+
+// Endpoint to query unified image search from backend
+app.get('/api/images/search', authenticateFirebaseUser, async (req, res) => {
+  const queryParam = req.query.query as string;
+  if (!queryParam) {
+    res.status(400).json({ error: 'Missing required query parameter: query' });
+    return;
+  }
+
+  const cleanQuery = queryParam.trim().toLowerCase();
+  
+  if (imageCache.has(cleanQuery)) {
+    res.json({ images: imageCache.get(cleanQuery) });
+    return;
+  }
+
+  const images: string[] = [];
+  const unsplashKey = process.env.UNSPLASH_ACCESS_KEY || '';
+  const pexelsKey = process.env.PEXELS_API_KEY || '';
+
+  const fetchUnsplash = async (query: string): Promise<string[]> => {
+    if (!unsplashKey) return [];
+    try {
+      const response = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&client_id=${unsplashKey}&per_page=10`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.results && Array.isArray(data.results)) {
+          return data.results.map((img: any) => img.urls.regular).filter(Boolean);
+        }
+      }
+    } catch (err) {
+      console.error('[IMAGES] Unsplash search error:', err);
+    }
+    return [];
+  };
+
+  const fetchPexels = async (query: string): Promise<string[]> => {
+    if (!pexelsKey) return [];
+    try {
+      const response = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=10`, {
+        headers: { 'Authorization': pexelsKey }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.photos && Array.isArray(data.photos)) {
+          return data.photos.map((p: any) => p.src.large).filter(Boolean);
+        }
+      }
+    } catch (err) {
+      console.error('[IMAGES] Pexels search error:', err);
+    }
+    return [];
+  };
+
+  const getFallbackImages = (query: string): string[] => {
+    const clean = query.toLowerCase();
+    const techImg = "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80";
+    const scienceImg = "https://images.unsplash.com/photo-1507413245164-6160d8298b31?w=800&auto=format&fit=crop&q=80";
+    const businessImg = "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&auto=format&fit=crop&q=80";
+    const eduImg = "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&auto=format&fit=crop&q=80";
+    const artImg = "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=800&auto=format&fit=crop&q=80";
+    const growthImg = "https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=800&auto=format&fit=crop&q=80";
+    const mathImg = "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=800&auto=format&fit=crop&q=80";
+    const generalImg = "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&auto=format&fit=crop&q=80";
+
+    const fallbacks: string[] = [];
+    if (clean.includes("tech") || clean.includes("computer") || clean.includes("software") || clean.includes("code") || clean.includes("digital") || clean.includes("web") || clean.includes("programming") || clean.includes("ai") || clean.includes("artificial")) {
+      fallbacks.push(techImg);
+    }
+    if (clean.includes("science") || clean.includes("biology") || clean.includes("chemistry") || clean.includes("physics") || clean.includes("lab") || clean.includes("medicine") || clean.includes("dna") || clean.includes("molecular") || clean.includes("cell")) {
+      fallbacks.push(scienceImg);
+    }
+    if (clean.includes("business") || clean.includes("corporate") || clean.includes("finance") || clean.includes("office") || clean.includes("market") || clean.includes("meeting") || clean.includes("money") || clean.includes("strategy") || clean.includes("leadership")) {
+      fallbacks.push(businessImg);
+    }
+    if (clean.includes("education") || clean.includes("learn") || clean.includes("history") || clean.includes("book") || clean.includes("study") || clean.includes("academic") || clean.includes("student") || clean.includes("class") || clean.includes("philosophy") || clean.includes("ethics")) {
+      fallbacks.push(eduImg);
+    }
+    if (clean.includes("art") || clean.includes("design") || clean.includes("creative") || clean.includes("paint") || clean.includes("draw") || clean.includes("graphic")) {
+      fallbacks.push(artImg);
+    }
+    if (clean.includes("growth") || clean.includes("success") || clean.includes("startup") || clean.includes("idea") || clean.includes("analytics") || clean.includes("chart") || clean.includes("diagram")) {
+      fallbacks.push(growthImg);
+    }
+    if (clean.includes("math") || clean.includes("calculus") || clean.includes("algebra") || clean.includes("derivative") || clean.includes("limit") || clean.includes("geometry") || clean.includes("equation")) {
+      fallbacks.push(mathImg);
+    }
+    
+    fallbacks.push(generalImg);
+    return fallbacks;
+  };
+
+  let fetched = await fetchUnsplash(cleanQuery);
+  if (fetched.length > 0) {
+    images.push(...fetched);
+  }
+
+  if (images.length === 0) {
+    fetched = await fetchPexels(cleanQuery);
+    if (fetched.length > 0) {
+      images.push(...fetched);
+    }
+  }
+
+  if (images.length === 0) {
+    images.push(...getFallbackImages(cleanQuery));
+  }
+
+  imageCache.set(cleanQuery, images);
+  res.json({ images });
+});
 
 // Endpoint to extract text from documents
 app.post('/api/storage/extract-text', authenticateFirebaseUser, async (req, res) => {

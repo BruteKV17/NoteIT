@@ -34,6 +34,8 @@ import {
 import pptxgen from 'pptxgenjs';
 import BruteLoader from './BruteLoader';
 import { PageId } from '../types';
+import { db, auth } from '../firebaseConfig';
+import { doc, updateDoc } from 'firebase/firestore';
 
 interface LectureCaptureViewProps {
   onSaveCapture: (title: string, subject: string, duration: string, audioBlob: Blob) => Promise<void>;
@@ -96,7 +98,11 @@ export default function LectureCaptureView({
   const secondsRef = useRef<number>(0);
 
   // Active review workspace states
-  const [activeOutputTab, setActiveOutputTab] = useState<'notes' | 'summary' | 'flashcards' | 'quiz' | 'mindmap' | 'timeline' | 'slides'>('notes');
+  const [activeOutputTab, setActiveOutputTab] = useState<'notes' | 'summary' | 'flashcards' | 'quiz' | 'mindmap' | 'timeline' | 'slides' | 'chat'>('notes');
+  const [localSlides, setLocalSlides] = useState<any[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [isChatLoading, setIsChatLoading] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
   const [notesFormat, setNotesFormat] = useState<'academic' | 'executive' | 'revision'>('academic');
   const [summaryFormat, setSummaryFormat] = useState<'academic' | 'revision' | 'executive' | 'beginner'>('academic');
   const [flashcardsFormat, setFlashcardsFormat] = useState<'basic' | 'advanced'>('basic');
@@ -324,12 +330,26 @@ export default function LectureCaptureView({
     const parts = text.split(regex);
     return parts.map((part, index) => {
       if (regex.test(part)) {
+        const timeMatch = part.match(/(\d{1,2}:\d{2})/);
+        const timestamp = timeMatch ? timeMatch[1] : null;
+        
+        const handleClick = () => {
+          if (timestamp) {
+            handleTimelineTimestampClick(timestamp);
+          } else {
+            const cleanText = part.replace(/[\[\]]/g, '').replace('Source:', '').trim();
+            alert(`Citation Detail: "${cleanText}"`);
+          }
+        };
+
         return (
           <span 
             key={index} 
-            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/15"
+            onClick={handleClick}
+            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/15 text-indigo-400 border border-indigo-500/25 cursor-pointer hover:bg-indigo-650 hover:text-white transition-all ml-1 select-none"
+            title="Jump to source in transcript"
           >
-            {part}
+            🔖 {part}
           </span>
         );
       }
@@ -625,33 +645,251 @@ export default function LectureCaptureView({
     printWindow.document.close();
   };
 
-  // PPTX builder with 9 templates & photo searches
+  // Active review workspace PPT/Chat logic helpers
+  const getThemeColorHex = (theme: string, type: 'accent' | 'primary' | 'bg' | 'cardBg') => {
+    const themeColors = {
+      academic: { bg: "#0f172a", text: "#ffffff", primary: "#e2e8f0", accent: "#d97706", cardBg: "#1e293b" },
+      corporate: { bg: "#1e293b", text: "#ffffff", primary: "#cbd5e1", accent: "#2563eb", cardBg: "#0f172a" },
+      startup: { bg: "#09090b", text: "#ffffff", primary: "#f4f4f5", accent: "#8b5cf6", cardBg: "#18181b" },
+      cyber: { bg: "#050508", text: "#ffffff", primary: "#39ff14", accent: "#ff007f", cardBg: "#0d0e12" },
+      minimal: { bg: "#ffffff", text: "#1e293b", primary: "#0f172a", accent: "#000000", cardBg: "#f8fafc" },
+      glass: { bg: "#18181b", text: "#ffffff", primary: "#f4f4f5", accent: "#06b6d4", cardBg: "#27272a" }
+    };
+    const c = (themeColors as any)[theme] || themeColors.academic;
+    return c[type];
+  };
+
+  const auditPPTQuality = (slides: any[]) => {
+    if (!slides || slides.length === 0) {
+      return { score: 0, narrativeFlow: 0, visualDensity: 0, imageRelevance: 0, completeness: 0, redundancy: 0, citations: 0 };
+    }
+
+    let flowScore = 70;
+    if (slides[0]?.layout === 'title_slide') flowScore += 10;
+    let layoutChanges = 0;
+    for (let i = 1; i < slides.length; i++) {
+      if (slides[i].layout !== slides[i-1].layout) layoutChanges++;
+    }
+    const transitionRatio = layoutChanges / (slides.length - 1 || 1);
+    flowScore += Math.min(20, transitionRatio * 20);
+
+    let densityScore = 100;
+    let densityViolations = 0;
+    slides.forEach(s => {
+      const wordCount = (s.title || "").split(/\s+/).length + (s.content || []).reduce((acc: number, bp: string) => acc + bp.split(/\s+/).length, 0);
+      if (wordCount > 50 || wordCount < 10) {
+        densityViolations++;
+      }
+    });
+    densityScore -= (densityViolations / slides.length) * 45;
+
+    let imageScore = 80;
+    let emptyQueries = 0;
+    slides.forEach(s => {
+      if (!s.imageSearchQuery && !s.imagePrompt) emptyQueries++;
+    });
+    imageScore -= (emptyQueries / slides.length) * 35;
+
+    let completenessScore = Math.min(100, slides.length * 9);
+
+    let redundancyScore = 100;
+    let duplicateCount = 0;
+    for (let i = 0; i < slides.length; i++) {
+      for (let j = i + 1; j < slides.length; j++) {
+        const getTokens = (str: string) => new Set((str || "").toLowerCase().trim().split(/\s+/).filter(w => w.length > 3));
+        const s1 = getTokens(slides[i].title);
+        const s2 = getTokens(slides[j].title);
+        if (s1.size > 0 && s2.size > 0) {
+          const intersection = new Set([...s1].filter(x => s2.has(x)));
+          const union = new Set([...s1, ...s2]);
+          if (intersection.size / union.size > 0.6) {
+            duplicateCount++;
+          }
+        }
+      }
+    }
+    redundancyScore -= Math.min(50, duplicateCount * 18);
+
+    let citationScore = 55;
+    let slidesWithCitations = 0;
+    slides.forEach(s => {
+      if (s.references || s.keyTakeaway?.includes('[Source') || (s.content && s.content.some((bp: string) => bp.includes('[Source')))) {
+        slidesWithCitations++;
+      }
+    });
+    citationScore += (slidesWithCitations / slides.length) * 45;
+
+    const totalScore = Math.round(
+      (flowScore + densityScore + imageScore + completenessScore + redundancyScore + citationScore) / 6
+    );
+
+    return {
+      score: Math.max(10, Math.min(100, totalScore)),
+      narrativeFlow: Math.max(10, Math.min(100, Math.round(flowScore))),
+      visualDensity: Math.max(10, Math.min(100, Math.round(densityScore))),
+      imageRelevance: Math.max(10, Math.min(100, Math.round(imageScore))),
+      completeness: Math.max(10, Math.min(100, Math.round(completenessScore))),
+      redundancy: Math.max(10, Math.min(100, Math.round(redundancyScore))),
+      citations: Math.max(10, Math.min(100, Math.round(citationScore)))
+    };
+  };
+
+  const generatePreviewBaselineSlides = () => {
+    const activeLecture = lectures.find(l => l.id === activeLectureId);
+    if (!activeLecture) return;
+    const lecNotes = notes.filter((n: any) => n.lectureId === activeLectureId);
+    const slides = [];
+    const layouts = ['split_column', 'timeline', 'key_metrics', 'grid_quadrant', 'bold_quote', 'diagram', 'comparison_table', 'process_flow', 'case_study'];
+
+    slides.push({
+      title: activeLecture.title,
+      layout: 'title_slide',
+      content: ['Comprehensive Study Deck', 'Powered by Note-IT AI Smart Workspace'],
+      imagePrompt: `An academic lecture library, classic design`,
+      keyTakeaway: `Initial review baseline`
+    });
+
+    for (let i = 0; i < pptLength - 1; i++) {
+      const note = lecNotes[i % lecNotes.length] || { title: `Topic Section ${i + 1}`, content: `Details for section ${i + 1} content.` };
+      const layout = layouts[i % layouts.length];
+      const textLines = note.content.split('\n').filter((l: string) => l.trim().length > 0).slice(0, 4);
+      const cleanLines = textLines.map((l: string) => l.replace(/[*#-]/g, '').trim());
+
+      let chart = undefined;
+      if (layout === 'key_metrics') {
+        chart = {
+          chartType: 'bar',
+          labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+          values: [30, 45, 60, 85]
+        };
+      }
+
+      slides.push({
+        title: note.title,
+        layout,
+        content: cleanLines.slice(0, 3),
+        imageSearchQuery: note.title.split(' ')[0] || 'study',
+        imagePrompt: `Professional design representing ${note.title}`,
+        keyTakeaway: `Key understanding of ${note.title}`,
+        chart
+      });
+    }
+    setLocalSlides(slides);
+  };
+
+  const handleUpdatePptLength = (l: 5 | 10 | 15) => {
+    setPptLength(l);
+  };
+
+  const handleRefreshImages = async () => {
+    if (localSlides.length === 0 || !activeLectureId) return;
+    setIsGeneratingPresentation(true);
+    try {
+      const { searchImages } = await import('../services/images');
+      const usedImages = new Set<string>();
+      const updatedSlides = await Promise.all(localSlides.map(async (s: any) => {
+        if (s.imageSearchQuery) {
+          try {
+            const urls = await searchImages(s.imageSearchQuery);
+            if (urls && urls.length > 0) {
+              let selectedUrl = urls[Math.floor(Math.random() * urls.length)];
+              for (const u of urls) {
+                if (!usedImages.has(u)) {
+                  selectedUrl = u;
+                  break;
+                }
+              }
+              usedImages.add(selectedUrl);
+              return { ...s, imageUrl: selectedUrl };
+            }
+          } catch (err) {
+            console.error(err);
+          }
+        }
+        return s;
+      }));
+      setLocalSlides(updatedSlides);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsGeneratingPresentation(false);
+    }
+  };
+
+  const handleExportPpt = async () => {
+    const activeLecture = lectures.find(l => l.id === activeLectureId);
+    if (localSlides.length === 0 || !activeLecture) return;
+    await buildAndDownloadPPTX(localSlides, activeLecture.title, pptTheme, pptDetailedMode);
+  };
+
+  const handleRegenerateDeck = async () => {
+    await generateCustomPresentationDeck();
+  };
+
+  const handleSendChatMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const activeLecture = lectures.find(l => l.id === activeLectureId);
+    if (!chatInput.trim() || !activeLecture || isChatLoading) return;
+    
+    const userMsg = chatInput.trim();
+    setChatInput('');
+    setIsChatLoading(true);
+
+    try {
+      const { askLectureAI } = await import('../services/gemini');
+      const uid = auth.currentUser?.uid;
+      if (!uid) throw new Error("User not authenticated.");
+
+      const activeHistory = activeLecture.chatHistory || [];
+      const updatedHistoryBefore = [...activeHistory, { sender: 'user', text: userMsg }];
+      
+      await updateDoc(doc(db, 'users', uid, 'lectures', activeLecture.id), {
+        chatHistory: updatedHistoryBefore
+      });
+
+      const response = await askLectureAI(uid, activeLecture.id, 'lecture', userMsg, activeHistory);
+
+      const finalHistory = [...updatedHistoryBefore, { sender: 'ai', text: response.answer, citations: response.citations }];
+      await updateDoc(doc(db, 'users', uid, 'lectures', activeLecture.id), {
+        chatHistory: finalHistory
+      });
+    } catch (err: any) {
+      console.error("Chat message send failed:", err);
+      alert(`Chat error: ${err.message || 'Unknown error'}`);
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [activeLectureId, isChatLoading]);
+
+  useEffect(() => {
+    if (activeLectureId) {
+      generatePreviewBaselineSlides();
+    }
+  }, [activeLectureId, notes, pptLength]);
+
+  const pptReport = auditPPTQuality(localSlides);
+
   const buildAndDownloadPPTX = async (
     rawSlides: any[],
     deckTitle: string,
     themeName: 'academic' | 'corporate' | 'startup' | 'cyber' | 'minimal' | 'glass',
     isDetailed: boolean
   ) => {
-    const calculateTitleSimilarity = (t1: string, t2: string): number => {
-      const s1 = (t1 || "").toLowerCase().trim().replace(/[^a-z0-9]/g, '');
-      const s2 = (t2 || "").toLowerCase().trim().replace(/[^a-z0-9]/g, '');
-      if (s1 === s2) return 1.0;
-      if (s1.length === 0 || s2.length === 0) return 0.0;
+    const calculateJaccardSimilarity = (t1: string, t2: string): number => {
+      const getTokens = (str: string) => new Set((str || "").toLowerCase().trim().split(/\s+/).filter(w => w.length > 3));
+      const s1 = getTokens(t1);
+      const s2 = getTokens(t2);
+      if (s1.size === 0 || s2.size === 0) return 0.0;
       
-      const track = Array(s2.length + 1).fill(null).map(() => Array(s1.length + 1).fill(null));
-      for (let i = 0; i <= s1.length; i += 1) track[0][i] = i;
-      for (let j = 0; j <= s2.length; j += 1) track[j][0] = j;
-      for (let j = 1; j <= s2.length; j += 1) {
-        for (let i = 1; i <= s1.length; i += 1) {
-          const indicator = s1[i - 1] === s2[j - 1] ? 0 : 1;
-          track[j][i] = Math.min(
-            track[j][i - 1] + 1,
-            track[j - 1][i] + 1,
-            track[j - 1][i - 1] + indicator
-          );
-        }
-      }
-      return 1.0 - (track[s2.length][s1.length] / Math.max(s1.length, s2.length));
+      const intersection = new Set([...s1].filter(x => s2.has(x)));
+      const union = new Set([...s1, ...s2]);
+      return intersection.size / union.size;
     };
 
     const deduplicatedSlides: any[] = [];
@@ -659,8 +897,8 @@ export default function LectureCaptureView({
       const slideContent = slide.content || slide.bulletPoints || [];
       let isDuplicate = false;
       for (const existing of deduplicatedSlides) {
-        const similarity = calculateTitleSimilarity(slide.title || "", existing.title || "");
-        if (similarity > 0.85) {
+        const similarity = calculateJaccardSimilarity(slide.title || "", existing.title || "");
+        if (similarity > 0.6) {
           const existingContent = existing.content || existing.bulletPoints || [];
           existing.content = Array.from(new Set([...existingContent, ...slideContent]));
           existing.bulletPoints = existing.content;
@@ -781,7 +1019,7 @@ export default function LectureCaptureView({
 
         const query = s.imageSearchQuery || s.imagePrompt || s.title;
         slide.addImage({
-          path: getRoyaltyFreeImage(query),
+          path: s.imageUrl || getRoyaltyFreeImage(query),
           x: 5.3, y: 1.0, w: 4.2, h: 3.8
         });
       } else if (s.layout === 'timeline') {
@@ -819,7 +1057,7 @@ export default function LectureCaptureView({
             fontSize: 11, color: colors.text, align: "center"
           });
         });
-      } else if (s.layout === 'key_metrics') {
+      } else if (s.layout === 'key_metrics' || s.layout === 'metrics') {
         slide.addText(s.title, {
           x: 0.5, y: 0.4, w: 9.0, h: 0.6,
           fontSize: 20, fontFace: "Helvetica",
@@ -869,7 +1107,7 @@ export default function LectureCaptureView({
             x: pos.x, y: pos.y, w: 0.1, h: 1.6,
             fill: { color: colors.accent }
           });
-          slide.addText(`0gIdx + 1.`, {
+          slide.addText(`0${gIdx + 1}.`, {
             x: pos.x + 0.2, y: pos.y + 0.15, w: 3.6, h: 0.3,
             fontSize: 11, color: colors.accent, bold: true
           });
@@ -878,7 +1116,7 @@ export default function LectureCaptureView({
             fontSize: 11, color: colors.text
           });
         });
-      } else if (s.layout === 'bold_quote') {
+      } else if (s.layout === 'bold_quote' || s.layout === 'quote') {
         slide.addText(s.title, {
           x: 0.5, y: 0.4, w: 9.0, h: 0.6,
           fontSize: 20, fontFace: "Helvetica",
@@ -950,7 +1188,7 @@ export default function LectureCaptureView({
             });
           }
         });
-      } else if (s.layout === 'comparison_table') {
+      } else if (s.layout === 'comparison_table' || s.layout === 'comparison') {
         slide.addText(s.title, {
           x: 0.5, y: 0.4, w: 9.0, h: 0.6,
           fontSize: 20, fontFace: "Helvetica",
@@ -996,7 +1234,7 @@ export default function LectureCaptureView({
           x: 1.0, y: 1.4, w: 8.0, h: 3.0,
           border: { type: "solid", color: colors.accent, pt: 1 }
         });
-      } else if (s.layout === 'process_flow') {
+      } else if (s.layout === 'process_flow' || s.layout === 'process') {
         slide.addText(s.title, {
           x: 0.5, y: 0.4, w: 9.0, h: 0.6,
           fontSize: 20, fontFace: "Helvetica",
@@ -1037,6 +1275,56 @@ export default function LectureCaptureView({
               line: { color: colors.accent, width: 3, endArrowType: 'arrow' }
             });
           }
+        });
+      } else if (s.layout === 'case_study') {
+        slide.addText(s.title, {
+          x: 0.5, y: 0.4, w: 9.0, h: 0.6,
+          fontSize: 20, fontFace: "Helvetica",
+          color: colors.accent, bold: true
+        });
+
+        const storyText = s.content.slice(0, 2).join('\n\n');
+        slide.addText(storyText, {
+          x: 0.5, y: 1.2, w: 5.2, h: 3.6,
+          fontSize: 12, fontFace: "Helvetica",
+          color: colors.text, lineSpacing: 18
+        });
+
+        slide.addShape(pptx.ShapeType.roundRect, {
+          x: 6.0, y: 1.2, w: 3.5, h: 3.6,
+          fill: { color: colors.cardBg }, line: { color: colors.accent, width: 2 }
+        });
+
+        slide.addText("CASE INSIGHT", {
+          x: 6.2, y: 1.4, w: 3.1, h: 0.3,
+          fontSize: 10, fontFace: "Helvetica", color: colors.accent, bold: true, align: "center"
+        });
+
+        const outcomeText = s.content[2] || "Detailed operational outcome, findings, and strategic lessons learned from the subject review.";
+        slide.addText(outcomeText, {
+          x: 6.2, y: 1.8, w: 3.1, h: 2.8,
+          fontSize: 11, fontFace: "Helvetica", color: colors.text, align: "center", valign: "middle"
+        });
+      }
+
+      if (s.chart) {
+        const chartTypeMap = {
+          bar: pptx.ChartType.bar,
+          line: pptx.ChartType.line,
+          pie: pptx.ChartType.pie
+        };
+        const type = chartTypeMap[s.chart.chartType as 'bar' | 'line' | 'pie'] || pptx.ChartType.bar;
+        const chartData = [
+          {
+            name: s.title || "Metrics",
+            labels: s.chart.labels,
+            values: s.chart.values
+          }
+        ];
+        slide.addChart(type as any, chartData, {
+          x: 5.3, y: 1.2, w: 4.2, h: 3.5,
+          showLegend: true,
+          legendPos: 'b'
         });
       }
 
@@ -1080,11 +1368,15 @@ export default function LectureCaptureView({
         
         For each slide, you must define:
         1. "title": A short title for the slide
-        2. "layout": One of ['title_slide', 'split_column', 'timeline', 'key_metrics', 'grid_quadrant', 'bold_quote', 'diagram', 'comparison_table', 'process_flow'].
+        2. "layout": One of ['title_slide', 'split_column', 'timeline', 'key_metrics', 'grid_quadrant', 'bold_quote', 'diagram', 'comparison_table', 'process_flow', 'case_study'].
         3. "content": An array of bullet points (each 6-12 words max).
         4. "imageSearchQuery": A single high-level search keyword (e.g., "molecule" or "office") representing the slide's visual topic.
         5. "imagePrompt": A detailed prompt for illustrating the content.
         6. "keyTakeaway": A short 1-sentence takeaway displayed at the bottom of the slide.
+        7. "chart": (Optional) If the slide contains statistics, metrics, or comparisons, include a chart plan:
+           - "chartType": one of ['bar', 'line', 'pie']
+           - "labels": array of strings (e.g. ["Q1", "Q2", "Q3"])
+           - "values": array of numbers (e.g. [45, 67, 89])
         
         Return the response strictly as a JSON object with a "slides" array.
       `;
@@ -1109,7 +1401,16 @@ export default function LectureCaptureView({
                       content: { type: 'ARRAY', items: { type: 'STRING' } },
                       imageSearchQuery: { type: 'STRING' },
                       imagePrompt: { type: 'STRING' },
-                      keyTakeaway: { type: 'STRING' }
+                      keyTakeaway: { type: 'STRING' },
+                      chart: {
+                        type: 'OBJECT',
+                        properties: {
+                          chartType: { type: 'STRING' },
+                          labels: { type: 'ARRAY', items: { type: 'STRING' } },
+                          values: { type: 'ARRAY', items: { type: 'INTEGER' } }
+                        },
+                        required: ['chartType', 'labels', 'values']
+                      }
                     },
                     required: ['title', 'layout', 'content', 'imageSearchQuery', 'imagePrompt', 'keyTakeaway']
                   }
@@ -1133,6 +1434,33 @@ export default function LectureCaptureView({
         throw new Error("Failed to generate slides via Gemini API");
       }
 
+      // Concurrently fetch images for each slide using the secure image service
+      const { searchImages } = await import('../services/images');
+      const usedImages = new Set<string>();
+      
+      const slideImagePromises = slides.map(async (s: any) => {
+        if (s.imageSearchQuery) {
+          try {
+            const urls = await searchImages(s.imageSearchQuery);
+            if (urls && urls.length > 0) {
+              let selectedUrl = urls[0];
+              for (const u of urls) {
+                if (!usedImages.has(u)) {
+                  selectedUrl = u;
+                  break;
+                }
+              }
+              usedImages.add(selectedUrl);
+              s.imageUrl = selectedUrl;
+            }
+          } catch (imgErr) {
+            console.error(`Failed to prefetch image for query "${s.imageSearchQuery}":`, imgErr);
+          }
+        }
+      });
+      await Promise.all(slideImagePromises);
+
+      setLocalSlides(slides);
       await buildAndDownloadPPTX(slides, activeLecture.title, pptTheme, pptDetailedMode);
       setIsGeneratingPresentation(false);
       setShowPptModal(false);
@@ -1141,7 +1469,7 @@ export default function LectureCaptureView({
       // Fallback slide deck building from notes
       const lecNotes = notes.filter((n: any) => n.lectureId === activeLectureId);
       const slides = [];
-      const layouts = ['split_column', 'timeline', 'key_metrics', 'grid_quadrant', 'bold_quote'];
+      const layouts = ['split_column', 'timeline', 'key_metrics', 'grid_quadrant', 'bold_quote', 'diagram', 'comparison_table', 'process_flow', 'case_study'];
 
       slides.push({
         title: activeLecture.title,
@@ -1166,6 +1494,7 @@ export default function LectureCaptureView({
         });
       }
 
+      setLocalSlides(slides);
       await buildAndDownloadPPTX(slides, activeLecture.title, pptTheme, pptDetailedMode);
       setIsGeneratingPresentation(false);
       setShowPptModal(false);
@@ -1258,7 +1587,7 @@ export default function LectureCaptureView({
             
             {/* MINI TAB ROW SELECTOR */}
             <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none whitespace-nowrap bg-neutral-950/20 p-1 rounded-xl border border-neutral-900/10 dark:border-neutral-900/40">
-              {(['notes', 'summary', 'flashcards', 'quiz', 'mindmap', 'timeline', 'slides'] as const).map(tab => (
+              {(['notes', 'summary', 'flashcards', 'quiz', 'mindmap', 'timeline', 'slides', 'chat'] as const).map(tab => (
                 <button
                   key={tab}
                   onClick={() => {
@@ -1271,7 +1600,7 @@ export default function LectureCaptureView({
                       : 'text-neutral-450 hover:text-white'
                   }`}
                 >
-                  {tab === 'mindmap' ? 'Mind Map' : tab}
+                  {tab === 'mindmap' ? 'Mind Map' : tab === 'chat' ? 'Ask Lecture AI' : tab}
                 </button>
               ))}
             </div>
@@ -1601,21 +1930,54 @@ export default function LectureCaptureView({
                     {activeLecture.keyConcepts && activeLecture.keyConcepts.length > 0 ? (
                       <>
                         <svg className="w-full h-full">
+                          <defs>
+                            <marker id="arrow" viewBox="0 0 10 10" refX="18" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                              <path d="M 0 0 L 10 5 L 0 10 z" fill={theme === 'dark' ? '#818cf8' : '#4f46e5'} />
+                            </marker>
+                          </defs>
+
                           {activeLecture.keyConcepts.map((node: any, idx: number) => {
                             if (node.parent) {
                               const parentNode = activeLecture.keyConcepts.find((n: any) => n.id === node.parent);
                               if (parentNode) {
+                                const x1 = parseFloat(parentNode.x);
+                                const y1 = parseFloat(parentNode.y);
+                                const x2 = parseFloat(node.x);
+                                const y2 = parseFloat(node.y);
+                                const midX = (x1 + x2) / 2;
+                                const midY = (y1 + y2) / 2;
+                                
+                                const getRelationshipType = (n: any) => {
+                                  if (n.parent === 'root') return 'hierarchy';
+                                  if (n.group === 'math' || n.formula) return 'dependency';
+                                  if (n.group === 'applications' || n.label.toLowerCase().includes('effect') || n.label.toLowerCase().includes('result')) return 'cause_effect';
+                                  if (n.group === 'concepts') return 'comparison';
+                                  return 'workflow';
+                                };
+                                const rel = getRelationshipType(node);
+
                                 return (
-                                  <line
-                                    key={idx}
-                                    x1={`${parentNode.x}%`}
-                                    y1={`${parentNode.y}%`}
-                                    x2={`${node.x}%`}
-                                    y2={`${node.y}%`}
-                                    stroke={theme === 'dark' ? '#312e81' : '#e2e8f0'}
-                                    strokeWidth="1.5"
-                                    strokeDasharray="4"
-                                  />
+                                  <g key={idx}>
+                                    <line
+                                      x1={`${parentNode.x}%`}
+                                      y1={`${parentNode.y}%`}
+                                      x2={`${node.x}%`}
+                                      y2={`${node.y}%`}
+                                      stroke={theme === 'dark' ? '#4f46e5' : '#818cf8'}
+                                      strokeWidth="1.5"
+                                      markerEnd="url(#arrow)"
+                                    />
+                                    <text
+                                      x={`${midX}%`}
+                                      y={`${midY}%`}
+                                      fill="#818cf8"
+                                      fontSize="7px"
+                                      textAnchor="middle"
+                                      className="font-mono bg-[#0d0e12] select-none"
+                                    >
+                                      {rel.toUpperCase()}
+                                    </text>
+                                  </g>
                                 );
                               }
                             }
@@ -1749,43 +2111,295 @@ export default function LectureCaptureView({
               )}
 
               {/* 7. SLIDES TAB */}
+              {/* 7. SLIDES TAB */}
               {activeOutputTab === 'slides' && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-indigo-400 font-mono uppercase">AI Presentation Architect</span>
-                    <button
-                      onClick={() => setShowPptModal(true)}
-                      className="flex items-center gap-1.5 text-[10.5px] font-bold text-indigo-400 hover:underline cursor-pointer bg-indigo-500/10 px-2 py-1 rounded border border-indigo-500/15"
-                    >
-                      <Download className="h-3.5 w-3.5" />
-                      <span>Export PPTX</span>
-                    </button>
-                  </div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
+                  {/* Left 2 columns: Slide Deck Preview list */}
+                  <div className="lg:col-span-2 space-y-4 max-h-[600px] overflow-y-auto pr-1">
+                    {localSlides.map((slide: any, idx: number) => {
+                      const query = slide.imageSearchQuery || slide.imagePrompt || slide.title;
+                      const getRoyaltyFreeImage = (q: string): string => {
+                        const clean = q.toLowerCase();
+                        if (clean.includes("tech") || clean.includes("computer") || clean.includes("software") || clean.includes("code") || clean.includes("digital") || clean.includes("web") || clean.includes("programming") || clean.includes("ai") || clean.includes("artificial")) {
+                          return "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80";
+                        }
+                        if (clean.includes("science") || clean.includes("biology") || clean.includes("chemistry") || clean.includes("physics") || clean.includes("lab") || clean.includes("medicine") || clean.includes("dna") || clean.includes("molecular") || clean.includes("cell")) {
+                          return "https://images.unsplash.com/photo-1507413245164-6160d8298b31?w=800&auto=format&fit=crop&q=80";
+                        }
+                        if (clean.includes("business") || clean.includes("corporate") || clean.includes("finance") || clean.includes("office") || clean.includes("market") || clean.includes("meeting") || clean.includes("money") || clean.includes("strategy") || clean.includes("leadership")) {
+                          return "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&auto=format&fit=crop&q=80";
+                        }
+                        if (clean.includes("education") || clean.includes("learn") || clean.includes("history") || clean.includes("book") || clean.includes("study") || clean.includes("academic") || clean.includes("student") || clean.includes("class") || clean.includes("philosophy") || clean.includes("ethics")) {
+                          return "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&auto=format&fit=crop&q=80";
+                        }
+                        if (clean.includes("art") || clean.includes("design") || clean.includes("creative") || clean.includes("paint") || clean.includes("draw") || clean.includes("graphic")) {
+                          return "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=800&auto=format&fit=crop&q=80";
+                        }
+                        if (clean.includes("growth") || clean.includes("success") || clean.includes("startup") || clean.includes("idea") || clean.includes("analytics") || clean.includes("chart") || clean.includes("diagram")) {
+                          return "https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=800&auto=format&fit=crop&q=80";
+                        }
+                        if (clean.includes("math") || clean.includes("calculus") || clean.includes("algebra") || clean.includes("derivative") || clean.includes("limit") || clean.includes("geometry") || clean.includes("equation")) {
+                          return "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=800&auto=format&fit=crop&q=80";
+                        }
+                        return "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&auto=format&fit=crop&q=80";
+                      };
 
-                  <div className="space-y-3">
-                    {filteredNotes && filteredNotes.map((note: any, idx: number) => {
-                      const points = note.content.split('\n').filter((l: string) => l.trim().startsWith('-') || l.trim().startsWith('*')).slice(0, 3).map((l: string) => l.replace(/^[-*]\s*/, ''));
+                      const imgUrl = slide.imageUrl || getRoyaltyFreeImage(query);
                       
                       return (
-                        <div key={idx} className={`p-4 rounded-xl border flex flex-col justify-between ${
-                          theme === 'dark' ? 'bg-neutral-950/65 border-neutral-900' : 'bg-white border-gray-200'
+                        <div key={idx} className={`p-5 rounded-xl border flex flex-col justify-between relative overflow-hidden ${
+                          theme === 'dark' ? 'bg-neutral-950/65 border-neutral-900 text-white' : 'bg-white border-gray-200 text-gray-900'
                         }`}>
-                          <div>
-                            <span className="text-[8px] font-bold text-indigo-400 font-mono uppercase">Slide {idx + 1} of {filteredNotes.length + 1}</span>
-                            <h4 className="text-xs font-black mt-1">{note.title}</h4>
-                            <ul className="list-disc pl-4 mt-2.5 space-y-1.5">
-                              {points.map((bp: string, bidx: number) => (
-                                <li key={bidx} className="text-[11.5px] text-neutral-350 leading-relaxed">{bp}</li>
-                              ))}
-                            </ul>
+                          <div className="h-1 absolute top-0 left-0 right-0" style={{ backgroundColor: getThemeColorHex(pptTheme, 'accent') }} />
+                          
+                          <div className="flex flex-col md:flex-row gap-4 mt-2">
+                            <div className="flex-1 space-y-2">
+                              <span className="text-[9px] font-bold font-mono px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/15 uppercase">
+                                Slide {idx + 1}: {slide.layout ? slide.layout.replace('_', ' ') : 'Layout'}
+                              </span>
+                              <h4 className="text-xs font-black mt-1 leading-tight">{slide.title}</h4>
+                              
+                              {slide.layout === 'bold_quote' || slide.layout === 'quote' ? (
+                                <p className="text-xs italic text-neutral-450 border-l-2 border-indigo-500 pl-3.5 my-3">
+                                  "{slide.content ? slide.content.join(' ') : ''}"
+                                </p>
+                              ) : (
+                                <ul className="list-disc pl-4 space-y-1 text-xs text-neutral-400">
+                                  {slide.content && slide.content.map((bp: string, bidx: number) => (
+                                    <li key={bidx} className="leading-normal">{bp}</li>
+                                  ))}
+                                </ul>
+                              )}
+                              
+                              {slide.chart && (
+                                <div className="mt-3 p-3 bg-neutral-950/45 rounded-lg border border-neutral-900">
+                                  <span className="text-[8px] font-mono font-bold text-indigo-400 uppercase block mb-1">
+                                    📊 Dynamic AI Chart ({slide.chart.chartType})
+                                  </span>
+                                  <div className="flex items-end gap-1.5 h-16 pt-2">
+                                    {slide.chart.values.map((v: number, vidx: number) => (
+                                      <div key={vidx} className="flex-1 flex flex-col items-center gap-1">
+                                        <div 
+                                          className="w-full bg-indigo-550 rounded-t"
+                                          style={{ height: `${Math.max(15, Math.min(100, (v / Math.max(...slide.chart.values)) * 100))}%` }}
+                                        />
+                                        <span className="text-[7px] font-mono text-neutral-500 truncate w-full text-center">
+                                          {slide.chart.labels[vidx]}: {v}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {['split_column', 'title_slide', 'case_study'].includes(slide.layout) && (
+                              <div className="w-full md:w-40 h-24 rounded-lg overflow-hidden border border-neutral-905/60 relative flex-shrink-0">
+                                <img src={imgUrl} alt={slide.title} className="w-full h-full object-cover" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-1.5">
+                                  <span className="text-[7.5px] font-mono font-bold text-white uppercase truncate w-full">
+                                    🔍 {query.substring(0, 18)}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
                           </div>
-                          <div className="mt-4 pt-2.5 border-t border-neutral-900/30 flex flex-col gap-1.5 text-[9.5px] text-neutral-500">
-                            <div><strong className="text-indigo-400">Visual Suggestion:</strong> Graphic workflow detailing {note.title}</div>
+                          
+                          <div className="mt-4 pt-2 border-t border-neutral-900/30 flex justify-between items-center text-[9px] font-mono text-neutral-550">
+                            <span className="truncate max-w-[70%]">Takeaway: {slide.keyTakeaway || 'Key understanding.'}</span>
+                            {slide.references && <span className="text-indigo-400">Ref: {slide.references}</span>}
                           </div>
                         </div>
                       );
                     })}
                   </div>
+
+                  {/* Right column: Slide configuration & Quality Score report dashboard */}
+                  <div className={`p-4 rounded-xl border space-y-4 flex flex-col justify-between ${
+                    theme === 'dark' ? 'bg-neutral-950/65 border-neutral-900 text-white' : 'bg-white border-gray-200 text-gray-900'
+                  }`}>
+                    <div className="space-y-4">
+                      <h4 className="text-[10px] font-bold text-indigo-400 font-mono uppercase tracking-wider">Slide Quality Audit</h4>
+                      
+                      <div className="flex items-center gap-4 p-3 rounded-lg bg-neutral-950/40 border border-neutral-900">
+                        <div className="relative h-12 w-12 flex items-center justify-center rounded-full border border-indigo-500/35">
+                          <div className="text-center">
+                            <span className="text-xs font-black text-indigo-400">{pptReport.score}</span>
+                            <span className="text-[6px] text-neutral-500 block uppercase font-mono leading-none">Score</span>
+                          </div>
+                        </div>
+                        <div className="flex-1 space-y-0.5">
+                          <span className="text-[8px] font-bold text-neutral-450 uppercase font-mono">Auditor Grade</span>
+                          <div className="text-[11px] font-extrabold text-neutral-200">
+                            {pptReport.score >= 85 ? '🌟 PREMIUM DECK' : pptReport.score >= 70 ? '👍 GOOD DESIGN' : '⚠️ TUNING REQUIRED'}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        {[
+                          { label: 'Narrative Flow', val: pptReport.narrativeFlow },
+                          { label: 'Visual Density', val: pptReport.visualDensity },
+                          { label: 'Image Relevance', val: pptReport.imageRelevance },
+                          { label: 'Completeness', val: pptReport.completeness },
+                          { label: 'Redundancy Check', val: pptReport.redundancy },
+                          { label: 'Citations coverage', val: pptReport.citations }
+                        ].map((item, i) => (
+                          <div key={i} className="space-y-0.5">
+                            <div className="flex justify-between text-[8px] font-bold font-mono">
+                              <span className="text-neutral-500 uppercase">{item.label}</span>
+                              <span className="text-indigo-400">{item.val}/100</span>
+                            </div>
+                            <div className="h-1 w-full bg-neutral-900 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-indigo-550 rounded-full transition-all duration-500" 
+                                style={{ width: `${item.val}%` }} 
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="space-y-3 border-t border-neutral-900/60 pt-3">
+                        <div>
+                          <label className="block text-[8px] font-bold text-neutral-400 uppercase font-mono">Presentation Length</label>
+                          <div className="flex gap-2 mt-1">
+                            {([5, 10, 15] as const).map(l => (
+                              <button
+                                key={l}
+                                onClick={() => handleUpdatePptLength(l)}
+                                className={`flex-1 py-1 rounded border text-[9px] font-bold cursor-pointer transition-all ${
+                                  pptLength === l ? 'bg-indigo-650 text-white border-indigo-500' : 'bg-transparent border-neutral-900 text-neutral-450 hover:border-neutral-800'
+                                }`}
+                              >
+                                {l} Slides
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[8px] font-bold text-neutral-400 uppercase font-mono">Select Design Theme Style</label>
+                          <div className="grid grid-cols-3 gap-1 mt-1">
+                            {(['academic', 'corporate', 'startup', 'cyber', 'minimal', 'glass'] as const).map(t => (
+                              <button
+                                key={t}
+                                onClick={() => setPptTheme(t)}
+                                className={`py-1 text-[8px] rounded border font-bold capitalize cursor-pointer transition-all ${
+                                  pptTheme === t ? 'bg-indigo-650 text-white border-indigo-500' : 'bg-transparent border-neutral-900 text-neutral-450 hover:border-neutral-800'
+                                }`}
+                              >
+                                {t}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between p-2 rounded border border-neutral-900 bg-neutral-950/20">
+                          <div>
+                            <span className="text-[10px] font-bold block">Detailed Bullet Mode</span>
+                            <span className="text-[7.5px] text-neutral-550">Overrides 40-word limit.</span>
+                          </div>
+                          <input
+                            type="checkbox"
+                            checked={pptDetailedMode}
+                            onChange={(e) => setPptDetailedMode(e.target.checked)}
+                            className="accent-indigo-550 cursor-pointer"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5 border-t border-neutral-900/60 pt-3">
+                      <button
+                        onClick={handleRegenerateDeck}
+                        className="w-full py-2 bg-indigo-650 hover:bg-indigo-600 active:scale-98 transition-all text-white text-[10px] font-black rounded-lg cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
+                      >
+                        <Sparkles className="h-3.5 w-3.5 animate-pulse" />
+                        <span>REGENERATE DECK PREVIEW</span>
+                      </button>
+                      <button
+                        onClick={handleRefreshImages}
+                        className="w-full py-2 bg-transparent border border-neutral-900 hover:bg-neutral-950 active:scale-98 transition-all text-neutral-350 text-[10px] font-bold rounded-lg cursor-pointer"
+                      >
+                        REFRESH IMAGE VARIETY
+                      </button>
+                      <button
+                        onClick={handleExportPpt}
+                        className="w-full py-2 bg-white text-black hover:bg-neutral-100 active:scale-98 transition-all text-[10px] font-black rounded-lg cursor-pointer flex items-center justify-center gap-1.5"
+                      >
+                        <Download className="h-3.5 w-3.5 text-black" />
+                        <span>DOWNLOAD PPTX FILE</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 8. LECTURE CHAT TAB */}
+              {activeOutputTab === 'chat' && (
+                <div className="flex flex-col h-[520px] border border-neutral-900 rounded-xl overflow-hidden bg-neutral-950/30 animate-fade-in">
+                  {/* Chat messages */}
+                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                    {(!activeLecture.chatHistory || activeLecture.chatHistory.length === 0) ? (
+                      <div className="flex flex-col items-center justify-center h-full text-center p-6 space-y-3 select-none">
+                        <Brain className="h-8 w-8 text-indigo-500 animate-pulse" />
+                        <h4 className="text-xs font-bold text-neutral-300">Ask Lecture AI</h4>
+                        <p className="text-[10px] text-neutral-500 max-w-xs leading-relaxed font-semibold">
+                          Query the cognitive grounding engine about the details of this lecture. Ask questions, clarify concepts, or request summary bullets.
+                        </p>
+                      </div>
+                    ) : (
+                      activeLecture.chatHistory.map((msg: any, idx: number) => (
+                        <div key={idx} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-[85%] rounded-xl p-3 text-xs leading-relaxed shadow-sm ${
+                            msg.sender === 'user'
+                              ? 'bg-indigo-650 text-white rounded-br-none'
+                              : theme === 'dark'
+                                ? 'bg-neutral-950 border border-neutral-850 text-neutral-200 rounded-bl-none'
+                                : 'bg-white border border-gray-200 text-gray-800 rounded-bl-none'
+                          }`}>
+                            <div className="text-[9px] font-bold font-mono text-indigo-400 mb-1">
+                              {msg.sender === 'user' ? 'STUDENT' : 'PROFESSOR AI'}
+                            </div>
+                            <div className="whitespace-pre-wrap">
+                              {renderTextWithCitations(msg.text)}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                    {isChatLoading && (
+                      <div className="flex justify-start">
+                        <div className={`rounded-xl p-3 text-xs shadow-sm flex items-center gap-2 ${
+                          theme === 'dark' ? 'bg-neutral-950 border border-neutral-850' : 'bg-white border border-gray-200'
+                        }`}>
+                          <Cpu className="h-3.5 w-3.5 text-indigo-500 animate-spin" />
+                          <span className="text-neutral-550 font-mono text-[9px] animate-pulse">Thinking...</span>
+                        </div>
+                      </div>
+                    )}
+                    <div ref={chatEndRef} />
+                  </div>
+
+                  {/* Input form */}
+                  <form onSubmit={handleSendChatMessage} className="p-3 border-t border-neutral-900 bg-neutral-950/70 flex gap-2">
+                    <input
+                      type="text"
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      placeholder="Ask a question about this lecture..."
+                      className="flex-1 rounded-lg border border-neutral-805 bg-neutral-950 px-3 py-2 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-indigo-500"
+                      disabled={isChatLoading}
+                    />
+                    <button
+                      type="submit"
+                      disabled={!chatInput.trim() || isChatLoading}
+                      className="px-4 py-2 bg-indigo-650 hover:bg-indigo-600 disabled:opacity-40 text-white text-xs font-bold rounded-lg cursor-pointer transition-all"
+                    >
+                      Send
+                    </button>
+                  </form>
                 </div>
               )}
 

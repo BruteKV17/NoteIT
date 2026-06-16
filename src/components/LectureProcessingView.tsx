@@ -10,7 +10,7 @@ import {
 import { PageId } from '../types';
 import { blobToBase64, generateLectureContent } from '../services/gemini';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
+import { db, auth } from '../firebaseConfig';
 import BruteLoader from './BruteLoader';
 
 interface LectureProcessingViewProps {
@@ -170,6 +170,30 @@ export default function LectureProcessingView({
             processingCompletedAt: serverTimestamp()
           });
 
+          // Call RAG grounding engine
+          try {
+            const currentUser = auth.currentUser;
+            if (currentUser) {
+              const idToken = await currentUser.getIdToken(true);
+              const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3002';
+              await fetch(`${backendUrl}/api/storage/ground-source`, {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${idToken}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  sourceId: lectureId,
+                  sourceType: 'lecture',
+                  text: aiData.cleanTranscript || aiData.transcript || extractedText || ''
+                })
+              });
+              console.log('[RAG] Grounding completed for lecture document');
+            }
+          } catch (ragErr) {
+            console.error('[RAG] Grounding failed for lecture document:', ragErr);
+          }
+
           // Save notes to general users/{uid}/notes
           if (userId && aiData.notes && Array.isArray(aiData.notes)) {
             const { collection, addDoc, serverTimestamp: firestoreServerTimestamp } = await import('firebase/firestore');
@@ -295,6 +319,30 @@ export default function LectureProcessingView({
             status: 'generated',
             processingCompletedAt: serverTimestamp()
           });
+
+          // Call RAG grounding engine
+          try {
+            const currentUser = auth.currentUser;
+            if (currentUser) {
+              const idToken = await currentUser.getIdToken(true);
+              const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3002';
+              await fetch(`${backendUrl}/api/storage/ground-source`, {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${idToken}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  sourceId: lectureId,
+                  sourceType: 'lecture',
+                  text: aiData.cleanTranscript || aiData.transcript || ''
+                })
+              });
+              console.log('[RAG] Grounding completed for lecture audio');
+            }
+          } catch (ragErr) {
+            console.error('[RAG] Grounding failed for lecture audio:', ragErr);
+          }
 
           if (userId && aiData.notes && Array.isArray(aiData.notes)) {
             const notesRef = collection(db, 'users', userId, 'notes');

@@ -19,6 +19,19 @@ export type PageId =
   | 'knowledge-studio'
   | 'auth';
 
+export interface Citation {
+  text: string;
+  sourceId: string;
+  page?: number;
+  timestamp?: string;
+  chapter?: string;
+}
+
+export interface ChatHistoryRecord {
+  lectureId: string;
+  chatHistory: { sender: 'user' | 'ai'; text: string; citations?: Citation[] }[];
+}
+
 export interface Source {
   id: string;
   name: string;
