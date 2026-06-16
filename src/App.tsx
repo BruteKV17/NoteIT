@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 
 // Types and mock imports
-import { PageId, Source, Lecture, WeakTopic, Quiz, NotificationItem, UserSettings, Note } from './types';
+import { PageId, Source, Lecture, WeakTopic, Quiz, QuizQuestion, NotificationItem, UserSettings, Note } from './types';
 import { useNotes } from './hooks/useNotes';
 import { useLectures } from './hooks/useLectures';
 import { 
@@ -55,6 +55,8 @@ import LectureCaptureView from './components/LectureCaptureView';
 import LectureProcessingView from './components/LectureProcessingView';
 import LandingView from './components/LandingView';
 import OnboardingView from './components/OnboardingView';
+import BruteLoader from './components/BruteLoader';
+import { generateAdditionalQuizQuestions } from './services/gemini';
 
 export default function App() {
   
@@ -179,6 +181,15 @@ export default function App() {
     const generatedQuizzes: Quiz[] = [...INITIAL_QUIZZES];
     combinedLectures.forEach(lecture => {
       if (lecture.quiz && lecture.quiz.length > 0) {
+        const mappedQuestions = lecture.quiz.map((q: any, idx: number) => ({
+          id: `q-${lecture.id}-${idx}`,
+          question: q.question,
+          options: q.options,
+          correctAnswerIndex: q.correctAnswer,
+          explanation: q.explanation || 'Review concepts in your study outline.',
+          sourceCitation: `[Source: ${lecture.title}]`
+        }));
+
         generatedQuizzes.push({
           id: `quiz-${lecture.id}`,
           title: `${lecture.title} Review`,
@@ -186,12 +197,10 @@ export default function App() {
           questionsCount: lecture.quiz.length,
           estimatedTime: `${lecture.quiz.length * 1} mins`,
           status: 'available',
-          questions: lecture.quiz.map((q: any, idx: number) => ({
-            id: `q-${lecture.id}-${idx}`,
-            question: q.question,
-            options: q.options,
-            correctAnswerIndex: q.correctAnswer
-          }))
+          questions: mappedQuestions,
+          easyQuestions: mappedQuestions,
+          mediumQuestions: [],
+          hardQuestions: []
         });
       }
     });
@@ -367,6 +376,24 @@ export default function App() {
       actionPage: 'dashboard'
     };
     setNotifications(prev => [note, ...prev]);
+  };
+
+  const handleAddQuestions = (quizId: string, difficulty: 'easy' | 'medium' | 'hard', newQuestions: QuizQuestion[]) => {
+    setQuizzes(prev => prev.map(q => {
+      if (q.id === quizId) {
+        if (difficulty === 'easy') {
+          const updated = [...(q.easyQuestions || []), ...newQuestions];
+          return { ...q, easyQuestions: updated, questionsCount: updated.length };
+        } else if (difficulty === 'medium') {
+          const updated = [...(q.mediumQuestions || []), ...newQuestions];
+          return { ...q, mediumQuestions: updated, questionsCount: updated.length };
+        } else {
+          const updated = [...(q.hardQuestions || []), ...newQuestions];
+          return { ...q, hardQuestions: updated, questionsCount: updated.length };
+        }
+      }
+      return q;
+    }));
   };
 
   // Callbacks: Notifications actions
@@ -550,6 +577,7 @@ export default function App() {
             selectedQuizId={selectedQuizId}
             setSelectedQuizId={setSelectedQuizId}
             onUpdateQuizScore={handleUpdateQuizScore}
+            onAddQuestions={handleAddQuestions}
             theme={theme}
           />
         );
@@ -607,10 +635,7 @@ export default function App() {
       <div className={`min-h-screen flex items-center justify-center ${
         theme === 'dark' ? 'bg-[#0a0a0c]' : 'bg-[#FAF9F5]'
       }`}>
-        <div className="flex flex-col items-center gap-3">
-          <GraduationCap className="h-10 w-10 text-indigo-500 animate-pulse" />
-          <div className="h-4 w-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-        </div>
+        <BruteLoader size="lg" message="Loading Note-IT AI Interface..." />
       </div>
     );
   }
