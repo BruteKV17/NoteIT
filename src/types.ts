@@ -53,6 +53,10 @@ export interface Lecture {
   flashcards?: { q: string; a: string }[];
   quiz?: { question: string; options: string[]; correctAnswer: number; explanation: string }[];
   keyConcepts?: { id: string; label: string; desc: string; parent?: string; x: number; y: number; group: string }[];
+  cleanTranscript?: string;
+  sections?: { id: string; title: string; startTime: string; endTime: string; content: string }[];
+  timeline?: { time: string; title: string; description: string }[];
+  sourceIntelligence?: { keyPeople: string[]; keyTerms: string[]; formulas: string[]; dates: string[]; statistics: string[]; references: string[] };
 }
 
 export interface WeakTopic {
@@ -204,6 +208,10 @@ export interface KnowledgeSource {
   keyConcepts?: { id: string; label: string; desc: string; parent?: string; x: number; y: number; group: string }[];
   slides?: StudioSlide[];
   podcastScript?: string;
+  cleanTranscript?: string;
+  sections?: { id: string; title: string; startTime: string; endTime: string; content: string }[];
+  timeline?: { time: string; title: string; description: string }[];
+  sourceIntelligence?: { keyPeople: string[]; keyTerms: string[]; formulas: string[]; dates: string[]; statistics: string[]; references: string[] };
 }
 
 

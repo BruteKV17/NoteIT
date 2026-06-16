@@ -72,6 +72,10 @@ export function useLectures(userId: string | undefined) {
             flashcards: data.flashcards,
             quiz: data.quiz,
             keyConcepts: data.keyConcepts,
+            cleanTranscript: data.cleanTranscript,
+            sections: data.sections,
+            timeline: data.timeline,
+            sourceIntelligence: data.sourceIntelligence,
           });
         });
         setLectures(lectureList);

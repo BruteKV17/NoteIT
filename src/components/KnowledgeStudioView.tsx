@@ -127,9 +127,10 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
   // Output Studio state
   const [activeOutputTab, setActiveOutputTab] = useState<'notes' | 'summary' | 'flashcards' | 'quiz' | 'mindmap' | 'slides' | 'podcast' | 'infographics'>('notes');
   const [notesFormat, setNotesFormat] = useState<'academic' | 'executive' | 'revision'>('academic');
-  const [summaryFormat, setSummaryFormat] = useState<'short' | 'detailed' | 'revision-sheet'>('detailed');
+  const [summaryFormat, setSummaryFormat] = useState<'academic' | 'revision' | 'executive' | 'beginner'>('academic');
   const [flashcardsFormat, setFlashcardsFormat] = useState<'basic' | 'advanced' | 'exam'>('basic');
   const [quizFormat, setQuizFormat] = useState<'mcq' | 'subjective' | 'case'>('mcq');
+  const [showTranscript, setShowTranscript] = useState(true);
   
   // Multi-language Output Selector
   const [outputLanguage, setOutputLanguage] = useState<string>('English');
@@ -1078,11 +1079,88 @@ ${queryText}`;
   // PPTX builder with 6 custom templates
   // PPTX builder with 9 custom templates & stock photo search
   const buildAndDownloadPPTX = async (
-    slides: any[],
+    rawSlides: any[],
     deckTitle: string,
     themeName: 'academic' | 'corporate' | 'startup' | 'cyber' | 'minimal' | 'glass',
     isDetailed: boolean
   ) => {
+    // 1. Calculate similarity for title deduplication
+    const calculateTitleSimilarity = (t1: string, t2: string): number => {
+      const s1 = (t1 || "").toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+      const s2 = (t2 || "").toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+      if (s1 === s2) return 1.0;
+      if (s1.length === 0 || s2.length === 0) return 0.0;
+      
+      const track = Array(s2.length + 1).fill(null).map(() => Array(s1.length + 1).fill(null));
+      for (let i = 0; i <= s1.length; i += 1) track[0][i] = i;
+      for (let j = 0; j <= s2.length; j += 1) track[j][0] = j;
+      for (let j = 1; j <= s2.length; j += 1) {
+        for (let i = 1; i <= s1.length; i += 1) {
+          const indicator = s1[i - 1] === s2[j - 1] ? 0 : 1;
+          track[j][i] = Math.min(
+            track[j][i - 1] + 1,
+            track[j - 1][i] + 1,
+            track[j - 1][i - 1] + indicator
+          );
+        }
+      }
+      return 1.0 - (track[s2.length][s1.length] / Math.max(s1.length, s2.length));
+    };
+
+    // 2. Slide Deduplication Pass (similarity > 85%)
+    const deduplicatedSlides: any[] = [];
+    rawSlides.forEach(slide => {
+      const slideContent = slide.content || slide.bulletPoints || [];
+      let isDuplicate = false;
+      for (const existing of deduplicatedSlides) {
+        const similarity = calculateTitleSimilarity(slide.title || "", existing.title || "");
+        if (similarity > 0.85) {
+          const existingContent = existing.content || existing.bulletPoints || [];
+          existing.content = Array.from(new Set([...existingContent, ...slideContent]));
+          existing.bulletPoints = existing.content;
+          isDuplicate = true;
+          break;
+        }
+      }
+      if (!isDuplicate) {
+        deduplicatedSlides.push({
+          ...slide,
+          content: slideContent,
+          bulletPoints: slideContent
+        });
+      }
+    });
+
+    // 3. Text Overflow Splitter Pass (max 40 words per slide unless Detailed Mode is enabled)
+    const processedSlides: any[] = [];
+    deduplicatedSlides.forEach(slide => {
+      const slideContent = slide.content || [];
+      const titleWords = (slide.title || "").split(/\s+/).filter(Boolean).length;
+      const contentWords = slideContent.reduce((acc: number, bp: string) => acc + bp.split(/\s+/).filter(Boolean).length, 0);
+      const totalWords = titleWords + contentWords;
+      
+      if (!isDetailed && totalWords > 40 && slideContent.length > 1) {
+        const halfIndex = Math.ceil(slideContent.length / 2);
+        const contentPart1 = slideContent.slice(0, halfIndex);
+        const contentPart2 = slideContent.slice(halfIndex);
+        
+        processedSlides.push({
+          ...slide,
+          title: `${slide.title} (Part 1)`,
+          content: contentPart1,
+          bulletPoints: contentPart1
+        });
+        processedSlides.push({
+          ...slide,
+          title: `${slide.title} (Part 2)`,
+          content: contentPart2,
+          bulletPoints: contentPart2
+        });
+      } else {
+        processedSlides.push(slide);
+      }
+    });
+
     const pptx = new pptxgen();
     pptx.title = deckTitle;
 
@@ -1099,32 +1177,34 @@ ${queryText}`;
 
     const getRoyaltyFreeImage = (query: string): string => {
       const clean = (query || "").toLowerCase();
-      // Curated high quality high res stock photos (CORS safe, permanent)
-      if (clean.includes("tech") || clean.includes("computer") || clean.includes("software") || clean.includes("code") || clean.includes("digital") || clean.includes("web") || clean.includes("programming")) {
-        return "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&auto=format&fit=crop&q=80";
+      if (clean.includes("tech") || clean.includes("computer") || clean.includes("software") || clean.includes("code") || clean.includes("digital") || clean.includes("web") || clean.includes("programming") || clean.includes("ai") || clean.includes("artificial")) {
+        return "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80";
       }
-      if (clean.includes("science") || clean.includes("biology") || clean.includes("chemistry") || clean.includes("physics") || clean.includes("lab") || clean.includes("medicine") || clean.includes("dna")) {
-        return "https://images.unsplash.com/photo-1507413245164-6160d8298b31?w=600&auto=format&fit=crop&q=80";
+      if (clean.includes("science") || clean.includes("biology") || clean.includes("chemistry") || clean.includes("physics") || clean.includes("lab") || clean.includes("medicine") || clean.includes("dna") || clean.includes("molecular") || clean.includes("cell")) {
+        return "https://images.unsplash.com/photo-1507413245164-6160d8298b31?w=800&auto=format&fit=crop&q=80";
       }
-      if (clean.includes("business") || clean.includes("corporate") || clean.includes("finance") || clean.includes("office") || clean.includes("market") || clean.includes("meeting") || clean.includes("money")) {
-        return "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&auto=format&fit=crop&q=80";
+      if (clean.includes("business") || clean.includes("corporate") || clean.includes("finance") || clean.includes("office") || clean.includes("market") || clean.includes("meeting") || clean.includes("money") || clean.includes("strategy") || clean.includes("leadership")) {
+        return "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&auto=format&fit=crop&q=80";
       }
-      if (clean.includes("education") || clean.includes("learn") || clean.includes("history") || clean.includes("book") || clean.includes("study") || clean.includes("academic") || clean.includes("student") || clean.includes("class")) {
-        return "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=600&auto=format&fit=crop&q=80";
+      if (clean.includes("education") || clean.includes("learn") || clean.includes("history") || clean.includes("book") || clean.includes("study") || clean.includes("academic") || clean.includes("student") || clean.includes("class") || clean.includes("philosophy") || clean.includes("ethics")) {
+        return "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&auto=format&fit=crop&q=80";
       }
       if (clean.includes("art") || clean.includes("design") || clean.includes("creative") || clean.includes("paint") || clean.includes("draw") || clean.includes("graphic")) {
-        return "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600&auto=format&fit=crop&q=80";
+        return "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=800&auto=format&fit=crop&q=80";
       }
-      if (clean.includes("growth") || clean.includes("success") || clean.includes("startup") || clean.includes("idea") || clean.includes("strategy") || clean.includes("analytics")) {
-        return "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&auto=format&fit=crop&q=80";
+      if (clean.includes("growth") || clean.includes("success") || clean.includes("startup") || clean.includes("idea") || clean.includes("analytics") || clean.includes("chart") || clean.includes("diagram")) {
+        return "https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=800&auto=format&fit=crop&q=80";
       }
-      // Fallback keyword-based search on loremflickr (CORS safe CC images)
-      const words = clean.replace(/[^a-z0-9]/g, ' ').trim().split(/\s+/);
-      const firstWord = words[0] || 'idea';
-      return `https://loremflickr.com/640/480/${encodeURIComponent(firstWord)}`;
+      if (clean.includes("math") || clean.includes("calculus") || clean.includes("algebra") || clean.includes("derivative") || clean.includes("limit") || clean.includes("geometry") || clean.includes("equation")) {
+        return "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=800&auto=format&fit=crop&q=80";
+      }
+      
+      const keywords = clean.split(/\s+/).filter(Boolean);
+      const queryParam = keywords.length > 0 ? keywords.slice(0, 2).join(",") : "abstract,academia";
+      return `https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&auto=format&fit=crop&q=80&sig=${Math.abs(queryParam.split('').reduce((a,b)=>(((a<<5)-a)+b.charCodeAt(0))|0,0))%100}`;
     };
 
-    slides.forEach((s, idx) => {
+    processedSlides.forEach((s, idx) => {
       const slide = pptx.addSlide();
       slide.background = { fill: colors.bg };
 
@@ -1435,7 +1515,7 @@ ${queryText}`;
           color: colors.accent, italic: true
         });
       }
-      slide.addText(`Slide ${idx + 1} of ${slides.length}`, {
+      slide.addText(`Slide ${idx + 1} of ${processedSlides.length}`, {
         x: 8.5, y: 5.2, w: 1.5, h: 0.4,
         fontSize: 9, fontFace: "Helvetica",
         color: colors.primary, align: "right"
@@ -1672,6 +1752,56 @@ ${queryText}`;
     setIsPodcastPlaying(false);
   };
 
+  const handleTimestampClick = (timeVal: string) => {
+    console.log("Timestamp clicked inside transcript:", timeVal);
+  };
+
+  const handleTimelineTimestampClick = (timeVal: string) => {
+    const cleanTimeId = timeVal.replace(':', '_');
+    const element = document.getElementById(`transcript-time-${cleanTimeId}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      element.classList.add('bg-indigo-650', 'text-white', 'scale-110');
+      setTimeout(() => {
+        element.classList.remove('bg-indigo-650', 'text-white', 'scale-110');
+      }, 1500);
+    }
+  };
+
+  const renderTranscriptContent = (text: string) => {
+    if (!text) return <p className="text-neutral-500 italic">No transcript content available.</p>;
+    const timestampRegex = /(\[\d{2}:\d{2}\])/g;
+    const parts = text.split(timestampRegex);
+    return parts.map((part, index) => {
+      if (timestampRegex.test(part)) {
+        const timeVal = part.replace(/[\[\]]/g, '');
+        const cleanTimeId = timeVal.replace(':', '_');
+        return (
+          <span
+            key={index}
+            id={`transcript-time-${cleanTimeId}`}
+            onClick={() => handleTimestampClick(timeVal)}
+            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 cursor-pointer hover:bg-indigo-650 hover:text-white transition-all mr-1"
+          >
+            {part}
+          </span>
+        );
+      }
+      return <span key={index}>{part}</span>;
+    });
+  };
+
+  const getNodeColor = (node: any, isSelected: boolean) => {
+    if (isSelected) return '#10b981';
+    if (node.id === 'root') return '#4f46e5';
+    const grp = (node.group || '').toLowerCase();
+    if (grp.includes('math') || grp.includes('formula')) return '#f97316';
+    if (grp.includes('application') || grp.includes('usecase')) return '#ec4899';
+    if (grp.includes('concept') || grp.includes('theory')) return '#06b6d4';
+    if (grp.includes('exam') || grp.includes('mistake')) return '#ef4444';
+    return '#818cf8';
+  };
+
   useEffect(() => {
     return () => {
       window.speechSynthesis.cancel();
@@ -1847,25 +1977,137 @@ ${queryText}`;
           </div>
         </div>
 
-        {/* PANEL 2: CENTER - WORKSPACE STUDIO */}
-        <div className={`flex-grow flex-1 flex flex-col overflow-hidden p-4 space-y-4 border-r ${
-          theme === 'dark' ? 'bg-[#050608] border-neutral-900' : 'bg-[#FAF9F5] border-gray-200'
+        {/* PANEL 2: CENTER - AI WORKSPACE */}
+        <div className={`flex-1 flex flex-col overflow-hidden p-4 space-y-4 ${
+          theme === 'dark' ? 'bg-[#050608]' : 'bg-[#FAF9F5]'
         }`}>
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xs font-black text-indigo-400 uppercase tracking-widest font-mono">Workspace Studio</h2>
-              <p className="text-[10px] text-neutral-400 mt-0.5">Generate, display, and export materials.</p>
-            </div>
-            {isChatCollapsed && (
+          <div>
+            <h2 className="text-xs font-black text-indigo-400 uppercase tracking-widest font-mono">AI Workspace</h2>
+            <p className="text-[10px] text-neutral-400 mt-0.5">Synthesize outlines, check contradictions, or query sources.</p>
+          </div>
+
+          {/* Quick Prompts Chips */}
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none whitespace-nowrap">
+            {[
+              "Summarize selected sources",
+              "Compare all sources",
+              "Find contradictions in documents",
+              "Explain difficult formulas/methods",
+              "Generate interview checklist"
+            ].map((prompt, idx) => (
               <button
-                type="button"
-                onClick={() => setIsChatCollapsed(false)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-650 hover:bg-indigo-600 text-white text-[10px] font-black transition-all hover:scale-98 cursor-pointer shadow-md"
+                key={idx}
+                onClick={() => handleQuickPrompt(prompt)}
+                className={`px-3 py-1.5 rounded-lg border text-[10px] font-extrabold transition-all hover:scale-98 cursor-pointer ${
+                  theme === 'dark'
+                    ? 'bg-neutral-900 border-neutral-800 text-neutral-350 hover:bg-neutral-850 hover:border-neutral-700'
+                    : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                }`}
               >
-                <Sparkles className="h-3 w-3 animate-pulse text-indigo-300" />
-                <span>Ask AI Assistant</span>
+                {prompt}
               </button>
+            ))}
+          </div>
+
+          {/* Chat Messages Log */}
+          <div className={`flex-1 rounded-2xl border p-4 overflow-y-auto space-y-4 font-sans ${
+            theme === 'dark' ? 'bg-[#090b0e]/75 border-neutral-900/60' : 'bg-white border-gray-200'
+          }`}>
+            {chatMessages.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-2">
+                <Sparkles className="h-8 w-8 text-indigo-500 animate-pulse" />
+                <h3 className="text-xs font-bold text-neutral-400">Search Workspace Active</h3>
+                <p className="text-[10px] text-neutral-500 max-w-xs leading-relaxed">
+                  Enter a query below. AI will reference all selected sources ({selectedSourceIds.length} active) to answer.
+                </p>
+              </div>
+            ) : (
+              chatMessages.map((msg, i) => (
+                <div key={i} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-xs leading-relaxed select-text ${
+                    msg.sender === 'user'
+                      ? theme === 'dark' 
+                        ? 'bg-indigo-650 text-white' 
+                        : 'bg-black text-white'
+                      : theme === 'dark'
+                        ? 'bg-[#121318] border border-neutral-850 text-neutral-205'
+                        : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    <span className="font-mono text-[9px] font-black uppercase tracking-wider block opacity-60 mb-1">
+                      {msg.sender === 'user' ? 'Student query' : 'NoteIT Intelligence'}
+                    </span>
+                    {(() => {
+                      const parts = msg.text.split(/Sources:\s*/i);
+                      const answerText = parts[0];
+                      const sourcesBlock = parts[1];
+                      return (
+                        <div>
+                          <p className="whitespace-pre-wrap">{answerText.trim()}</p>
+                          {sourcesBlock && (
+                            <div className="mt-3 pt-2 border-t border-indigo-500/20">
+                              <span className="font-mono text-[8px] font-black uppercase text-indigo-400 block mb-1">Sources:</span>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {sourcesBlock.split('\n').map(l => l.trim()).filter(l => l.length > 0).map((line, idx) => {
+                                  const cleanLine = line.replace(/^-\s*/, '').trim();
+                                  return (
+                                    <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+                                      {cleanLine}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+              ))
             )}
+            {isChatLoading && (
+              <div className="flex justify-start">
+                <div className={`rounded-2xl px-4 py-3 border flex items-center gap-3 ${theme === 'dark' ? 'bg-[#121318] border-neutral-850 text-neutral-400' : 'bg-gray-100 border-gray-250 text-gray-500'}`}>
+                  <BruteLoader size="xs" message="" />
+                  <span className="text-xs font-mono font-bold tracking-wider animate-pulse">Synthesizing logical layers...</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Input Form */}
+          <form onSubmit={handleChatSubmit} className="flex gap-2">
+            <input
+              type="text"
+              required
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              placeholder="Ask anything about your selected sources..."
+              className={`flex-grow rounded-xl text-xs font-semibold outline-none p-3.5 transition-all ${
+                theme === 'dark' 
+                  ? 'bg-neutral-950 border border-neutral-855 text-white placeholder-neutral-600 focus:border-indigo-500' 
+                  : 'bg-white border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-black'
+              }`}
+            />
+            <button
+              type="submit"
+              disabled={isChatLoading || selectedSourceIds.length === 0}
+              className={`rounded-xl px-5 py-3.5 text-xs font-black shadow-lg transition-all active:scale-95 cursor-pointer disabled:opacity-30 disabled:pointer-events-none ${
+                theme === 'dark' ? 'bg-white text-black hover:bg-neutral-100' : 'bg-black text-white hover:bg-gray-800'
+              }`}
+            >
+              Ask
+            </button>
+          </form>
+        </div>
+
+        {/* PANEL 3: RIGHT - OUTPUT STUDIO */}
+        <div className={`w-full md:w-[420px] flex-shrink-0 flex flex-col border-l overflow-y-auto p-4 space-y-4 ${
+          theme === 'dark' ? 'bg-[#08090c] border-neutral-900' : 'bg-gray-50/50 border-gray-200'
+        }`}>
+          <div>
+            <h2 className="text-xs font-black text-indigo-400 uppercase tracking-widest font-mono">Output Studio</h2>
+            <p className="text-[10px] text-neutral-400 mt-0.5">Generate, display, and export materials.</p>
           </div>
 
           {/* Multi-language selector */}
@@ -1873,7 +2115,7 @@ ${queryText}`;
             <div className={`flex items-center justify-between p-2.5 rounded-xl border ${
               theme === 'dark' ? 'bg-neutral-950/70 border-neutral-900/60' : 'bg-gray-50 border-gray-200'
             }`}>
-              <span className="text-[10px] font-black uppercase text-neutral-455 tracking-wider">Output Language</span>
+              <span className="text-[10px] font-black uppercase text-neutral-450 tracking-wider">Output Language</span>
               <select
                 value={outputLanguage}
                 onChange={(e) => handleLanguageChange(e.target.value)}
@@ -1896,11 +2138,10 @@ ${queryText}`;
                 onClick={() => {
                   setActiveOutputTab(tab);
                   setSelectedMindmapNode(null);
-                  setIsChatCollapsed(true);
                 }}
                 className={`py-1.5 rounded-lg text-[10px] font-black capitalize transition-all cursor-pointer ${
                   activeOutputTab === tab 
-                    ? theme === 'dark' ? 'bg-indigo-600 text-white' : 'bg-white text-black shadow-xs' 
+                    ? theme === 'dark' ? 'bg-indigo-650 text-white' : 'bg-white text-black shadow-xs' 
                     : 'text-neutral-400 hover:text-white'
                 }`}
               >
@@ -1916,11 +2157,10 @@ ${queryText}`;
                 onClick={() => {
                   setActiveOutputTab(tab);
                   setSelectedMindmapNode(null);
-                  setIsChatCollapsed(true);
                 }}
                 className={`py-1.5 rounded-lg text-[10px] font-black capitalize transition-all cursor-pointer ${
                   activeOutputTab === tab 
-                    ? theme === 'dark' ? 'bg-indigo-600 text-white' : 'bg-white text-black shadow-xs' 
+                    ? theme === 'dark' ? 'bg-indigo-650 text-white' : 'bg-white text-black shadow-xs' 
                     : 'text-neutral-400 hover:text-white'
                 }`}
               >
@@ -1988,19 +2228,7 @@ ${queryText}`;
                 {activeOutputTab === 'summary' && (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <div className="flex gap-1">
-                        {(['short', 'detailed', 'revision-sheet'] as const).map(f => (
-                          <button
-                            key={f}
-                            onClick={() => setSummaryFormat(f)}
-                            className={`px-2.5 py-1 rounded-lg text-[9px] font-extrabold uppercase ${
-                              summaryFormat === f ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-455'
-                            }`}
-                          >
-                            {f.replace('-', ' ')}
-                          </button>
-                        ))}
-                      </div>
+                      <span className="text-[10px] font-bold text-indigo-400 font-mono uppercase">Structured Summary</span>
                       <button
                         onClick={() => {
                           setPdfExportData({ title: `${activeSource.title} - Summary`, data: activeSource.summary });
@@ -2016,20 +2244,20 @@ ${queryText}`;
                     <div className="space-y-4">
                       {(() => {
                         const sections = parseSummaryIntoSections(activeSource.summary);
-                        const sectionConfig = [
-                          { label: 'Executive Overview', content: sections.executiveOverview },
-                          { label: 'Key Concepts', content: sections.keyConcepts },
-                          { label: 'Detailed Explanation', content: sections.detailedExplanation },
-                          { label: 'Examples', content: sections.examples },
-                          { label: 'Formulas', content: sections.formulas },
-                          { label: 'Common Mistakes', content: sections.commonMistakes },
-                          { label: 'Revision Notes', content: sections.revisionNotes },
-                          { label: 'Exam Questions', content: sections.examQuestions },
-                          { label: 'Real World Applications', content: sections.realWorldApplications },
-                          { label: 'Quick Recap', content: sections.quickRecap }
+                        const allSections = [
+                          { key: 'executiveOverview', label: 'Executive Overview', content: sections.executiveOverview },
+                          { key: 'keyConcepts', label: 'Key Concepts', content: sections.keyConcepts },
+                          { key: 'detailedExplanation', label: 'Detailed Explanation', content: sections.detailedExplanation },
+                          { key: 'examples', label: 'Examples', content: sections.examples },
+                          { key: 'formulas', label: 'Formulas', content: sections.formulas },
+                          { key: 'commonMistakes', label: 'Common Mistakes', content: sections.commonMistakes },
+                          { key: 'revisionNotes', label: 'Revision Notes', content: sections.revisionNotes },
+                          { key: 'examQuestions', label: 'Exam Questions', content: sections.examQuestions },
+                          { key: 'realWorldApplications', label: 'Real World Applications', content: sections.realWorldApplications },
+                          { key: 'quickRecap', label: 'Quick Recap', content: sections.quickRecap }
                         ];
 
-                        return sectionConfig.map((sec, idx) => (
+                        return allSections.map((sec, idx) => (
                           <div key={idx} className={`p-4 rounded-xl border ${
                             theme === 'dark' ? 'bg-[#121318] border-neutral-900' : 'bg-white border-gray-200'
                           }`}>
@@ -2157,6 +2385,11 @@ ${queryText}`;
                             <div className="mt-4 pt-3 border-t border-dashed border-neutral-900 text-[11px] text-neutral-455">
                               <span className="font-mono text-[9px] font-bold text-indigo-400 block mb-1">COGNITIVE ANALYSIS:</span>
                               {renderTextWithCitations(cleanMarkdownText(activeSource.quiz[activeQuizQuestionIdx].explanation))}
+                              {activeSource.quiz[activeQuizQuestionIdx].sourceCitation && (
+                                <div className="mt-2 text-[10px] font-bold text-indigo-350 font-mono">
+                                  Citation: {activeSource.quiz[activeQuizQuestionIdx].sourceCitation}
+                                </div>
+                              )}
                             </div>
                           )}
 
@@ -2211,7 +2444,6 @@ ${queryText}`;
                       theme === 'dark' ? 'bg-[#0d0e12] border-neutral-900' : 'bg-white border-gray-200'
                     }`}>
                       <svg className="w-full h-full">
-                        {/* Lines linking nodes */}
                         {activeSource.keyConcepts && activeSource.keyConcepts.map((node: any, idx: number) => {
                           if (node.parent) {
                             const parentNode = activeSource.keyConcepts.find((n: any) => n.id === node.parent);
@@ -2233,15 +2465,14 @@ ${queryText}`;
                           return null;
                         })}
 
-                        {/* Renders interactive nodes */}
                         {activeSource.keyConcepts && activeSource.keyConcepts.map((node: any, idx: number) => (
                           <g key={idx} onClick={() => setSelectedMindmapNode(node)} className="cursor-pointer group">
                             <circle
                               cx={`${node.x}%`}
                               cy={`${node.y}%`}
                               r={node.id === 'root' ? 14 : 9}
-                              fill={selectedMindmapNode?.id === node.id ? '#10b981' : (node.id === 'root' ? '#4f46e5' : '#818cf8')}
-                              className="transition-all hover:scale-110"
+                              fill={getNodeColor(node, selectedMindmapNode?.id === node.id)}
+                              className="transition-all hover:scale-115"
                             />
                             <text
                               x={`${node.x}%`}
@@ -2262,9 +2493,9 @@ ${queryText}`;
                       </div>
                     </div>
 
-                    {/* Interactive Node Side Panel Details Drawer */}
+                    {/* Expandable Mind Map Details Panel */}
                     {selectedMindmapNode && (
-                      <div className={`p-4 rounded-xl border text-left space-y-2.5 animate-fade-in ${
+                      <div className={`p-4 rounded-xl border text-left space-y-3.5 animate-fade-in ${
                         theme === 'dark' ? 'bg-[#121318] border-neutral-900' : 'bg-white border-gray-200'
                       }`}>
                         <div className="flex items-center justify-between border-b border-neutral-855 pb-2">
@@ -2278,18 +2509,37 @@ ${queryText}`;
                             &times;
                           </button>
                         </div>
-                        <div className="text-[11.5px] leading-relaxed text-neutral-355">
-                          <strong className="text-indigo-400 block text-[10px] uppercase font-mono">Definition & Explanation</strong>
+                        
+                        <div className="text-[11.5px] leading-relaxed text-neutral-350">
+                          <strong className="text-indigo-400 block text-[9.5px] uppercase font-mono tracking-wider">Definition & Explanation</strong>
                           {renderTextWithCitations(cleanMarkdownText(selectedMindmapNode.desc || selectedMindmapNode.explanation || 'Provides logical synthesis for this section.'))}
                         </div>
+                        
                         {selectedMindmapNode.examples && (
-                          <div className="text-[11.5px] leading-relaxed text-neutral-355">
-                            <strong className="text-indigo-400 block text-[10px] uppercase font-mono">Examples & Analogies</strong>
+                          <div className="text-[11.5px] leading-relaxed text-neutral-350">
+                            <strong className="text-indigo-400 block text-[9.5px] uppercase font-mono tracking-wider">Examples & Analogies</strong>
                             {renderTextWithCitations(cleanMarkdownText(selectedMindmapNode.examples))}
                           </div>
                         )}
-                        <div className="text-[9.5px] font-mono text-indigo-455 pt-1.5 border-t border-neutral-900/30">
-                          Reference Citation: {selectedMindmapNode.sourceCitation || `[Source: ${activeSource.title}, Node indexing]`}
+
+                        {selectedMindmapNode.formula && (
+                          <div className="text-[11.5px] leading-relaxed text-neutral-350">
+                            <strong className="text-indigo-400 block text-[9.5px] uppercase font-mono tracking-wider">Equations or Theories</strong>
+                            <code className="block bg-neutral-950/50 p-2 rounded text-[10px] font-mono mt-1 text-orange-450 border border-neutral-900">
+                              {selectedMindmapNode.formula}
+                            </code>
+                          </div>
+                        )}
+
+                        {selectedMindmapNode.applications && (
+                          <div className="text-[11.5px] leading-relaxed text-neutral-350">
+                            <strong className="text-indigo-400 block text-[9.5px] uppercase font-mono tracking-wider">Applications & Use Cases</strong>
+                            {renderTextWithCitations(cleanMarkdownText(selectedMindmapNode.applications))}
+                          </div>
+                        )}
+
+                        <div className="text-[9px] font-mono text-neutral-500 pt-1.5 border-t border-neutral-900/30">
+                          Reference: {selectedMindmapNode.sourceCitation || `[Source: ${activeSource.title}, Concept Net]`}
                         </div>
                       </div>
                     )}
@@ -2319,8 +2569,8 @@ ${queryText}`;
                             <span className="text-[8px] font-bold text-indigo-400 font-mono uppercase">Slide {idx + 1} of {activeSource.slides.length}</span>
                             <h4 className="text-xs font-black text-white mt-1">{s.title}</h4>
                             <ul className="list-disc pl-4 mt-2.5 space-y-1.5">
-                              {s.bulletPoints.map((bp: string, bidx: number) => (
-                                <li key={bidx} className="text-[11.5px] text-neutral-355 leading-relaxed">{bp}</li>
+                              {(s.content || s.bulletPoints || []).map((bp: string, bidx: number) => (
+                                  <li key={bidx} className="text-[11.5px] text-neutral-350 leading-relaxed">{bp}</li>
                               ))}
                             </ul>
                           </div>
@@ -2355,7 +2605,7 @@ ${queryText}`;
                         {!isPodcastPlaying ? (
                           <button
                             onClick={startPodcastAudio}
-                            className="h-8.5 w-8.5 flex items-center justify-center bg-indigo-600 hover:bg-indigo-500 text-white rounded-full transition-transform active:scale-95 cursor-pointer"
+                            className="h-8.5 w-8.5 flex items-center justify-center bg-indigo-650 hover:bg-indigo-600 text-white rounded-full transition-transform active:scale-95 cursor-pointer"
                           >
                             <Play className="h-4 w-4 fill-current ml-0.5" />
                           </button>
@@ -2430,168 +2680,6 @@ ${queryText}`;
             )}
           </div>
         </div>
-
-        {/* PANEL 3: RIGHT - AI WORKSPACE (Chat Panel) */}
-        {isChatCollapsed ? (
-          <div className={`w-full md:w-12 flex-shrink-0 flex flex-col border-l items-center py-4 space-y-6 transition-all duration-300 ${
-            theme === 'dark' ? 'bg-[#08090c] border-neutral-900' : 'bg-gray-50/50 border-gray-200'
-          }`}>
-            <button
-              type="button"
-              onClick={() => setIsChatCollapsed(false)}
-              className={`p-2 rounded-lg border transition-all hover:scale-105 cursor-pointer ${
-                theme === 'dark' 
-                  ? 'border-neutral-800 bg-neutral-900/60 hover:bg-neutral-850 hover:text-white' 
-                  : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-700'
-              }`}
-              title="Expand AI Assistant"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <div className="flex-1 flex items-center justify-center">
-              <span className="text-[10px] font-black tracking-widest font-mono text-indigo-400 uppercase transform -rotate-90 whitespace-nowrap origin-center select-none">
-                AI CHAT ASSISTANT
-              </span>
-            </div>
-          </div>
-        ) : (
-          <div className={`w-full md:w-[420px] flex-shrink-0 flex flex-col border-l overflow-hidden p-4 space-y-4 transition-all duration-300 ${
-            theme === 'dark' ? 'bg-[#08090c] border-neutral-900' : 'bg-gray-50/50 border-gray-200'
-          }`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-xs font-black text-indigo-400 uppercase tracking-widest font-mono">AI Workspace</h2>
-                <p className="text-[10px] text-neutral-400 mt-0.5">Synthesize outlines, check contradictions, or query sources.</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsChatCollapsed(true)}
-                className={`p-1.5 rounded-lg border transition-all hover:scale-105 cursor-pointer ${
-                  theme === 'dark' 
-                    ? 'border-neutral-850 bg-neutral-950/60 hover:bg-neutral-900 hover:text-white' 
-                    : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-700'
-                }`}
-                title="Collapse AI Assistant"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-
-            {/* Quick Prompts Chips */}
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none whitespace-nowrap">
-              {[
-                "Summarize selected sources",
-                "Compare all sources",
-                "Find contradictions in documents",
-                "Explain difficult formulas/methods",
-                "Generate interview checklist"
-              ].map((prompt, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleQuickPrompt(prompt)}
-                  className={`px-3 py-1.5 rounded-lg border text-[10px] font-extrabold transition-all hover:scale-98 cursor-pointer ${
-                    theme === 'dark'
-                      ? 'bg-neutral-900 border-neutral-800 text-neutral-350 hover:bg-neutral-850 hover:border-neutral-700'
-                      : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  {prompt}
-                </button>
-              ))}
-            </div>
-
-            {/* Chat Messages Log */}
-            <div className={`flex-1 rounded-2xl border p-4 overflow-y-auto space-y-4 font-sans ${
-              theme === 'dark' ? 'bg-[#090b0e]/75 border-neutral-900/60' : 'bg-white border-gray-200'
-            }`}>
-              {chatMessages.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-2">
-                  <Sparkles className="h-8 w-8 text-indigo-500 animate-pulse" />
-                  <h3 className="text-xs font-bold text-neutral-400">Search Workspace Active</h3>
-                  <p className="text-[10px] text-neutral-500 max-w-xs leading-relaxed">
-                    Enter a query below. AI will reference all selected sources ({selectedSourceIds.length} active) to answer.
-                  </p>
-                </div>
-              ) : (
-                chatMessages.map((msg, i) => (
-                  <div key={i} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-xs leading-relaxed select-text ${
-                      msg.sender === 'user'
-                        ? theme === 'dark' 
-                          ? 'bg-indigo-600 text-white' 
-                          : 'bg-black text-white'
-                        : theme === 'dark'
-                          ? 'bg-[#121318] border border-neutral-850 text-neutral-200'
-                          : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      <span className="font-mono text-[9px] font-black uppercase tracking-wider block opacity-60 mb-1">
-                        {msg.sender === 'user' ? 'Student query' : 'NoteIT Intelligence'}
-                      </span>
-                      {(() => {
-                        const parts = msg.text.split(/Sources:\s*/i);
-                        const answerText = parts[0];
-                        const sourcesBlock = parts[1];
-                        return (
-                          <div>
-                            <p className="whitespace-pre-wrap">{answerText.trim()}</p>
-                            {sourcesBlock && (
-                              <div className="mt-3 pt-2 border-t border-indigo-500/20">
-                                <span className="font-mono text-[8px] font-black uppercase text-indigo-400 block mb-1">Sources:</span>
-                                <div className="flex flex-wrap gap-1 mt-1">
-                                  {sourcesBlock.split('\n').map(l => l.trim()).filter(l => l.length > 0).map((line, idx) => {
-                                    const cleanLine = line.replace(/^-\s*/, '').trim();
-                                    return (
-                                      <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
-                                        {cleanLine}
-                                      </span>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                ))
-              )}
-              {isChatLoading && (
-                <div className="flex justify-start">
-                  <div className={`rounded-2xl px-4 py-3 border flex items-center gap-3 ${theme === 'dark' ? 'bg-[#121318] border-neutral-850 text-neutral-400' : 'bg-gray-100 border-gray-250 text-gray-500'}`}>
-                    <BruteLoader size="xs" message="" />
-                    <span className="text-xs font-mono font-bold tracking-wider animate-pulse">Synthesizing logical layers...</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Input Form */}
-            <form onSubmit={handleChatSubmit} className="flex gap-2">
-              <input
-                type="text"
-                required
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                placeholder="Ask anything about your selected sources..."
-                className={`flex-grow rounded-xl text-xs font-semibold outline-none p-3.5 transition-all ${
-                  theme === 'dark' 
-                    ? 'bg-neutral-950 border border-neutral-850 text-white placeholder-neutral-600 focus:border-indigo-500' 
-                    : 'bg-white border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-black'
-                }`}
-              />
-              <button
-                type="submit"
-                disabled={isChatLoading || selectedSourceIds.length === 0}
-                className={`rounded-xl px-5 py-3.5 text-xs font-black shadow-lg transition-all active:scale-95 cursor-pointer disabled:opacity-30 disabled:pointer-events-none ${
-                  theme === 'dark' ? 'bg-white text-black hover:bg-neutral-100' : 'bg-black text-white hover:bg-gray-800'
-                }`}
-              >
-                Ask
-              </button>
-            </form>
-          </div>
-        )}
 
       </div>
 
@@ -2699,7 +2787,7 @@ ${queryText}`;
                 </div>
                 <div className="space-y-1">
                   <h4 className="text-xs font-black">Authorize Google Account Connection</h4>
-                  <p className="text-[10px] text-neutral-450 max-w-xs mx-auto leading-relaxed">
+                  <p className="text-[10px] text-neutral-455 max-w-xs mx-auto leading-relaxed">
                     Connect your Academic Drive folders to sync docs, notes, and spreadsheet assets.
                   </p>
                 </div>
@@ -2726,7 +2814,7 @@ ${queryText}`;
                   <span className="text-[10.5px] text-green-400 font-bold">✓ Connected: scholar.session@google.edu</span>
                   <button 
                     onClick={() => setIsDriveConnected(false)} 
-                    className="text-[9.5px] text-neutral-400 hover:text-white hover:underline cursor-pointer"
+                    className="text-[9.5px] text-neutral-450 hover:text-white hover:underline cursor-pointer"
                   >
                     Disconnect
                   </button>
@@ -2791,7 +2879,7 @@ ${queryText}`;
                       className={`py-2 px-3 text-xs font-bold border rounded-lg cursor-pointer capitalize transition-all ${
                         selectedPdfTheme === t 
                           ? 'bg-indigo-650 border-indigo-500 text-white' 
-                          : theme === 'dark' ? 'border-neutral-800 text-neutral-400 hover:border-neutral-700' : 'border-gray-200 text-gray-700 hover:border-gray-300'
+                          : theme === 'dark' ? 'border-neutral-800 text-neutral-450 hover:border-neutral-700' : 'border-gray-200 text-gray-700 hover:border-gray-300'
                       }`}
                     >
                       {t} Style
@@ -2804,7 +2892,7 @@ ${queryText}`;
                 <button
                   type="button"
                   onClick={() => { setShowPdfModal(false); setPdfExportData(null); }}
-                  className="rounded-lg px-4 py-2 text-xs font-bold border border-neutral-800 text-neutral-400 cursor-pointer"
+                  className="rounded-lg px-4 py-2 text-xs font-bold border border-neutral-800 text-neutral-450 cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -2856,7 +2944,7 @@ ${queryText}`;
                       className={`py-2 px-1 text-[10px] font-bold border rounded-lg cursor-pointer capitalize transition-all ${
                         pptTheme === t 
                           ? 'bg-indigo-650 border-indigo-500 text-white' 
-                          : theme === 'dark' ? 'border-neutral-800 text-neutral-400 hover:border-neutral-700' : 'border-gray-200 text-gray-700 hover:border-gray-300'
+                          : theme === 'dark' ? 'border-neutral-800 text-neutral-450 hover:border-neutral-700' : 'border-gray-200 text-gray-700 hover:border-gray-300'
                       }`}
                     >
                       {t === 'startup' ? 'Startup' : t === 'cyber' ? 'Cyber Neon' : t === 'glass' ? 'Dark Glass' : t}
@@ -2876,7 +2964,7 @@ ${queryText}`;
                       className={`flex-1 py-2 text-xs font-bold border rounded-lg cursor-pointer transition-all ${
                         pptLength === l 
                           ? 'bg-indigo-650 border-indigo-500 text-white' 
-                          : theme === 'dark' ? 'border-neutral-800 text-neutral-400' : 'border-gray-200 text-gray-700'
+                          : theme === 'dark' ? 'border-neutral-800 text-neutral-450' : 'border-gray-200 text-gray-700'
                       }`}
                     >
                       {l} Slides

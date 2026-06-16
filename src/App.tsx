@@ -225,6 +225,7 @@ export default function App() {
   const [processingLectureId, setProcessingLectureId] = useState<string | null>(null);
   const [processingAudioBlob, setProcessingAudioBlob] = useState<Blob | null>(null);
   const [processingFile, setProcessingFile] = useState<File | null>(null);
+  const [activeLectureId, setActiveLectureId] = useState<string | null>(null);
 
 
   // Callbacks: Sources
@@ -514,6 +515,9 @@ export default function App() {
             setActivePage={setActivePage}
             theme={theme}
             lectures={combinedLectures}
+            activeLectureId={activeLectureId}
+            setActiveLectureId={setActiveLectureId}
+            notes={notes}
           />
         );
       case 'lecture-processing':
@@ -528,6 +532,7 @@ export default function App() {
             updateLecture={updateLecture}
             setActivePage={setActivePage}
             theme={theme}
+            setActiveLectureId={setActiveLectureId}
           />
         );
       case 'profile':

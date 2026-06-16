@@ -36,152 +36,47 @@ const extractJsonObject = (rawText: string): string => {
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-export const generateLectureContent = async (
-  base64Audio: string, 
-  mimeType: string = 'audio/webm',
+export const executeGeminiCall = async (
+  prompt: string,
+  apiKey: string,
+  inlineData?: { mimeType: string, data: string },
+  responseSchema?: any,
   onBusy?: (isBusy: boolean) => void
 ): Promise<any> => {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
-  if (!apiKey) {
-    throw new Error("Gemini API key is not configured in .env. Please configure VITE_GEMINI_API_KEY.");
-  }
-
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-
-  const prompt = `
-    You are an expert academic tutor. Analyze the provided audio lecture and perform the following tasks:
-    1. Generate a detailed, chronological transcript of the lecture. Format the transcript text by prepending bracketed timestamps (e.g. [00:00], [01:15]) at the beginning of each major statement or logical paragraph based on the audio timeline.
-    2. Generate a structured academic summary of the lecture in clean Markdown format (covering main ideas, objectives, and any core formulas/definitions).
-    3. Generate a list of key detailed notes from the lecture context. Each note must have a title and detailed content in Markdown. Inside the content, structure it with the following exact subsections:
-       - 🧠 **Key Terms & Definitions**
-       - 📝 **Detailed Explanations & Examples**
-       - 💡 **Core Formula or Analogy** (if applicable)
-       - 🎯 **Actionable Summary / Study Focus**
-    4. Generate a list of 4 conceptual flashcards from the lecture. Each flashcard must have a question "q" and a detailed answer "a" in Markdown.
-    5. Generate a quiz of 3-4 multiple-choice questions from the lecture. Each question must have a "question", a list of 4 "options", a "correctAnswer" index (0-based), and a detailed conceptual "explanation".
-    6. Generate a list of 5-7 keyConcepts for a mind map representing the lecture. One concept MUST be the root concept with id "root", x: 50, y: 50, and group "center". Other concepts must have an id, label, parent (referencing the parent's id, e.g. "root"), x and y coordinates (numbers between 10 and 90 representing positions on a 2D canvas), and a group name (e.g. "math", "concepts", "applications").
-    7. Generate a list of 1-2 weakTopics that this lecture covers, diagnosing typical student struggles. Each topic must have a "topicName", "subject", "aiDiagnosis", and a list of 3 "actionPlan" recommendations.
-
-    Return the result STRICTLY as a JSON object matching the requested schema.
-  `;
-
   let currentDelay = 2000;
   const maxRetries = 5;
   const retryStatusCodes = [429, 500, 502, 503, 504];
 
   for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
     try {
+      const parts: any[] = [];
+      if (inlineData) {
+        parts.push({ inlineData });
+      }
+      parts.push({ text: prompt });
+
+      const requestBody: any = {
+        contents: [{ parts }]
+      };
+
+      if (responseSchema) {
+        requestBody.generationConfig = {
+          responseMimeType: 'application/json',
+          responseSchema
+        };
+      }
+
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  inlineData: {
-                    mimeType,
-                    data: base64Audio,
-                  },
-                },
-                {
-                  text: prompt,
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            responseMimeType: 'application/json',
-            responseSchema: {
-              type: 'OBJECT',
-              properties: {
-                transcript: { type: 'STRING' },
-                summary: { type: 'STRING' },
-                notes: {
-                  type: 'ARRAY',
-                  items: {
-                    type: 'OBJECT',
-                    properties: {
-                      title: { type: 'STRING' },
-                      content: { type: 'STRING' }
-                    },
-                    required: ['title', 'content']
-                  }
-                },
-                flashcards: {
-                  type: 'ARRAY',
-                  items: {
-                    type: 'OBJECT',
-                    properties: {
-                      q: { type: 'STRING' },
-                      a: { type: 'STRING' }
-                    },
-                    required: ['q', 'a']
-                  }
-                },
-                quiz: {
-                  type: 'ARRAY',
-                  items: {
-                    type: 'OBJECT',
-                    properties: {
-                      question: { type: 'STRING' },
-                      options: {
-                        type: 'ARRAY',
-                        items: { type: 'STRING' }
-                      },
-                      correctAnswer: { type: 'INTEGER' },
-                      explanation: { type: 'STRING' }
-                    },
-                    required: ['question', 'options', 'correctAnswer', 'explanation']
-                  }
-                },
-                keyConcepts: {
-                  type: 'ARRAY',
-                  items: {
-                    type: 'OBJECT',
-                    properties: {
-                      id: { type: 'STRING' },
-                      label: { type: 'STRING' },
-                      desc: { type: 'STRING' },
-                      parent: { type: 'STRING' },
-                      x: { type: 'INTEGER' },
-                      y: { type: 'INTEGER' },
-                      group: { type: 'STRING' }
-                    },
-                    required: ['id', 'label', 'desc', 'x', 'y', 'group']
-                  }
-                },
-                weakTopics: {
-                  type: 'ARRAY',
-                  items: {
-                    type: 'OBJECT',
-                    properties: {
-                      topicName: { type: 'STRING' },
-                      subject: { type: 'STRING' },
-                      aiDiagnosis: { type: 'STRING' },
-                      actionPlan: {
-                        type: 'ARRAY',
-                        items: { type: 'STRING' }
-                      }
-                    },
-                    required: ['topicName', 'subject', 'aiDiagnosis', 'actionPlan']
-                  }
-                }
-              },
-              required: ['transcript', 'summary', 'notes', 'flashcards', 'quiz', 'keyConcepts', 'weakTopics']
-            }
-          },
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
         if (retryStatusCodes.includes(response.status) && attempt <= maxRetries) {
           console.warn(`Gemini API returned status ${response.status}. Retrying in ${currentDelay}ms (attempt ${attempt}/${maxRetries})...`);
-          if (onBusy) {
-            onBusy(true);
-          }
+          if (onBusy) onBusy(true);
           await delay(currentDelay);
           currentDelay *= 2;
           continue;
@@ -190,306 +85,363 @@ export const generateLectureContent = async (
         throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
       }
 
-      if (onBusy) {
-        onBusy(false);
-      }
+      if (onBusy) onBusy(false);
 
       const data = await response.json();
-      console.log("Raw Gemini response object (data):", data);
-      
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      console.log("Raw Gemini response text content (text):", text);
-
-      try {
-        const cleanedText = extractJsonObject(text);
-        return JSON.parse(cleanedText);
-      } catch (err) {
-        console.error('Failed to parse Gemini response text as JSON:', data, err);
-        throw new Error('Invalid JSON format returned from Gemini API.');
+      
+      if (responseSchema) {
+        try {
+          const cleanedText = extractJsonObject(text);
+          return JSON.parse(cleanedText);
+        } catch (err) {
+          console.error('Failed to parse Gemini response text as JSON:', text, err);
+          throw new Error('Invalid JSON format returned from Gemini API.');
+        }
       }
+      return text;
     } catch (error: any) {
-      if (onBusy) {
-        onBusy(false);
-      }
-      throw error;
+      if (onBusy) onBusy(false);
+      if (attempt > maxRetries) throw error;
+      await delay(currentDelay);
+      currentDelay *= 2;
     }
   }
+};
+
+export const transcribeAudio = async (
+  base64Audio: string,
+  mimeType: string,
+  apiKey: string,
+  onBusy?: (isBusy: boolean) => void
+): Promise<string> => {
+  const prompt = `You are an expert transcriber. Transcribe the provided audio lecture word-for-word. Format the transcript text by prepending bracketed timestamps (e.g. [00:00], [01:15]) at the beginning of each major statement or logical paragraph based on the audio timeline.`;
+  return executeGeminiCall(prompt, apiKey, { mimeType, data: base64Audio }, undefined, onBusy);
+};
+
+export const cleanTranscriptText = async (
+  rawTranscript: string,
+  apiKey: string,
+  onBusy?: (isBusy: boolean) => void
+): Promise<string> => {
+  const prompt = `You are an expert academic editor. Take the following raw lecture transcript and clean it up.
+Remove all stutters, filler words (such as 'uh', 'um', 'so basically', 'like', 'you know', 'right', 'actually', 'sort of', 'now', 'okay'), and speech disfluencies.
+Convert the spoken language into professional, clean, written academic prose.
+IMPORTANT: You MUST preserve the bracketed timestamps (e.g. [00:00], [01:15]) at their approximate correct locations in the text. Do not omit them!
+Do not summarize or delete important lecture content; just clean the language.
+Return ONLY the cleaned transcript with timestamps.
+
+Raw Transcript:
+${rawTranscript}`;
+
+  return executeGeminiCall(prompt, apiKey, undefined, undefined, onBusy);
+};
+
+export const segmentTranscriptIntoTopics = async (
+  cleanTranscript: string,
+  apiKey: string,
+  onBusy?: (isBusy: boolean) => void
+): Promise<any[]> => {
+  const prompt = `You are an expert academic tutor. Analyze the following cleaned lecture transcript and segment it into logical topics or sections.
+For each section, define:
+1. 'id': A unique string id (e.g. 'sec-1', 'sec-2')
+2. 'title': A short, descriptive title of the section/topic
+3. 'startTime': The start timestamp of the section (e.g. '00:00')
+4. 'endTime': The end timestamp of the section (e.g. '01:30')
+5. 'content': A detailed summary of what was discussed in this section
+
+Return the result STRICTLY as a JSON object with a 'sections' array matching the requested schema.
+
+Cleaned Transcript:
+${cleanTranscript}`;
+
+  const schema = {
+    type: 'OBJECT',
+    properties: {
+      sections: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          properties: {
+            id: { type: 'STRING' },
+            title: { type: 'STRING' },
+            startTime: { type: 'STRING' },
+            endTime: { type: 'STRING' },
+            content: { type: 'STRING' }
+          },
+          required: ['id', 'title', 'startTime', 'endTime', 'content']
+        }
+      }
+    },
+    required: ['sections']
+  };
+
+  const res = await executeGeminiCall(prompt, apiKey, undefined, schema, onBusy);
+  return res.sections || [];
+};
+
+export const generateStudyAssets = async (
+  cleanTranscript: string,
+  sections: any[],
+  apiKey: string,
+  mode: 'academic' | 'executive' | 'revision' = 'academic',
+  onBusy?: (isBusy: boolean) => void
+): Promise<any> => {
+  const prompt = `
+    You are an expert academic tutor. Analyze the following cleaned lecture transcript and semantic sections, then extract premium study assets.
+    
+    Active Mode: ${mode}
+    
+    1. Generate a structured knowledge document representing the summary of the lecture in clean Markdown format, containing exactly 10 headers:
+       ### Executive Overview
+       [Strategic high-level overview of the subject]
+       ### Key Concepts
+       [Essential models, terminology, and baseline definitions]
+       ### Detailed Explanation
+       [Deep analysis and detailed explanation of the frameworks]
+       ### Examples
+       [Walkthrough of analytical examples or business cases]
+       ### Formulas
+       [Key mathematical equations, derivations, or evaluation parameters]
+       ### Common Mistakes
+       [Common misconceptions, exam traps, or strategy errors to avoid]
+       ### Revision Notes
+       [High-intensity revision pointers and memory helpers]
+       ### Exam Questions
+       [High-yield practice questions for self-testing]
+       ### Real World Applications
+       [Industrial, practical, or clinical case applications]
+       ### Quick Recap
+       [Final executive 1-sentence takeaways and summarizing recap]
+       
+    2. Generate a list of key detailed notes.
+       ${mode === 'executive' ? `
+       Each note must be concise, professional, focused on strategic recommendations, and target a word count of 300-600 words in total. Structure each note with the following exact subsections:
+       - 📊 **Executive Overview & Major Findings**
+       - 📈 **Key Metrics & Bullet Points**
+       - 🎯 **Actionable Insights & Deliverables**
+       - 🛑 **Strategic Takeaways**
+       ` : mode === 'revision' ? `
+       Each note must be high-yield, exam-oriented, focused on memory recall, and target a word count of 200-500 words in total. Structure each note with the following exact subsections:
+       - 🔑 **Key Facts & Flash Recall Points**
+       - 📝 **Exam-Oriented Explanations & Common Mistakes**
+       - 💡 **Formula Sheet & Memory Tricks**
+       - 🎯 **High-Yield Practice Questions / High-Intensity Review**
+       ` : `
+       Each note must be highly detailed, academic, and target a word count of 1500+ words in total across the notes. Structure each note with the following exact subsections:
+       - 🧠 **Key Terms & Definitions**
+       - 📝 **Detailed Explanations & Examples**
+       - 💡 **Core Formula or Analogy** (if applicable)
+       - 🎯 **Actionable Summary / Study Focus**
+       `}
+       
+    3. Generate a list of 4 conceptual flashcards. Each card must have a question "q" and a detailed answer "a" in Markdown.
+    
+    4. Generate a quiz of 4 multiple-choice questions from the lecture. Every question must be generated directly from the source context, avoiding generic textbook questions. Every question must cite the exact section/topic or timestamp from the source context it originated from (e.g. '[Source: Section 1, Timestamp 01:15]' or '[Source: Page 4, Paragraph 2]') inside the 'sourceCitation' field. Each question must have:
+       - "question": string
+       - "options": array of 4 strings
+       - "correctAnswer": 0-based index (integer)
+       - "explanation": detailed explanation of why the correct answer is correct
+       - "sourceCitation": string citation
+       
+    5. Generate a list of 6-8 keyConcepts for a mind map representing the lecture. One concept MUST be the root concept with id "root", x: 50, y: 50, and group "center". Other concepts must have an id, label, parent (referencing parent's id, e.g. "root"), x and y coordinates (numbers between 10 and 90 representing positions on a 2D canvas), and a group name (e.g. "math", "concepts", "applications"). For each concept, also include:
+       - "desc": definition/explanation
+       - "examples": examples/analogies
+       - "formula": mathematical formulas or core theories (if any, otherwise empty string)
+       - "applications": real-world applications/cases
+       
+    6. Generate a list of 1-2 weakTopics that this lecture covers, diagnosing typical student struggles. Each topic must have a "topicName", "subject", "aiDiagnosis", and a list of 3 "actionPlan" recommendations.
+    
+    7. Generate a timeline of chronological milestones. Each item must have:
+       - "time": A timestamp matching the lecture (e.g. '01:15' or '05:30'). Must be from the transcript's bracketed timestamps.
+       - "title": A brief title of the event/topic discussed at this time
+       - "description": A short explanation of the concept discussed at this milestone
+       
+    8. Generate sourceIntelligence containing:
+       - "keyPeople": array of names of people/researchers mentioned (e.g. "Sartre", "Einstein")
+       - "keyTerms": array of technical terms/jargon (e.g. "Fisher Esterification", "Categorical Imperative")
+       - "formulas": array of equations/formulas mentioned (e.g. "f'(x) = lim...")
+       - "dates": array of important dates mentioned (e.g. "1781", "Q1 2026")
+       - "statistics": array of statistics or metrics (e.g. "72% yield", "34.2% market share")
+       - "references": array of documents, books, papers, or video sources cited
+       
+    Cleaned Transcript:
+    ${cleanTranscript}
+    
+    Semantic Sections:
+    ${JSON.stringify(sections)}
+    
+    Return the result STRICTLY as a JSON object matching the requested schema.
+  `;
+
+  const schema = {
+    type: 'OBJECT',
+    properties: {
+      summary: { type: 'STRING' },
+      notes: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          properties: {
+            title: { type: 'STRING' },
+            content: { type: 'STRING' }
+          },
+          required: ['title', 'content']
+        }
+      },
+      flashcards: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          properties: {
+            q: { type: 'STRING' },
+            a: { type: 'STRING' }
+          },
+          required: ['q', 'a']
+        }
+      },
+      quiz: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          properties: {
+            question: { type: 'STRING' },
+            options: { type: 'ARRAY', items: { type: 'STRING' } },
+            correctAnswer: { type: 'INTEGER' },
+            explanation: { type: 'STRING' },
+            sourceCitation: { type: 'STRING' }
+          },
+          required: ['question', 'options', 'correctAnswer', 'explanation', 'sourceCitation']
+        }
+      },
+      keyConcepts: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          properties: {
+            id: { type: 'STRING' },
+            label: { type: 'STRING' },
+            desc: { type: 'STRING' },
+            parent: { type: 'STRING' },
+            x: { type: 'INTEGER' },
+            y: { type: 'INTEGER' },
+            group: { type: 'STRING' },
+            examples: { type: 'STRING' },
+            formula: { type: 'STRING' },
+            applications: { type: 'STRING' }
+          },
+          required: ['id', 'label', 'desc', 'x', 'y', 'group']
+        }
+      },
+      weakTopics: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          properties: {
+            topicName: { type: 'STRING' },
+            subject: { type: 'STRING' },
+            aiDiagnosis: { type: 'STRING' },
+            actionPlan: { type: 'ARRAY', items: { type: 'STRING' } }
+          },
+          required: ['topicName', 'subject', 'aiDiagnosis', 'actionPlan']
+        }
+      },
+      timeline: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          properties: {
+            time: { type: 'STRING' },
+            title: { type: 'STRING' },
+            description: { type: 'STRING' }
+          },
+          required: ['time', 'title', 'description']
+        }
+      },
+      sourceIntelligence: {
+        type: 'OBJECT',
+        properties: {
+          keyPeople: { type: 'ARRAY', items: { type: 'STRING' } },
+          keyTerms: { type: 'ARRAY', items: { type: 'STRING' } },
+          formulas: { type: 'ARRAY', items: { type: 'STRING' } },
+          dates: { type: 'ARRAY', items: { type: 'STRING' } },
+          statistics: { type: 'ARRAY', items: { type: 'STRING' } },
+          references: { type: 'ARRAY', items: { type: 'STRING' } }
+        },
+        required: ['keyPeople', 'keyTerms', 'formulas', 'dates', 'statistics', 'references']
+      }
+    },
+    required: ['summary', 'notes', 'flashcards', 'quiz', 'keyConcepts', 'weakTopics', 'timeline', 'sourceIntelligence']
+  };
+
+  return executeGeminiCall(prompt, apiKey, undefined, schema, onBusy);
+};
+
+export const generateLectureContent = async (
+  base64Audio: string, 
+  mimeType: string = 'audio/webm',
+  onBusy?: (isBusy: boolean) => void,
+  mode: 'academic' | 'executive' | 'revision' = 'academic',
+  onProgress?: (step: number, message: string) => void
+): Promise<any> => {
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+  if (!apiKey) {
+    throw new Error("Gemini API key is not configured in .env. Please configure VITE_GEMINI_API_KEY.");
+  }
+
+  // Phase 1: Transcribe Audio
+  if (onProgress) onProgress(1, "Deciphering Speech...");
+  const rawTranscript = await transcribeAudio(base64Audio, mimeType, apiKey, onBusy);
+
+  // Phase 2: Clean Transcript
+  if (onProgress) onProgress(2, "Cleaning Transcript...");
+  const cleanTranscript = await cleanTranscriptText(rawTranscript, apiKey, onBusy);
+
+  // Phase 3: Segment Topics
+  if (onProgress) onProgress(3, "Detecting Topics...");
+  const sections = await segmentTranscriptIntoTopics(cleanTranscript, apiKey, onBusy);
+
+  // Phase 4: Asset Extraction
+  if (onProgress) onProgress(4, "Extracting Study Assets...");
+  const assets = await generateStudyAssets(cleanTranscript, sections, apiKey, mode, onBusy);
+
+  return {
+    transcript: rawTranscript,
+    cleanTranscript,
+    sections,
+    ...assets
+  };
 };
 
 export const generateLectureContentFromText = async (
   extractedText: string,
   onBusy?: (isBusy: boolean) => void,
-  mode: 'academic' | 'executive' | 'revision' = 'academic'
+  mode: 'academic' | 'executive' | 'revision' = 'academic',
+  onProgress?: (step: number, message: string) => void
 ): Promise<any> => {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
   if (!apiKey) {
     throw new Error("Gemini API key is not configured in .env. Please configure VITE_GEMINI_API_KEY.");
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  // Phase 1: Clean Transcript (adds estimated timestamps and professional format)
+  if (onProgress) onProgress(1, "Cleaning Transcript...");
+  const cleanTranscript = await cleanTranscriptText(extractedText, apiKey, onBusy);
 
-  let promptInstructions = '';
+  // Phase 2: Segment Topics
+  if (onProgress) onProgress(2, "Detecting Topics...");
+  const sections = await segmentTranscriptIntoTopics(cleanTranscript, apiKey, onBusy);
 
-  if (mode === 'executive') {
-    promptInstructions = `
-    You are an expert executive summary assistant. Analyze the provided lecture text content and perform the following tasks:
-    1. Generate a detailed, chronological transcript of the lecture based on the text. Since this is extracted text without timestamps, format the transcript text by prepending bracketed estimated timestamps (e.g. [00:00], [01:15], [02:30]) at the beginning of each major statement or logical paragraph to split the content logically.
-    2. Generate a structured knowledge document representing the summary of the lecture in clean Markdown format, containing exactly 10 headers:
-       ### Executive Overview
-       [Strategic high-level overview of the subject]
-       ### Key Concepts
-       [Essential models, terminology, and baseline definitions]
-       ### Detailed Explanation
-       [Deep analysis and detailed explanation of the frameworks]
-       ### Examples
-       [Walkthrough of analytical examples or business cases]
-       ### Formulas
-       [Key mathematical equations, derivations, or evaluation parameters]
-       ### Common Mistakes
-       [Common misconceptions, exam traps, or strategy errors to avoid]
-       ### Revision Notes
-       [High-intensity revision pointers and memory helpers]
-       ### Exam Questions
-       [High-yield practice questions for self-testing]
-       ### Real World Applications
-       [Industrial, practical, or clinical case applications]
-       ### Quick Recap
-       [Final executive 1-sentence takeaways and summarizing recap]
-    3. Generate a list of key detailed notes from the lecture context. Each note must be concise, professional, focused on strategic recommendations, and target a word count of 300-600 words in total. Each note must have a title and content in Markdown structured with the following exact subsections:
-       - 📊 **Executive Overview & Major Findings**
-       - 📈 **Key Metrics & Bullet Points**
-       - 🎯 **Actionable Insights & Deliverables**
-       - 🛑 **Strategic Takeaways**
-    4. Generate a list of 4 conceptual flashcards from the lecture. Each flashcard must have a question "q" and a detailed answer "a" in Markdown, focused on high-level findings and professional/strategic decisions.
-    5. Generate a quiz of 3-4 questions from the lecture. Each question must be generated directly from the source context, avoiding generic textbook questions. Every question must cite the exact section/topic or page from the source context it originated from (e.g. '[Source: Section 2.1 - Vector Space]' or '[Source: Page 4, Paragraph 2]') inside the 'sourceCitation' field. Each question must have a "question", a list of 4 "options", a "correctAnswer" index (0-based), a detailed conceptual "explanation" testing strategic decisions, and a "sourceCitation".
-    6. Generate a list of 5-7 keyConcepts for a mind map representing the lecture. One concept MUST be the root concept with id "root", x: 50, y: 50, and group "center". Other concepts must have an id, label, parent (referencing the parent's id, e.g. "root"), x and y coordinates (numbers between 10 and 90 representing positions on a 2D canvas), and a group name (e.g. "strategy", "metrics", "findings").
-    7. Generate a list of 1-2 weakTopics that this lecture covers, diagnosing typical student struggles. Each topic must have a "topicName", "subject", "aiDiagnosis", and a list of 3 "actionPlan" recommendations.
-    `;
-  } else if (mode === 'revision') {
-    promptInstructions = `
-    You are an expert exam revision tutor. Analyze the provided lecture text content and perform the following tasks:
-    1. Generate a detailed, chronological transcript of the lecture based on the text. Since this is extracted text without timestamps, format the transcript text by prepending bracketed estimated timestamps (e.g. [00:00], [01:15], [02:30]) at the beginning of each major statement or logical paragraph to split the content logically.
-    2. Generate a structured knowledge document representing the summary of the lecture in clean Markdown format, containing exactly 10 headers:
-       ### Executive Overview
-       [Strategic high-level overview of the subject]
-       ### Key Concepts
-       [Essential models, terminology, and baseline definitions]
-       ### Detailed Explanation
-       [Deep analysis and detailed explanation of the frameworks]
-       ### Examples
-       [Walkthrough of analytical examples or business cases]
-       ### Formulas
-       [Key mathematical equations, derivations, or evaluation parameters]
-       ### Common Mistakes
-       [Common misconceptions, exam traps, or strategy errors to avoid]
-       ### Revision Notes
-       [High-intensity revision pointers and memory helpers]
-       ### Exam Questions
-       [High-yield practice questions for self-testing]
-       ### Real World Applications
-       [Industrial, practical, or clinical case applications]
-       ### Quick Recap
-       [Final executive 1-sentence takeaways and summarizing recap]
-    3. Generate a list of key detailed notes from the lecture context. Each note must be high-yield, exam-oriented, focused on memory recall, and target a word count of 200-500 words in total. Each note must have a title and content in Markdown structured with the following exact subsections:
-       - 🔑 **Key Facts & Flash Recall Points**
-       - 📝 **Exam-Oriented Explanations & Common Mistakes**
-       - 💡 **Formula Sheet & Memory Tricks**
-       - 🎯 **High-Yield Practice Questions / High-Intensity Review**
-    4. Generate a list of 4 conceptual flashcards from the lecture. Each flashcard must have a question "q" and a detailed answer "a" in Markdown, focused on memory tricks, formulas, or high-yield facts.
-    5. Generate a quiz of 3-4 questions from the lecture. Each question must be generated directly from the source context, avoiding generic textbook questions. Every question must cite the exact section/topic or page from the source context it originated from (e.g. '[Source: Section 2.1 - Vector Space]' or '[Source: Page 4, Paragraph 2]') inside the 'sourceCitation' field. Each question must have a "question", a list of 4 "options", a "correctAnswer" index (0-based), a detailed conceptual "explanation" testing common exam traps, and a "sourceCitation".
-    6. Generate a list of 5-7 keyConcepts for a mind map representing the lecture. One concept MUST be the root concept with id "root", x: 50, y: 50, and group "center". Other concepts must have an id, label, parent (referencing the parent's id, e.g. "root"), x and y coordinates (numbers between 10 and 90 representing positions on a 2D canvas), and a group name (e.g. "formulas", "facts", "recall").
-    7. Generate a list of 1-2 weakTopics that this lecture covers, diagnosing typical student struggles. Each topic must have a "topicName", "subject", "aiDiagnosis", and a list of 3 "actionPlan" recommendations.
-    `;
-  } else {
-    promptInstructions = `
-    You are an expert academic tutor. Analyze the provided lecture text content and perform the following tasks:
-    1. Generate a detailed, chronological transcript of the lecture based on the text. Since this is extracted text without timestamps, format the transcript text by prepending bracketed estimated timestamps (e.g. [00:00], [01:15], [02:30]) at the beginning of each major statement or logical paragraph to split the content logically.
-    2. Generate a structured knowledge document representing the summary of the lecture in clean Markdown format, containing exactly 10 headers:
-       ### Executive Overview
-       [Strategic high-level overview of the subject]
-       ### Key Concepts
-       [Essential models, terminology, and baseline definitions]
-       ### Detailed Explanation
-       [Deep analysis and detailed explanation of the frameworks]
-       ### Examples
-       [Walkthrough of analytical examples or business cases]
-       ### Formulas
-       [Key mathematical equations, derivations, or evaluation parameters]
-       ### Common Mistakes
-       [Common misconceptions, exam traps, or strategy errors to avoid]
-       ### Revision Notes
-       [High-intensity revision pointers and memory helpers]
-       ### Exam Questions
-       [High-yield practice questions for self-testing]
-       ### Real World Applications
-       [Industrial, practical, or clinical case applications]
-       ### Quick Recap
-       [Final executive 1-sentence takeaways and summarizing recap]
-    3. Generate a list of key detailed notes from the lecture context. Each note must be highly detailed, academic, and target a word count of 1500+ words in total across the notes. Each note must have a title and content in Markdown structured with the following exact subsections:
-       - 🧠 **Key Terms & Definitions**
-       - 📝 **Detailed Explanations & Examples**
-       - 💡 **Core Formula or Analogy** (if applicable)
-       - 🎯 **Actionable Summary / Study Focus**
-    4. Generate a list of 4 conceptual flashcards from the lecture. Each flashcard must have a question "q" and a detailed answer "a" in Markdown, focused on deep understanding and definitions.
-    5. Generate a quiz of 3-4 questions from the lecture. Each question must be generated directly from the source context, avoiding generic textbook questions. Every question must cite the exact section/topic or page from the source context it originated from (e.g. '[Source: Section 2.1 - Vector Space]' or '[Source: Page 4, Paragraph 2]') inside the 'sourceCitation' field. Each question must have a "question", a list of 4 "options", a "correctAnswer" index (0-based), a detailed conceptual "explanation" testing deep concepts, and a "sourceCitation".
-    6. Generate a list of 5-7 keyConcepts for a mind map representing the lecture. One concept MUST be the root concept with id "root", x: 50, y: 50, and group "center". Other concepts must have an id, label, parent (referencing the parent's id, e.g. "root"), x and y coordinates (numbers between 10 and 90 representing positions on a 2D canvas), and a group name (e.g. "math", "concepts", "applications").
-    7. Generate a list of 1-2 weakTopics that this lecture covers, diagnosing typical student struggles. Each topic must have a "topicName", "subject", "aiDiagnosis", and a list of 3 "actionPlan" recommendations.
-    `;
-  }
+  // Phase 3: Asset Extraction
+  if (onProgress) onProgress(3, "Extracting Study Assets...");
+  const assets = await generateStudyAssets(cleanTranscript, sections, apiKey, mode, onBusy);
 
-  const prompt = `
-    ${promptInstructions}
-
-    Text content to analyze:
-    ${extractedText}
-
-    Return the result STRICTLY as a JSON object matching the requested schema.
-  `;
-
-  let currentDelay = 2000;
-  const maxRetries = 5;
-  const retryStatusCodes = [429, 500, 502, 503, 504];
-
-  for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt,
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            responseMimeType: 'application/json',
-            responseSchema: {
-              type: 'OBJECT',
-              properties: {
-                transcript: { type: 'STRING' },
-                summary: { type: 'STRING' },
-                notes: {
-                  type: 'ARRAY',
-                  items: {
-                    type: 'OBJECT',
-                    properties: {
-                      title: { type: 'STRING' },
-                      content: { type: 'STRING' }
-                    },
-                    required: ['title', 'content']
-                  }
-                },
-                flashcards: {
-                  type: 'ARRAY',
-                  items: {
-                    type: 'OBJECT',
-                    properties: {
-                      q: { type: 'STRING' },
-                      a: { type: 'STRING' }
-                    },
-                    required: ['q', 'a']
-                  }
-                },
-                quiz: {
-                  type: 'ARRAY',
-                  items: {
-                    type: 'OBJECT',
-                    properties: {
-                      question: { type: 'STRING' },
-                      options: {
-                        type: 'ARRAY',
-                        items: { type: 'STRING' }
-                      },
-                      correctAnswer: { type: 'INTEGER' },
-                      explanation: { type: 'STRING' },
-                      sourceCitation: { type: 'STRING' }
-                    },
-                    required: ['question', 'options', 'correctAnswer', 'explanation', 'sourceCitation']
-                  }
-                },
-                keyConcepts: {
-                  type: 'ARRAY',
-                  items: {
-                    type: 'OBJECT',
-                    properties: {
-                      id: { type: 'STRING' },
-                      label: { type: 'STRING' },
-                      desc: { type: 'STRING' },
-                      parent: { type: 'STRING' },
-                      x: { type: 'INTEGER' },
-                      y: { type: 'INTEGER' },
-                      group: { type: 'STRING' }
-                    },
-                    required: ['id', 'label', 'desc', 'x', 'y', 'group']
-                  }
-                },
-                weakTopics: {
-                  type: 'ARRAY',
-                  items: {
-                    type: 'OBJECT',
-                    properties: {
-                      topicName: { type: 'STRING' },
-                      subject: { type: 'STRING' },
-                      aiDiagnosis: { type: 'STRING' },
-                      actionPlan: {
-                        type: 'ARRAY',
-                        items: { type: 'STRING' }
-                      }
-                    },
-                    required: ['topicName', 'subject', 'aiDiagnosis', 'actionPlan']
-                  }
-                }
-              },
-              required: ['transcript', 'summary', 'notes', 'flashcards', 'quiz', 'keyConcepts', 'weakTopics']
-            }
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        if (retryStatusCodes.includes(response.status) && attempt <= maxRetries) {
-          console.warn(`Gemini API returned status ${response.status}. Retrying in ${currentDelay}ms (attempt ${attempt}/${maxRetries})...`);
-          if (onBusy) {
-            onBusy(true);
-          }
-          await delay(currentDelay);
-          currentDelay *= 2;
-          continue;
-        }
-        const errorText = await response.text();
-        throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
-      }
-
-      if (onBusy) {
-        onBusy(false);
-      }
-
-      const data = await response.json();
-      console.log("Raw Gemini response object (data):", data);
-      
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      console.log("Raw Gemini response text content (text):", text);
-
-      try {
-        const cleanedText = extractJsonObject(text);
-        return JSON.parse(cleanedText);
-      } catch (err) {
-        console.error('Failed to parse Gemini response text as JSON:', data, err);
-        throw new Error('Invalid JSON format returned from Gemini API.');
-      }
-    } catch (error: any) {
-      if (onBusy) {
-        onBusy(false);
-      }
-      throw error;
-    }
-  }
+  return {
+    transcript: extractedText,
+    cleanTranscript,
+    sections,
+    ...assets
+  };
 };
 
 export const generateAdditionalQuizQuestions = async (
