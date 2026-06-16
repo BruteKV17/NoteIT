@@ -357,7 +357,29 @@ app.post('/api/storage/extract-url', authenticateFirebaseUser, async (req, res) 
       try {
         const transcripts = await YoutubeTranscript.fetchTranscript(videoId);
         extractedText = transcripts.map((t: any) => t.text).join(' ');
+        
+        // Fetch title from YouTube oEmbed or noembed API
         title = `YouTube Video - ${videoId}`;
+        try {
+          const titleRes = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+          if (titleRes.ok) {
+            const titleData = await titleRes.json();
+            if (titleData && titleData.title) {
+              title = titleData.title;
+            }
+          } else {
+            const noembedRes = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
+            if (noembedRes.ok) {
+              const noembedData = await noembedRes.json();
+              if (noembedData && noembedData.title) {
+                title = noembedData.title;
+              }
+            }
+          }
+        } catch (titleErr) {
+          console.error('[YOUTUBE] Failed to fetch video title, falling back to ID:', titleErr);
+        }
+
         console.log('[YOUTUBE] Transcript length:', extractedText.length);
       } catch (err: any) {
         console.error('YouTube transcript fetch failed:', err);

@@ -187,6 +187,30 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
           setActiveSourceId(list[0].id);
           setSelectedSourceIds([list[0].id]);
         }
+
+        // Self-heal any YouTube sources with generic "YouTube Video - ID" titles
+        list.forEach(async (src) => {
+          if (src.sourceType === 'youtube' && src.title.startsWith('YouTube Video - ')) {
+            const videoId = src.title.replace('YouTube Video - ', '').trim();
+            if (videoId && videoId.length === 11) {
+              try {
+                const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
+                if (res.ok) {
+                  const data = await res.json();
+                  if (data && data.title) {
+                    // Update in Firestore
+                    const srcDocRef = doc(db, 'users', userId, 'sources', src.id);
+                    await updateDoc(srcDocRef, { title: data.title });
+                    // Update in local state
+                    setSources(prev => prev.map(s => s.id === src.id ? { ...s, title: data.title } : s));
+                  }
+                }
+              } catch (e) {
+                console.error("Failed to self-heal YouTube title:", e);
+              }
+            }
+          }
+        });
       } catch (err) {
         console.error("Failed to load sources from Firestore:", err);
       }
