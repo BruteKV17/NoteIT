@@ -11,6 +11,7 @@ import { PageId } from '../types';
 import { blobToBase64, generateLectureContent } from '../services/gemini';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
+import BruteLoader from './BruteLoader';
 
 interface LectureProcessingViewProps {
   userId: string | undefined;
@@ -429,6 +430,12 @@ export default function LectureProcessingView({
             Step {Math.min(steps.length, currentStepIndex + 1)} of {steps.length}
           </span>
         </div>
+
+        {uploadStatus !== 'completed' && uploadStatus !== 'failed' && (
+          <div className="py-4 flex justify-center border-b border-gray-100 dark:border-neutral-850/50">
+            <BruteLoader size="md" message={`Current Phase: ${steps[currentStepIndex]?.label || 'Processing'}`} />
+          </div>
+        )}
  
         {errorMsg ? (
           <div className="p-5 rounded-xl border border-red-500/20 bg-red-500/5 text-center space-y-3">

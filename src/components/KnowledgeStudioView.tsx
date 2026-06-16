@@ -43,6 +43,7 @@ import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp
 import { generateLectureContentFromText } from '../services/gemini';
 import { getAzureUploadSasUrl, uploadBlobToAzure, extractTextFromDocument, extractTextFromUrl } from '../services/azure';
 import pptxgen from 'pptxgenjs';
+import BruteLoader from './BruteLoader';
 
 interface KnowledgeStudioViewProps {
   userId: string | undefined;
@@ -128,6 +129,23 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
   const [summaryFormat, setSummaryFormat] = useState<'short' | 'detailed' | 'revision-sheet'>('detailed');
   const [flashcardsFormat, setFlashcardsFormat] = useState<'basic' | 'advanced' | 'exam'>('basic');
   const [quizFormat, setQuizFormat] = useState<'mcq' | 'subjective' | 'case'>('mcq');
+  
+  // Multi-language Output Selector
+  const [outputLanguage, setOutputLanguage] = useState<string>('English');
+
+  // PDF Export Modal & Settings
+  const [showPdfModal, setShowPdfModal] = useState(false);
+  const [pdfExportData, setPdfExportData] = useState<{ title: string; data: any } | null>(null);
+  const [selectedPdfTheme, setSelectedPdfTheme] = useState<'academic' | 'modern' | 'corporate' | 'dark'>('academic');
+
+  // PPTX Export Modal & Settings
+  const [showPptModal, setShowPptModal] = useState(false);
+  const [pptTheme, setPptTheme] = useState<'academic' | 'corporate' | 'startup' | 'cyber' | 'minimal' | 'glass'>('academic');
+  const [pptLength, setPptLength] = useState<5 | 10 | 15>(10);
+  const [pptDetailedMode, setPptDetailedMode] = useState<boolean>(false);
+
+  // Mindmap Interactive Drawer
+  const [selectedMindmapNode, setSelectedMindmapNode] = useState<any | null>(null);
   
   // Quiz gameplay state
   const [activeQuizQuestionIdx, setActiveQuizQuestionIdx] = useState(0);
@@ -608,16 +626,355 @@ ${queryText}`;
     setChatInput(prompt);
   };
 
+  // Helper to strip markdown symbols
+  const cleanMarkdownText = (text: string): string => {
+    if (!text) return '';
+    return text.replace(/[*#`_~]/g, '').trim();
+  };
+
+  // Helper to render text with citation tags
+  const renderTextWithCitations = (text: string) => {
+    if (!text) return '';
+    const regex = /(\[Source:\s*[^\]]+\])/g;
+    const parts = text.split(regex);
+    return parts.map((part, index) => {
+      if (regex.test(part)) {
+        return (
+          <span 
+            key={index} 
+            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/15"
+          >
+            {part}
+          </span>
+        );
+      }
+      return part;
+    });
+  };
+
+  // Structured sections summary parser
+  interface StructuredSummary {
+    introduction: string;
+    keyConcepts: string;
+    importantTopics: string;
+    examples: string;
+    formulas: string;
+    keyTakeaways: string;
+    revisionNotes: string;
+  }
+
+  const parseSummaryIntoSections = (summaryText: string): StructuredSummary => {
+    const clean = (txt: string) => txt.replace(/[*#`_~]/g, '').trim();
+    const sections: StructuredSummary = {
+      introduction: '',
+      keyConcepts: '',
+      importantTopics: '',
+      examples: '',
+      formulas: '',
+      keyTakeaways: '',
+      revisionNotes: ''
+    };
+
+    if (!summaryText) return sections;
+
+    const patterns = {
+      introduction: /introduction/i,
+      keyConcepts: /key\s+concepts/i,
+      importantTopics: /important\s+topics/i,
+      examples: /examples/i,
+      formulas: /formulas/i,
+      keyTakeaways: /key\s+takeaways/i,
+      revisionNotes: /revision\s+notes/i
+    };
+
+    const lines = summaryText.split('\n');
+    let currentKey: keyof StructuredSummary | null = null;
+
+    lines.forEach(line => {
+      const lineCleaned = line.trim().replace(/[*#]/g, '').trim();
+      let matched = false;
+      for (const [key, regex] of Object.entries(patterns)) {
+        if (regex.test(lineCleaned) && lineCleaned.length < 50) {
+          currentKey = key as keyof StructuredSummary;
+          matched = true;
+          break;
+        }
+      }
+
+      if (!matched) {
+        if (currentKey) {
+          sections[currentKey] += (sections[currentKey] ? '\n' : '') + line;
+        } else {
+          sections.introduction += (sections.introduction ? '\n' : '') + line;
+        }
+      }
+    });
+
+    const keys = Object.keys(sections) as (keyof StructuredSummary)[];
+    const filledCount = keys.filter(k => sections[k].trim().length > 0).length;
+
+    if (filledCount < 3) {
+      const words = summaryText.split(/\s+/);
+      const chunkSize = Math.ceil(words.length / 7);
+      for (let i = 0; i < 7; i++) {
+        const partWords = words.slice(i * chunkSize, (i + 1) * chunkSize);
+        sections[keys[i]] = partWords.join(' ');
+      }
+    }
+
+    for (const key of keys) {
+      sections[key] = clean(sections[key]);
+    }
+
+    return sections;
+  };
+
+  const extractJsonObject = (rawText: string): string => {
+    let cleaned = rawText.trim();
+    const jsonBlockRegex = /```(?:json)?\s*([\s\S]*?)\s*```/i;
+    const match = cleaned.match(jsonBlockRegex);
+    if (match && match[1]) {
+      cleaned = match[1].trim();
+    }
+    const startIdx = cleaned.indexOf('{');
+    const endIdx = cleaned.lastIndexOf('}');
+    if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+      cleaned = cleaned.substring(startIdx, endIdx + 1);
+    }
+    return cleaned;
+  };
+
+  // Multi-language translation handler
+  const handleLanguageChange = async (lang: string) => {
+    setOutputLanguage(lang);
+    if (!activeSourceId || !userId || !activeSource) return;
+
+    setIsUploading(true);
+    setUploadProgress(15);
+    setProcessingStatus(`Translating Workspace to ${lang}...`);
+
+    try {
+      const prompt = `
+        You are a highly professional academic translator. Translate the following study materials into the requested language: "${lang}".
+        If Hinglish is selected, translate the text into Hindi language, but spell it phonetically using Roman/English alphabet letters.
+        Strictly retain the JSON format and structure. Do not change any keys. Only translate the string values.
+        
+        JSON to translate:
+        ${JSON.stringify({
+          summary: activeSource.summary || '',
+          notes: activeSource.notes || [],
+          flashcards: activeSource.flashcards || [],
+          quiz: activeSource.quiz || [],
+          keyConcepts: activeSource.keyConcepts || []
+        })}
+      `;
+
+      const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: 'OBJECT',
+              properties: {
+                summary: { type: 'STRING' },
+                notes: {
+                  type: 'ARRAY',
+                  items: {
+                    type: 'OBJECT',
+                    properties: { title: { type: 'STRING' }, content: { type: 'STRING' } },
+                    required: ['title', 'content']
+                  }
+                },
+                flashcards: {
+                  type: 'ARRAY',
+                  items: {
+                    type: 'OBJECT',
+                    properties: { q: { type: 'STRING' }, a: { type: 'STRING' } },
+                    required: ['q', 'a']
+                  }
+                },
+                quiz: {
+                  type: 'ARRAY',
+                  items: {
+                    type: 'OBJECT',
+                    properties: {
+                      question: { type: 'STRING' },
+                      options: { type: 'ARRAY', items: { type: 'STRING' } },
+                      correctAnswer: { type: 'INTEGER' },
+                      explanation: { type: 'STRING' }
+                    },
+                    required: ['question', 'options', 'correctAnswer', 'explanation']
+                  }
+                },
+                keyConcepts: {
+                  type: 'ARRAY',
+                  items: {
+                    type: 'OBJECT',
+                    properties: {
+                      id: { type: 'STRING' },
+                      label: { type: 'STRING' },
+                      desc: { type: 'STRING' },
+                      parent: { type: 'STRING' },
+                      x: { type: 'INTEGER' },
+                      y: { type: 'INTEGER' },
+                      group: { type: 'STRING' }
+                    },
+                    required: ['id', 'label', 'desc', 'x', 'y', 'group']
+                  }
+                }
+              },
+              required: ['summary', 'notes', 'flashcards', 'quiz', 'keyConcepts']
+            }
+          }
+        })
+      });
+
+      setUploadProgress(70);
+      if (!res.ok) throw new Error(`Translation API error: ${res.status}`);
+      
+      const data = await res.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const cleanedText = extractJsonObject(text);
+      const translated = JSON.parse(cleanedText);
+
+      setUploadProgress(90);
+      await updateDoc(doc(db, 'users', userId, 'sources', activeSourceId), {
+        summary: translated.summary || activeSource.summary,
+        notes: translated.notes || activeSource.notes,
+        flashcards: translated.flashcards || activeSource.flashcards,
+        quiz: translated.quiz || activeSource.quiz,
+        keyConcepts: translated.keyConcepts || activeSource.keyConcepts
+      });
+
+      const updatedSnapshot = await getDocs(query(collection(db, 'users', userId, 'sources'), orderBy('createdAt', 'desc')));
+      const updatedList: any[] = [];
+      updatedSnapshot.forEach(docSnap => {
+        updatedList.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      setSources(updatedList);
+
+      setIsUploading(false);
+      setProcessingStatus(null);
+    } catch (err) {
+      console.error("Multi-language translation failed, retaining content:", err);
+      setIsUploading(false);
+      setProcessingStatus("Failed");
+    }
+  };
+
   // PDF Export
-  const exportPDFFile = (title: string, rawData: any) => {
+  const exportPDFFile = (title: string, rawData: any, pdfTheme: 'academic' | 'modern' | 'corporate' | 'dark' = 'academic') => {
     let contentHtml = '';
+    
     if (typeof rawData === 'string') {
-      contentHtml = `<p>${rawData.replace(/\n/g, '<br/>')}</p>`;
+      const sections = parseSummaryIntoSections(rawData);
+      contentHtml = `
+        <div class="pdf-section">
+          <h2>1. Introduction</h2>
+          <p>${sections.introduction.replace(/\n/g, '<br/>')}</p>
+        </div>
+        <div class="pdf-section">
+          <h2>2. Key Concepts</h2>
+          <p>${sections.keyConcepts.replace(/\n/g, '<br/>')}</p>
+        </div>
+        <div class="pdf-section">
+          <h2>3. Important Topics</h2>
+          <p>${sections.importantTopics.replace(/\n/g, '<br/>')}</p>
+        </div>
+        <div class="pdf-section">
+          <h2>4. Examples</h2>
+          <p>${sections.examples.replace(/\n/g, '<br/>')}</p>
+        </div>
+        <div class="pdf-section">
+          <h2>5. Formulas</h2>
+          <p>${sections.formulas.replace(/\n/g, '<br/>')}</p>
+        </div>
+        <div class="pdf-section">
+          <h2>6. Key Takeaways</h2>
+          <p>${sections.keyTakeaways.replace(/\n/g, '<br/>')}</p>
+        </div>
+        <div class="pdf-section">
+          <h2>7. Revision Notes</h2>
+          <p>${sections.revisionNotes.replace(/\n/g, '<br/>')}</p>
+        </div>
+      `;
     } else if (Array.isArray(rawData)) {
-      contentHtml = rawData.map(item => `
-        <h3>${item.title || item.q}</h3>
-        <p>${(item.content || item.a || '').replace(/\n/g, '<br/>')}</p>
+      contentHtml = rawData.map((item, idx) => `
+        <div class="pdf-section">
+          <h2>${idx + 1}. ${item.title || item.q || ('Section ' + (idx + 1))}</h2>
+          <p>${(item.content || item.a || item.question || '').replace(/\n/g, '<br/>')}</p>
+          ${item.options ? `<ul class="pdf-options">${item.options.map((opt: string) => `<li>${opt}</li>`).join('')}</ul>` : ''}
+          ${item.explanation ? `<p class="pdf-explanation"><strong>Explanation:</strong> ${item.explanation}</p>` : ''}
+        </div>
       `).join('');
+    }
+
+    const themeStyles = {
+      academic: `
+        body { font-family: 'Playfair Display', 'Georgia', serif; background-color: #fdfbf7; color: #1e293b; padding: 50px; line-height: 1.8; }
+        .cover-page { height: 95vh; display: flex; flex-direction: column; justify-content: center; border: 3px double #b5885c; padding: 40px; margin-bottom: 50px; background: #faf8f5; box-sizing: border-box; }
+        .cover-title { font-size: 34px; color: #1e3a8a; font-family: 'Playfair Display', serif; text-align: center; margin-top: 120px; }
+        .cover-subtitle { font-size: 15px; text-transform: uppercase; letter-spacing: 2px; color: #b5885c; text-align: center; margin-top: 20px; }
+        .cover-meta { font-size: 13px; font-family: 'Inter', sans-serif; color: #64748b; text-align: center; margin-top: auto; margin-bottom: 80px; }
+        h1, h2 { color: #1e3a8a; font-family: 'Playfair Display', serif; }
+        h2 { font-size: 19px; border-bottom: 1px solid #b5885c; padding-bottom: 6px; margin-top: 35px; page-break-before: always; }
+        p { font-size: 13.5px; text-align: justify; }
+        .pdf-section { margin-bottom: 25px; }
+      `,
+      modern: `
+        body { font-family: 'Outfit', 'Inter', sans-serif; background-color: #ffffff; color: #0f172a; padding: 40px; line-height: 1.6; }
+        .cover-page { height: 95vh; display: flex; flex-direction: column; justify-content: space-between; border-left: 8px solid #4f46e5; padding: 60px; margin-bottom: 50px; box-sizing: border-box; }
+        .cover-title { font-size: 40px; font-weight: 800; color: #0f172a; margin-top: 100px; }
+        .cover-subtitle { font-size: 17px; font-weight: 500; color: #4f46e5; margin-top: 10px; }
+        .cover-meta { font-size: 13px; color: #64748b; margin-bottom: 50px; }
+        h2 { font-size: 21px; font-weight: 700; color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; margin-top: 40px; page-break-before: always; }
+        p { font-size: 13.5px; color: #334155; }
+        .pdf-section { margin-bottom: 30px; }
+      `,
+      corporate: `
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; padding: 45px; line-height: 1.7; }
+        .cover-page { height: 95vh; display: flex; flex-direction: column; justify-content: center; padding: 80px; border: 1px solid #cbd5e1; background: #ffffff; margin-bottom: 50px; box-sizing: border-box; }
+        .cover-title { font-size: 30px; font-weight: 700; color: #0f172a; border-bottom: 4px solid #3b82f6; padding-bottom: 20px; }
+        .cover-subtitle { font-size: 14px; color: #64748b; margin-top: 15px; text-transform: uppercase; letter-spacing: 1px; }
+        .cover-meta { font-size: 12px; color: #94a3b8; margin-top: auto; }
+        h2 { font-size: 18px; font-weight: 700; color: #0f172a; margin-top: 35px; border-left: 4px solid #3b82f6; padding-left: 12px; page-break-before: always; }
+        p { font-size: 13px; color: #334155; }
+        .pdf-section { margin-bottom: 25px; }
+      `,
+      dark: `
+        body { font-family: 'Outfit', 'Inter', sans-serif; background-color: #0b0f19; color: #f3f4f6; padding: 40px; line-height: 1.6; }
+        .cover-page { height: 95vh; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 1px solid #1e293b; background: #070a13; margin-bottom: 50px; box-sizing: border-box; }
+        .cover-title { font-size: 38px; font-weight: 800; color: #ffffff; text-align: center; text-shadow: 0 0 10px rgba(99, 102, 241, 0.4); }
+        .cover-subtitle { font-size: 15px; color: #6366f1; text-align: center; margin-top: 15px; text-transform: uppercase; letter-spacing: 2px; }
+        .cover-meta { font-size: 12px; color: #64748b; margin-top: auto; margin-bottom: 80px; }
+        h2 { font-size: 19px; font-weight: 700; color: #ffffff; border-bottom: 1px solid #1e293b; padding-bottom: 8px; margin-top: 40px; text-shadow: 0 0 8px rgba(99, 102, 241, 0.2); page-break-before: always; }
+        p { font-size: 13px; color: #9ca3af; }
+        .pdf-section { margin-bottom: 30px; }
+      `
+    };
+
+    let tocHtml = '';
+    if (typeof rawData === 'string') {
+      tocHtml = `
+        <div class="toc-page" style="page-break-after: always; padding: 50px; font-family: sans-serif;">
+          <h2 style="page-break-before: avoid; border: none; padding: 0;">Table of Contents</h2>
+          <ul style="list-style-type: none; padding-left: 0; margin-top: 30px; font-size: 14px;">
+            <li style="margin-bottom: 12px; display: flex; justify-content: space-between;"><span>1. Introduction</span><span>................................................................</span><span>Page 3</span></li>
+            <li style="margin-bottom: 12px; display: flex; justify-content: space-between;"><span>2. Key Concepts</span><span>................................................................</span><span>Page 4</span></li>
+            <li style="margin-bottom: 12px; display: flex; justify-content: space-between;"><span>3. Important Topics</span><span>................................................................</span><span>Page 5</span></li>
+            <li style="margin-bottom: 12px; display: flex; justify-content: space-between;"><span>4. Examples</span><span>................................................................</span><span>Page 6</span></li>
+            <li style="margin-bottom: 12px; display: flex; justify-content: space-between;"><span>5. Formulas</span><span>................................................................</span><span>Page 7</span></li>
+            <li style="margin-bottom: 12px; display: flex; justify-content: space-between;"><span>6. Key Takeaways</span><span>................................................................</span><span>Page 8</span></li>
+            <li style="margin-bottom: 12px; display: flex; justify-content: space-between;"><span>7. Revision Notes</span><span>................................................................</span><span>Page 9</span></li>
+          </ul>
+        </div>
+      `;
     }
 
     const printWindow = window.open('', '_blank');
@@ -626,79 +983,354 @@ ${queryText}`;
       <html>
         <head>
           <title>${title}</title>
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&family=Outfit:wght@400;600;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
           <style>
-            body { font-family: 'Outfit', 'Inter', Helvetica, Arial, sans-serif; padding: 40px; color: #1e293b; line-height: 1.6; background-color: #ffffff; }
-            h1 { color: #4f46e5; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; font-size: 26px; }
-            h3 { color: #0f172a; margin-top: 24px; font-size: 16px; border-left: 3px solid #818cf8; padding-left: 10px; }
-            p { font-size: 13.5px; color: #334155; }
-            .footer { margin-top: 60px; font-size: 11px; color: #94a3b8; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 12px; }
+            ${themeStyles[pdfTheme]}
+            @media print {
+              body { margin: 0; padding: 20px; }
+              .cover-page { height: 90vh; }
+            }
+            .pdf-options { padding-left: 20px; font-size: 13px; margin: 10px 0; }
+            .pdf-explanation { font-style: italic; color: #4b5563; font-size: 12px; background: rgba(0,0,0,0.02); padding: 10px; border-radius: 6px; margin-top: 10px; }
           </style>
         </head>
         <body>
-          <h1>${title}</h1>
-          <div>${contentHtml}</div>
-          <div class="footer">Generated by NoteIT AI V2 Knowledge Studio</div>
+          <div class="cover-page">
+            <div class="cover-title">${title}</div>
+            <div class="cover-subtitle">Knowledge Report & Synthesis</div>
+            <div class="cover-meta">
+              Generated by <strong>Note-IT AI V2 Output Studio</strong><br/>
+              Date: ${new Date().toLocaleDateString()}<br/>
+              Theme Style: ${pdfTheme.charAt(0).toUpperCase() + pdfTheme.slice(1)} Mode
+            </div>
+          </div>
+          ${tocHtml}
+          <div class="pdf-content">
+            ${contentHtml}
+          </div>
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
         </body>
       </html>
     `);
     printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 250);
   };
 
-  // PPTX Export
-  const exportPPTXFile = (slides: any[], title: string) => {
+  // PPTX builder with 6 custom templates
+  const buildAndDownloadPPTX = async (
+    slides: any[],
+    deckTitle: string,
+    themeName: 'academic' | 'corporate' | 'startup' | 'cyber' | 'minimal' | 'glass',
+    isDetailed: boolean
+  ) => {
     const pptx = new pptxgen();
-    pptx.title = title;
+    pptx.title = deckTitle;
 
-    // Title slide
-    const titleSlide = pptx.addSlide();
-    titleSlide.background = { fill: "0e0f14" };
-    titleSlide.addText(title, {
-      x: 0.5, y: 2.2, w: 9.0, h: 1.5,
-      fontSize: 34, fontFace: "Helvetica",
-      color: "ffffff", bold: true, align: "center"
-    });
-    titleSlide.addText("Knowledge Presentation • Powered by NoteIT AI", {
-      x: 0.5, y: 3.8, w: 9.0, h: 0.5,
-      fontSize: 16, fontFace: "Helvetica",
-      color: "a78bfa", align: "center"
-    });
+    const themeColors = {
+      academic: { bg: "0f172a", text: "ffffff", primary: "e2e8f0", accent: "d97706", cardBg: "1e293b" },
+      corporate: { bg: "1e293b", text: "ffffff", primary: "cbd5e1", accent: "2563eb", cardBg: "0f172a" },
+      startup: { bg: "09090b", text: "ffffff", primary: "f4f4f5", accent: "8b5cf6", cardBg: "18181b" },
+      cyber: { bg: "050508", text: "ffffff", primary: "39ff14", accent: "ff007f", cardBg: "0d0e12" },
+      minimal: { bg: "ffffff", text: "1e293b", primary: "0f172a", accent: "000000", cardBg: "f8fafc" },
+      glass: { bg: "18181b", text: "ffffff", primary: "f4f4f5", accent: "06b6d4", cardBg: "27272a" }
+    };
 
-    // Content slides
-    slides.forEach((slideData) => {
+    const colors = themeColors[themeName] || themeColors.academic;
+
+    slides.forEach((s, idx) => {
       const slide = pptx.addSlide();
-      slide.background = { fill: "0e0f14" };
+      slide.background = { fill: colors.bg };
 
-      // Header
-      slide.addText(slideData.title, {
-        x: 0.5, y: 0.5, w: 9.0, h: 0.8,
-        fontSize: 22, fontFace: "Helvetica",
-        color: "ffffff", bold: true
-      });
+      // Slide layout templates
+      if (s.layout === 'title_slide' || idx === 0) {
+        slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: '100%', h: 0.15, fill: { color: colors.accent } });
+        slide.addText(s.title, {
+          x: 0.5, y: 1.8, w: 9.0, h: 1.5,
+          fontSize: 32, fontFace: "Helvetica",
+          color: colors.text, bold: true, align: "center"
+        });
+        slide.addText(s.content ? s.content.join(' • ') : "Knowledge Deck", {
+          x: 0.5, y: 3.5, w: 9.0, h: 0.8,
+          fontSize: 14, fontFace: "Helvetica",
+          color: colors.primary, align: "center", italic: true
+        });
+      } else if (s.layout === 'split_column') {
+        slide.addText(s.title, {
+          x: 0.5, y: 0.5, w: 4.5, h: 0.8,
+          fontSize: 20, fontFace: "Helvetica",
+          color: colors.accent, bold: true
+        });
+        const bulletLines = s.content.map((bp: string) => ({ text: bp, options: { bullet: true, color: colors.text } }));
+        slide.addText(bulletLines, {
+          x: 0.5, y: 1.4, w: 4.5, h: 3.8,
+          fontSize: 13, fontFace: "Helvetica",
+          color: colors.text, lineSpacing: 18
+        });
 
-      // Bullets
-      const bullets = slideData.bulletPoints.map((bp: string) => ({ text: bp, options: { bullet: true } }));
-      slide.addText(bullets, {
-        x: 0.5, y: 1.5, w: 8.5, h: 3.8,
-        fontSize: 15, fontFace: "Helvetica",
-        color: "d1d5db", lineSpacing: 22
-      });
-
-      // Key Takeaway
-      if (slideData.keyTakeaways) {
-        slide.addText(`Takeaway: ${slideData.keyTakeaways}`, {
-          x: 0.5, y: 5.6, w: 9.0, h: 0.8,
-          fontSize: 12, fontFace: "Helvetica",
-          color: "a78bfa", italic: true
+        slide.addShape(pptx.ShapeType.roundRect, {
+          x: 5.3, y: 1.0, w: 4.2, h: 3.8,
+          fill: { color: colors.cardBg }, line: { color: colors.accent, width: 1.5 }
+        });
+        slide.addText(`Visual Representation Placeholder\n\nAI Prompt:\n"${s.imagePrompt}"`, {
+          x: 5.5, y: 1.3, w: 3.8, h: 3.2,
+          fontSize: 11, fontFace: "Courier New",
+          color: colors.primary, italic: true, align: "center"
+        });
+      } else if (s.layout === 'timeline') {
+        slide.addText(s.title, {
+          x: 0.5, y: 0.4, w: 9.0, h: 0.6,
+          fontSize: 20, fontFace: "Helvetica",
+          color: colors.accent, bold: true
+        });
+        slide.addShape(pptx.ShapeType.line, {
+          x: 1.0, y: 2.6, w: 8.0, h: 0,
+          line: { color: colors.accent, width: 2 }
+        });
+        const steps = s.content.slice(0, 4);
+        const stepWidth = 8.0 / steps.length;
+        steps.forEach((stepText: string, stepIdx: number) => {
+          const xPos = 1.0 + (stepIdx * stepWidth);
+          slide.addShape(pptx.ShapeType.ellipse, {
+            x: xPos + (stepWidth / 2) - 0.2, y: 2.4, w: 0.4, h: 0.4,
+            fill: { color: colors.accent }
+          });
+          slide.addShape(pptx.ShapeType.roundRect, {
+            x: xPos + 0.1, y: 1.0, w: stepWidth - 0.2, h: 1.2,
+            fill: { color: colors.cardBg }
+          });
+          slide.addText(`Step ${stepIdx + 1}`, {
+            x: xPos + 0.1, y: 1.1, w: stepWidth - 0.2, h: 0.3,
+            fontSize: 11, color: colors.accent, bold: true, align: "center"
+          });
+          slide.addText(stepText, {
+            x: xPos + 0.1, y: 3.0, w: stepWidth - 0.2, h: 1.8,
+            fontSize: 11, color: colors.text, align: "center"
+          });
+        });
+      } else if (s.layout === 'key_metrics') {
+        slide.addText(s.title, {
+          x: 0.5, y: 0.4, w: 9.0, h: 0.6,
+          fontSize: 20, fontFace: "Helvetica",
+          color: colors.accent, bold: true
+        });
+        const metrics = s.content.slice(0, 3);
+        const cardWidth = 8.8 / metrics.length;
+        metrics.forEach((m: string, mIdx: number) => {
+          const xPos = 0.6 + (mIdx * cardWidth);
+          slide.addShape(pptx.ShapeType.roundRect, {
+            x: xPos + 0.1, y: 1.2, w: cardWidth - 0.2, h: 3.5,
+            fill: { color: colors.cardBg }, line: { color: colors.accent, width: 1 }
+          });
+          const statNum = `0${mIdx + 1}`;
+          slide.addText(statNum, {
+            x: xPos + 0.2, y: 1.5, w: cardWidth - 0.4, h: 1.0,
+            fontSize: 44, color: colors.accent, bold: true, align: "center"
+          });
+          slide.addText(m, {
+            x: xPos + 0.2, y: 2.6, w: cardWidth - 0.4, h: 1.8,
+            fontSize: 12, color: colors.text, align: "center"
+          });
+        });
+      } else if (s.layout === 'grid_quadrant') {
+        slide.addText(s.title, {
+          x: 0.5, y: 0.4, w: 9.0, h: 0.6,
+          fontSize: 20, fontFace: "Helvetica",
+          color: colors.accent, bold: true
+        });
+        const gridItems = s.content.slice(0, 4);
+        const gridPositions = [
+          { x: 0.8, y: 1.2 },
+          { x: 5.2, y: 1.2 },
+          { x: 0.8, y: 3.1 },
+          { x: 5.2, y: 3.1 }
+        ];
+        gridItems.forEach((text: string, gIdx: number) => {
+          const pos = gridPositions[gIdx];
+          slide.addShape(pptx.ShapeType.roundRect, {
+            x: pos.x, y: pos.y, w: 4.0, h: 1.6,
+            fill: { color: colors.cardBg }
+          });
+          slide.addShape(pptx.ShapeType.rect, {
+            x: pos.x, y: pos.y, w: 0.1, h: 1.6,
+            fill: { color: colors.accent }
+          });
+          slide.addText(`0${gIdx + 1}.`, {
+            x: pos.x + 0.2, y: pos.y + 0.15, w: 3.6, h: 0.3,
+            fontSize: 11, color: colors.accent, bold: true
+          });
+          slide.addText(text, {
+            x: pos.x + 0.2, y: pos.y + 0.45, w: 3.6, h: 1.0,
+            fontSize: 11, color: colors.text
+          });
+        });
+      } else if (s.layout === 'bold_quote') {
+        slide.addText(s.title, {
+          x: 0.5, y: 0.4, w: 9.0, h: 0.6,
+          fontSize: 20, fontFace: "Helvetica",
+          color: colors.accent, bold: true
+        });
+        slide.addShape(pptx.ShapeType.roundRect, {
+          x: 1.2, y: 1.3, w: 7.6, h: 3.2,
+          fill: { color: colors.cardBg }, line: { color: colors.accent, width: 2 }
+        });
+        slide.addText(`"${s.content.join(' ')}"`, {
+          x: 1.5, y: 1.6, w: 7.0, h: 2.2,
+          fontSize: 18, fontFace: "Helvetica",
+          color: colors.text, italic: true, align: "center", bold: true
+        });
+        slide.addText(`Visual Suggestion: ${s.imagePrompt}`, {
+          x: 1.5, y: 3.9, w: 7.0, h: 0.4,
+          fontSize: 9, fontFace: "Courier New",
+          color: colors.primary, italic: true, align: "center"
         });
       }
+
+      if (s.keyTakeaway) {
+        slide.addText(`Takeaway: ${s.keyTakeaway}`, {
+          x: 0.5, y: 5.2, w: 9.0, h: 0.4,
+          fontSize: 10.5, fontFace: "Helvetica",
+          color: colors.accent, italic: true
+        });
+      }
+      slide.addText(`Slide ${idx + 1} of ${slides.length}`, {
+        x: 8.5, y: 5.2, w: 1.5, h: 0.4,
+        fontSize: 9, fontFace: "Helvetica",
+        color: colors.primary, align: "right"
+      });
     });
 
-    pptx.writeFile({ fileName: `${title.replace(/\s+/g, "_")}.pptx` });
+    pptx.writeFile({ fileName: `${deckTitle.replace(/\s+/g, "_")}.pptx` });
+  };
+
+  // Custom presentation generator modal triggers
+  const generateCustomPresentationDeck = async () => {
+    if (!activeSource || !userId) return;
+    setIsUploading(true);
+    setUploadProgress(10);
+    setProcessingStatus("Generating slide content...");
+
+    try {
+      const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+
+      const prompt = `
+        Create a structured PowerPoint presentation deck based on the following material.
+        
+        Document Title: "${activeSource.title}"
+        Material Content:
+        ${activeSource.content ? activeSource.content.substring(0, 8000) : activeSource.summary}
+        
+        Configuration Requirements:
+        - Theme style: ${pptTheme}
+        - Slide count: Exactly ${pptLength} slides
+        - Text limit: ${pptDetailedMode ? 'detailed explanations' : 'strictly under 40 words total per slide (short bullet points)'}
+        
+        For each slide, you must define:
+        1. "title": A short title for the slide
+        2. "layout": One of ['title_slide', 'split_column', 'timeline', 'key_metrics', 'grid_quadrant', 'bold_quote']
+        3. "content": An array of bullet points (each 6-12 words max). If not Detailed Mode, make sure the entire text of the slide is very brief (less than 40 words total).
+        4. "imagePrompt": A detailed descriptive text prompt to generate an AI image illustrating the slide content.
+        5. "keyTakeaway": A short 1-sentence takeaway displayed at the bottom of the slide.
+        
+        Return the response strictly as a JSON object with a "slides" array.
+      `;
+
+      setUploadProgress(30);
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: 'OBJECT',
+              properties: {
+                slides: {
+                  type: 'ARRAY',
+                  items: {
+                    type: 'OBJECT',
+                    properties: {
+                      title: { type: 'STRING' },
+                      layout: { type: 'STRING' },
+                      content: { type: 'ARRAY', items: { type: 'STRING' } },
+                      imagePrompt: { type: 'STRING' },
+                      keyTakeaway: { type: 'STRING' }
+                    },
+                    required: ['title', 'layout', 'content', 'imagePrompt', 'keyTakeaway']
+                  }
+                }
+              },
+              required: ['slides']
+            }
+          }
+        })
+      });
+
+      setUploadProgress(75);
+      let slides = [];
+      if (res.ok) {
+        const data = await res.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        const cleanedText = extractJsonObject(text);
+        const parsed = JSON.parse(cleanedText);
+        slides = parsed.slides || [];
+      } else {
+        throw new Error("Failed to generate slides via Gemini API");
+      }
+
+      setUploadProgress(90);
+      setProcessingStatus("Building PowerPoint file...");
+      await buildAndDownloadPPTX(slides, activeSource.title, pptTheme, pptDetailedMode);
+
+      setIsUploading(false);
+      setProcessingStatus(null);
+      setShowPptModal(false);
+    } catch (err) {
+      console.error("Custom slide generation failed, using local fallback...", err);
+      const notes = activeSource.notes || [];
+      const slides = [];
+      const layouts = ['split_column', 'timeline', 'key_metrics', 'grid_quadrant', 'bold_quote'];
+
+      slides.push({
+        title: activeSource.title,
+        layout: 'title_slide',
+        content: ['Comprehensive Study Deck', 'Powered by Note-IT AI Studio'],
+        imagePrompt: `An academic library, classical style, warm lighting`,
+        keyTakeaway: `Initial review baseline`
+      });
+
+      for (let i = 0; i < pptLength - 1; i++) {
+        const note = notes[i % notes.length] || { title: `Topic Section ${i + 1}`, content: `Details for section ${i + 1} content.` };
+        const layout = layouts[i % layouts.length];
+        const textLines = note.content.split('\n').filter((l: string) => l.trim().length > 0).slice(0, 4);
+        const cleanLines = textLines.map((l: string) => l.replace(/[*#-]/g, '').trim());
+
+        slides.push({
+          title: note.title,
+          layout,
+          content: cleanLines.slice(0, 3),
+          imagePrompt: `Professional presentation graphic representing ${note.title}, vector art style`,
+          keyTakeaway: `Key understanding of ${note.title}`
+        });
+      }
+
+      await buildAndDownloadPPTX(slides, activeSource.title, pptTheme, pptDetailedMode);
+      setIsUploading(false);
+      setProcessingStatus(null);
+      setShowPptModal(false);
+    }
+  };
+
+  const exportPPTXFile = (slides: any[], title: string) => {
+    // Intercept with the custom generation modal
+    setShowPptModal(true);
   };
 
   // TTS Podcast script player
@@ -785,7 +1417,7 @@ ${queryText}`;
         {/* Global loader overlay */}
         {isUploading && (
           <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 text-[10px] font-bold border border-indigo-500/20">
-            <span className="h-2 w-2 rounded-full bg-indigo-500 animate-ping" />
+            <BruteLoader size="xs" message="" />
             <span>{processingStatus || 'Processing...'} ({uploadProgress}%)</span>
           </div>
         )}
@@ -999,9 +1631,10 @@ ${queryText}`;
               ))
             )}
             {isChatLoading && (
-              <div className="flex justify-start animate-pulse">
-                <div className={`rounded-2xl px-4 py-3 text-xs ${theme === 'dark' ? 'bg-[#121318] border border-neutral-850 text-neutral-400' : 'bg-gray-100 text-gray-500'}`}>
-                  Synthesizing logical layers...
+              <div className="flex justify-start">
+                <div className={`rounded-2xl px-4 py-3 border flex items-center gap-3 ${theme === 'dark' ? 'bg-[#121318] border-neutral-850 text-neutral-400' : 'bg-gray-100 border-gray-250 text-gray-500'}`}>
+                  <BruteLoader size="xs" message="" />
+                  <span className="text-xs font-mono font-bold tracking-wider animate-pulse">Synthesizing logical layers...</span>
                 </div>
               </div>
             )}
@@ -1042,12 +1675,35 @@ ${queryText}`;
             <p className="text-[10px] text-neutral-400 mt-0.5">Generate, display, and export materials.</p>
           </div>
 
+          {/* Multi-language selector */}
+          {activeSourceId && (
+            <div className={`flex items-center justify-between p-2.5 rounded-xl border ${
+              theme === 'dark' ? 'bg-neutral-950/70 border-neutral-900/60' : 'bg-gray-50 border-gray-200'
+            }`}>
+              <span className="text-[10px] font-black uppercase text-neutral-450 tracking-wider">Output Language</span>
+              <select
+                value={outputLanguage}
+                onChange={(e) => handleLanguageChange(e.target.value)}
+                className={`rounded px-2.5 py-1 text-xs font-bold border outline-none cursor-pointer ${
+                  theme === 'dark' ? 'bg-neutral-900 border-neutral-850 text-white' : 'bg-white border-gray-300 text-black'
+                }`}
+              >
+                {['English', 'Hindi', 'Hinglish', 'Marathi', 'Tamil', 'Gujarati', 'Bengali'].map(lang => (
+                  <option key={lang} value={lang}>{lang}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Mini-Tab Selector */}
           <div className={`grid grid-cols-4 gap-1 p-1 rounded-xl ${theme === 'dark' ? 'bg-neutral-950' : 'bg-gray-150'}`}>
             {(['notes', 'summary', 'flashcards', 'quiz'] as const).map(tab => (
               <button
                 key={tab}
-                onClick={() => setActiveOutputTab(tab)}
+                onClick={() => {
+                  setActiveOutputTab(tab);
+                  setSelectedMindmapNode(null);
+                }}
                 className={`py-1.5 rounded-lg text-[10px] font-black capitalize transition-all cursor-pointer ${
                   activeOutputTab === tab 
                     ? theme === 'dark' ? 'bg-indigo-600 text-white' : 'bg-white text-black shadow-xs' 
@@ -1063,7 +1719,10 @@ ${queryText}`;
             {(['mindmap', 'slides', 'podcast', 'infographics'] as const).map(tab => (
               <button
                 key={tab}
-                onClick={() => setActiveOutputTab(tab)}
+                onClick={() => {
+                  setActiveOutputTab(tab);
+                  setSelectedMindmapNode(null);
+                }}
                 className={`py-1.5 rounded-lg text-[10px] font-black capitalize transition-all cursor-pointer ${
                   activeOutputTab === tab 
                     ? theme === 'dark' ? 'bg-indigo-600 text-white' : 'bg-white text-black shadow-xs' 
@@ -1106,7 +1765,10 @@ ${queryText}`;
                         ))}
                       </div>
                       <button
-                        onClick={() => exportPDFFile(`${activeSource.title} - Notes`, activeSource.notes)}
+                        onClick={() => {
+                          setPdfExportData({ title: `${activeSource.title} - Notes`, data: activeSource.notes });
+                          setShowPdfModal(true);
+                        }}
                         className="flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:underline cursor-pointer"
                       >
                         <Download className="h-3 w-3" />
@@ -1116,9 +1778,11 @@ ${queryText}`;
 
                     <div className="space-y-3">
                       {activeSource.notes && activeSource.notes.map((n: any, i: number) => (
-                        <div key={i} className={`p-4 rounded-xl border font-sans ${theme === 'dark' ? 'bg-neutral-950/60 border-neutral-900' : 'bg-white border-gray-200'}`}>
+                        <div key={i} className={`p-4 rounded-xl border font-sans ${theme === 'dark' ? 'bg-[#121318] border-neutral-905' : 'bg-white border-gray-200'}`}>
                           <h4 className="text-xs font-black text-indigo-400">{n.title}</h4>
-                          <p className="text-[11.5px] mt-2 text-neutral-300 leading-relaxed whitespace-pre-wrap">{n.content}</p>
+                          <p className="text-[11.5px] mt-2 text-neutral-300 leading-relaxed whitespace-pre-wrap">
+                            {renderTextWithCitations(cleanMarkdownText(n.content))}
+                          </p>
                         </div>
                       ))}
                     </div>
@@ -1143,7 +1807,10 @@ ${queryText}`;
                         ))}
                       </div>
                       <button
-                        onClick={() => exportPDFFile(`${activeSource.title} - Summary`, activeSource.summary)}
+                        onClick={() => {
+                          setPdfExportData({ title: `${activeSource.title} - Summary`, data: activeSource.summary });
+                          setShowPdfModal(true);
+                        }}
                         className="flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:underline cursor-pointer"
                       >
                         <Download className="h-3 w-3" />
@@ -1151,10 +1818,30 @@ ${queryText}`;
                       </button>
                     </div>
 
-                    <div className={`p-4.5 rounded-xl border font-sans text-[12px] leading-relaxed whitespace-pre-wrap ${
-                      theme === 'dark' ? 'bg-neutral-950/60 border-neutral-900 text-neutral-200' : 'bg-white border-gray-200 text-gray-800'
-                    }`}>
-                      {activeSource.summary}
+                    <div className="space-y-4">
+                      {(() => {
+                        const sections = parseSummaryIntoSections(activeSource.summary);
+                        const sectionConfig = [
+                          { label: 'Introduction', content: sections.introduction },
+                          { label: 'Key Concepts', content: sections.keyConcepts },
+                          { label: 'Important Topics', content: sections.importantTopics },
+                          { label: 'Examples', content: sections.examples },
+                          { label: 'Formulas', content: sections.formulas },
+                          { label: 'Key Takeaways', content: sections.keyTakeaways },
+                          { label: 'Revision Notes', content: sections.revisionNotes }
+                        ];
+
+                        return sectionConfig.map((sec, idx) => (
+                          <div key={idx} className={`p-4 rounded-xl border ${
+                            theme === 'dark' ? 'bg-[#121318] border-neutral-900' : 'bg-white border-gray-200'
+                          }`}>
+                            <h4 className="text-xs font-black text-indigo-400 uppercase tracking-widest font-mono">{sec.label}</h4>
+                            <p className="text-[11.5px] mt-2 text-neutral-300 leading-relaxed whitespace-pre-wrap">
+                              {renderTextWithCitations(sec.content)}
+                            </p>
+                          </div>
+                        ));
+                      })()}
                     </div>
                   </div>
                 )}
@@ -1177,7 +1864,10 @@ ${queryText}`;
                         ))}
                       </div>
                       <button
-                        onClick={() => exportPDFFile(`${activeSource.title} - Flashcards`, activeSource.flashcards)}
+                        onClick={() => {
+                          setPdfExportData({ title: `${activeSource.title} - Flashcards`, data: activeSource.flashcards });
+                          setShowPdfModal(true);
+                        }}
                         className="flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:underline cursor-pointer"
                       >
                         <Download className="h-3 w-3" />
@@ -1188,11 +1878,13 @@ ${queryText}`;
                     <div className="space-y-3">
                       {activeSource.flashcards && activeSource.flashcards.map((f: any, i: number) => (
                         <div key={i} className={`p-4.5 rounded-xl border font-sans space-y-2 ${
-                          theme === 'dark' ? 'bg-neutral-950/60 border-neutral-900' : 'bg-white border-gray-200'
+                          theme === 'dark' ? 'bg-[#121318] border-neutral-900' : 'bg-white border-gray-200'
                         }`}>
                           <div className="text-[10px] font-bold text-indigo-400 font-mono">Q. CARD {i + 1}</div>
-                          <div className="text-xs font-black">{f.q}</div>
-                          <div className="text-[11.5px] text-neutral-350 pt-2 border-t border-neutral-900/20">{f.a}</div>
+                          <div className="text-xs font-black">{renderTextWithCitations(cleanMarkdownText(f.q))}</div>
+                          <div className="text-[11.5px] text-neutral-350 pt-2 border-t border-neutral-900/20">
+                            {renderTextWithCitations(cleanMarkdownText(f.a))}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -1217,7 +1909,10 @@ ${queryText}`;
                         ))}
                       </div>
                       <button
-                        onClick={() => exportPDFFile(`${activeSource.title} - Quiz`, activeSource.quiz)}
+                        onClick={() => {
+                          setPdfExportData({ title: `${activeSource.title} - Quiz`, data: activeSource.quiz });
+                          setShowPdfModal(true);
+                        }}
                         className="flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:underline cursor-pointer"
                       >
                         <Download className="h-3 w-3" />
@@ -1227,9 +1922,11 @@ ${queryText}`;
 
                     {activeSource.quiz && activeSource.quiz.length > 0 ? (
                       <div className="space-y-4">
-                        <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-neutral-950/65 border-neutral-900' : 'bg-white border-gray-200'}`}>
+                        <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#121318] border-neutral-900' : 'bg-white border-gray-200'}`}>
                           <div className="text-[10px] font-black text-indigo-400 font-mono">QUESTION {activeQuizQuestionIdx + 1} of {activeSource.quiz.length}</div>
-                          <h4 className="text-xs font-bold font-sans mt-2 leading-relaxed">{activeSource.quiz[activeQuizQuestionIdx].question}</h4>
+                          <h4 className="text-xs font-bold font-sans mt-2 leading-relaxed">
+                            {renderTextWithCitations(cleanMarkdownText(activeSource.quiz[activeQuizQuestionIdx].question))}
+                          </h4>
                           
                           <div className="grid grid-cols-1 gap-2 mt-4">
                             {activeSource.quiz[activeQuizQuestionIdx].options.map((opt: string, optIdx: number) => {
@@ -1238,12 +1935,12 @@ ${queryText}`;
                               
                               let btnClass = "";
                               if (isQuizRevealed) {
-                                if (isCorrect) btnClass = "border-emerald-500 bg-emerald-500/10 text-emerald-450";
-                                else if (isSelected) btnClass = "border-red-500 bg-red-500/10 text-red-450";
-                                else btnClass = "border-neutral-900 bg-neutral-950/20 text-neutral-500";
+                                  if (isCorrect) btnClass = "border-emerald-500 bg-emerald-500/10 text-emerald-450";
+                                  else if (isSelected) btnClass = "border-red-500 bg-red-500/10 text-red-450";
+                                  else btnClass = "border-neutral-900 bg-neutral-950/20 text-neutral-500";
                               } else {
-                                if (isSelected) btnClass = "border-indigo-500 bg-indigo-500/10 text-white";
-                                else btnClass = "border-neutral-850 bg-neutral-950/40 text-neutral-350 hover:bg-neutral-900";
+                                  if (isSelected) btnClass = "border-indigo-500 bg-indigo-500/10 text-white";
+                                  else btnClass = "border-neutral-850 bg-neutral-950/40 text-neutral-350 hover:bg-neutral-900";
                               }
 
                               return (
@@ -1259,9 +1956,9 @@ ${queryText}`;
                           </div>
 
                           {isQuizRevealed && (
-                            <div className="mt-4 pt-3 border-t border-dashed border-neutral-900 text-[11px] text-neutral-450">
+                            <div className="mt-4 pt-3 border-t border-dashed border-neutral-900 text-[11px] text-neutral-455">
                               <span className="font-mono text-[9px] font-bold text-indigo-400 block mb-1">COGNITIVE ANALYSIS:</span>
-                              {activeSource.quiz[activeQuizQuestionIdx].explanation}
+                              {renderTextWithCitations(cleanMarkdownText(activeSource.quiz[activeQuizQuestionIdx].explanation))}
                             </div>
                           )}
 
@@ -1301,7 +1998,10 @@ ${queryText}`;
                     <div className="flex justify-between items-center">
                       <span className="text-[10px] font-bold text-indigo-400 font-mono uppercase">Interactive Concept Net</span>
                       <button
-                        onClick={() => exportPDFFile(`${activeSource.title} - Concept Map`, JSON.stringify(activeSource.keyConcepts))}
+                        onClick={() => {
+                          setPdfExportData({ title: `${activeSource.title} - Concept Map`, data: activeSource.keyConcepts });
+                          setShowPdfModal(true);
+                        }}
                         className="flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:underline cursor-pointer"
                       >
                         <Download className="h-3 w-3" />
@@ -1335,15 +2035,15 @@ ${queryText}`;
                           return null;
                         })}
 
-                        {/* Renders nodes */}
+                        {/* Renders interactive nodes */}
                         {activeSource.keyConcepts && activeSource.keyConcepts.map((node: any, idx: number) => (
-                          <g key={idx}>
+                          <g key={idx} onClick={() => setSelectedMindmapNode(node)} className="cursor-pointer group">
                             <circle
                               cx={`${node.x}%`}
                               cy={`${node.y}%`}
                               r={node.id === 'root' ? 14 : 9}
-                              fill={node.id === 'root' ? '#4f46e5' : '#818cf8'}
-                              className="cursor-pointer hover:opacity-80 transition-opacity"
+                              fill={selectedMindmapNode?.id === node.id ? '#10b981' : (node.id === 'root' ? '#4f46e5' : '#818cf8')}
+                              className="transition-all hover:scale-110"
                             />
                             <text
                               x={`${node.x}%`}
@@ -1352,17 +2052,49 @@ ${queryText}`;
                               fill={theme === 'dark' ? '#d1d5db' : '#1e293b'}
                               fontSize="9px"
                               fontWeight="bold"
-                              className="font-mono"
+                              className="font-mono select-none"
                             >
                               {node.label}
                             </text>
                           </g>
                         ))}
                       </svg>
-                      <div className="absolute bottom-2 left-2 text-[8px] font-mono text-neutral-500 bg-neutral-950/40 p-1.5 rounded">
-                        Hold click & drag simulation
+                      <div className="absolute bottom-2 left-2 text-[8px] font-mono text-neutral-500 bg-neutral-950/45 p-1 rounded">
+                        Click on nodes to show conceptual details drawer.
                       </div>
                     </div>
+
+                    {/* Interactive Node Side Panel Details Drawer */}
+                    {selectedMindmapNode && (
+                      <div className={`p-4 rounded-xl border text-left space-y-2.5 animate-fade-in ${
+                        theme === 'dark' ? 'bg-[#121318] border-neutral-900' : 'bg-white border-gray-200'
+                      }`}>
+                        <div className="flex items-center justify-between border-b border-neutral-850 pb-2">
+                          <h4 className="text-xs font-black text-indigo-400 uppercase tracking-widest font-mono">
+                            {selectedMindmapNode.label}
+                          </h4>
+                          <button 
+                            onClick={() => setSelectedMindmapNode(null)}
+                            className="text-neutral-550 hover:text-white text-xs font-bold cursor-pointer"
+                          >
+                            &times;
+                          </button>
+                        </div>
+                        <div className="text-[11.5px] leading-relaxed text-neutral-350">
+                          <strong className="text-indigo-400 block text-[10px] uppercase font-mono">Definition & Explanation</strong>
+                          {renderTextWithCitations(cleanMarkdownText(selectedMindmapNode.desc || selectedMindmapNode.explanation || 'Provides logical synthesis for this section.'))}
+                        </div>
+                        {selectedMindmapNode.examples && (
+                          <div className="text-[11.5px] leading-relaxed text-neutral-350">
+                            <strong className="text-indigo-400 block text-[10px] uppercase font-mono">Examples & Analogies</strong>
+                            {renderTextWithCitations(cleanMarkdownText(selectedMindmapNode.examples))}
+                          </div>
+                        )}
+                        <div className="text-[9.5px] font-mono text-indigo-455 pt-1.5 border-t border-neutral-900/30">
+                          Reference Citation: {selectedMindmapNode.sourceCitation || `[Source: ${activeSource.title}, Node indexing]`}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1664,6 +2396,165 @@ ${queryText}`;
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* PDF CUSTOMIZATION MODAL */}
+      {showPdfModal && pdfExportData && (
+        <div className="fixed inset-0 bg-neutral-950/65 backdrop-blur-xs flex items-center justify-center z-50 p-4 select-none animate-fade-in">
+          <div className={`rounded-2xl max-w-md w-full border p-6 space-y-4 shadow-2xl relative ${
+            theme === 'dark' ? 'bg-[#0d0e12] border-neutral-850 text-white' : 'bg-white border-gray-200 text-gray-900'
+          }`}>
+            <div className="flex items-center justify-between pb-3 border-b border-neutral-900/40">
+              <h3 className="font-sans font-black text-sm flex items-center gap-1.5">
+                <FileText className="h-4 w-4 text-indigo-400" />
+                <span>Configure PDF Document Theme</span>
+              </h3>
+              <button 
+                onClick={() => { setShowPdfModal(false); setPdfExportData(null); }}
+                className="text-neutral-500 hover:text-white text-xs font-bold cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-black text-neutral-500 uppercase font-mono">Select Document Theme</label>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {(['academic', 'modern', 'corporate', 'dark'] as const).map(t => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setSelectedPdfTheme(t)}
+                      className={`py-2 px-3 text-xs font-bold border rounded-lg cursor-pointer capitalize transition-all ${
+                        selectedPdfTheme === t 
+                          ? 'bg-indigo-650 border-indigo-500 text-white' 
+                          : theme === 'dark' ? 'border-neutral-800 text-neutral-400 hover:border-neutral-700' : 'border-gray-200 text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      {t} Style
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2.5 pt-3">
+                <button
+                  type="button"
+                  onClick={() => { setShowPdfModal(false); setPdfExportData(null); }}
+                  className="rounded-lg px-4 py-2 text-xs font-bold border border-neutral-800 text-neutral-400 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    exportPDFFile(pdfExportData.title, pdfExportData.data, selectedPdfTheme);
+                    setShowPdfModal(false);
+                    setPdfExportData(null);
+                  }}
+                  className="rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 text-xs font-bold cursor-pointer"
+                >
+                  Export PDF
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PPT PRESENTATION CUSTOMIZATION MODAL */}
+      {showPptModal && (
+        <div className="fixed inset-0 bg-neutral-950/65 backdrop-blur-xs flex items-center justify-center z-50 p-4 select-none animate-fade-in">
+          <div className={`rounded-2xl max-w-md w-full border p-6 space-y-4 shadow-2xl relative ${
+            theme === 'dark' ? 'bg-[#0d0e12] border-neutral-855 text-white' : 'bg-white border-gray-200 text-gray-900'
+          }`}>
+            <div className="flex items-center justify-between pb-3 border-b border-neutral-900/40">
+              <h3 className="font-sans font-black text-sm flex items-center gap-1.5">
+                <Sparkles className="h-4 w-4 text-indigo-400" />
+                <span>AI PowerPoint Presentation Settings</span>
+              </h3>
+              <button 
+                onClick={() => setShowPptModal(false)}
+                className="text-neutral-500 hover:text-white text-xs font-bold cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-black text-neutral-500 uppercase font-mono">Select Design Theme Style</label>
+                <div className="grid grid-cols-3 gap-1.5 mt-2">
+                  {(['academic', 'corporate', 'startup', 'cyber', 'minimal', 'glass'] as const).map(t => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setPptTheme(t)}
+                      className={`py-2 px-1 text-[10px] font-bold border rounded-lg cursor-pointer capitalize transition-all ${
+                        pptTheme === t 
+                          ? 'bg-indigo-650 border-indigo-500 text-white' 
+                          : theme === 'dark' ? 'border-neutral-800 text-neutral-400 hover:border-neutral-700' : 'border-gray-200 text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      {t === 'startup' ? 'Startup' : t === 'cyber' ? 'Cyber Neon' : t === 'glass' ? 'Dark Glass' : t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black text-neutral-500 uppercase font-mono">Presentation Length</label>
+                <div className="flex gap-2 mt-2">
+                  {([5, 10, 15] as const).map(l => (
+                    <button
+                      key={l}
+                      type="button"
+                      onClick={() => setPptLength(l)}
+                      className={`flex-1 py-2 text-xs font-bold border rounded-lg cursor-pointer transition-all ${
+                        pptLength === l 
+                          ? 'bg-indigo-650 border-indigo-500 text-white' 
+                          : theme === 'dark' ? 'border-neutral-800 text-neutral-400' : 'border-gray-200 text-gray-700'
+                      }`}
+                    >
+                      {l} Slides
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-2.5 rounded-xl border border-neutral-850 bg-neutral-950/20">
+                <div>
+                  <span className="text-xs font-bold block">Detailed Mode</span>
+                  <span className="text-[9.5px] text-neutral-450">Overrides the standard 40-word limit per slide for longer text descriptions.</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={pptDetailedMode}
+                  onChange={(e) => setPptDetailedMode(e.target.checked)}
+                  className="accent-indigo-500 h-4.5 w-4.5 cursor-pointer"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2.5 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setShowPptModal(false)}
+                  className="rounded-lg px-4 py-2 text-xs font-bold border border-neutral-800 text-neutral-400 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={generateCustomPresentationDeck}
+                  className="rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 text-xs font-bold cursor-pointer"
+                >
+                  Generate Deck
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

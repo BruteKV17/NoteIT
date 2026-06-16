@@ -67,9 +67,17 @@ export interface WeakTopic {
 
 export interface QuizQuestion {
   id: string;
+  type?: 'mcq' | 'true_false' | 'fill_blank' | 'match_following' | 'assertion_reason' | 'scenario_based';
   question: string;
   options: string[];
   correctAnswerIndex: number;
+  reason?: string;
+  scenario?: string;
+  matchLeft?: string[];
+  matchRight?: string[];
+  correctMatchPairs?: { [key: string]: string };
+  explanation?: string;
+  sourceCitation?: string;
 }
 
 export interface Quiz {
@@ -79,7 +87,15 @@ export interface Quiz {
   questionsCount: number;
   estimatedTime: string;
   questions: QuizQuestion[];
+  easyQuestions: QuizQuestion[];
+  mediumQuestions: QuizQuestion[];
+  hardQuestions: QuizQuestion[];
   score?: number;
+  scores?: {
+    easy?: number;
+    medium?: number;
+    hard?: number;
+  };
   status: 'available' | 'completed';
 }
 

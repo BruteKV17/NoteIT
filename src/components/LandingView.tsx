@@ -709,8 +709,15 @@ export default function LandingView({
           <div className="md:col-span-4 space-y-4">
             <AILogo size={32} showText={true} theme="light" />
             <p className="text-xs text-gray-400 font-medium leading-relaxed max-w-xs">
-              ScholarAI. Precision in knowledge synthesis. Helping the world think deeper through technology.
+              NoteIT AI. Precision in knowledge synthesis. Helping the world think deeper through technology.
             </p>
+            <div className="pt-2 border-t border-gray-200/80 space-y-1 text-xs text-gray-400">
+              <div className="font-extrabold text-gray-650">Built by BRUTE</div>
+              <div className="font-medium text-gray-500">Founder: <span className="font-bold text-gray-700">Kishan Verma</span></div>
+              <div className="font-extrabold text-indigo-500 mt-2.5 block">Contact Us</div>
+              <div className="text-[11px] font-mono leading-relaxed">Email: vermakishan478@gmail.com</div>
+              <div className="text-[11px] font-mono leading-relaxed">Phone: +91 7471111980</div>
+            </div>
           </div>
 
           {/* Nav groups */}
