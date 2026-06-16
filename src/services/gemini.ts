@@ -234,28 +234,34 @@ export const generateLectureContentFromText = async (
     promptInstructions = `
     You are an expert executive summary assistant. Analyze the provided lecture text content and perform the following tasks:
     1. Generate a detailed, chronological transcript of the lecture based on the text. Since this is extracted text without timestamps, format the transcript text by prepending bracketed estimated timestamps (e.g. [00:00], [01:15], [02:30]) at the beginning of each major statement or logical paragraph to split the content logically.
-    2. Generate a concise professional summary of the lecture in clean Markdown format, focused on major findings, key takeaways, and actionable insights. Keep it between 300 to 600 words. The summary MUST have the following exact headers structure:
-       ### Introduction
-       [Professional overview of the subject]
+    2. Generate a structured knowledge document representing the summary of the lecture in clean Markdown format, containing exactly 10 headers:
+       ### Executive Overview
+       [Strategic high-level overview of the subject]
        ### Key Concepts
-       [List of essential business models/definitions]
-       ### Important Topics
-       [Key issues or themes addressed]
+       [Essential models, terminology, and baseline definitions]
+       ### Detailed Explanation
+       [Deep analysis and detailed explanation of the frameworks]
        ### Examples
-       [Real-world corporate examples or case applications]
+       [Walkthrough of analytical examples or business cases]
        ### Formulas
-       [Core metric formulas or evaluation parameters]
-       ### Key Takeaways
-       [Strategic insights and primary deliverables]
+       [Key mathematical equations, derivations, or evaluation parameters]
+       ### Common Mistakes
+       [Common misconceptions, exam traps, or strategy errors to avoid]
        ### Revision Notes
-       [Quick check reference for quick reading]
+       [High-intensity revision pointers and memory helpers]
+       ### Exam Questions
+       [High-yield practice questions for self-testing]
+       ### Real World Applications
+       [Industrial, practical, or clinical case applications]
+       ### Quick Recap
+       [Final executive 1-sentence takeaways and summarizing recap]
     3. Generate a list of key detailed notes from the lecture context. Each note must be concise, professional, focused on strategic recommendations, and target a word count of 300-600 words in total. Each note must have a title and content in Markdown structured with the following exact subsections:
        - 📊 **Executive Overview & Major Findings**
        - 📈 **Key Metrics & Bullet Points**
        - 🎯 **Actionable Insights & Deliverables**
        - 🛑 **Strategic Takeaways**
     4. Generate a list of 4 conceptual flashcards from the lecture. Each flashcard must have a question "q" and a detailed answer "a" in Markdown, focused on high-level findings and professional/strategic decisions.
-    5. Generate a quiz of 3-4 multiple-choice questions from the lecture. Each question must have a "question", a list of 4 "options", a "correctAnswer" index (0-based), and a detailed conceptual "explanation" targeting executive decision-making and major implications.
+    5. Generate a quiz of 3-4 questions from the lecture. Each question must be generated directly from the source context, avoiding generic textbook questions. Every question must cite the exact section/topic or page from the source context it originated from (e.g. '[Source: Section 2.1 - Vector Space]' or '[Source: Page 4, Paragraph 2]') inside the 'sourceCitation' field. Each question must have a "question", a list of 4 "options", a "correctAnswer" index (0-based), a detailed conceptual "explanation" testing strategic decisions, and a "sourceCitation".
     6. Generate a list of 5-7 keyConcepts for a mind map representing the lecture. One concept MUST be the root concept with id "root", x: 50, y: 50, and group "center". Other concepts must have an id, label, parent (referencing the parent's id, e.g. "root"), x and y coordinates (numbers between 10 and 90 representing positions on a 2D canvas), and a group name (e.g. "strategy", "metrics", "findings").
     7. Generate a list of 1-2 weakTopics that this lecture covers, diagnosing typical student struggles. Each topic must have a "topicName", "subject", "aiDiagnosis", and a list of 3 "actionPlan" recommendations.
     `;
@@ -263,28 +269,34 @@ export const generateLectureContentFromText = async (
     promptInstructions = `
     You are an expert exam revision tutor. Analyze the provided lecture text content and perform the following tasks:
     1. Generate a detailed, chronological transcript of the lecture based on the text. Since this is extracted text without timestamps, format the transcript text by prepending bracketed estimated timestamps (e.g. [00:00], [01:15], [02:30]) at the beginning of each major statement or logical paragraph to split the content logically.
-    2. Generate an exam-oriented revision summary of the lecture in clean Markdown format, containing a quick formula sheet, key facts, and common mistakes. Keep it between 200 to 500 words. The summary MUST have the following exact headers structure:
-       ### Introduction
-       [Quick revision context]
+    2. Generate a structured knowledge document representing the summary of the lecture in clean Markdown format, containing exactly 10 headers:
+       ### Executive Overview
+       [Strategic high-level overview of the subject]
        ### Key Concepts
-       [Core concepts to define for the exam]
-       ### Important Topics
-       [Key syllabus topics covered]
+       [Essential models, terminology, and baseline definitions]
+       ### Detailed Explanation
+       [Deep analysis and detailed explanation of the frameworks]
        ### Examples
-       [High-yield exam question examples]
+       [Walkthrough of analytical examples or business cases]
        ### Formulas
-       [Quick recall equations and constants]
-       ### Key Takeaways
-       [Top memory facts to write down first]
+       [Key mathematical equations, derivations, or evaluation parameters]
+       ### Common Mistakes
+       [Common misconceptions, exam traps, or strategy errors to avoid]
        ### Revision Notes
-       [High-intensity study prompts and memory tricks]
+       [High-intensity revision pointers and memory helpers]
+       ### Exam Questions
+       [High-yield practice questions for self-testing]
+       ### Real World Applications
+       [Industrial, practical, or clinical case applications]
+       ### Quick Recap
+       [Final executive 1-sentence takeaways and summarizing recap]
     3. Generate a list of key detailed notes from the lecture context. Each note must be high-yield, exam-oriented, focused on memory recall, and target a word count of 200-500 words in total. Each note must have a title and content in Markdown structured with the following exact subsections:
        - 🔑 **Key Facts & Flash Recall Points**
        - 📝 **Exam-Oriented Explanations & Common Mistakes**
        - 💡 **Formula Sheet & Memory Tricks**
        - 🎯 **High-Yield Practice Questions / High-Intensity Review**
     4. Generate a list of 4 conceptual flashcards from the lecture. Each flashcard must have a question "q" and a detailed answer "a" in Markdown, focused on memory tricks, formulas, or high-yield facts.
-    5. Generate a quiz of 3-4 multiple-choice questions from the lecture. Each question must have a "question", a list of 4 "options", a "correctAnswer" index (0-based), and a detailed conceptual "explanation" targeting common exam traps and mistakes.
+    5. Generate a quiz of 3-4 questions from the lecture. Each question must be generated directly from the source context, avoiding generic textbook questions. Every question must cite the exact section/topic or page from the source context it originated from (e.g. '[Source: Section 2.1 - Vector Space]' or '[Source: Page 4, Paragraph 2]') inside the 'sourceCitation' field. Each question must have a "question", a list of 4 "options", a "correctAnswer" index (0-based), a detailed conceptual "explanation" testing common exam traps, and a "sourceCitation".
     6. Generate a list of 5-7 keyConcepts for a mind map representing the lecture. One concept MUST be the root concept with id "root", x: 50, y: 50, and group "center". Other concepts must have an id, label, parent (referencing the parent's id, e.g. "root"), x and y coordinates (numbers between 10 and 90 representing positions on a 2D canvas), and a group name (e.g. "formulas", "facts", "recall").
     7. Generate a list of 1-2 weakTopics that this lecture covers, diagnosing typical student struggles. Each topic must have a "topicName", "subject", "aiDiagnosis", and a list of 3 "actionPlan" recommendations.
     `;
@@ -292,28 +304,34 @@ export const generateLectureContentFromText = async (
     promptInstructions = `
     You are an expert academic tutor. Analyze the provided lecture text content and perform the following tasks:
     1. Generate a detailed, chronological transcript of the lecture based on the text. Since this is extracted text without timestamps, format the transcript text by prepending bracketed estimated timestamps (e.g. [00:00], [01:15], [02:30]) at the beginning of each major statement or logical paragraph to split the content logically.
-    2. Generate a structured academic summary of the lecture in clean Markdown format (covering main ideas, objectives, examples, analogies, historical context, applications, and formula derivations). Keep it detailed and extensive, targeting 1500+ words in total. The summary MUST have the following exact headers structure:
-       ### Introduction
-       [Theoretical foundations and baseline definitions]
+    2. Generate a structured knowledge document representing the summary of the lecture in clean Markdown format, containing exactly 10 headers:
+       ### Executive Overview
+       [Strategic high-level overview of the subject]
        ### Key Concepts
-       [Comprehensive explanations of key ideas]
-       ### Important Topics
-       [Core theoretical frameworks and subtopics]
+       [Essential models, terminology, and baseline definitions]
+       ### Detailed Explanation
+       [Deep analysis and detailed explanation of the frameworks]
        ### Examples
-       [Deep analytical examples and walkthroughs]
+       [Walkthrough of analytical examples or business cases]
        ### Formulas
-       [Mathematical derivations and equation lists]
-       ### Key Takeaways
-       [High-level takeaways and core understandings]
+       [Key mathematical equations, derivations, or evaluation parameters]
+       ### Common Mistakes
+       [Common misconceptions, exam traps, or strategy errors to avoid]
        ### Revision Notes
-       [In-depth review checkpoints]
+       [High-intensity revision pointers and memory helpers]
+       ### Exam Questions
+       [High-yield practice questions for self-testing]
+       ### Real World Applications
+       [Industrial, practical, or clinical case applications]
+       ### Quick Recap
+       [Final executive 1-sentence takeaways and summarizing recap]
     3. Generate a list of key detailed notes from the lecture context. Each note must be highly detailed, academic, and target a word count of 1500+ words in total across the notes. Each note must have a title and content in Markdown structured with the following exact subsections:
        - 🧠 **Key Terms & Definitions**
        - 📝 **Detailed Explanations & Examples**
        - 💡 **Core Formula or Analogy** (if applicable)
        - 🎯 **Actionable Summary / Study Focus**
     4. Generate a list of 4 conceptual flashcards from the lecture. Each flashcard must have a question "q" and a detailed answer "a" in Markdown, focused on deep understanding and definitions.
-    5. Generate a quiz of 3-4 multiple-choice questions from the lecture. Each question must have a "question", a list of 4 "options", a "correctAnswer" index (0-based), and a detailed conceptual "explanation" testing deep concepts and formula derivations.
+    5. Generate a quiz of 3-4 questions from the lecture. Each question must be generated directly from the source context, avoiding generic textbook questions. Every question must cite the exact section/topic or page from the source context it originated from (e.g. '[Source: Section 2.1 - Vector Space]' or '[Source: Page 4, Paragraph 2]') inside the 'sourceCitation' field. Each question must have a "question", a list of 4 "options", a "correctAnswer" index (0-based), a detailed conceptual "explanation" testing deep concepts, and a "sourceCitation".
     6. Generate a list of 5-7 keyConcepts for a mind map representing the lecture. One concept MUST be the root concept with id "root", x: 50, y: 50, and group "center". Other concepts must have an id, label, parent (referencing the parent's id, e.g. "root"), x and y coordinates (numbers between 10 and 90 representing positions on a 2D canvas), and a group name (e.g. "math", "concepts", "applications").
     7. Generate a list of 1-2 weakTopics that this lecture covers, diagnosing typical student struggles. Each topic must have a "topicName", "subject", "aiDiagnosis", and a list of 3 "actionPlan" recommendations.
     `;
@@ -389,9 +407,10 @@ export const generateLectureContentFromText = async (
                         items: { type: 'STRING' }
                       },
                       correctAnswer: { type: 'INTEGER' },
-                      explanation: { type: 'STRING' }
+                      explanation: { type: 'STRING' },
+                      sourceCitation: { type: 'STRING' }
                     },
-                    required: ['question', 'options', 'correctAnswer', 'explanation']
+                    required: ['question', 'options', 'correctAnswer', 'explanation', 'sourceCitation']
                   }
                 },
                 keyConcepts: {
@@ -477,6 +496,7 @@ export const generateAdditionalQuizQuestions = async (
   topic: string,
   difficulty: 'easy' | 'medium' | 'hard',
   existingQuestions: string[] = [],
+  contextText: string = '',
   outputLanguage: string = 'English'
 ): Promise<any[]> => {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
@@ -487,8 +507,11 @@ export const generateAdditionalQuizQuestions = async (
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
   const prompt = `
-    You are an expert academic tutor. Generate 10 unique additional quiz questions about the topic "${topic}" with difficulty level "${difficulty}".
+    You are an expert academic tutor. Generate 10 unique additional quiz questions about the topic "${topic}" with difficulty level "${difficulty}" directly from the provided source context.
     The output must be returned in the language: "${outputLanguage}".
+    
+    Source Context:
+    ${contextText || 'Use general knowledge for topic: ' + topic}
     
     To ensure these questions are unique and do not overlap with existing questions, DO NOT generate questions similar to these existing ones:
     ${existingQuestions.map((q, idx) => `${idx + 1}. ${q}`).join('\n')}
@@ -501,13 +524,17 @@ export const generateAdditionalQuizQuestions = async (
     5. Assertion Reason: question type testing assertion and reason. Format the assertion and reason inside a "scenario" field (e.g., "Assertion (A): ... \\nReason (R): ..."), and provide standard logical choice options.
     6. Scenario Based: a brief scenario described in "scenario" field, followed by a specific question and options.
 
+    Requirements:
+    1. Every question must be generated directly from the provided source context. Avoid generic textbook questions.
+    2. Every question must cite the exact section/topic or page from the source context it originated from (e.g., [Source: Section 2.1 - Vector Space] or [Source: Page 4, Paragraph 2]) inside the 'sourceCitation' field. Do not make up fake general filenames if specific sections or details are available in the context.
+
     For each question, you MUST include:
     - "type": one of ['mcq', 'true_false', 'fill_blank', 'match_following', 'assertion_reason', 'scenario_based']
     - "question": the question text
     - "options": list of 4 options (2 for True/False)
     - "correctAnswerIndex": index of correct option (0-based)
     - "explanation": a detailed explanation of why the correct answer is correct
-    - "sourceCitation": a fake but realistic academic source citation matching the topic (e.g., [Source: ${topic.replace(/\s+/g, '_')}_Study.pdf, Page 14])
+    - "sourceCitation": the exact citation mapping to the source context (e.g., [Source: Section 3 - Derivatives, Page 4])
     - "scenario": only for scenario_based and assertion_reason questions.
     - "matchLeft" and "matchRight": only for match_following.
 

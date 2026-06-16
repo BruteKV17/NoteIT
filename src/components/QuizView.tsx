@@ -143,7 +143,8 @@ export default function QuizView({
       const newQuestions = await generateAdditionalQuizQuestions(
         activeQuiz.topic,
         activeDifficulty,
-        existingTexts
+        existingTexts,
+        activeQuiz.contextText || ''
       );
 
       // Append new questions to the correct quiz level

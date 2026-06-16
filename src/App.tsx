@@ -187,7 +187,7 @@ export default function App() {
           options: q.options,
           correctAnswerIndex: q.correctAnswer,
           explanation: q.explanation || 'Review concepts in your study outline.',
-          sourceCitation: `[Source: ${lecture.title}]`
+          sourceCitation: q.sourceCitation || `[Source: ${lecture.title}]`
         }));
 
         generatedQuizzes.push({
@@ -200,7 +200,8 @@ export default function App() {
           questions: mappedQuestions,
           easyQuestions: mappedQuestions,
           mediumQuestions: [],
-          hardQuestions: []
+          hardQuestions: [],
+          contextText: lecture.transcript || lecture.summary || ""
         });
       }
     });

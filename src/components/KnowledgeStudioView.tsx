@@ -122,6 +122,7 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
   const [chatInput, setChatInput] = useState('');
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isChatLoading, setIsChatLoading] = useState(false);
+  const [isChatCollapsed, setIsChatCollapsed] = useState(false);
 
   // Output Studio state
   const [activeOutputTab, setActiveOutputTab] = useState<'notes' | 'summary' | 'flashcards' | 'quiz' | 'mindmap' | 'slides' | 'podcast' | 'infographics'>('notes');
@@ -591,6 +592,13 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
       }
 
       const prompt = `You are a helpful AI study assistant. Respond to the student's question based on the provided context. Keep it highly detailed, academic, and formatted in clean markdown.
+Every single answer must come directly from the source documents. If the answer cannot be found in the sources, state that clearly.
+For every response, you must cite the source(s) used. Include a 'Sources:' block at the very end of your response listing exactly which files, sections, PDF pages, or video timestamps the information originated from.
+Format of the citation list at the end of response:
+Sources:
+- [Source Name]
+- [PDF Page X / Section Y]
+- [YouTube Timestamp MM:SS]
 
 Context:
 ${context}
@@ -654,37 +662,46 @@ ${queryText}`;
 
   // Structured sections summary parser
   interface StructuredSummary {
-    introduction: string;
+    executiveOverview: string;
     keyConcepts: string;
-    importantTopics: string;
+    detailedExplanation: string;
     examples: string;
     formulas: string;
-    keyTakeaways: string;
+    commonMistakes: string;
     revisionNotes: string;
+    examQuestions: string;
+    realWorldApplications: string;
+    quickRecap: string;
   }
 
   const parseSummaryIntoSections = (summaryText: string): StructuredSummary => {
     const clean = (txt: string) => txt.replace(/[*#`_~]/g, '').trim();
     const sections: StructuredSummary = {
-      introduction: '',
+      executiveOverview: '',
       keyConcepts: '',
-      importantTopics: '',
+      detailedExplanation: '',
       examples: '',
       formulas: '',
-      keyTakeaways: '',
-      revisionNotes: ''
+      commonMistakes: '',
+      revisionNotes: '',
+      examQuestions: '',
+      realWorldApplications: '',
+      quickRecap: ''
     };
 
     if (!summaryText) return sections;
 
     const patterns = {
-      introduction: /introduction/i,
+      executiveOverview: /executive\s+overview|introduction/i,
       keyConcepts: /key\s+concepts/i,
-      importantTopics: /important\s+topics/i,
+      detailedExplanation: /detailed\s+explanation|important\s+topics/i,
       examples: /examples/i,
       formulas: /formulas/i,
-      keyTakeaways: /key\s+takeaways/i,
-      revisionNotes: /revision\s+notes/i
+      commonMistakes: /common\s+mistakes/i,
+      revisionNotes: /revision\s+notes/i,
+      examQuestions: /exam\s+questions/i,
+      realWorldApplications: /real\s+world\s+applications|applications/i,
+      quickRecap: /quick\s+recap|key\s+takeaways/i
     };
 
     const lines = summaryText.split('\n');
@@ -705,7 +722,7 @@ ${queryText}`;
         if (currentKey) {
           sections[currentKey] += (sections[currentKey] ? '\n' : '') + line;
         } else {
-          sections.introduction += (sections.introduction ? '\n' : '') + line;
+          sections.executiveOverview += (sections.executiveOverview ? '\n' : '') + line;
         }
       }
     });
@@ -713,10 +730,10 @@ ${queryText}`;
     const keys = Object.keys(sections) as (keyof StructuredSummary)[];
     const filledCount = keys.filter(k => sections[k].trim().length > 0).length;
 
-    if (filledCount < 3) {
+    if (filledCount < 4) {
       const words = summaryText.split(/\s+/);
-      const chunkSize = Math.ceil(words.length / 7);
-      for (let i = 0; i < 7; i++) {
+      const chunkSize = Math.ceil(words.length / 10);
+      for (let i = 0; i < 10; i++) {
         const partWords = words.slice(i * chunkSize, (i + 1) * chunkSize);
         sections[keys[i]] = partWords.join(' ');
       }
@@ -876,16 +893,16 @@ ${queryText}`;
       const sections = parseSummaryIntoSections(rawData);
       contentHtml = `
         <div class="pdf-section">
-          <h2>1. Introduction</h2>
-          <p>${sections.introduction.replace(/\n/g, '<br/>')}</p>
+          <h2>1. Executive Overview</h2>
+          <p>${sections.executiveOverview.replace(/\n/g, '<br/>')}</p>
         </div>
         <div class="pdf-section">
           <h2>2. Key Concepts</h2>
           <p>${sections.keyConcepts.replace(/\n/g, '<br/>')}</p>
         </div>
         <div class="pdf-section">
-          <h2>3. Important Topics</h2>
-          <p>${sections.importantTopics.replace(/\n/g, '<br/>')}</p>
+          <h2>3. Detailed Explanation</h2>
+          <p>${sections.detailedExplanation.replace(/\n/g, '<br/>')}</p>
         </div>
         <div class="pdf-section">
           <h2>4. Examples</h2>
@@ -896,12 +913,24 @@ ${queryText}`;
           <p>${sections.formulas.replace(/\n/g, '<br/>')}</p>
         </div>
         <div class="pdf-section">
-          <h2>6. Key Takeaways</h2>
-          <p>${sections.keyTakeaways.replace(/\n/g, '<br/>')}</p>
+          <h2>6. Common Mistakes</h2>
+          <p>${sections.commonMistakes.replace(/\n/g, '<br/>')}</p>
         </div>
         <div class="pdf-section">
           <h2>7. Revision Notes</h2>
           <p>${sections.revisionNotes.replace(/\n/g, '<br/>')}</p>
+        </div>
+        <div class="pdf-section">
+          <h2>8. Exam Questions</h2>
+          <p>${sections.examQuestions.replace(/\n/g, '<br/>')}</p>
+        </div>
+        <div class="pdf-section">
+          <h2>9. Real World Applications</h2>
+          <p>${sections.realWorldApplications.replace(/\n/g, '<br/>')}</p>
+        </div>
+        <div class="pdf-section">
+          <h2>10. Quick Recap</h2>
+          <p>${sections.quickRecap.replace(/\n/g, '<br/>')}</p>
         </div>
       `;
     } else if (Array.isArray(rawData)) {
@@ -1023,6 +1052,7 @@ ${queryText}`;
   };
 
   // PPTX builder with 6 custom templates
+  // PPTX builder with 9 custom templates & stock photo search
   const buildAndDownloadPPTX = async (
     slides: any[],
     deckTitle: string,
@@ -1043,6 +1073,33 @@ ${queryText}`;
 
     const colors = themeColors[themeName] || themeColors.academic;
 
+    const getRoyaltyFreeImage = (query: string): string => {
+      const clean = (query || "").toLowerCase();
+      // Curated high quality high res stock photos (CORS safe, permanent)
+      if (clean.includes("tech") || clean.includes("computer") || clean.includes("software") || clean.includes("code") || clean.includes("digital") || clean.includes("web") || clean.includes("programming")) {
+        return "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&auto=format&fit=crop&q=80";
+      }
+      if (clean.includes("science") || clean.includes("biology") || clean.includes("chemistry") || clean.includes("physics") || clean.includes("lab") || clean.includes("medicine") || clean.includes("dna")) {
+        return "https://images.unsplash.com/photo-1507413245164-6160d8298b31?w=600&auto=format&fit=crop&q=80";
+      }
+      if (clean.includes("business") || clean.includes("corporate") || clean.includes("finance") || clean.includes("office") || clean.includes("market") || clean.includes("meeting") || clean.includes("money")) {
+        return "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&auto=format&fit=crop&q=80";
+      }
+      if (clean.includes("education") || clean.includes("learn") || clean.includes("history") || clean.includes("book") || clean.includes("study") || clean.includes("academic") || clean.includes("student") || clean.includes("class")) {
+        return "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=600&auto=format&fit=crop&q=80";
+      }
+      if (clean.includes("art") || clean.includes("design") || clean.includes("creative") || clean.includes("paint") || clean.includes("draw") || clean.includes("graphic")) {
+        return "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600&auto=format&fit=crop&q=80";
+      }
+      if (clean.includes("growth") || clean.includes("success") || clean.includes("startup") || clean.includes("idea") || clean.includes("strategy") || clean.includes("analytics")) {
+        return "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&auto=format&fit=crop&q=80";
+      }
+      // Fallback keyword-based search on loremflickr (CORS safe CC images)
+      const words = clean.replace(/[^a-z0-9]/g, ' ').trim().split(/\s+/);
+      const firstWord = words[0] || 'idea';
+      return `https://loremflickr.com/640/480/${encodeURIComponent(firstWord)}`;
+    };
+
     slides.forEach((s, idx) => {
       const slide = pptx.addSlide();
       slide.background = { fill: colors.bg };
@@ -1050,6 +1107,7 @@ ${queryText}`;
       // Slide layout templates
       if (s.layout === 'title_slide' || idx === 0) {
         slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: '100%', h: 0.15, fill: { color: colors.accent } });
+        slide.addShape(pptx.ShapeType.rect, { x: 0.5, y: 4.5, w: 9.0, h: 0.05, fill: { color: colors.accent } });
         slide.addText(s.title, {
           x: 0.5, y: 1.8, w: 9.0, h: 1.5,
           fontSize: 32, fontFace: "Helvetica",
@@ -1073,14 +1131,11 @@ ${queryText}`;
           color: colors.text, lineSpacing: 18
         });
 
-        slide.addShape(pptx.ShapeType.roundRect, {
-          x: 5.3, y: 1.0, w: 4.2, h: 3.8,
-          fill: { color: colors.cardBg }, line: { color: colors.accent, width: 1.5 }
-        });
-        slide.addText(`Visual Representation Placeholder\n\nAI Prompt:\n"${s.imagePrompt}"`, {
-          x: 5.5, y: 1.3, w: 3.8, h: 3.2,
-          fontSize: 11, fontFace: "Courier New",
-          color: colors.primary, italic: true, align: "center"
+        // Add actual stock image on the right
+        const query = s.imageSearchQuery || s.imagePrompt || s.title;
+        slide.addImage({
+          path: getRoyaltyFreeImage(query),
+          x: 5.3, y: 1.0, w: 4.2, h: 3.8
         });
       } else if (s.layout === 'timeline') {
         slide.addText(s.title, {
@@ -1090,15 +1145,20 @@ ${queryText}`;
         });
         slide.addShape(pptx.ShapeType.line, {
           x: 1.0, y: 2.6, w: 8.0, h: 0,
-          line: { color: colors.accent, width: 2 }
+          line: { color: colors.accent, width: 3, dashType: 'dash' }
         });
         const steps = s.content.slice(0, 4);
         const stepWidth = 8.0 / steps.length;
         steps.forEach((stepText: string, stepIdx: number) => {
           const xPos = 1.0 + (stepIdx * stepWidth);
+          // Badge circle
           slide.addShape(pptx.ShapeType.ellipse, {
-            x: xPos + (stepWidth / 2) - 0.2, y: 2.4, w: 0.4, h: 0.4,
+            x: xPos + (stepWidth / 2) - 0.25, y: 2.35, w: 0.5, h: 0.5,
             fill: { color: colors.accent }
+          });
+          slide.addText(`0${stepIdx + 1}`, {
+            x: xPos + (stepWidth / 2) - 0.25, y: 2.35, w: 0.5, h: 0.5,
+            fontSize: 12, color: colors.text, bold: true, align: "center"
           });
           slide.addShape(pptx.ShapeType.roundRect, {
             x: xPos + 0.1, y: 1.0, w: stepWidth - 0.2, h: 1.2,
@@ -1127,12 +1187,15 @@ ${queryText}`;
             x: xPos + 0.1, y: 1.2, w: cardWidth - 0.2, h: 3.5,
             fill: { color: colors.cardBg }, line: { color: colors.accent, width: 1 }
           });
-          const statNum = `0${mIdx + 1}`;
-          slide.addText(statNum, {
+          const split = m.split(':');
+          const numberText = split[0] ? split[0].trim() : `0${mIdx + 1}`;
+          const labelText = split[1] ? split.slice(1).join(':').trim() : m;
+          
+          slide.addText(numberText, {
             x: xPos + 0.2, y: 1.5, w: cardWidth - 0.4, h: 1.0,
-            fontSize: 44, color: colors.accent, bold: true, align: "center"
+            fontSize: 40, color: colors.accent, bold: true, align: "center"
           });
-          slide.addText(m, {
+          slide.addText(labelText, {
             x: xPos + 0.2, y: 2.6, w: cardWidth - 0.4, h: 1.8,
             fontSize: 12, color: colors.text, align: "center"
           });
@@ -1179,15 +1242,165 @@ ${queryText}`;
           x: 1.2, y: 1.3, w: 7.6, h: 3.2,
           fill: { color: colors.cardBg }, line: { color: colors.accent, width: 2 }
         });
+        slide.addText("“", {
+          x: 1.5, y: 1.5, w: 1.0, h: 0.6,
+          fontSize: 48, fontFace: "Georgia", color: colors.accent, bold: true
+        });
         slide.addText(`"${s.content.join(' ')}"`, {
-          x: 1.5, y: 1.6, w: 7.0, h: 2.2,
+          x: 1.5, y: 2.0, w: 7.0, h: 1.8,
           fontSize: 18, fontFace: "Helvetica",
           color: colors.text, italic: true, align: "center", bold: true
         });
-        slide.addText(`Visual Suggestion: ${s.imagePrompt}`, {
-          x: 1.5, y: 3.9, w: 7.0, h: 0.4,
-          fontSize: 9, fontFace: "Courier New",
-          color: colors.primary, italic: true, align: "center"
+      } else if (s.layout === 'diagram') {
+        slide.addText(s.title, {
+          x: 0.5, y: 0.4, w: 9.0, h: 0.6,
+          fontSize: 20, fontFace: "Helvetica",
+          color: colors.accent, bold: true
+        });
+
+        const diag = s.diagramData || {
+          nodes: [
+            { id: "n1", label: s.content[0] || "Start" },
+            { id: "n2", label: s.content[1] || "Process" },
+            { id: "n3", label: s.content[2] || "End" }
+          ],
+          connections: [
+            { from: "n1", to: "n2" },
+            { from: "n2", to: "n3" }
+          ]
+        };
+
+        const nodeMap: { [key: string]: { x: number, y: number, w: number, h: number } } = {};
+        const nodeWidth = 2.0;
+        const nodeHeight = 1.0;
+        
+        diag.nodes.forEach((node: any, nIdx: number) => {
+          const spacing = 8.0 / Math.max(1, diag.nodes.length - 1);
+          const x = 1.0 + (nIdx * (diag.nodes.length > 1 ? spacing : 0)) + (spacing/2 - nodeWidth/2);
+          const y = 2.4;
+          
+          nodeMap[node.id] = { x, y, w: nodeWidth, h: nodeHeight };
+          
+          // Draw node box
+          slide.addShape(pptx.ShapeType.roundRect, {
+            x, y, w: nodeWidth, h: nodeHeight,
+            fill: { color: colors.cardBg },
+            line: { color: colors.accent, width: 2 }
+          });
+          slide.addText(node.label, {
+            x: x + 0.1, y: y + 0.1, w: nodeWidth - 0.2, h: nodeHeight - 0.2,
+            fontSize: 12, color: colors.text, bold: true, align: "center", valign: "middle"
+          });
+        });
+
+        // Draw connections
+        diag.connections.forEach((conn: any) => {
+          const fromNode = nodeMap[conn.from];
+          const toNode = nodeMap[conn.to];
+          if (fromNode && toNode) {
+            const startX = fromNode.x + fromNode.w;
+            const startY = fromNode.y + (fromNode.h / 2);
+            const endX = toNode.x;
+            const endY = toNode.y + (toNode.h / 2);
+            
+            slide.addShape(pptx.ShapeType.line, {
+              x: startX, y: startY, w: endX - startX, h: endY - startY,
+              line: { color: colors.accent, width: 2.5, endArrowType: 'arrow' }
+            });
+          }
+        });
+      } else if (s.layout === 'comparison_table') {
+        slide.addText(s.title, {
+          x: 0.5, y: 0.4, w: 9.0, h: 0.6,
+          fontSize: 20, fontFace: "Helvetica",
+          color: colors.accent, bold: true
+        });
+
+        const tableData = s.tableData || {
+          headers: ["Aspect", "Parameter A", "Parameter B"],
+          rows: s.content.map((c: string, cidx: number) => [`Metric ${cidx+1}`, c.substring(0, 25), c.substring(25, 55) || "Aligned Outline"])
+        };
+
+        const formattedRows: any[] = [];
+        
+        // Header Row
+        const headerCells = tableData.headers.map((h: string) => ({
+          text: h,
+          options: {
+            fill: { color: colors.accent },
+            bold: true,
+            color: colors.bg === "ffffff" ? "ffffff" : "000000",
+            fontSize: 12,
+            align: "center",
+            valign: "middle",
+            margin: [8, 8, 8, 8]
+          }
+        }));
+        formattedRows.push(headerCells);
+
+        // Content Rows
+        tableData.rows.forEach((row: string[], rIdx: number) => {
+          const cells = row.map((cellText: string, cIdx: number) => ({
+            text: cellText,
+            options: {
+              fill: { color: rIdx % 2 === 0 ? colors.cardBg : colors.bg },
+              color: colors.text,
+              fontSize: 11,
+              align: cIdx === 0 ? "left" : "center",
+              valign: "middle",
+              margin: [8, 8, 8, 8]
+            }
+          }));
+          formattedRows.push(cells);
+        });
+
+        slide.addTable(formattedRows, {
+          x: 1.0, y: 1.4, w: 8.0, h: 3.0,
+          border: { type: "solid", color: colors.accent, pt: 1 }
+        });
+      } else if (s.layout === 'process_flow') {
+        slide.addText(s.title, {
+          x: 0.5, y: 0.4, w: 9.0, h: 0.6,
+          fontSize: 20, fontFace: "Helvetica",
+          color: colors.accent, bold: true
+        });
+
+        const steps = s.processSteps || s.content.slice(0, 3);
+        const cardWidth = 2.2;
+        const cardHeight = 1.4;
+        const totalCards = steps.length;
+        const spacing = 8.0 / Math.max(1, totalCards);
+        
+        steps.forEach((stepText: string, stepIdx: number) => {
+          const xPos = 1.0 + (stepIdx * spacing) + (spacing/2 - cardWidth/2);
+          const yPos = 2.0;
+
+          // Draw block
+          slide.addShape(pptx.ShapeType.roundRect, {
+            x: xPos, y: yPos, w: cardWidth, h: cardHeight,
+            fill: { color: colors.cardBg }, line: { color: colors.accent, width: 2 }
+          });
+          
+          slide.addText(`Stage 0${stepIdx + 1}`, {
+            x: xPos + 0.1, y: yPos + 0.1, w: cardWidth - 0.2, h: 0.3,
+            fontSize: 10, color: colors.accent, bold: true, align: "center"
+          });
+
+          slide.addText(stepText, {
+            x: xPos + 0.1, y: yPos + 0.4, w: cardWidth - 0.2, h: 0.9,
+            fontSize: 11, color: colors.text, align: "center", valign: "middle"
+          });
+
+          // Draw next arrow if not last
+          if (stepIdx < totalCards - 1) {
+            const arrowStartX = xPos + cardWidth;
+            const arrowEndX = xPos + spacing;
+            const arrowY = yPos + (cardHeight / 2);
+            slide.addShape(pptx.ShapeType.line, {
+              x: arrowStartX + 0.15, y: arrowY, w: (arrowEndX - arrowStartX) - 0.3, h: 0,
+              line: { color: colors.accent, width: 3, endArrowType: 'arrow' }
+            });
+          }
         });
       }
 
@@ -1233,10 +1446,18 @@ ${queryText}`;
         
         For each slide, you must define:
         1. "title": A short title for the slide
-        2. "layout": One of ['title_slide', 'split_column', 'timeline', 'key_metrics', 'grid_quadrant', 'bold_quote']
+        2. "layout": One of ['title_slide', 'split_column', 'timeline', 'key_metrics', 'grid_quadrant', 'bold_quote', 'diagram', 'comparison_table', 'process_flow']. Make sure to choose layouts dynamically to represent the data logically (e.g. diagrams for conceptual relations, tables for comparisons, timelines/flows for processes).
         3. "content": An array of bullet points (each 6-12 words max). If not Detailed Mode, make sure the entire text of the slide is very brief (less than 40 words total).
-        4. "imagePrompt": A detailed descriptive text prompt to generate an AI image illustrating the slide content.
-        5. "keyTakeaway": A short 1-sentence takeaway displayed at the bottom of the slide.
+        4. "imageSearchQuery": A single high-level search keyword or two-word phrase (e.g., "molecule" or "office meeting" or "calculus") representing the slide's visual topic. Used to fetch royalty free stock photography.
+        5. "imagePrompt": A detailed prompt for illustrating the content.
+        6. "keyTakeaway": A short 1-sentence takeaway displayed at the bottom of the slide.
+        7. "diagramData": (Optional, required for layout "diagram") An object containing:
+           - "nodes": array of { "id": "n1", "label": "Short Node Name" }
+           - "connections": array of { "from": "n1", "to": "n2" }
+        8. "tableData": (Optional, required for layout "comparison_table") An object containing:
+           - "headers": array of headers (e.g. ["Parameter", "Option A", "Option B"])
+           - "rows": array of arrays of cell values (e.g. [["Speed", "Slow", "Fast"], ["Cost", "High", "Low"]])
+        9. "processSteps": (Optional, required for layout "process_flow") An array of 3-4 ordered process step descriptions (e.g. ["Step 1: Parse Text", "Step 2: Vector Search", "Step 3: Output"]).
         
         Return the response strictly as a JSON object with a "slides" array.
       `;
@@ -1260,10 +1481,46 @@ ${queryText}`;
                       title: { type: 'STRING' },
                       layout: { type: 'STRING' },
                       content: { type: 'ARRAY', items: { type: 'STRING' } },
+                      imageSearchQuery: { type: 'STRING' },
                       imagePrompt: { type: 'STRING' },
-                      keyTakeaway: { type: 'STRING' }
+                      keyTakeaway: { type: 'STRING' },
+                      diagramData: {
+                        type: 'OBJECT',
+                        properties: {
+                          nodes: {
+                            type: 'ARRAY',
+                            items: {
+                              type: 'OBJECT',
+                              properties: {
+                                id: { type: 'STRING' },
+                                label: { type: 'STRING' }
+                              },
+                              required: ['id', 'label']
+                            }
+                          },
+                          connections: {
+                            type: 'ARRAY',
+                            items: {
+                              type: 'OBJECT',
+                              properties: {
+                                from: { type: 'STRING' },
+                                to: { type: 'STRING' }
+                              },
+                              required: ['from', 'to']
+                            }
+                          }
+                        }
+                      },
+                      tableData: {
+                        type: 'OBJECT',
+                        properties: {
+                          headers: { type: 'ARRAY', items: { type: 'STRING' } },
+                          rows: { type: 'ARRAY', items: { type: 'ARRAY', items: { type: 'STRING' } } }
+                        }
+                      },
+                      processSteps: { type: 'ARRAY', items: { type: 'STRING' } }
                     },
-                    required: ['title', 'layout', 'content', 'imagePrompt', 'keyTakeaway']
+                    required: ['title', 'layout', 'content', 'imageSearchQuery', 'imagePrompt', 'keyTakeaway']
                   }
                 }
               },
@@ -1566,113 +1823,25 @@ ${queryText}`;
           </div>
         </div>
 
-        {/* PANEL 2: CENTER - AI WORKSPACE */}
-        <div className={`flex-1 flex flex-col overflow-hidden p-4 space-y-4 ${
-          theme === 'dark' ? 'bg-[#050608]' : 'bg-[#FAF9F5]'
+        {/* PANEL 2: CENTER - WORKSPACE STUDIO */}
+        <div className={`flex-grow flex-1 flex flex-col overflow-hidden p-4 space-y-4 border-r ${
+          theme === 'dark' ? 'bg-[#050608] border-neutral-900' : 'bg-[#FAF9F5] border-gray-200'
         }`}>
-          <div>
-            <h2 className="text-xs font-black text-indigo-400 uppercase tracking-widest font-mono">AI Workspace</h2>
-            <p className="text-[10px] text-neutral-400 mt-0.5">Synthesize outlines, check contradictions, or query sources.</p>
-          </div>
-
-          {/* Quick Prompts Chips */}
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none whitespace-nowrap">
-            {[
-              "Summarize selected sources",
-              "Compare all sources",
-              "Find contradictions in documents",
-              "Explain difficult formulas/methods",
-              "Generate interview checklist"
-            ].map((prompt, idx) => (
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xs font-black text-indigo-400 uppercase tracking-widest font-mono">Workspace Studio</h2>
+              <p className="text-[10px] text-neutral-400 mt-0.5">Generate, display, and export materials.</p>
+            </div>
+            {isChatCollapsed && (
               <button
-                key={idx}
-                onClick={() => handleQuickPrompt(prompt)}
-                className={`px-3 py-1.5 rounded-lg border text-[10px] font-extrabold transition-all hover:scale-98 cursor-pointer ${
-                  theme === 'dark'
-                    ? 'bg-neutral-900 border-neutral-800 text-neutral-350 hover:bg-neutral-850 hover:border-neutral-700'
-                    : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
-                }`}
+                type="button"
+                onClick={() => setIsChatCollapsed(false)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-650 hover:bg-indigo-600 text-white text-[10px] font-black transition-all hover:scale-98 cursor-pointer shadow-md"
               >
-                {prompt}
+                <Sparkles className="h-3 w-3 animate-pulse text-indigo-300" />
+                <span>Ask AI Assistant</span>
               </button>
-            ))}
-          </div>
-
-          {/* Chat Messages Log */}
-          <div className={`flex-1 rounded-2xl border p-4 overflow-y-auto space-y-4 font-sans ${
-            theme === 'dark' ? 'bg-[#090b0e]/75 border-neutral-900/60' : 'bg-white border-gray-200'
-          }`}>
-            {chatMessages.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-2">
-                <Sparkles className="h-8 w-8 text-indigo-500 animate-pulse" />
-                <h3 className="text-xs font-bold text-neutral-400">Search Workspace Active</h3>
-                <p className="text-[10px] text-neutral-500 max-w-xs leading-relaxed">
-                  Enter a query below. AI will reference all selected sources ({selectedSourceIds.length} active) to answer.
-                </p>
-              </div>
-            ) : (
-              chatMessages.map((msg, i) => (
-                <div key={i} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-xs leading-relaxed select-text ${
-                    msg.sender === 'user'
-                      ? theme === 'dark' 
-                        ? 'bg-indigo-600 text-white' 
-                        : 'bg-black text-white'
-                      : theme === 'dark'
-                        ? 'bg-[#121318] border border-neutral-850 text-neutral-200'
-                        : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    <span className="font-mono text-[9px] font-black uppercase tracking-wider block opacity-60 mb-1">
-                      {msg.sender === 'user' ? 'Student query' : 'NoteIT Intelligence'}
-                    </span>
-                    <p className="whitespace-pre-wrap">{msg.text}</p>
-                  </div>
-                </div>
-              ))
             )}
-            {isChatLoading && (
-              <div className="flex justify-start">
-                <div className={`rounded-2xl px-4 py-3 border flex items-center gap-3 ${theme === 'dark' ? 'bg-[#121318] border-neutral-850 text-neutral-400' : 'bg-gray-100 border-gray-250 text-gray-500'}`}>
-                  <BruteLoader size="xs" message="" />
-                  <span className="text-xs font-mono font-bold tracking-wider animate-pulse">Synthesizing logical layers...</span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Input Form */}
-          <form onSubmit={handleChatSubmit} className="flex gap-2">
-            <input
-              type="text"
-              required
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              placeholder="Ask anything about your selected sources..."
-              className={`flex-grow rounded-xl text-xs font-semibold outline-none p-3.5 transition-all ${
-                theme === 'dark' 
-                  ? 'bg-neutral-950 border border-neutral-850 text-white placeholder-neutral-600 focus:border-indigo-500' 
-                  : 'bg-white border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-black'
-              }`}
-            />
-            <button
-              type="submit"
-              disabled={isChatLoading || selectedSourceIds.length === 0}
-              className={`rounded-xl px-5 py-3.5 text-xs font-black shadow-lg transition-all active:scale-95 cursor-pointer disabled:opacity-30 disabled:pointer-events-none ${
-                theme === 'dark' ? 'bg-white text-black hover:bg-neutral-100' : 'bg-black text-white hover:bg-gray-800'
-              }`}
-            >
-              Ask
-            </button>
-          </form>
-        </div>
-
-        {/* PANEL 3: RIGHT - OUTPUT STUDIO */}
-        <div className={`w-full md:w-[420px] flex-shrink-0 flex flex-col border-l overflow-y-auto p-4 space-y-4 ${
-          theme === 'dark' ? 'bg-[#08090c] border-neutral-900' : 'bg-gray-50/50 border-gray-200'
-        }`}>
-          <div>
-            <h2 className="text-xs font-black text-indigo-400 uppercase tracking-widest font-mono">Output Studio</h2>
-            <p className="text-[10px] text-neutral-400 mt-0.5">Generate, display, and export materials.</p>
           </div>
 
           {/* Multi-language selector */}
@@ -1680,7 +1849,7 @@ ${queryText}`;
             <div className={`flex items-center justify-between p-2.5 rounded-xl border ${
               theme === 'dark' ? 'bg-neutral-950/70 border-neutral-900/60' : 'bg-gray-50 border-gray-200'
             }`}>
-              <span className="text-[10px] font-black uppercase text-neutral-450 tracking-wider">Output Language</span>
+              <span className="text-[10px] font-black uppercase text-neutral-455 tracking-wider">Output Language</span>
               <select
                 value={outputLanguage}
                 onChange={(e) => handleLanguageChange(e.target.value)}
@@ -1703,6 +1872,7 @@ ${queryText}`;
                 onClick={() => {
                   setActiveOutputTab(tab);
                   setSelectedMindmapNode(null);
+                  setIsChatCollapsed(true);
                 }}
                 className={`py-1.5 rounded-lg text-[10px] font-black capitalize transition-all cursor-pointer ${
                   activeOutputTab === tab 
@@ -1722,6 +1892,7 @@ ${queryText}`;
                 onClick={() => {
                   setActiveOutputTab(tab);
                   setSelectedMindmapNode(null);
+                  setIsChatCollapsed(true);
                 }}
                 className={`py-1.5 rounded-lg text-[10px] font-black capitalize transition-all cursor-pointer ${
                   activeOutputTab === tab 
@@ -1822,13 +1993,16 @@ ${queryText}`;
                       {(() => {
                         const sections = parseSummaryIntoSections(activeSource.summary);
                         const sectionConfig = [
-                          { label: 'Introduction', content: sections.introduction },
+                          { label: 'Executive Overview', content: sections.executiveOverview },
                           { label: 'Key Concepts', content: sections.keyConcepts },
-                          { label: 'Important Topics', content: sections.importantTopics },
+                          { label: 'Detailed Explanation', content: sections.detailedExplanation },
                           { label: 'Examples', content: sections.examples },
                           { label: 'Formulas', content: sections.formulas },
-                          { label: 'Key Takeaways', content: sections.keyTakeaways },
-                          { label: 'Revision Notes', content: sections.revisionNotes }
+                          { label: 'Common Mistakes', content: sections.commonMistakes },
+                          { label: 'Revision Notes', content: sections.revisionNotes },
+                          { label: 'Exam Questions', content: sections.examQuestions },
+                          { label: 'Real World Applications', content: sections.realWorldApplications },
+                          { label: 'Quick Recap', content: sections.quickRecap }
                         ];
 
                         return sectionConfig.map((sec, idx) => (
@@ -2069,7 +2243,7 @@ ${queryText}`;
                       <div className={`p-4 rounded-xl border text-left space-y-2.5 animate-fade-in ${
                         theme === 'dark' ? 'bg-[#121318] border-neutral-900' : 'bg-white border-gray-200'
                       }`}>
-                        <div className="flex items-center justify-between border-b border-neutral-850 pb-2">
+                        <div className="flex items-center justify-between border-b border-neutral-855 pb-2">
                           <h4 className="text-xs font-black text-indigo-400 uppercase tracking-widest font-mono">
                             {selectedMindmapNode.label}
                           </h4>
@@ -2080,12 +2254,12 @@ ${queryText}`;
                             &times;
                           </button>
                         </div>
-                        <div className="text-[11.5px] leading-relaxed text-neutral-350">
+                        <div className="text-[11.5px] leading-relaxed text-neutral-355">
                           <strong className="text-indigo-400 block text-[10px] uppercase font-mono">Definition & Explanation</strong>
                           {renderTextWithCitations(cleanMarkdownText(selectedMindmapNode.desc || selectedMindmapNode.explanation || 'Provides logical synthesis for this section.'))}
                         </div>
                         {selectedMindmapNode.examples && (
-                          <div className="text-[11.5px] leading-relaxed text-neutral-350">
+                          <div className="text-[11.5px] leading-relaxed text-neutral-355">
                             <strong className="text-indigo-400 block text-[10px] uppercase font-mono">Examples & Analogies</strong>
                             {renderTextWithCitations(cleanMarkdownText(selectedMindmapNode.examples))}
                           </div>
@@ -2122,7 +2296,7 @@ ${queryText}`;
                             <h4 className="text-xs font-black text-white mt-1">{s.title}</h4>
                             <ul className="list-disc pl-4 mt-2.5 space-y-1.5">
                               {s.bulletPoints.map((bp: string, bidx: number) => (
-                                <li key={bidx} className="text-[11.5px] text-neutral-350 leading-relaxed">{bp}</li>
+                                <li key={bidx} className="text-[11.5px] text-neutral-355 leading-relaxed">{bp}</li>
                               ))}
                             </ul>
                           </div>
@@ -2151,7 +2325,7 @@ ${queryText}`;
                       <div className="flex items-center justify-between pb-3.5 border-b border-neutral-900/20">
                         <div>
                           <h4 className="text-[11.5px] font-black">Synthesize Study Podcast</h4>
-                          <p className="text-[9.5px] text-neutral-400 mt-0.5">Professor & Student dynamic audio conversation</p>
+                          <p className="text-[9.5px] text-neutral-450 mt-0.5">Professor & Student dynamic audio conversation</p>
                         </div>
                         
                         {!isPodcastPlaying ? (
@@ -2232,6 +2406,168 @@ ${queryText}`;
             )}
           </div>
         </div>
+
+        {/* PANEL 3: RIGHT - AI WORKSPACE (Chat Panel) */}
+        {isChatCollapsed ? (
+          <div className={`w-full md:w-12 flex-shrink-0 flex flex-col border-l items-center py-4 space-y-6 transition-all duration-300 ${
+            theme === 'dark' ? 'bg-[#08090c] border-neutral-900' : 'bg-gray-50/50 border-gray-200'
+          }`}>
+            <button
+              type="button"
+              onClick={() => setIsChatCollapsed(false)}
+              className={`p-2 rounded-lg border transition-all hover:scale-105 cursor-pointer ${
+                theme === 'dark' 
+                  ? 'border-neutral-800 bg-neutral-900/60 hover:bg-neutral-850 hover:text-white' 
+                  : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-700'
+              }`}
+              title="Expand AI Assistant"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <div className="flex-1 flex items-center justify-center">
+              <span className="text-[10px] font-black tracking-widest font-mono text-indigo-400 uppercase transform -rotate-90 whitespace-nowrap origin-center select-none">
+                AI CHAT ASSISTANT
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className={`w-full md:w-[420px] flex-shrink-0 flex flex-col border-l overflow-hidden p-4 space-y-4 transition-all duration-300 ${
+            theme === 'dark' ? 'bg-[#08090c] border-neutral-900' : 'bg-gray-50/50 border-gray-200'
+          }`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xs font-black text-indigo-400 uppercase tracking-widest font-mono">AI Workspace</h2>
+                <p className="text-[10px] text-neutral-400 mt-0.5">Synthesize outlines, check contradictions, or query sources.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsChatCollapsed(true)}
+                className={`p-1.5 rounded-lg border transition-all hover:scale-105 cursor-pointer ${
+                  theme === 'dark' 
+                    ? 'border-neutral-850 bg-neutral-950/60 hover:bg-neutral-900 hover:text-white' 
+                    : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-700'
+                }`}
+                title="Collapse AI Assistant"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Quick Prompts Chips */}
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none whitespace-nowrap">
+              {[
+                "Summarize selected sources",
+                "Compare all sources",
+                "Find contradictions in documents",
+                "Explain difficult formulas/methods",
+                "Generate interview checklist"
+              ].map((prompt, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleQuickPrompt(prompt)}
+                  className={`px-3 py-1.5 rounded-lg border text-[10px] font-extrabold transition-all hover:scale-98 cursor-pointer ${
+                    theme === 'dark'
+                      ? 'bg-neutral-900 border-neutral-800 text-neutral-350 hover:bg-neutral-850 hover:border-neutral-700'
+                      : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {prompt}
+                </button>
+              ))}
+            </div>
+
+            {/* Chat Messages Log */}
+            <div className={`flex-1 rounded-2xl border p-4 overflow-y-auto space-y-4 font-sans ${
+              theme === 'dark' ? 'bg-[#090b0e]/75 border-neutral-900/60' : 'bg-white border-gray-200'
+            }`}>
+              {chatMessages.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-2">
+                  <Sparkles className="h-8 w-8 text-indigo-500 animate-pulse" />
+                  <h3 className="text-xs font-bold text-neutral-400">Search Workspace Active</h3>
+                  <p className="text-[10px] text-neutral-500 max-w-xs leading-relaxed">
+                    Enter a query below. AI will reference all selected sources ({selectedSourceIds.length} active) to answer.
+                  </p>
+                </div>
+              ) : (
+                chatMessages.map((msg, i) => (
+                  <div key={i} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-xs leading-relaxed select-text ${
+                      msg.sender === 'user'
+                        ? theme === 'dark' 
+                          ? 'bg-indigo-600 text-white' 
+                          : 'bg-black text-white'
+                        : theme === 'dark'
+                          ? 'bg-[#121318] border border-neutral-850 text-neutral-200'
+                          : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      <span className="font-mono text-[9px] font-black uppercase tracking-wider block opacity-60 mb-1">
+                        {msg.sender === 'user' ? 'Student query' : 'NoteIT Intelligence'}
+                      </span>
+                      {(() => {
+                        const parts = msg.text.split(/Sources:\s*/i);
+                        const answerText = parts[0];
+                        const sourcesBlock = parts[1];
+                        return (
+                          <div>
+                            <p className="whitespace-pre-wrap">{answerText.trim()}</p>
+                            {sourcesBlock && (
+                              <div className="mt-3 pt-2 border-t border-indigo-500/20">
+                                <span className="font-mono text-[8px] font-black uppercase text-indigo-400 block mb-1">Sources:</span>
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {sourcesBlock.split('\n').map(l => l.trim()).filter(l => l.length > 0).map((line, idx) => {
+                                    const cleanLine = line.replace(/^-\s*/, '').trim();
+                                    return (
+                                      <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+                                        {cleanLine}
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                ))
+              )}
+              {isChatLoading && (
+                <div className="flex justify-start">
+                  <div className={`rounded-2xl px-4 py-3 border flex items-center gap-3 ${theme === 'dark' ? 'bg-[#121318] border-neutral-850 text-neutral-400' : 'bg-gray-100 border-gray-250 text-gray-500'}`}>
+                    <BruteLoader size="xs" message="" />
+                    <span className="text-xs font-mono font-bold tracking-wider animate-pulse">Synthesizing logical layers...</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Input Form */}
+            <form onSubmit={handleChatSubmit} className="flex gap-2">
+              <input
+                type="text"
+                required
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                placeholder="Ask anything about your selected sources..."
+                className={`flex-grow rounded-xl text-xs font-semibold outline-none p-3.5 transition-all ${
+                  theme === 'dark' 
+                    ? 'bg-neutral-950 border border-neutral-850 text-white placeholder-neutral-600 focus:border-indigo-500' 
+                    : 'bg-white border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-black'
+                }`}
+              />
+              <button
+                type="submit"
+                disabled={isChatLoading || selectedSourceIds.length === 0}
+                className={`rounded-xl px-5 py-3.5 text-xs font-black shadow-lg transition-all active:scale-95 cursor-pointer disabled:opacity-30 disabled:pointer-events-none ${
+                  theme === 'dark' ? 'bg-white text-black hover:bg-neutral-100' : 'bg-black text-white hover:bg-gray-800'
+                }`}
+              >
+                Ask
+              </button>
+            </form>
+          </div>
+        )}
 
       </div>
 

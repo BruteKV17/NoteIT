@@ -97,6 +97,7 @@ export interface Quiz {
     hard?: number;
   };
   status: 'available' | 'completed';
+  contextText?: string;
 }
 
 export interface NotificationItem {
