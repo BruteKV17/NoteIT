@@ -1,4 +1,5 @@
 import { auth } from '../firebaseConfig';
+import { API_BASE_URL } from '../config';
 
 export interface AzureSasResponse {
   uploadUrl: string;
@@ -18,8 +19,7 @@ export const getAzureUploadSasUrl = async (fileName: string): Promise<AzureSasRe
   const idToken = await currentUser.getIdToken(true);
   console.log("getAzureUploadSasUrl: token existence =", !!idToken);
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3002';
-  const requestUrl = `${backendUrl}/api/storage/sas?fileName=${encodeURIComponent(fileName)}`;
+  const requestUrl = `${API_BASE_URL}/api/storage/sas?fileName=${encodeURIComponent(fileName)}`;
   console.log("getAzureUploadSasUrl: request URL =", requestUrl);
 
   const response = await fetch(
@@ -32,6 +32,8 @@ export const getAzureUploadSasUrl = async (fileName: string): Promise<AzureSasRe
       }
     }
   );
+
+  console.log(`[API Diagnostic] Base: ${API_BASE_URL}, Endpoint: ${requestUrl}, Status: ${response.status}`);
 
   console.log("getAzureUploadSasUrl: response status =", response.status);
 
@@ -101,8 +103,7 @@ export const getAzureReadSasUrl = async (blobPath: string): Promise<string> => {
   const idToken = await currentUser.getIdToken(true);
   console.log("getAzureReadSasUrl: token existence =", !!idToken);
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3002';
-  const requestUrl = `${backendUrl}/api/storage/read-sas?blobPath=${encodeURIComponent(blobPath)}`;
+  const requestUrl = `${API_BASE_URL}/api/storage/read-sas?blobPath=${encodeURIComponent(blobPath)}`;
   console.log("getAzureReadSasUrl: request URL =", requestUrl);
 
   const response = await fetch(
@@ -115,6 +116,8 @@ export const getAzureReadSasUrl = async (blobPath: string): Promise<string> => {
       }
     }
   );
+
+  console.log(`[API Diagnostic] Base: ${API_BASE_URL}, Endpoint: ${requestUrl}, Status: ${response.status}`);
 
   console.log("getAzureReadSasUrl: response status =", response.status);
 
@@ -139,8 +142,8 @@ export const extractTextFromDocument = async (blobPath: string): Promise<string>
   }
   const idToken = await currentUser.getIdToken(true);
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3002';
-  const response = await fetch(`${backendUrl}/api/storage/extract-text`, {
+  const requestUrl = `${API_BASE_URL}/api/storage/extract-text`;
+  const response = await fetch(requestUrl, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${idToken}`,
@@ -148,6 +151,8 @@ export const extractTextFromDocument = async (blobPath: string): Promise<string>
     },
     body: JSON.stringify({ blobPath })
   });
+
+  console.log(`[API Diagnostic] Base: ${API_BASE_URL}, Endpoint: ${requestUrl}, Status: ${response.status}`);
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -168,8 +173,8 @@ export const extractTextFromUrl = async (url: string, type: 'youtube' | 'website
   }
   const idToken = await currentUser.getIdToken(true);
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3002';
-  const response = await fetch(`${backendUrl}/api/storage/extract-url`, {
+  const requestUrl = `${API_BASE_URL}/api/storage/extract-url`;
+  const response = await fetch(requestUrl, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${idToken}`,
@@ -177,6 +182,8 @@ export const extractTextFromUrl = async (url: string, type: 'youtube' | 'website
     },
     body: JSON.stringify({ url, type })
   });
+
+  console.log(`[API Diagnostic] Base: ${API_BASE_URL}, Endpoint: ${requestUrl}, Status: ${response.status}`);
 
   if (!response.ok) {
     const errorText = await response.text();

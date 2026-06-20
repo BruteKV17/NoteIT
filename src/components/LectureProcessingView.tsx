@@ -12,6 +12,7 @@ import { blobToBase64, generateLectureContent } from '../services/gemini';
 import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebaseConfig';
 import BruteLoader from './BruteLoader';
+import { API_BASE_URL } from '../config';
 
 interface LectureProcessingViewProps {
   userId: string | undefined;
@@ -190,8 +191,8 @@ export default function LectureProcessingView({
             const currentUser = auth.currentUser;
             if (currentUser) {
               const idToken = await currentUser.getIdToken(true);
-              const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3002';
-              await fetch(`${backendUrl}/api/storage/ground-source`, {
+              const requestUrl = `${API_BASE_URL}/api/storage/ground-source`;
+              const res = await fetch(requestUrl, {
                 method: 'POST',
                 headers: {
                   'Authorization': `Bearer ${idToken}`,
@@ -203,6 +204,7 @@ export default function LectureProcessingView({
                   text: aiData.cleanTranscript || aiData.transcript || extractedText || ''
                 })
               });
+              console.log(`[API Diagnostic] Base: ${API_BASE_URL}, Endpoint: ${requestUrl}, Status: ${res.status}`);
               console.log('[RAG] Grounding completed for lecture document');
             }
           } catch (ragErr) {
@@ -311,8 +313,8 @@ export default function LectureProcessingView({
             const currentUser = auth.currentUser;
             if (currentUser) {
               const idToken = await currentUser.getIdToken(true);
-              const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3002';
-              await fetch(`${backendUrl}/api/storage/ground-source`, {
+              const requestUrl = `${API_BASE_URL}/api/storage/ground-source`;
+              const res = await fetch(requestUrl, {
                 method: 'POST',
                 headers: {
                   'Authorization': `Bearer ${idToken}`,
@@ -324,6 +326,7 @@ export default function LectureProcessingView({
                   text: aiData.cleanTranscript || aiData.transcript || ''
                 })
               });
+              console.log(`[API Diagnostic] Base: ${API_BASE_URL}, Endpoint: ${requestUrl}, Status: ${res.status}`);
               console.log('[RAG] Grounding completed for lecture audio');
             }
           } catch (ragErr) {

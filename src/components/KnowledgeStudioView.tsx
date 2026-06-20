@@ -39,6 +39,7 @@ import {
   Info
 } from 'lucide-react';
 import { db, auth } from '../firebaseConfig';
+import { API_BASE_URL } from '../config';
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { generateLectureContentFromText } from '../services/gemini';
 import { getAzureUploadSasUrl, uploadBlobToAzure, extractTextFromDocument, extractTextFromUrl } from '../services/azure';
@@ -420,8 +421,8 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
         const currentUser = auth.currentUser;
         if (currentUser) {
           const idToken = await currentUser.getIdToken(true);
-          const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3002';
-          await fetch(`${backendUrl}/api/storage/ground-source`, {
+          const requestUrl = `${API_BASE_URL}/api/storage/ground-source`;
+          const res = await fetch(requestUrl, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${idToken}`,
@@ -433,6 +434,7 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
               text: extractedText
             })
           });
+          console.log(`[API Diagnostic] Base: ${API_BASE_URL}, Endpoint: ${requestUrl}, Status: ${res.status}`);
           console.log('[RAG] Grounding completed for uploaded document');
         }
       } catch (ragErr) {
@@ -530,8 +532,8 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
         const currentUser = auth.currentUser;
         if (currentUser) {
           const idToken = await currentUser.getIdToken(true);
-          const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3002';
-          await fetch(`${backendUrl}/api/storage/ground-source`, {
+          const requestUrl = `${API_BASE_URL}/api/storage/ground-source`;
+          const res = await fetch(requestUrl, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${idToken}`,
@@ -543,6 +545,7 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
               text: extractedText
             })
           });
+          console.log(`[API Diagnostic] Base: ${API_BASE_URL}, Endpoint: ${requestUrl}, Status: ${res.status}`);
         }
       } catch (ragErr) {
         console.error('[RAG] Grounding failed for uploaded document:', ragErr);
@@ -629,8 +632,8 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
         const currentUser = auth.currentUser;
         if (currentUser) {
           const idToken = await currentUser.getIdToken(true);
-          const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3002';
-          await fetch(`${backendUrl}/api/storage/ground-source`, {
+          const requestUrl = `${API_BASE_URL}/api/storage/ground-source`;
+          const res = await fetch(requestUrl, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${idToken}`,
@@ -642,6 +645,7 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
               text: text
             })
           });
+          console.log(`[API Diagnostic] Base: ${API_BASE_URL}, Endpoint: ${requestUrl}, Status: ${res.status}`);
         }
       } catch (ragErr) {
         console.error('[RAG] Grounding failed for URL:', ragErr);
@@ -811,8 +815,8 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
         const currentUser = auth.currentUser;
         if (currentUser) {
           const idToken = await currentUser.getIdToken(true);
-          const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3002';
-          await fetch(`${backendUrl}/api/storage/ground-source`, {
+          const requestUrl = `${API_BASE_URL}/api/storage/ground-source`;
+          const res = await fetch(requestUrl, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${idToken}`,
@@ -824,6 +828,7 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
               text: text
             })
           });
+          console.log(`[API Diagnostic] Base: ${API_BASE_URL}, Endpoint: ${requestUrl}, Status: ${res.status}`);
           console.log('[RAG] Grounding completed for URL');
         }
       } catch (ragErr) {

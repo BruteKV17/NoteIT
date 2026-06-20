@@ -1,4 +1,5 @@
 import { auth } from '../firebaseConfig';
+import { API_BASE_URL } from '../config';
 
 /**
  * Searches stock photos by querying the backend API proxy.
@@ -11,14 +12,16 @@ export const searchImages = async (query: string): Promise<string[]> => {
   }
   const idToken = await currentUser.getIdToken(true);
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3002';
-  const response = await fetch(`${backendUrl}/api/images/search?query=${encodeURIComponent(query)}`, {
+  const requestUrl = `${API_BASE_URL}/api/images/search?query=${encodeURIComponent(query)}`;
+  const response = await fetch(requestUrl, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${idToken}`,
       'Content-Type': 'application/json'
     }
   });
+
+  console.log(`[API Diagnostic] Base: ${API_BASE_URL}, Endpoint: ${requestUrl}, Status: ${response.status}`);
 
   if (!response.ok) {
     const errorText = await response.text();
