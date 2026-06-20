@@ -74,6 +74,23 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Helper to format Firebase private key robustly (supporting quotes, escaped newlines, and spaces)
+function formatFirebasePrivateKey(key: string): string {
+  let cleanKey = key.trim().replace(/^["']|["']$/g, '');
+  cleanKey = cleanKey.replace(/\\n/g, '\n');
+  if (!cleanKey.includes('\n')) {
+    const header = '-----BEGIN PRIVATE KEY-----';
+    const footer = '-----END PRIVATE KEY-----';
+    if (cleanKey.startsWith(header) && cleanKey.endsWith(footer)) {
+      const base64Part = cleanKey
+        .slice(header.length, cleanKey.length - footer.length)
+        .replace(/\s+/g, '');
+      cleanKey = `${header}\n${base64Part}\n${footer}`;
+    }
+  }
+  return cleanKey;
+}
+
 // Initialize Firebase Admin SDK
 try {
   if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
@@ -82,7 +99,7 @@ try {
       credential: cert({
         projectId: process.env.FIREBASE_PROJECT_ID || 'noteit-ai-fd7eb',
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/^["']|["']$/g, '').replace(/\\n/g, '\n')
+        privateKey: formatFirebasePrivateKey(process.env.FIREBASE_PRIVATE_KEY)
       })
     });
   } else if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY_PATH) {
