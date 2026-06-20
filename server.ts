@@ -43,21 +43,27 @@ if (!fs.existsSync(uploadsDir)) {
 app.use('/uploads', express.static(uploadsDir));
 
 // Initialize Firebase Admin SDK
-const firebaseProjectId = process.env.FIREBASE_PROJECT_ID || 'noteit-ai-fd7eb';
-const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_KEY_PATH;
-
 try {
-  if (serviceAccountPath) {
-    const resolvedPath = path.resolve(serviceAccountPath);
+  if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
+    console.log('Initializing Firebase Admin using environment variables...');
+    initializeApp({
+      credential: cert({
+        projectId: process.env.FIREBASE_PROJECT_ID || 'noteit-ai-fd7eb',
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+      })
+    });
+  } else if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY_PATH) {
+    const resolvedPath = path.resolve(process.env.FIREBASE_SERVICE_ACCOUNT_KEY_PATH);
     console.log(`Initializing Firebase Admin with Service Account from: ${resolvedPath}`);
     initializeApp({
       credential: cert(resolvedPath),
-      projectId: firebaseProjectId
+      projectId: process.env.FIREBASE_PROJECT_ID || 'noteit-ai-fd7eb'
     });
   } else {
     console.log('Initializing Firebase Admin with default credentials or project ID...');
     initializeApp({
-      projectId: firebaseProjectId
+      projectId: process.env.FIREBASE_PROJECT_ID || 'noteit-ai-fd7eb'
     });
   }
   console.log('Firebase Admin initialized successfully.');
