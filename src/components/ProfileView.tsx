@@ -21,7 +21,7 @@ import { UserSettings } from '../types';
 interface ProfileViewProps {
   settings: UserSettings;
   onUpdateSettings: (newSettings: UserSettings) => void;
-  setActivePage: (page: string) => void;
+  setActivePage: (page: any) => void;
   theme: 'light' | 'dark';
 }
 

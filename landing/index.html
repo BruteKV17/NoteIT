@@ -1,0 +1,2608 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Noteit AI — AI That Thinks While You Learn</title>
+    <!-- Google Fonts Outfit & Playfair Display (Serif) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@1,500&display=swap" rel="stylesheet">
+    
+    <!-- ES Module Importmap for Three.js and Addons -->
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.143.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.143.0/examples/jsm/"
+        }
+      }
+    </script>
+
+    <style>
+      :root {
+        --color-bg-dark: #030408;
+        --color-primary: #5f6df8;
+        --color-accent: #2563eb;
+        --color-success: #10b981;
+        --color-warning: #f59e0b;
+        --color-error: #ef4444;
+        --color-text-primary: #ffffff;
+        --color-text-secondary: #a3a3a3;
+        --color-glass: rgba(13, 15, 23, 0.65);
+        --color-glass-light: rgba(255, 255, 255, 0.03);
+        --border-glass: 1px solid rgba(255, 255, 255, 0.08);
+        --font-sans: 'Outfit', sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        scroll-behavior: smooth;
+      }
+
+      body {
+        background-color: var(--color-bg-dark);
+        color: var(--color-text-primary);
+        font-family: var(--font-sans);
+        overflow-x: hidden;
+        min-height: 100vh;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* Fixed full-window background canvas */
+      #scene {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 0;
+        pointer-events: none;
+      }
+
+      /* Content Overlay Layout */
+      .content-overlay {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      /* Navigation Bar */
+      header {
+        position: sticky;
+        top: 0;
+        width: 100%;
+        height: 80px;
+        background: rgba(3, 4, 8, 0.7);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .header-container {
+        width: 100%;
+        max-width: 1280px;
+        padding: 0 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        color: var(--color-text-primary);
+        font-weight: 900;
+        font-size: 20px;
+        letter-spacing: -0.5px;
+      }
+
+      .logo svg {
+        display: block;
+      }
+
+      .nav-links {
+        display: none;
+      }
+
+      @media (min-width: 768px) {
+        .nav-links {
+          display: flex;
+          align-items: center;
+          gap: 32px;
+        }
+      }
+
+      .nav-links a {
+        text-decoration: none;
+        color: var(--color-text-secondary);
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        transition: color 0.3s;
+      }
+
+      .nav-links a:hover {
+        color: var(--color-text-primary);
+      }
+
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .btn-text {
+        background: transparent;
+        border: none;
+        color: var(--color-text-secondary);
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        cursor: pointer;
+        transition: color 0.3s;
+        outline: none;
+      }
+
+      .btn-text:hover {
+        color: var(--color-text-primary);
+      }
+
+      .btn-primary {
+        background: var(--color-text-primary);
+        color: var(--color-bg-dark);
+        border: none;
+        padding: 10px 24px;
+        border-radius: 9999px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        cursor: pointer;
+        transition: all 0.3s;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .btn-primary:hover {
+        background: #e5e5e5;
+        transform: translateY(-1px);
+      }
+
+      .btn-primary:active {
+        transform: scale(0.95);
+      }
+
+      /* Sections General */
+      section {
+        width: 100%;
+        max-width: 1280px;
+        padding: 120px 24px;
+        position: relative;
+      }
+
+      /* Hero Section */
+      .hero {
+        padding-top: 80px;
+        padding-bottom: 80px;
+        display: grid;
+        grid-template-cols: 1fr;
+        gap: 48px;
+        align-items: center;
+      }
+
+      @media (min-width: 1024px) {
+        .hero {
+          grid-template-cols: 7fr 5fr;
+        }
+      }
+
+      .hero-copy {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+        gap: 24px;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(95, 109, 248, 0.1);
+        border: 1px solid rgba(95, 109, 248, 0.25);
+        padding: 6px 16px;
+        border-radius: 9999px;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: #818cf8;
+      }
+
+      .badge-dot {
+        height: 6px;
+        width: 6px;
+        background-color: var(--color-primary);
+        border-radius: 50%;
+        animation: pulse 1.5s infinite;
+      }
+
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+      }
+
+      h1 {
+        font-size: 40px;
+        font-weight: 900;
+        line-height: 1.05;
+        letter-spacing: -1px;
+      }
+
+      @media (min-width: 640px) {
+        h1 { font-size: 56px; }
+      }
+
+      @media (min-width: 768px) {
+        h1 { font-size: 64px; }
+      }
+
+      .highlight-serif {
+        font-family: 'Playfair Display', serif;
+        font-style: italic;
+        font-weight: 500;
+        background: linear-gradient(90deg, #818cf8, #3b82f6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        padding-right: 4px;
+      }
+
+      .hero-desc {
+        font-size: 15px;
+        color: var(--color-text-secondary);
+        max-width: 520px;
+        font-weight: 500;
+        line-height: 1.6;
+      }
+
+      .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-top: 12px;
+      }
+
+      .btn-cta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 14px 28px;
+        border-radius: 9999px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .btn-cta-primary {
+        background: var(--color-text-primary);
+        color: var(--color-bg-dark);
+        border: none;
+        box-shadow: 0 4px 20px rgba(95, 109, 248, 0.25);
+      }
+
+      .btn-cta-primary:hover {
+        background: #e5e5e5;
+        transform: translateY(-2px);
+      }
+
+      .btn-cta-secondary {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--color-text-primary);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+      }
+
+      .btn-cta-secondary:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.25);
+        transform: translateY(-2px);
+      }
+
+      .btn-cta svg {
+        height: 16px;
+        width: 16px;
+      }
+
+      /* Hero Widget Mockup */
+      .hero-visual {
+        display: flex;
+        justify-content: center;
+        position: relative;
+        width: 100%;
+      }
+
+      .glow-blur {
+        position: absolute;
+        width: 320px;
+        height: 320px;
+        background: rgba(95, 109, 248, 0.12);
+        filter: blur(90px);
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .glass-widget {
+        background: var(--color-glass);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: var(--border-glass);
+        border-radius: 24px;
+        padding: 24px;
+        width: 100%;
+        max-width: 420px;
+        position: relative;
+        z-index: 1;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      }
+
+      .widget-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        padding-bottom: 16px;
+        margin-bottom: 20px;
+      }
+
+      .window-dots {
+        display: flex;
+        gap: 8px;
+      }
+
+      .dot {
+        height: 10px;
+        width: 10px;
+        border-radius: 50%;
+      }
+
+      .dot-red { background: #ff5f56; }
+      .dot-yellow { background: #ffbd2e; }
+      .dot-green { background: #27c93f; }
+
+      .widget-tag {
+        font-family: monospace;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: var(--color-primary);
+      }
+
+      .widget-body {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        text-align: left;
+      }
+
+      .inner-card {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        border-radius: 16px;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .inner-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .inner-card-title {
+        font-size: 10px;
+        font-weight: 800;
+        color: var(--color-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .badge-success {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--color-success);
+        padding: 2px 10px;
+        border-radius: 9999px;
+        font-size: 8px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .wave-container {
+        display: flex;
+        align-items: flex-end;
+        gap: 4px;
+        height: 32px;
+        padding: 0 4px;
+      }
+
+      .wave-bar {
+        flex: 1;
+        background: linear-gradient(0deg, var(--color-primary), var(--color-accent));
+        border-radius: 9999px;
+        transition: height 0.3s;
+      }
+
+      .simulated-text {
+        font-family: 'Playfair Display', serif;
+        font-style: italic;
+        font-size: 11.5px;
+        color: #8b9bb4;
+        line-height: 1.5;
+      }
+
+      .concepts-section {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .concepts-label {
+        font-size: 9px;
+        font-weight: 800;
+        text-transform: uppercase;
+        color: var(--color-text-secondary);
+        letter-spacing: 1.5px;
+      }
+
+      .concept-pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .pill {
+        font-size: 10px;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 8px;
+      }
+
+      .pill-primary {
+        background: rgba(95, 109, 248, 0.1);
+        border: 1px solid rgba(95, 109, 248, 0.2);
+        color: #818cf8;
+      }
+
+      .pill-secondary {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        color: var(--color-text-secondary);
+      }
+
+      .pill-purple {
+        background: rgba(168, 85, 247, 0.1);
+        border: 1px solid rgba(168, 85, 247, 0.2);
+        color: #c084fc;
+      }
+
+      /* Section Headers */
+      .section-header {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        align-items: center;
+        text-align: center;
+        margin-bottom: 60px;
+      }
+
+      .section-header h2 {
+        font-size: 28px;
+        font-weight: 900;
+        letter-spacing: -0.5px;
+      }
+
+      @media (min-width: 768px) {
+        .section-header h2 { font-size: 38px; }
+      }
+
+      .section-header p {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--color-text-secondary);
+        max-width: 480px;
+        line-height: 1.5;
+      }
+
+      /* Features Grid */
+      .features-grid {
+        display: grid;
+        grid-template-cols: 1fr;
+        gap: 24px;
+      }
+
+      @media (min-width: 640px) {
+        .features-grid { grid-template-cols: repeat(2, 1fr); }
+      }
+
+      @media (min-width: 1024px) {
+        .features-grid { grid-template-cols: repeat(4, 1fr); }
+      }
+
+      .feature-card {
+        background: var(--color-glass);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: var(--border-glass);
+        padding: 32px;
+        border-radius: 24px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+        text-align: left;
+        transition: all 0.3s ease;
+      }
+
+      .feature-card:hover {
+        border-color: rgba(95, 109, 248, 0.3);
+        transform: translateY(-4px);
+      }
+
+      .card-icon {
+        height: 40px;
+        width: 40px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--color-primary);
+        transition: all 0.3s;
+      }
+
+      .feature-card:hover .card-icon {
+        background: var(--color-primary);
+        color: #ffffff;
+      }
+
+      .card-icon-yellow { color: var(--color-warning); }
+      .card-icon-green { color: var(--color-success); }
+
+      .feature-card h4 {
+        font-size: 14px;
+        font-weight: 800;
+        color: var(--color-text-primary);
+      }
+
+      .feature-card p {
+        font-size: 12px;
+        color: var(--color-text-secondary);
+        line-height: 1.6;
+        font-weight: 500;
+      }
+
+      /* Ultimate Notebook Section */
+      .notebook {
+        display: grid;
+        grid-template-cols: 1fr;
+        gap: 60px;
+        align-items: center;
+      }
+
+      @media (min-width: 1024px) {
+        .notebook { grid-template-cols: 5fr 7fr; }
+      }
+
+      .notebook-info {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+        gap: 24px;
+      }
+
+      .notebook-info .badge {
+        color: var(--color-primary);
+      }
+
+      .notebook-info p {
+        font-size: 13px;
+        color: var(--color-text-secondary);
+        font-weight: 500;
+        line-height: 1.6;
+      }
+
+      .bullets-list {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        margin-top: 8px;
+      }
+
+      .bullet-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 12px;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.85);
+      }
+
+      .bullet-item svg {
+        height: 20px;
+        width: 20px;
+        color: var(--color-primary);
+        flex-shrink: 0;
+      }
+
+      /* MacBook Mockup */
+      .macbook-visual {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+        position: relative;
+      }
+
+      .macbook-chassis {
+        width: 100%;
+        max-width: 540px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .macbook-screen {
+        aspect-ratio: 16/10;
+        width: 100%;
+        background: #121318;
+        border-radius: 16px;
+        padding: 8px;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+        position: relative;
+        border: 4px solid #333333;
+      }
+
+      @media (min-width: 768px) {
+        .macbook-screen { padding: 12px; }
+      }
+
+      .macbook-camera {
+        position: absolute;
+        top: 4px;
+        left: 50%;
+        transform: translateX(-50%);
+        height: 4px;
+        width: 4px;
+        background: #1a1a1a;
+        border-radius: 50%;
+      }
+
+      .macbook-screen-content {
+        height: 100%;
+        width: 100%;
+        background: #ffffff;
+        border-radius: 8px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        color: #333333;
+        position: relative;
+      }
+
+      .app-header {
+        height: 28px;
+        background: #f3f4f6;
+        border-bottom: 1px solid #e5e7eb;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 12px;
+      }
+
+      .app-title {
+        font-size: 9px;
+        font-weight: 700;
+        color: #9ca3af;
+      }
+
+      .app-close-dot {
+        height: 6px;
+        width: 6px;
+        background: #d1d5db;
+        border-radius: 50%;
+      }
+
+      .app-split-pane {
+        flex: 1;
+        display: flex;
+        overflow: hidden;
+      }
+
+      .pane-left {
+        width: 50%;
+        background: #faf9f5;
+        border-right: 1px solid #e9e3d4;
+        padding: 12px;
+        text-align: left;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        overflow-y: auto;
+      }
+
+      .pane-tag {
+        font-size: 7.5px;
+        font-weight: 900;
+        color: #9ca3af;
+        letter-spacing: 1px;
+        border-bottom: 1px solid #e9e3d4;
+        padding-bottom: 4px;
+        display: block;
+      }
+
+      .pane-left p {
+        font-family: serif;
+        font-size: 8.5px;
+        color: #4b5563;
+        line-height: 1.4;
+      }
+
+      .formula-box {
+        background: rgba(95, 109, 248, 0.08);
+        border: 1px solid rgba(95, 109, 248, 0.15);
+        border-radius: 4px;
+        padding: 6px;
+        font-family: monospace;
+        font-size: 8px;
+        font-weight: 700;
+        color: #4f46e5;
+        text-align: center;
+      }
+
+      .pane-right {
+        width: 50%;
+        background: #ffffff;
+        padding: 12px;
+        text-align: left;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        overflow-y: auto;
+      }
+
+      .pane-right .pane-tag {
+        color: var(--color-primary);
+      }
+
+      .concept-title {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .concept-heading {
+        font-size: 9px;
+        font-weight: 900;
+        color: #0c0e17;
+      }
+
+      .concept-bar {
+        height: 4px;
+        width: 64px;
+        background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
+        border-radius: 2px;
+      }
+
+      .bullets-summary {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-size: 8.5px;
+        font-weight: 500;
+        color: #6b7280;
+      }
+
+      .bullets-summary li {
+        list-style: none;
+        position: relative;
+        padding-left: 10px;
+      }
+
+      .bullets-summary li::before {
+        content: "•";
+        color: var(--color-primary);
+        font-weight: 900;
+        position: absolute;
+        left: 0;
+      }
+
+      .midterm-flag {
+        background: rgba(245, 158, 11, 0.1);
+        border: 1px solid rgba(245, 158, 11, 0.2);
+        border-radius: 6px;
+        padding: 6px;
+        font-size: 8px;
+        font-weight: 700;
+        color: #b45309;
+      }
+
+      .macbook-base {
+        height: 14px;
+        width: 114%;
+        background: #d7dadb;
+        border-radius: 0 0 16px 16px;
+        border-top: 1px solid #ffffff;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+        position: relative;
+        z-index: 10;
+        display: flex;
+        justify-content: center;
+      }
+
+      .macbook-indent {
+        height: 2px;
+        width: 96px;
+        background: #a1a1a1;
+        border-radius: 9999px;
+        margin-top: 2px;
+      }
+
+      /* Steps Section */
+      .steps-grid {
+        display: grid;
+        grid-template-cols: 1fr;
+        gap: 32px;
+      }
+
+      @media (min-width: 768px) {
+        .steps-grid { grid-template-cols: repeat(3, 1fr); }
+      }
+
+      .step-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+        text-align: center;
+      }
+
+      .step-number {
+        height: 40px;
+        width: 40px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.02);
+        border: var(--border-glass);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: monospace;
+        font-size: 12px;
+        font-weight: 900;
+        color: var(--color-primary);
+      }
+
+      .step-item h4 {
+        font-size: 14px;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: var(--color-text-primary);
+      }
+
+      .step-item p {
+        font-size: 12px;
+        color: var(--color-text-secondary);
+        line-height: 1.6;
+        font-weight: 600;
+        max-width: 260px;
+      }
+
+      /* Academic Memory Section */
+      .memory-grid {
+        display: grid;
+        grid-template-cols: 1fr;
+        gap: 32px;
+        max-width: 1024px;
+        margin: 0 auto;
+      }
+
+      @media (min-width: 1024px) {
+        .memory-grid { grid-template-cols: 7fr 5fr; }
+      }
+
+      .memory-dashboard {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      .dashboard-card {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        padding: 22px;
+        border-radius: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .dashboard-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .card-tag {
+        font-family: monospace;
+        font-size: 10px;
+        font-weight: 900;
+        text-transform: uppercase;
+        color: var(--color-primary);
+        letter-spacing: 1.5px;
+      }
+
+      .card-title {
+        font-size: 12px;
+        font-weight: 900;
+        color: var(--color-text-primary);
+        margin-top: 2px;
+      }
+
+      .chart-legends {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--color-text-secondary);
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .legend-dot {
+        height: 6px;
+        width: 6px;
+        border-radius: 50%;
+      }
+
+      .chart-container {
+        height: 128px;
+        position: relative;
+        display: flex;
+        align-items: flex-end;
+      }
+
+      .chart-svg {
+        position: absolute;
+        inset: 0;
+        height: 100%;
+        width: 100%;
+        opacity: 0.8;
+      }
+
+      .chart-labels {
+        position: absolute;
+        inset-x: 0;
+        bottom: 2px;
+        display: flex;
+        justify-content: space-between;
+        font-family: monospace;
+        font-size: 8px;
+        color: var(--color-text-secondary);
+        font-weight: 800;
+        padding: 0 4px;
+      }
+
+      /* Radar chart styling */
+      .radar-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      @media (min-width: 640px) {
+        .radar-wrapper {
+          flex-direction: row;
+          align-items: center;
+          justify-content: space-between;
+        }
+      }
+
+      .radar-svg-box {
+        height: 112px;
+        width: 112px;
+        position: relative;
+        flex-shrink: 0;
+      }
+
+      .radar-legend-grid {
+        flex: 1;
+        display: grid;
+        grid-template-cols: repeat(2, 1fr);
+        gap: 12px;
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--color-text-secondary);
+      }
+
+      .radar-legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .radar-dot {
+        height: 8px;
+        width: 8px;
+        border-radius: 50%;
+      }
+
+      /* Recommendations pane */
+      .recs-panel {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .recs-label {
+        font-size: 10px;
+        font-weight: 900;
+        text-transform: uppercase;
+        color: var(--color-primary);
+        letter-spacing: 1.5px;
+        text-align: left;
+      }
+
+      .rec-card {
+        border-radius: 16px;
+        padding: 18px;
+        display: flex;
+        gap: 16px;
+        align-items: start;
+        text-align: left;
+      }
+
+      .rec-green {
+        background: rgba(16, 185, 129, 0.05);
+        border: 1px solid rgba(16, 185, 129, 0.15);
+      }
+
+      .rec-orange {
+        background: rgba(245, 158, 11, 0.05);
+        border: 1px solid rgba(245, 158, 11, 0.15);
+      }
+
+      .rec-blue {
+        background: rgba(59, 130, 246, 0.05);
+        border: 1px solid rgba(59, 130, 246, 0.15);
+      }
+
+      .rec-icon {
+        height: 34px;
+        width: 34px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .rec-green .rec-icon { background: rgba(16, 185, 129, 0.1); color: var(--color-success); }
+      .rec-orange .rec-icon { background: rgba(245, 158, 11, 0.1); color: var(--color-warning); }
+      .rec-blue .rec-icon { background: rgba(59, 130, 246, 0.1); color: var(--color-accent); }
+
+      .rec-details {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .rec-heading-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .rec-title {
+        font-size: 12px;
+        font-weight: 900;
+        color: #ffffff;
+      }
+
+      .rec-green .rec-title { color: #d1fae5; }
+      .rec-orange .rec-title { color: #ffedd5; }
+      .rec-blue .rec-title { color: #dbeafe; }
+
+      .rec-badge {
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 8px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .rec-green .rec-badge { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+      .rec-orange .rec-badge { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+      .rec-blue .rec-badge { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+
+      .rec-desc {
+        font-size: 10.5px;
+        line-height: 1.5;
+        font-weight: 500;
+      }
+
+      .rec-green .rec-desc { color: #a7f3d0; }
+      .rec-orange .rec-desc { color: #fed7aa; }
+      .rec-blue .rec-desc { color: #bfdbfe; }
+
+      /* Pricing Section */
+      .pricing-grid {
+        display: grid;
+        grid-template-cols: 1fr;
+        gap: 32px;
+        max-width: 1024px;
+        margin: 0 auto;
+      }
+
+      @media (min-width: 768px) {
+        .pricing-grid { grid-template-cols: repeat(3, 1fr); }
+      }
+
+      .pricing-card {
+        background: rgba(13, 15, 23, 0.55);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: var(--border-glass);
+        padding: 34px;
+        border-radius: 28px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 32px;
+        text-align: left;
+        transition: all 0.3s;
+      }
+
+      .pricing-card:hover {
+        border-color: rgba(95, 109, 248, 0.25);
+      }
+
+      .pricing-card-popular {
+        background: var(--color-glass);
+        border: 2px solid #ffffff;
+        position: relative;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+      }
+
+      .popular-badge {
+        position: absolute;
+        top: -14px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #ffffff;
+        color: var(--color-bg-dark);
+        font-size: 9px;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        padding: 6px 16px;
+        border-radius: 9999px;
+        white-space: nowrap;
+      }
+
+      .pricing-info {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .pricing-info h3 {
+        font-size: 14px;
+        font-weight: 900;
+        text-transform: uppercase;
+        color: var(--color-text-primary);
+        letter-spacing: 1.5px;
+      }
+
+      .pricing-card-popular .pricing-info h3 {
+        color: var(--color-primary);
+      }
+
+      .price-row {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .price {
+        font-size: 36px;
+        font-weight: 800;
+        color: #ffffff;
+        line-height: 1;
+      }
+
+      .price-period {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--color-text-secondary);
+      }
+
+      .pricing-divider {
+        height: 1px;
+        background: rgba(255, 255, 255, 0.08);
+        width: 100%;
+      }
+
+      .pricing-features {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        list-style: none;
+      }
+
+      .pricing-features li {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--color-text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .pricing-card-popular .pricing-features li {
+        color: rgba(255, 255, 255, 0.85);
+      }
+
+      .pricing-features li svg {
+        height: 18px;
+        width: 18px;
+        color: var(--color-primary);
+      }
+
+      .btn-pricing {
+        width: 100%;
+        border-radius: 16px;
+        padding: 12px 20px;
+        font-size: 12px;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+      }
+
+      .btn-pricing-secondary {
+        background: rgba(255, 255, 255, 0.03);
+        color: var(--color-text-primary);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+      }
+
+      .btn-pricing-secondary:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .btn-pricing-primary {
+        background: #ffffff;
+        color: var(--color-bg-dark);
+        border: none;
+      }
+
+      .btn-pricing-primary:hover {
+        background: #e5e5e5;
+      }
+
+      /* CTA upgrade box */
+      .cta-box {
+        position: relative;
+        background: #000000;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 40px;
+        border-radius: 32px;
+        text-align: center;
+        max-width: 896px;
+        margin: 0 auto;
+        overflow: hidden;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6);
+      }
+
+      @media (min-width: 768px) {
+        .cta-box { padding: 56px; }
+      }
+
+      .cta-glow {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 480px;
+        height: 192px;
+        background: rgba(95, 109, 248, 0.15);
+        filter: blur(110px);
+        pointer-events: none;
+        border-radius: 50%;
+      }
+
+      .cta-content {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      .cta-content h3 {
+        font-size: 28px;
+        font-weight: 900;
+        letter-spacing: -0.5px;
+      }
+
+      @media (min-width: 768px) {
+        .cta-content h3 { font-size: 45px; }
+      }
+
+      .cta-content p {
+        font-size: 13px;
+        color: var(--color-text-secondary);
+        font-weight: 500;
+        max-width: 512px;
+        margin: 0 auto;
+        line-height: 1.6;
+      }
+
+      .cta-buttons {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+        justify-content: center;
+      }
+
+      @media (min-width: 640px) {
+        .cta-buttons { flex-direction: row; }
+      }
+
+      .cta-buttons .btn-cta {
+        width: 100%;
+      }
+
+      @media (min-width: 640px) {
+        .cta-buttons .btn-cta { width: auto; }
+      }
+
+      /* Footer styling */
+      footer {
+        width: 100%;
+        background: rgba(3, 4, 8, 0.9);
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        padding: 80px 24px;
+        font-size: 13px;
+        color: var(--color-text-secondary);
+      }
+
+      .footer-container {
+        width: 100%;
+        max-width: 1280px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-cols: 1fr;
+        gap: 40px;
+      }
+
+      @media (min-width: 768px) {
+        .footer-container { grid-template-cols: repeat(12, 1fr); }
+      }
+
+      .footer-brand {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      @media (min-width: 768px) {
+        .footer-brand { grid-column: span 4; }
+      }
+
+      .footer-desc {
+        font-size: 12px;
+        line-height: 1.6;
+        color: #737373;
+        max-width: 320px;
+      }
+
+      .footer-telemetry {
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        padding-top: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-size: 12px;
+        color: #737373;
+      }
+
+      .founder-info {
+        color: #8a8a8a;
+      }
+
+      .founder-info span {
+        font-weight: 700;
+        color: #ffffff;
+      }
+
+      .footer-contact-title {
+        font-weight: 800;
+        color: var(--color-primary);
+        margin-top: 10px;
+      }
+
+      .footer-contact-item {
+        font-family: monospace;
+        font-size: 11px;
+      }
+
+      .footer-links-grid {
+        display: grid;
+        grid-template-cols: repeat(2, 1fr);
+        gap: 26px;
+      }
+
+      @media (min-width: 640px) {
+        .footer-links-grid { grid-template-cols: repeat(3, 1fr); }
+      }
+
+      @media (min-width: 768px) {
+        .footer-links-grid { grid-column: span 8; }
+      }
+
+      .footer-nav-group {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        text-align: left;
+      }
+
+      .footer-nav-group span {
+        font-size: 10px;
+        font-weight: 900;
+        text-transform: uppercase;
+        color: #ffffff;
+        letter-spacing: 1.5px;
+      }
+
+      .footer-nav-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        list-style: none;
+      }
+
+      .footer-nav-list a {
+        text-decoration: none;
+        color: var(--color-text-secondary);
+        font-size: 12px;
+        font-weight: 600;
+        transition: color 0.3s;
+      }
+
+      .footer-nav-list a:hover {
+        color: #ffffff;
+      }
+
+      .footer-bottom {
+        width: 100%;
+        max-width: 1280px;
+        margin: 0 auto;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+        padding-top: 40px;
+        margin-top: 40px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+        text-align: center;
+        font-size: 12px;
+        color: #737373;
+      }
+
+      @media (min-width: 640px) {
+        .footer-bottom {
+          flex-direction: row;
+          justify-content: space-between;
+        }
+      }
+
+      .footer-socials {
+        display: flex;
+        gap: 16px;
+      }
+
+      .footer-socials a {
+        color: var(--color-text-secondary);
+        transition: color 0.3s;
+      }
+
+      .footer-socials a:hover {
+        color: var(--color-primary);
+      }
+
+      .icon {
+        height: 16px;
+        width: 16px;
+        stroke-width: 2.2;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Three.js Canvas Scene Background -->
+    <canvas id="scene"></canvas>
+
+    <div class="content-overlay">
+      <!-- 1. Header Navigation Bar -->
+      <header>
+        <div class="header-container">
+          <a href="#" class="logo">
+            <!-- Brand SVG Logo -->
+            <svg width="32" height="32" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="100" height="100" rx="28" fill="#0c0e17" />
+              <rect x="38" y="32" width="31" height="35" rx="5" fill="#242834" />
+              <path d="M30 29.5 L38 34 V 66 L30 70.5 Z" fill="#FFFFFF" />
+              <path d="M38 34 L38 66" stroke="#2c303f" stroke-width="0.8" />
+              <rect x="38" y="34" width="4" height="32" fill="#1d202b" />
+              <rect x="42" y="34" width="22" height="32" rx="3.5" fill="#FFFFFF" />
+              <rect x="46" y="42" width="10" height="2" rx="1" fill="#a4abb6" />
+              <rect x="46" y="48" width="12" height="2" rx="1" fill="#a4abb6" />
+              <rect x="46" y="54" width="8" height="2" rx="1" fill="#a4abb6" />
+              <circle cx="71" cy="33.5" r="9.5" fill="#5F6DF8" stroke="#0c0e17" stroke-width="2" />
+              <path d="M71 29 V38 M66.5 33.5 H75.5" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" />
+            </svg>
+            <span>Noteit AI</span>
+          </a>
+
+          <div class="nav-links">
+            <a href="#features">Features</a>
+            <a href="#notebook">Solutions</a>
+            <a href="#pricing">Pricing</a>
+            <a href="#memory">About</a>
+          </div>
+
+          <div class="header-actions">
+            <button class="btn-text">Sign In</button>
+            <button class="btn-primary">Get Started</button>
+          </div>
+        </div>
+      </header>
+
+      <!-- 2. Hero Presentation Area -->
+      <section class="hero">
+        <!-- Left Side Copy -->
+        <div class="hero-copy">
+          <div class="badge">
+            <span class="badge-dot"></span>
+            <span>Next-Gen Academic AI</span>
+          </div>
+
+          <h1>
+            AI That Thinks <br />
+            While You <span class="highlight-serif">Learn</span>
+          </h1>
+
+          <p class="hero-desc">
+            Capture lectures live. Generate intelligent notes instantly. Track weak topics automatically. Learn with a persistent AI memory system.
+          </p>
+
+          <div class="hero-actions">
+            <a href="#" class="btn-cta btn-cta-primary">
+              <!-- Volume2 icon inline -->
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+              <span>Start Recording</span>
+            </a>
+            
+            <a href="#" class="btn-cta btn-cta-secondary">
+              <!-- Play icon inline -->
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <span>Watch Demo</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Right Side Brand Glass Tablet Visual -->
+        <div class="hero-visual">
+          <div class="glow-blur"></div>
+          
+          <div class="glass-widget">
+            <!-- Tablet Header Mock -->
+            <div class="widget-header">
+              <div class="window-dots">
+                <div class="dot dot-red"></div>
+                <div class="dot dot-yellow"></div>
+                <div class="dot dot-green"></div>
+              </div>
+              <span class="widget-tag">Notebook AI Node</span>
+            </div>
+
+            <!-- Inner Dashboard Widget Grid -->
+            <div class="widget-body">
+              <div class="inner-card">
+                <div class="inner-card-header">
+                  <span class="inner-card-title">Speaker 1 • Active Transcription</span>
+                  <span class="badge-success">LIVE STAGING</span>
+                </div>
+                
+                <!-- Simulated Audio waves -->
+                <div class="wave-container">
+                  <div class="wave-bar" style="height: 30%;"></div>
+                  <div class="wave-bar" style="height: 60%;"></div>
+                  <div class="wave-bar" style="height: 45%;"></div>
+                  <div class="wave-bar" style="height: 90%;"></div>
+                  <div class="wave-bar" style="height: 40%;"></div>
+                  <div class="wave-bar" style="height: 20%;"></div>
+                  <div class="wave-bar" style="height: 65%;"></div>
+                  <div class="wave-bar" style="height: 80%;"></div>
+                  <div class="wave-bar" style="height: 50%;"></div>
+                  <div class="wave-bar" style="height: 75%;"></div>
+                  <div class="wave-bar" style="height: 95%;"></div>
+                  <div class="wave-bar" style="height: 30%;"></div>
+                  <div class="wave-bar" style="height: 45%;"></div>
+                  <div class="wave-bar" style="height: 60%;"></div>
+                  <div class="wave-bar" style="height: 55%;"></div>
+                  <div class="wave-bar" style="height: 70%;"></div>
+                  <div class="wave-bar" style="height: 40%;"></div>
+                </div>
+
+                <p class="simulated-text">
+                  "Gradient optimization constraints decrease exponentially when the activation functions are correctly scaled using adaptive weights parameters..."
+                </p>
+              </div>
+
+              <!-- Cognitive tags key concepts block -->
+              <div class="concepts-section">
+                <span class="concepts-label">Key Concepts Identified</span>
+                <div class="concept-pills">
+                  <span class="pill pill-primary">Stochastic Gradients</span>
+                  <span class="pill pill-secondary">Decay Matrices</span>
+                  <span class="pill pill-purple">Loss Minifolds</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. Section: "Engineered for Intellectual Rigor" -->
+      <section id="features">
+        <div class="section-header">
+          <h2 style="color: #ffffff;">Engineered for Intellectual Rigor</h2>
+          <p>Precision tools designed for researchers, students, and high-level knowledge workers.</p>
+        </div>
+
+        <div class="features-grid">
+          <!-- Card 1 -->
+          <div class="feature-card">
+            <div class="card-icon">
+              <!-- Upload icon inline -->
+              <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+            </div>
+            <h4>Live Lecture Capture</h4>
+            <p>High-fidelity transcription that understands academic context and complex jargon.</p>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="feature-card">
+            <div class="card-icon card-icon-yellow">
+              <!-- Sparkles icon inline -->
+              <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+            </div>
+            <h4>Smart Notes</h4>
+            <p>AI-structured summaries that link disparate concepts into a cohesive knowledge map.</p>
+          </div>
+
+          <!-- Card 3 -->
+          <div class="feature-card">
+            <div class="card-icon card-icon-green">
+              <!-- TrendingUp icon inline -->
+              <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+            </div>
+            <h4>Adaptive Learning</h4>
+            <p>Real-time gap analysis identifies what you missed and adapts your study path.</p>
+          </div>
+
+          <!-- Card 4 -->
+          <div class="feature-card">
+            <div class="card-icon">
+              <!-- Brain icon inline -->
+              <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.44 2.5 2.5 0 0 1 0-3.12 3 3 0 0 1 0-4.88 2.5 2.5 0 0 1 0-3.12A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.44 2.5 2.5 0 0 0 0-3.12 3 3 0 0 0 0-4.88 2.5 2.5 0 0 0 0-3.12A2.5 2.5 0 0 0 14.5 2Z"/></svg>
+            </div>
+            <h4>Persistent AI Brain</h4>
+            <p>A long-term memory system that recalls previous sessions to build cross-topic insights.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. Section: "The Ultimate Digital Notebook" -->
+      <section class="notebook" id="notebook">
+        <!-- Left info column -->
+        <div class="notebook-info">
+          <span class="badge">PRODUCT INTERFACE</span>
+          <h2 style="color: #ffffff;">The Ultimate Digital Notebook</h2>
+          <p>
+            Our split-screen interface allows you to view the original source material alongside AI-generated insights. Highlight any text to trigger the "Persistent Memory" check.
+          </p>
+
+          <div class="bullets-list">
+            <div class="bullet-item">
+              <!-- CheckCircle icon inline -->
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 8 8 12 12 16"/><line x1="16" y1="12" x2="8" y2="12"/></svg>
+              <span>Interactive Knowledge Graphs</span>
+            </div>
+            <div class="bullet-item">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 8 8 12 12 16"/><line x1="16" y1="12" x2="8" y2="12"/></svg>
+              <span>Instant Semantic Search</span>
+            </div>
+            <div class="bullet-item">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 8 8 12 12 16"/><line x1="16" y1="12" x2="8" y2="12"/></svg>
+              <span>Context-Aware Highlighting</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right simulated MacBook screen visualization -->
+        <div class="macbook-visual">
+          <div class="macbook-chassis">
+            <div class="macbook-screen">
+              <div class="macbook-camera"></div>
+              
+              <div class="macbook-screen-content">
+                <div class="app-header">
+                  <span class="app-title">workspace / Calculus-Theory.pdf</span>
+                  <div class="app-close-dot"></div>
+                </div>
+
+                <div class="app-split-pane">
+                  <!-- Transcript view left -->
+                  <div class="pane-left">
+                    <span class="pane-tag">TRANSCRIPT VIEW</span>
+                    <p>"Under non-trivial topologies, boundary states diverge from traditional manifolds. We represent this as limit coordinates."</p>
+                    <div class="formula-box">
+                      f(x) = lim (h -> 0) [f(x+h) - f(x)] / h
+                    </div>
+                    <p>"This establishes the derivatives base rules. Repeating this allows gradient tracing..."</p>
+                  </div>
+
+                  <!-- Summaries workspace right -->
+                  <div class="pane-right">
+                    <span class="pane-tag">KNOWLEDGE RECALL</span>
+                    
+                    <div class="concept-title">
+                      <span class="concept-heading">Calculus Foundations</span>
+                      <div class="concept-bar"></div>
+                    </div>
+
+                    <ul class="bullets-summary">
+                      <li>Derivatives represent local slope systems.</li>
+                      <li>Highly vital for gradient optimization structures.</li>
+                    </ul>
+
+                    <div class="midterm-flag">
+                      ★ Topic Flagged: Midterm Critical Section
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="macbook-base">
+              <div class="macbook-indent"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. Section: "Three Steps to Mastery" -->
+      <section style="text-align: center;">
+        <div class="section-header">
+          <h2 style="color: #ffffff;">Three Steps to Mastery</h2>
+        </div>
+
+        <div class="steps-grid">
+          <!-- Step 1 -->
+          <div class="step-item">
+            <div class="step-number">1</div>
+            <h4>Record</h4>
+            <p>Live stream your audio or upload transcripts to our secure cloud.</p>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="step-item">
+            <div class="step-number">2</div>
+            <h4>Understand</h4>
+            <p>AI clusters themes and highlights the most critical data points.</p>
+          </div>
+
+          <!-- Step 3 -->
+          <div class="step-item">
+            <div class="step-number">3</div>
+            <h4>Get Notes</h4>
+            <p>Receive structured documents, quiz banks, and flashcards instantly.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. Section: "Your Personal Academic Memory" -->
+      <section id="memory">
+        <div class="section-header">
+          <h2 style="color: #ffffff;">Your Personal Academic Memory</h2>
+          <p>NoteIT doesn't just process files; it builds a mental model of your knowledge. Over time, it identifies your cognitive gaps and proactively suggests review material.</p>
+        </div>
+
+        <div class="memory-grid">
+          <!-- Dashboard pane left -->
+          <div class="memory-dashboard">
+            <!-- Curve Card -->
+            <div class="dashboard-card">
+              <div class="dashboard-card-header">
+                <div>
+                  <span class="card-tag">Retention Curve</span>
+                  <h4 class="card-title">Learning History</h4>
+                </div>
+                <div class="chart-legends">
+                  <div class="legend-item">
+                    <span class="legend-dot" style="background: var(--color-primary);"></span>
+                    <span>Current Mastery</span>
+                  </div>
+                  <div class="legend-item">
+                    <span class="legend-dot" style="background: var(--color-success);"></span>
+                    <span>Preserved Knowledge</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Curve representation -->
+              <div class="chart-container">
+                <svg class="chart-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="blue-grad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="var(--color-primary)" stop-opacity="0.25"/>
+                      <stop offset="100%" stop-color="var(--color-bg-dark)" stop-opacity="0"/>
+                    </linearGradient>
+                    <linearGradient id="green-grad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="var(--color-success)" stop-opacity="0.12"/>
+                      <stop offset="100%" stop-color="var(--color-bg-dark)" stop-opacity="0"/>
+                    </linearGradient>
+                  </defs>
+                  <!-- Curves -->
+                  <path d="M0 80 Q 25 30, 50 45 T 100 20 L 100 100 L 0 100 Z" fill="url(#blue-grad)"/>
+                  <path d="M0 80 Q 25 30, 50 45 T 100 20" stroke="var(--color-primary)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+                  
+                  <path d="M0 90 Q 30 70, 60 55 T 100 40 L 100 100 L 0 100 Z" fill="url(#green-grad)"/>
+                  <path d="M0 90 Q 30 70, 60 55 T 100 40" stroke="var(--color-success)" stroke-width="2" stroke-dasharray="4,3" fill="none"/>
+                </svg>
+                <div class="chart-labels">
+                  <span>LEC 1</span>
+                  <span>LEC 3</span>
+                  <span>LEC 5</span>
+                  <span>LEC 7</span>
+                  <span>LEC 10</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Radar tracker -->
+            <div class="dashboard-card">
+              <span class="card-tag">Telemetry analysis</span>
+              <h4 class="card-title" style="margin-top: 0;">Weak Topic Radar</h4>
+
+              <div class="radar-wrapper">
+                <div class="radar-svg-box">
+                  <svg class="chart-svg" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="45" stroke="rgba(255,255,255,0.06)" stroke-width="0.8" fill="none" />
+                    <circle cx="50" cy="50" r="30" stroke="rgba(255,255,255,0.06)" stroke-width="0.8" fill="none" />
+                    <circle cx="50" cy="50" r="15" stroke="rgba(255,255,255,0.06)" stroke-width="0.8" fill="none" />
+                    
+                    <line x1="50" y1="5" x2="50" y2="95" stroke="rgba(255,255,255,0.06)" stroke-width="0.8" />
+                    <line x1="5" y1="50" x2="95" y2="50" stroke="rgba(255,255,255,0.06)" stroke-width="0.8" />
+                    <line x1="18.2" y1="18.2" x2="81.8" y2="81.8" stroke="rgba(255,255,255,0.06)" stroke-width="0.8" />
+                    <line x1="18.2" y1="81.8" x2="81.8" y2="18.2" stroke="rgba(255,255,255,0.06)" stroke-width="0.8" />
+
+                    <polygon points="50,15 70,30 85,50 60,75 50,80 35,60 20,50 30,35" fill="rgba(239, 68, 68, 0.12)" stroke="var(--color-error)" stroke-width="1.8" />
+                  </svg>
+                </div>
+
+                <div class="radar-legend-grid">
+                  <div class="radar-legend-item"><span class="radar-dot" style="background: #f87171;"></span> NLP: Critical</div>
+                  <div class="radar-legend-item"><span class="radar-dot" style="background: #34d399;"></span> Algorithms: Mastered</div>
+                  <div class="radar-legend-item"><span class="radar-dot" style="background: #fbbf24;"></span> Neural Networks: Review</div>
+                  <div class="radar-legend-item"><span class="radar-dot" style="background: #f87171;"></span> Python: Staging</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recommendations column right -->
+          <div class="recs-panel">
+            <span class="recs-label">Personalized Recommendations</span>
+
+            <!-- Rec 1 -->
+            <div class="rec-card rec-green">
+              <div class="rec-icon">
+                <!-- Brain icon -->
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.44 2.5 2.5 0 0 1 0-3.12 3 3 0 0 1 0-4.88 2.5 2.5 0 0 1 0-3.12A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.44 2.5 2.5 0 0 0 0-3.12 3 3 0 0 0 0-4.88 2.5 2.5 0 0 0 0-3.12A2.5 2.5 0 0 0 14.5 2Z"/></svg>
+              </div>
+              <div class="rec-details">
+                <div class="rec-heading-row">
+                  <span class="rec-title">Review: Neural Networks</span>
+                  <span class="rec-badge">45% Score</span>
+                </div>
+                <p class="rec-desc">Learn micro-connections to practice your deep neural networks.</p>
+              </div>
+            </div>
+
+            <!-- Rec 2 -->
+            <div class="rec-card rec-orange">
+              <div class="rec-icon">
+                <!-- Cpu icon -->
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 15h3M1 9h3M1 15h3"/></svg>
+              </div>
+              <div class="rec-details">
+                <div class="rec-heading-row">
+                  <span class="rec-title">Practice: Algorithms</span>
+                  <span class="rec-badge">Review Required</span>
+                </div>
+                <p class="rec-desc">Learn more algorithms from leveraging your data structures.</p>
+              </div>
+            </div>
+
+            <!-- Rec 3 -->
+            <div class="rec-card rec-blue">
+              <div class="rec-icon">
+                <!-- Layers icon -->
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+              </div>
+              <div class="rec-details">
+                <div class="rec-heading-row">
+                  <span class="rec-title">Explore: Reinforcement Learning</span>
+                  <span class="rec-badge">Suggested Core</span>
+                </div>
+                <p class="rec-desc">Explore how neurons learn to explore reinforcement learning.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7. Section: "Simple, Scholar-Focused Pricing" -->
+      <section id="pricing" style="text-align: center;">
+        <div class="section-header">
+          <h2 style="color: #ffffff;">Simple, Scholar-Focused Pricing</h2>
+          <p>Choose the optimal scaling factor for your education demands.</p>
+        </div>
+
+        <div class="pricing-grid">
+          <!-- Free tier -->
+          <div class="pricing-card">
+            <div class="pricing-info">
+              <h3>Free</h3>
+              <div class="price-row">
+                <span class="price">$0</span>
+                <span class="price-period">/ month</span>
+              </div>
+              <div class="pricing-divider"></div>
+              <ul class="pricing-features">
+                <li>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 8 8 12 12 16"/><line x1="16" y1="12" x2="8" y2="12"/></svg>
+                  <span>5 Recordings / Mo</span>
+                </li>
+                <li>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 8 8 12 12 16"/><line x1="16" y1="12" x2="8" y2="12"/></svg>
+                  <span>Standard Transcription</span>
+                </li>
+                <li>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 8 8 12 12 16"/><line x1="16" y1="12" x2="8" y2="12"/></svg>
+                  <span>Basic Summaries</span>
+                </li>
+              </ul>
+            </div>
+            <button class="btn-pricing btn-pricing-secondary">Get Started</button>
+          </div>
+
+          <!-- Student Pro tier -->
+          <div class="pricing-card pricing-card-popular">
+            <span class="popular-badge">MOST POPULAR</span>
+            <div class="pricing-info">
+              <h3>Student Pro</h3>
+              <div class="price-row">
+                <span class="price">$12</span>
+                <span class="price-period">/ month</span>
+              </div>
+              <div class="pricing-divider"></div>
+              <ul class="pricing-features">
+                <li>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 8 8 12 12 16"/><line x1="16" y1="12" x2="8" y2="12"/></svg>
+                  <span>Unlimited Recordings</span>
+                </li>
+                <li>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 8 8 12 12 16"/><line x1="16" y1="12" x2="8" y2="12"/></svg>
+                  <span>High-Fidelity AI Processing</span>
+                </li>
+                <li>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 8 8 12 12 16"/><line x1="16" y1="12" x2="8" y2="12"/></svg>
+                  <span>Persistent AI Memory</span>
+                </li>
+                <li>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 8 8 12 12 16"/><line x1="16" y1="12" x2="8" y2="12"/></svg>
+                  <span>Weak Topic Radar</span>
+                </li>
+              </ul>
+            </div>
+            <button class="btn-pricing btn-pricing-primary">Go Pro</button>
+          </div>
+
+          <!-- Institution tier -->
+          <div class="pricing-card">
+            <div class="pricing-info">
+              <h3>Institution</h3>
+              <div class="price-row">
+                <span class="price" style="font-size: 28px;">Custom</span>
+                <span class="price-period">/ customized plan</span>
+              </div>
+              <div class="pricing-divider"></div>
+              <ul class="pricing-features">
+                <li>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 8 8 12 12 16"/><line x1="16" y1="12" x2="8" y2="12"/></svg>
+                  <span>Scale academic intelligence across university/lab.</span>
+                </li>
+                <li>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 8 8 12 12 16"/><line x1="16" y1="12" x2="8" y2="12"/></svg>
+                  <span>Admin Dashboard</span>
+                </li>
+                <li>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 8 8 12 12 16"/><line x1="16" y1="12" x2="8" y2="12"/></svg>
+                  <span>API Integration</span>
+                </li>
+                <li>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 8 8 12 12 16"/><line x1="16" y1="12" x2="8" y2="12"/></svg>
+                  <span>Priority Support</span>
+                </li>
+              </ul>
+            </div>
+            <button class="btn-pricing btn-pricing-secondary">Contact Sales</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 8. Section: "Ready to upgrade your intellect?" -->
+      <section style="text-align: center;">
+        <div class="cta-box">
+          <div class="cta-glow"></div>
+          <div class="cta-content">
+            <h3 style="color: #ffffff;">Ready to upgrade your intellect?</h3>
+            <p>Join 50,000+ researchers and students using ScholarAI to redefine how they learn.</p>
+            
+            <div class="cta-buttons">
+              <a href="#" class="btn-cta btn-cta-primary" style="justify-content: center;">Start Free Trial</a>
+              <a href="#" class="btn-cta btn-cta-secondary" style="justify-content: center;">Schedule a Demo</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 9. Premium Footer -->
+      <footer>
+        <div class="footer-container">
+          <!-- Footer Branding left -->
+          <div class="footer-brand">
+            <a href="#" class="logo">
+              <svg width="32" height="32" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="100" height="100" rx="28" fill="#0c0e17" />
+                <rect x="38" y="32" width="31" height="35" rx="5" fill="#242834" />
+                <path d="M30 29.5 L38 34 V 66 L30 70.5 Z" fill="#FFFFFF" />
+                <path d="M38 34 L38 66" stroke="#2c303f" stroke-width="0.8" />
+                <rect x="38" y="34" width="4" height="32" fill="#1d202b" />
+                <rect x="42" y="34" width="22" height="32" rx="3.5" fill="#FFFFFF" />
+                <rect x="46" y="42" width="10" height="2" rx="1" fill="#a4abb6" />
+                <rect x="46" y="48" width="12" height="2" rx="1" fill="#a4abb6" />
+                <rect x="46" y="54" width="8" height="2" rx="1" fill="#a4abb6" />
+                <circle cx="71" cy="33.5" r="9.5" fill="#5F6DF8" stroke="#0c0e17" stroke-width="2" />
+                <path d="M71 29 V38 M66.5 33.5 H75.5" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" />
+              </svg>
+              <span>Noteit AI</span>
+            </a>
+            <p class="footer-desc">
+              NoteIT AI. Precision in knowledge synthesis. Helping the world think deeper through technology.
+            </p>
+            <div class="footer-telemetry">
+              <div class="founder-info" style="font-weight: 800;">Built by BRUTE</div>
+              <div class="founder-info">Founder: <span>Kishan Verma</span></div>
+              <div class="footer-contact-title">Contact Us</div>
+              <div class="footer-contact-item">Email: vermakishan478@gmail.com</div>
+              <div class="footer-contact-item">Phone: +91 7471111980</div>
+            </div>
+          </div>
+
+          <!-- Footer link groups right -->
+          <div class="footer-links-grid">
+            <div class="footer-nav-group">
+              <span>Product</span>
+              <ul class="footer-nav-list">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#notebook">Solutions</a></li>
+                <li><a href="#pricing">Pricing</a></li>
+                <li><a href="#memory">About</a></li>
+              </ul>
+            </div>
+
+            <div class="footer-nav-group">
+              <span>Company</span>
+              <ul class="footer-nav-list">
+                <li><a href="#">About Us</a></li>
+                <li><a href="#">Privacy Policy</a></li>
+                <li><a href="#">Terms of Service</a></li>
+                <li><a href="#">Research Ethics</a></li>
+              </ul>
+            </div>
+
+            <div class="footer-nav-group">
+              <span>Support</span>
+              <ul class="footer-nav-list">
+                <li><a href="#">Help Center</a></li>
+                <li><a href="#">Contact Support</a></li>
+                <li><a href="#">API Documentation</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer-bottom">
+          <span>© 2026 ScholarAI. Precision in knowledge synthesis. All rights reserved.</span>
+          <div class="footer-socials">
+            <a href="#">
+              <!-- Network icon inline -->
+              <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3M12 12V8"/></svg>
+            </a>
+            <a href="#">
+              <!-- Users icon inline -->
+              <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </a>
+            <a href="#">
+              <!-- Award icon inline -->
+              <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
+            </a>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <!-- Three.js Setup Script (ES Module) -->
+    <script type="module">
+      import * as THREE from 'https://unpkg.com/three@0.143.0/build/three.module.js';
+      import { EffectComposer } from 'https://unpkg.com/three@0.143.0/examples/jsm/postprocessing/EffectComposer.js';
+      import { RenderPass } from 'https://unpkg.com/three@0.143.0/examples/jsm/postprocessing/RenderPass.js';
+      import { UnrealBloomPass } from 'https://unpkg.com/three@0.143.0/examples/jsm/postprocessing/UnrealBloomPass.js';
+      import { ShaderPass } from 'https://unpkg.com/three@0.143.0/examples/jsm/postprocessing/ShaderPass.js';
+      import { GammaCorrectionShader } from 'https://unpkg.com/three@0.143.0/examples/jsm/shaders/GammaCorrectionShader.js';
+      import { CopyShader } from 'https://unpkg.com/three@0.143.0/examples/jsm/shaders/CopyShader.js';
+
+      // 1. Initialise Scene, Camera, Renderer
+      const canvas = document.getElementById('scene');
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x000000);
+      scene.fog = new THREE.Fog(0x000000, 0, 45);
+
+      const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 400);
+      camera.position.set(0, 7, 16);
+      scene.add(camera);
+
+      const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.VSMShadowMap;
+
+      // Layers definition
+      const LAYERS = { NONE: 0, TORUS_SCENE: 1, BLOOM_SCENE: 2, ENTIRE_SCENE: 3 };
+      
+      // Enable camera layers
+      camera.layers.enable(LAYERS.NONE);
+      camera.layers.enable(LAYERS.TORUS_SCENE);
+      camera.layers.enable(LAYERS.BLOOM_SCENE);
+      camera.layers.enable(LAYERS.ENTIRE_SCENE);
+
+      // 2. Setup Postprocessing Composers sharing a single RenderPass
+      const renderPass = new RenderPass(scene, camera);
+
+      // Torus composer
+      const torusComposer = new EffectComposer(renderer);
+      torusComposer.renderToScreen = false;
+      torusComposer.addPass(renderPass);
+      torusComposer.addPass(new ShaderPass(GammaCorrectionShader));
+      const torusBloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.22, 0.2, 0);
+      torusComposer.addPass(torusBloomPass);
+      torusComposer.addPass(new ShaderPass(CopyShader));
+
+      // Bloom composer (Wave grid)
+      const bloomComposer = new EffectComposer(renderer);
+      bloomComposer.renderToScreen = false;
+      bloomComposer.addPass(renderPass);
+      const gridBloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.4, 0.55, 0);
+      bloomComposer.addPass(gridBloomPass);
+      bloomComposer.addPass(new ShaderPass(GammaCorrectionShader));
+
+      // Final composer blending everything
+      const finalComposer = new EffectComposer(renderer);
+      finalComposer.addPass(renderPass);
+
+      const finalPass = new ShaderPass(
+        new THREE.ShaderMaterial({
+          uniforms: {
+            baseTexture: { value: null },
+            bloomTexture: { value: null },
+            torusTexture: { value: null }
+          },
+          vertexShader: `
+            varying vec2 vUv;
+            void main() {
+              vUv = uv;
+              gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+          `,
+          fragmentShader: `
+            uniform sampler2D baseTexture;
+            uniform sampler2D bloomTexture;
+            uniform sampler2D torusTexture;
+            varying vec2 vUv;
+            void main() {
+              vec4 base = texture2D(baseTexture, vUv);
+              vec4 bloom = texture2D(bloomTexture, vUv);
+              vec4 torus = texture2D(torusTexture, vUv);
+              gl_FragColor = base + bloom * 1.6 + torus * 1.3;
+            }
+          `
+        }),
+        'baseTexture'
+      );
+      finalComposer.addPass(finalPass);
+
+      // 3. Create Objects & Assign Layers
+      
+      // Floating ambient star particles (Base layer)
+      const starGeo = new THREE.BufferGeometry();
+      const starCount = 300;
+      const starPos = new Float32Array(starCount * 3);
+      for (let i = 0; i < starCount * 3; i++) {
+        starPos[i] = (Math.random() - 0.5) * 150;
+      }
+      starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+      const starMat = new THREE.PointsMaterial({
+        color: 0xffffff,
+        size: 0.35,
+        transparent: true,
+        opacity: 0.45
+      });
+      const stars = new THREE.Points(starGeo, starMat);
+      stars.layers.set(LAYERS.NONE);
+      scene.add(stars);
+
+      // Torus Knot objects (Torus scene layer)
+      const torusGeo1 = new THREE.TorusKnotGeometry(2.4, 0.55, 120, 16);
+      const torusMat1 = new THREE.MeshBasicMaterial({
+        color: 0x5f6df8,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.35
+      });
+      const torus1 = new THREE.Mesh(torusGeo1, torusMat1);
+      torus1.position.set(7, 1, -12);
+      torus1.layers.set(LAYERS.TORUS_SCENE);
+      scene.add(torus1);
+
+      const torusGeo2 = new THREE.TorusKnotGeometry(1.6, 0.3, 100, 12);
+      const torusMat2 = new THREE.MeshBasicMaterial({
+        color: 0x10b981,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.3
+      });
+      const torus2 = new THREE.Mesh(torusGeo2, torusMat2);
+      torus2.position.set(-8, -2, -26);
+      torus2.layers.set(LAYERS.TORUS_SCENE);
+      scene.add(torus2);
+
+      // Dynamic canvas circular soft dot texture
+      function createCircleTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 16;
+        canvas.height = 16;
+        const ctx = canvas.getContext('2d');
+        const grad = ctx.createRadialGradient(8, 8, 0, 8, 8, 8);
+        grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+        grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 16, 16);
+        return new THREE.CanvasTexture(canvas);
+      }
+      
+      // Winding stream paths helper for organic particle ribbons
+      function getStreamPath3D(streamId, x, time) {
+        if (streamId === 0) {
+          // Upper winding ribbon
+          const y = Math.sin(x * 0.045 + time * 0.5) * 4.2 + Math.cos(x * 0.02) * 2.0 - 2.0;
+          const z = Math.cos(x * 0.02 + time * 0.2) * 8.0 - 10.0;
+          return { y, z };
+        } else if (streamId === 1) {
+          // Lower winding ribbon
+          const y = Math.sin(x * 0.025 - time * 0.3) * 5.0 + Math.cos(x * 0.01 + time * 0.1) * 3.0 - 6.0;
+          const z = Math.sin(x * 0.015 - time * 0.15) * 10.0 - 18.0;
+          return { y, z };
+        } else if (streamId === 2) {
+          // Fast central stream
+          const y = Math.sin(x * 0.035 + time * 0.6) * 3.0 - 4.5;
+          const z = Math.cos(x * 0.035 - time * 0.3) * 6.0 - 6.0;
+          return { y, z };
+        } else {
+          // Diffuse background stream
+          const y = Math.sin(x * 0.012 + time * 0.12) * 6.0 + Math.cos(x * 0.005) * 3.5 - 5.0;
+          const z = Math.cos(x * 0.01 - time * 0.1) * 13.0 - 22.0;
+          return { y, z };
+        }
+      }
+      
+      // Flow Stream Particle System (Organic data streams)
+      const particleCount = 2000;
+      const particleGeo = new THREE.BufferGeometry();
+      const positions = new Float32Array(particleCount * 3);
+      const colors = new Float32Array(particleCount * 3);
+      const particleData = [];
+
+      const colorPalette = [
+        new THREE.Color(0x5f6df8), // Indigo
+        new THREE.Color(0x06b6d4), // Cyan/Teal
+        new THREE.Color(0xa855f7), // Violet
+        new THREE.Color(0x2563eb)  // Deep Blue
+      ];
+
+      for (let i = 0; i < particleCount; i++) {
+        const streamId = i % 4;
+        const x = (Math.random() - 0.5) * 120;
+        
+        // Pre-calculate positions on the stream paths for cohesion
+        const path = getStreamPath3D(streamId, x, 0);
+
+        positions[i * 3] = x;
+        positions[i * 3 + 1] = path.y + (Math.random() - 0.5) * 2.5;
+        positions[i * 3 + 2] = path.z + (Math.random() - 0.5) * 4.0;
+
+        // Choose a random color from our premium palette
+        const baseColor = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+        colors[i * 3] = baseColor.r * 0.75;
+        colors[i * 3 + 1] = baseColor.g * 0.75;
+        colors[i * 3 + 2] = baseColor.b * 0.75;
+
+        particleData.push({
+          streamId: streamId,
+          baseColor: baseColor,
+          speed: (0.07 + Math.random() * 0.08) * (streamId === 2 ? 1.4 : 1.0), // Fast stream flows quicker
+          noiseOffset: Math.random() * 100,
+          offsetY: (Math.random() - 0.5) * 1.5,
+          offsetZ: (Math.random() - 0.5) * 2.5
+        });
+      }
+
+      particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      particleGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+      const particleMat = new THREE.PointsMaterial({
+        size: 0.45,
+        map: createCircleTexture(),
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.75,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+
+      const flowParticles = new THREE.Points(particleGeo, particleMat);
+      flowParticles.layers.set(LAYERS.BLOOM_SCENE); // Render in bloom layer for soft glowing effects!
+      scene.add(flowParticles);
+
+      // Interactive Mouse-Raycasting Setup
+      const mouse = new THREE.Vector2();
+      const raycaster = new THREE.Raycaster();
+      let targetPoint = new THREE.Vector3(0, -5, 0);
+      let isMouseActive = false;
+
+      window.addEventListener('mousemove', (event) => {
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        isMouseActive = true;
+      });
+
+      window.addEventListener('mouseleave', () => {
+        isMouseActive = false;
+      });
+
+      // 4. Scroll Tracking & Animation loop
+      let scrollY = 0;
+      window.addEventListener('scroll', () => {
+        scrollY = window.scrollY;
+      });
+
+      const clock = new THREE.Clock();
+
+      function animate() {
+        requestAnimationFrame(animate);
+
+        const time = clock.getElapsedTime();
+
+        // Raycasting to project mouse coordinates on the horizontal grid plane
+        if (isMouseActive) {
+          raycaster.setFromCamera(mouse, camera);
+          const ray = raycaster.ray;
+          // Calculate intersection with plane y = -5: origin.y + t * direction.y = -5
+          if (Math.abs(ray.direction.y) > 0.0001) {
+            const t = (-5 - ray.origin.y) / ray.direction.y;
+            if (t >= 0) {
+              const intersectX = ray.origin.x + t * ray.direction.x;
+              const intersectZ = ray.origin.z + t * ray.direction.z;
+              // Smoothly lerp towards target to make mouse tracking fluid
+              targetPoint.lerp(new THREE.Vector3(intersectX, -5, intersectZ), 0.1);
+            }
+          }
+        } else {
+          // Gently return the ripple focus to the center
+          targetPoint.lerp(new THREE.Vector3(0, -5, 0), 0.05);
+        }
+
+        // Update Flow Stream Particles
+        const posAttr = flowParticles.geometry.attributes.position;
+        const posArray = posAttr.array;
+        const colorAttr = flowParticles.geometry.attributes.color;
+        const colorsArray = colorAttr.array;
+        
+        for (let i = 0; i < particleCount; i++) {
+          const data = particleData[i];
+          // Particles flow from right to left (along negative X direction)
+          posArray[i * 3] -= data.speed;
+          
+          // Respawn at right edge if they pass the left boundary
+          if (posArray[i * 3] < -60) {
+            posArray[i * 3] = 60;
+            data.offsetY = (Math.random() - 0.5) * 1.5;
+            data.offsetZ = (Math.random() - 0.5) * 2.5;
+          }
+          
+          const px = posArray[i * 3];
+          
+          // Compute paths using stream ribbons
+          const path = getStreamPath3D(data.streamId, px, time);
+
+          // Localized mouse distortion/deflection (push particles away from cursor)
+          let deflectionX = 0;
+          let deflectionY = 0;
+          let deflectionZ = 0;
+
+          if (isMouseActive) {
+            const dx = px - targetPoint.x;
+            const dy = posArray[i * 3 + 1] - targetPoint.y; // targetPoint.y is -5
+            const dz = posArray[i * 3 + 2] - targetPoint.z;
+            const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            
+            if (dist < 18) {
+              const force = (18 - dist) * 0.08;
+              deflectionX = (dx / dist) * force;
+              deflectionY = (dy / dist) * force;
+              deflectionZ = (dz / dist) * force;
+            }
+          }
+
+          // Flow field micro-fluctuation noise
+          const noiseForce = Math.sin(px * 0.12 + data.noiseOffset + time) * 0.45;
+
+          // Set final coordinates
+          posArray[i * 3 + 1] = path.y + data.offsetY + noiseForce + deflectionY;
+          posArray[i * 3 + 2] = path.z + data.offsetZ + deflectionZ;
+          posArray[i * 3] += deflectionX;
+
+          // Smooth edge boundary fade-in/fade-out
+          let fade = 1.0;
+          if (px > 40) {
+            fade = (60 - px) / 20;
+          } else if (px < -40) {
+            fade = (px + 60) / 20;
+          }
+          fade = Math.max(0, Math.min(1, fade));
+
+          colorsArray[i * 3] = data.baseColor.r * fade * 0.75;
+          colorsArray[i * 3 + 1] = data.baseColor.g * fade * 0.75;
+          colorsArray[i * 3 + 2] = data.baseColor.b * fade * 0.75;
+        }
+        posAttr.needsUpdate = true;
+        colorAttr.needsUpdate = true;
+
+        // Rotate Torus Knots
+        torus1.rotation.x = time * 0.12;
+        torus1.rotation.y = time * 0.2;
+        torus2.rotation.x = time * -0.15;
+        torus2.rotation.z = time * 0.25;
+
+        // Camera scroll reactive positioning
+        const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+        const scrollFrac = maxScroll > 0 ? scrollY / maxScroll : 0;
+
+        const targetCamY = 7 - scrollFrac * 11;
+        const targetCamZ = 16 - scrollFrac * 48;
+
+        // Smooth camera lerp
+        camera.position.y += (targetCamY - camera.position.y) * 0.08;
+        camera.position.z += (targetCamZ - camera.position.z) * 0.08;
+
+        const lookAtY = -scrollFrac * 8;
+        const lookAtZ = -scrollFrac * 45;
+        camera.lookAt(0, lookAtY, lookAtZ);
+
+        // Composers texture binding
+        finalPass.uniforms.bloomTexture.value = bloomComposer.readBuffer.texture;
+        finalPass.uniforms.torusTexture.value = torusComposer.readBuffer.texture;
+
+        // Multi-Composer Selective Render Passes
+        // Pass 1: Torus scene only
+        camera.layers.set(LAYERS.TORUS_SCENE);
+        torusComposer.render();
+
+        // Pass 2: Wave grid scene only
+        camera.layers.set(LAYERS.BLOOM_SCENE);
+        bloomComposer.render();
+
+        // Pass 3: Combine base background layers and composite
+        camera.layers.set(LAYERS.NONE);
+        finalComposer.render();
+      }
+
+      animate();
+
+      // Handle window sizing
+      window.addEventListener('resize', () => {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize(width, height);
+        
+        torusComposer.setSize(width, height);
+        bloomComposer.setSize(width, height);
+        finalComposer.setSize(width, height);
+        
+        torusBloomPass.setSize(width, height);
+        gridBloomPass.setSize(width, height);
+      });
+    </script>
+  </body>
+</html>

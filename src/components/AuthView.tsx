@@ -29,17 +29,20 @@ import {
   Chrome
 } from 'lucide-react';
 import { motion } from 'motion/react';
+import AILogo from './AILogo';
 
 interface AuthViewProps {
   onLoginSuccess: (userData: { fullName: string; emailAddress: string }) => void;
   initialMode?: 'login' | 'signup' | 'forgot' | 'verify';
   theme: 'light' | 'dark';
+  onNavigateToLanding?: () => void;
 }
 
 export default function AuthView({
   onLoginSuccess,
   initialMode = 'login',
-  theme
+  theme,
+  onNavigateToLanding
 }: AuthViewProps) {
   const [mode, setMode] = useState<'login' | 'signup' | 'forgot' | 'verify'>(initialMode);
   
@@ -185,62 +188,138 @@ export default function AuthView({
   };
 
   return (
-    <div className={`relative min-h-screen flex items-center justify-center overflow-hidden font-sans ${
+    <div className={`min-h-screen w-screen flex flex-col md:flex-row overflow-hidden font-sans ${
       theme === 'dark' ? 'bg-[#0a0a0c] text-white' : 'bg-[#FAF9F5] text-gray-900'
     }`}>
       
-      {/* Floating particles background background */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30">
-        {particles.map((p) => (
-          <div
-            key={p.id}
-            style={{
-              position: 'absolute',
-              left: `${p.x}%`,
-              top: `${p.y}%`,
-              width: `${p.s}px`,
-              height: `${p.s}px`,
-              animation: `float ${p.d}s infinite ease-in-out`
-            }}
-            className={`rounded-full ${
-              theme === 'dark' ? 'bg-indigo-500/40' : 'bg-indigo-600/20'
-            }`}
-          />
-        ))}
+      {/* LEFT COLUMN: Product Branding & Showcase */}
+      <div className={`hidden md:flex md:w-1/2 flex-col justify-between p-12 relative overflow-hidden border-r ${
+        theme === 'dark' ? 'border-neutral-900 bg-neutral-950/20' : 'border-gray-200 bg-gray-50/20'
+      }`}>
+        {/* Ambient background particles */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30">
+          {particles.map((p) => (
+            <div
+              key={p.id}
+              style={{
+                position: 'absolute',
+                left: `${p.x}%`,
+                top: `${p.y}%`,
+                width: `${p.s}px`,
+                height: `${p.s}px`,
+                animation: `float ${p.d}s infinite ease-in-out`
+              }}
+              className={`rounded-full ${
+                theme === 'dark' ? 'bg-indigo-500/40' : 'bg-indigo-600/20'
+              }`}
+            />
+          ))}
+          <div className={`absolute top-[-20%] left-[-10%] w-[40vw] h-[40vw] rounded-full blur-[120px] pointer-events-none ${
+            theme === 'dark' ? 'bg-indigo-950/20' : 'bg-indigo-100/30'
+          }`} />
+        </div>
 
-        {/* Ambient colored glowing clouds */}
-        <div className={`absolute top-[-20%] left-[-10%] w-[60vw] h-[60vw] rounded-full blur-[140px] pointer-events-none ${
-          theme === 'dark' ? 'bg-indigo-950/20' : 'bg-indigo-100/30'
-        }`} />
-        <div className={`absolute bottom-[-20%] right-[-10%] w-[50vw] h-[50vw] rounded-full blur-[130px] pointer-events-none ${
-          theme === 'dark' ? 'bg-purple-950/25' : 'bg-purple-100/25'
-        }`} />
+        {/* Brand Header */}
+        <div 
+          className="flex items-center gap-2 cursor-pointer relative z-10"
+          onClick={onNavigateToLanding}
+        >
+          <AILogo size={38} showText={true} theme={theme} />
+        </div>
+
+        {/* Tagline & Copy */}
+        <div className="space-y-6 my-auto max-w-lg relative z-10 text-left">
+          <h1 className="text-4xl font-sans font-black tracking-tight leading-[1.1]">
+            AI That Thinks <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#5F6DF8] to-[#2563EB] italic font-serif py-1 font-medium select-text">
+              While You Learn
+            </span>
+          </h1>
+          <p className="text-sm font-semibold leading-relaxed text-gray-500 dark:text-neutral-400">
+            NoteIT AI captures lectures, extracts structural text, generates dynamic notes, flashcards, interactive quizzes, and designs beautiful presentation slides in one unified workspace.
+          </p>
+
+          {/* Premium Preview Dashboard Card */}
+          <div className={`rounded-2xl border p-5.5 space-y-4 shadow-xl ${
+            theme === 'dark' ? 'bg-[#121318]/70 border-neutral-850' : 'bg-white border-gray-200'
+          }`}>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 font-mono">
+                Speaker 1 • Active Synthesis
+              </span>
+              <span className="rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-450 px-2.5 py-0.5 text-[9px] font-bold">
+                COMPLETED
+              </span>
+            </div>
+            
+            <p className="text-xs font-serif italic text-gray-500 leading-relaxed">
+              "Gradient descent scaling parameters decrease exponentially when optimization adaptive weights are scaled with moving averages of gradients..."
+            </p>
+
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              <span className="rounded bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-500/10 px-2.5 py-0.5 text-[9px] font-semibold">
+                Adam Optimizer
+              </span>
+              <span className="rounded bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 text-gray-600 dark:text-neutral-400 px-2.5 py-0.5 text-[9px] font-semibold">
+                Gradient Descent
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer info */}
+        <div className="text-xs text-neutral-500 relative z-10">
+          © 2026 NoteIT AI Labs. Powered by BRUTE.
+        </div>
       </div>
 
-      <div className="w-full max-w-md p-6 relative z-10">
-        <header className="text-center mb-8 space-y-3">
-          <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-black text-white dark:bg-white dark:text-black shadow-lg">
-            <GraduationCap className="h-6 w-6" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-black tracking-tight font-sans">
+      {/* RIGHT COLUMN: Glassmorphic Login Panel */}
+      <div className="flex-1 flex items-center justify-center p-6 relative overflow-y-auto z-10">
+        
+        {/* Mobile Header Logo (visible only on small devices) */}
+        <div 
+          className="absolute top-6 left-6 md:hidden flex items-center gap-2 cursor-pointer"
+          onClick={onNavigateToLanding}
+        >
+          <AILogo size={32} showText={true} theme={theme} />
+        </div>
+
+        {/* Floating background particles for mobile */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30 md:hidden">
+          <div className={`absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] rounded-full blur-[100px] ${
+            theme === 'dark' ? 'bg-purple-950/20' : 'bg-purple-100/25'
+          }`} />
+        </div>
+
+        <div className="w-full max-w-md space-y-6">
+          {/* Back Navigation trigger */}
+          {onNavigateToLanding && (
+            <button
+              onClick={onNavigateToLanding}
+              className="text-xs font-bold text-gray-400 hover:text-indigo-500 transition-colors flex items-center gap-1 focus:outline-none cursor-pointer"
+            >
+              ← Back to Landing
+            </button>
+          )}
+
+          <header className="text-center md:text-left mb-6 space-y-2">
+            <h2 className="text-2.5xl font-black tracking-tight font-sans">
               {mode === 'login' && 'Access AI Workspace'}
               {mode === 'signup' && 'Create Academic Identity'}
               {mode === 'forgot' && 'Discharge Security Token'}
               {mode === 'verify' && 'Verify Academic Email'}
             </h2>
-            <p className={`text-xs font-semibold tracking-wider font-mono uppercase mt-1 ${
+            <p className={`text-[10px] font-bold tracking-wider font-mono uppercase ${
               theme === 'dark' ? 'text-indigo-400' : 'text-indigo-600'
             }`}>
-              Note-IT AI • Cognitive Tiers
+              Note-IT AI • Secure Cognitive Portal
             </p>
-          </div>
-        </header>
+          </header>
 
-        {/* Main Card */}
-        <div className={`rounded-2xl border p-6 md:p-8 space-y-6 shadow-xl transition-all ${
-          theme === 'dark' ? 'bg-[#121318]/90 border-neutral-800' : 'bg-white border-gray-200'
-        }`}>
+          {/* Form Card */}
+          <div className={`rounded-2xl border p-6 md:p-8 space-y-6 shadow-xl transition-all ${
+            theme === 'dark' ? 'bg-[#121318]/90 border-neutral-800' : 'bg-white border-gray-200'
+          }`}>
           {error && (
             <div className="rounded-xl bg-red-500/10 border border-red-500/20 p-3.5 flex items-start gap-2.5">
               <AlertCircle className="h-4.5 w-4.5 text-red-500 flex-shrink-0 mt-0.5" />
@@ -479,6 +558,7 @@ export default function AuthView({
         {/* Footer specifications */}
         <div className="text-center mt-6 text-[11px] font-medium text-neutral-500 leading-normal max-w-xs mx-auto">
           Private academic workspace protected by decentralized key signatures. Powered by Note-IT AI Labs.
+        </div>
         </div>
       </div>
     </div>

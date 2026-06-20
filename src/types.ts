@@ -63,13 +63,23 @@ export interface Lecture {
   processingCompletedAt?: any;
   transcript?: string;
   summary?: string;
-  flashcards?: { q: string; a: string }[];
-  quiz?: { question: string; options: string[]; correctAnswer: number; explanation: string }[];
+  summaries?: { [key: string]: string };
+  notes?: { quick?: string; detailed?: string; academic?: string; exam?: string; };
+  flashcards?: { q: string; a: string; category?: 'Basic Recall' | 'Concept Understanding' | 'Application Based' }[];
+  quiz?: { question: string; options: string[]; correctAnswer: number; explanation: string; difficulty?: 'easy' | 'medium' | 'hard' | 'scenario' | 'application'; sourceCitation?: string }[];
   keyConcepts?: { id: string; label: string; desc: string; parent?: string; x: number; y: number; group: string }[];
   cleanTranscript?: string;
   sections?: { id: string; title: string; startTime: string; endTime: string; content: string }[];
   timeline?: { time: string; title: string; description: string }[];
   sourceIntelligence?: { keyPeople: string[]; keyTerms: string[]; formulas: string[]; dates: string[]; statistics: string[]; references: string[] };
+  presentationBlueprint?: {
+    theme: string;
+    purpose: string;
+    regenerationLevel: 'quick' | 'balanced' | 'premium';
+    qualityScore: number;
+    slideCount: number;
+    blueprint: any[];
+  };
 }
 
 export interface WeakTopic {
@@ -225,6 +235,27 @@ export interface KnowledgeSource {
   sections?: { id: string; title: string; startTime: string; endTime: string; content: string }[];
   timeline?: { time: string; title: string; description: string }[];
   sourceIntelligence?: { keyPeople: string[]; keyTerms: string[]; formulas: string[]; dates: string[]; statistics: string[]; references: string[] };
+  presentationBlueprint?: {
+    theme: string;
+    purpose: string;
+    regenerationLevel: 'quick' | 'balanced' | 'premium';
+    qualityScore: number;
+    slideCount: number;
+    blueprint: any[];
+  };
+}
+
+export interface SlideBlueprint {
+  slideType: 'title' | 'hero' | 'timeline' | 'process' | 'comparison' | 'architecture' | 'hierarchy' | 'metrics' | 'quote' | 'case_study' | 'diagram' | 'mindmap' | 'conclusion';
+  title: string;
+  objective: string;
+  keyPoints: string[];
+  imageQuery: string;
+  imageUrl?: string;
+  layoutPriority: number;
+  visualImportance: string;
+  wordLimit: number;
+  designNotes: string;
 }
 
 

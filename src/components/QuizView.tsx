@@ -27,10 +27,57 @@ interface QuizViewProps {
   quizzes: Quiz[];
   selectedQuizId: string | null;
   setSelectedQuizId: (id: string | null) => void;
-  onUpdateQuizScore: (id: string, score: number) => void;
+  onUpdateQuizScore: (id: string, score: number, scores?: { easy?: number; medium?: number; hard?: number }) => void;
   onAddQuestions?: (quizId: string, difficulty: 'easy' | 'medium' | 'hard', newQuestions: QuizQuestion[]) => void;
   theme?: 'light' | 'dark';
 }
+
+// Text similarity helpers
+const normalizeText = (text: string): string => {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
+const getJaccardSimilarity = (str1: string, str2: string): number => {
+  const norm1 = normalizeText(str1);
+  const norm2 = normalizeText(str2);
+  
+  if (norm1 === norm2) return 1.0;
+  if (!norm1 || !norm2) return 0.0;
+  
+  const words1 = new Set(norm1.split(' '));
+  const words2 = new Set(norm2.split(' '));
+  
+  const intersection = new Set([...words1].filter(w => words2.has(w)));
+  const union = new Set([...words1, ...words2]);
+  
+  return intersection.size / union.size;
+};
+
+const isDuplicateQuestion = (
+  newQ: { question: string; options: string[]; correctAnswerIndex: number; explanation?: string },
+  existingQuestions: QuizQuestion[]
+): boolean => {
+  const newText = newQ.question;
+  const newAnswer = newQ.options[newQ.correctAnswerIndex] || '';
+  const newExpl = newQ.explanation || '';
+  
+  for (const existing of existingQuestions) {
+    const qSim = getJaccardSimilarity(newText, existing.question);
+    const existingAnswer = existing.options[existing.correctAnswerIndex] || '';
+    const aSim = getJaccardSimilarity(newAnswer, existingAnswer);
+    const eSim = getJaccardSimilarity(newExpl, existing.explanation || '');
+    
+    if (qSim > 0.8 || (qSim > 0.6 && aSim > 0.8) || (qSim > 0.6 && eSim > 0.8)) {
+      console.log(`Duplicate detected! Q=${qSim.toFixed(2)}, A=${aSim.toFixed(2)}, E=${eSim.toFixed(2)}. Question: "${newText}"`);
+      return true;
+    }
+  }
+  return false;
+};
 
 export default function QuizView({
   quizzes,
@@ -43,12 +90,22 @@ export default function QuizView({
   
   // Game states
   const [activeDifficulty, setActiveDifficulty] = useState<'easy' | 'medium' | 'hard'>('easy');
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0); // Kept at 0 as we dynamically shift
   const [selectedAnswerIndex, setSelectedAnswerIndex] = useState<number | null>(null);
   const [isAnswerRevealed, setIsAnswerRevealed] = useState(false);
-  const [accumulatedScore, setAccumulatedScore] = useState(0);
   const [isQuizFinished, setIsQuizFinished] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // New detailed states
+  const [attemptedQuestionIds, setAttemptedQuestionIds] = useState<string[]>([]);
+  const [userAnswers, setUserAnswers] = useState<Record<string, number>>({});
+  const [difficultyCompleted, setDifficultyCompleted] = useState<'easy' | 'medium' | null>(null);
+  const [showReview, setShowReview] = useState(false);
+  const [sessionScores, setSessionScores] = useState<Record<'easy' | 'medium' | 'hard', { attempted: number; correct: number }>>({
+    easy: { attempted: 0, correct: 0 },
+    medium: { attempted: 0, correct: 0 },
+    hard: { attempted: 0, correct: 0 }
+  });
 
   // Find active quiz
   const activeQuiz = quizzes.find(q => q.id === selectedQuizId);
@@ -58,27 +115,37 @@ export default function QuizView({
   let mediumQ = activeQuiz?.mediumQuestions || [];
   let hardQ = activeQuiz?.hardQuestions || [];
 
-  if (activeQuiz && easyQ.length === 0 && activeQuiz.questions.length > 0) {
-    easyQ = activeQuiz.questions;
-    mediumQ = activeQuiz.questions.map(q => ({
-      ...q,
-      id: `${q.id}-medium`,
-      question: `[Medium] ${q.question}`,
-      explanation: q.explanation || 'Medium difficulty conceptual application review.',
-      sourceCitation: q.sourceCitation || `[Source: ${activeQuiz.title}, Chapter 2]`
-    }));
-    hardQ = activeQuiz.questions.map(q => ({
-      ...q,
-      id: `${q.id}-hard`,
-      question: `[Hard] ${q.question}`,
-      explanation: q.explanation || 'Hard difficulty advanced derivation check.',
-      sourceCitation: q.sourceCitation || `[Source: ${activeQuiz.title}, Appendix A]`
-    }));
+  if (activeQuiz && activeQuiz.questions.length > 0) {
+    if (easyQ.length === 0) {
+      easyQ = activeQuiz.questions;
+    }
+    if (mediumQ.length === 0) {
+      mediumQ = activeQuiz.questions.map((q, idx) => ({
+        ...q,
+        id: `${q.id}-medium-${idx}`,
+        question: `[Medium] ${q.question}`,
+        explanation: q.explanation || 'Medium difficulty conceptual application review.',
+        sourceCitation: q.sourceCitation || `[Source: ${activeQuiz.title}, Chapter 2]`
+      }));
+    }
+    if (hardQ.length === 0) {
+      hardQ = activeQuiz.questions.map((q, idx) => ({
+        ...q,
+        id: `${q.id}-hard-${idx}`,
+        question: `[Hard] ${q.question}`,
+        explanation: q.explanation || 'Hard difficulty advanced derivation check.',
+        sourceCitation: q.sourceCitation || `[Source: ${activeQuiz.title}, Appendix A]`
+      }));
+    }
   }
 
   const questionsList = activeDifficulty === 'easy' 
     ? easyQ 
     : (activeDifficulty === 'medium' ? mediumQ : hardQ);
+
+  // Filter out questions that have already been attempted in this session
+  const activeQuestions = questionsList.filter(q => !attemptedQuestionIds.includes(q.id));
+  const currentQuestion = activeQuestions[0];
 
   const startQuizGameplay = (id: string, difficulty: 'easy' | 'medium' | 'hard' = 'easy') => {
     setSelectedQuizId(id);
@@ -86,8 +153,18 @@ export default function QuizView({
     setCurrentQuestionIndex(0);
     setSelectedAnswerIndex(null);
     setIsAnswerRevealed(false);
-    setAccumulatedScore(0);
+    
+    // Reset session states
+    setAttemptedQuestionIds([]);
+    setUserAnswers({});
+    setDifficultyCompleted(null);
     setIsQuizFinished(false);
+    setShowReview(false);
+    setSessionScores({
+      easy: { attempted: 0, correct: 0 },
+      medium: { attempted: 0, correct: 0 },
+      hard: { attempted: 0, correct: 0 }
+    });
   };
 
   const handleSelectOption = (index: number) => {
@@ -96,31 +173,78 @@ export default function QuizView({
   };
 
   const handleRevealAnswer = () => {
-    if (selectedAnswerIndex === null || !activeQuiz) return;
+    if (selectedAnswerIndex === null || !activeQuiz || !currentQuestion) return;
     
     // Check correctness
-    const currentQuestion = questionsList[currentQuestionIndex];
     const isCorrect = selectedAnswerIndex === currentQuestion.correctAnswerIndex;
     
-    if (isCorrect) {
-      setAccumulatedScore(prev => prev + 1);
-    }
+    // Save user choice
+    setUserAnswers(prev => ({
+      ...prev,
+      [currentQuestion.id]: selectedAnswerIndex
+    }));
+
+    // Update session scores
+    setSessionScores(prev => ({
+      ...prev,
+      [activeDifficulty]: {
+        attempted: prev[activeDifficulty].attempted + 1,
+        correct: prev[activeDifficulty].correct + (isCorrect ? 1 : 0)
+      }
+    }));
     
     setIsAnswerRevealed(true);
   };
 
+  const loadNextDifficulty = () => {
+    if (activeDifficulty === 'easy') {
+      setDifficultyCompleted('easy');
+    } else if (activeDifficulty === 'medium') {
+      setDifficultyCompleted('medium');
+    } else {
+      // Finished hard, update global score
+      setIsQuizFinished(true);
+      
+      const totalAttempted = sessionScores.easy.attempted + sessionScores.medium.attempted + sessionScores.hard.attempted;
+      const totalCorrect = sessionScores.easy.correct + sessionScores.medium.correct + sessionScores.hard.correct;
+      const finalScore = totalAttempted > 0 ? Math.round((totalCorrect / totalAttempted) * 100) : 0;
+      
+      onUpdateQuizScore(activeQuiz.id, finalScore, {
+        easy: sessionScores.easy.attempted > 0 ? Math.round((sessionScores.easy.correct / sessionScores.easy.attempted) * 100) : 0,
+        medium: sessionScores.medium.attempted > 0 ? Math.round((sessionScores.medium.correct / sessionScores.medium.attempted) * 100) : 0,
+        hard: sessionScores.hard.attempted > 0 ? Math.round((sessionScores.hard.correct / sessionScores.hard.attempted) * 100) : 0
+      });
+    }
+  };
+
+  const proceedToNextDifficulty = () => {
+    if (difficultyCompleted === 'easy') {
+      setActiveDifficulty('medium');
+      setDifficultyCompleted(null);
+      setSelectedAnswerIndex(null);
+      setIsAnswerRevealed(false);
+    } else if (difficultyCompleted === 'medium') {
+      setActiveDifficulty('hard');
+      setDifficultyCompleted(null);
+      setSelectedAnswerIndex(null);
+      setIsAnswerRevealed(false);
+    }
+  };
+
   const handleNextQuestion = () => {
-    if (!activeQuiz) return;
+    if (!activeQuiz || !currentQuestion) return;
     
-    const nextIndex = currentQuestionIndex + 1;
-    if (nextIndex < questionsList.length) {
-      setCurrentQuestionIndex(nextIndex);
+    // Append to attempted set
+    setAttemptedQuestionIds(prev => [...prev, currentQuestion.id]);
+    
+    // Check remaining unanswered in this difficulty (excluding the current one)
+    const remaining = questionsList.filter(q => q.id !== currentQuestion.id && !attemptedQuestionIds.includes(q.id));
+    
+    if (remaining.length > 0) {
       setSelectedAnswerIndex(null);
       setIsAnswerRevealed(false);
     } else {
-      // Finished!
-      setIsQuizFinished(true);
-      onUpdateQuizScore(activeQuiz.id, Math.round((accumulatedScore / questionsList.length) * 100));
+      loadNextDifficulty();
     }
   };
 
@@ -129,8 +253,11 @@ export default function QuizView({
     setCurrentQuestionIndex(0);
     setSelectedAnswerIndex(null);
     setIsAnswerRevealed(false);
-    setAccumulatedScore(0);
     setIsQuizFinished(false);
+    setAttemptedQuestionIds([]);
+    setUserAnswers({});
+    setDifficultyCompleted(null);
+    setShowReview(false);
   };
 
   // Generate 10 additional unique questions
@@ -147,29 +274,47 @@ export default function QuizView({
         activeQuiz.contextText || ''
       );
 
-      // Append new questions to the correct quiz level
-      const mappedNewQuestions: QuizQuestion[] = newQuestions.map((q, idx) => ({
-        id: `gen-${activeDifficulty}-${Date.now()}-${idx}`,
-        type: q.type || 'mcq',
-        question: q.question,
-        options: q.options,
-        correctAnswerIndex: q.correctAnswerIndex,
-        explanation: q.explanation,
-        sourceCitation: q.sourceCitation,
-        scenario: q.scenario,
-        matchLeft: q.matchLeft,
-        matchRight: q.matchRight
-      }));
+      // Filter duplicates before adding to quiz state
+      const uniqueNewQuestions: QuizQuestion[] = [];
+      const allCurrentQuestions = [...easyQ, ...mediumQ, ...hardQ];
 
-      onAddQuestions(activeQuiz.id, activeDifficulty, mappedNewQuestions);
+      newQuestions.forEach((q: any) => {
+        const checkQ = {
+          question: q.question,
+          options: q.options,
+          correctAnswerIndex: q.correctAnswerIndex,
+          explanation: q.explanation
+        };
+        
+        if (!isDuplicateQuestion(checkQ, [...allCurrentQuestions, ...uniqueNewQuestions])) {
+          uniqueNewQuestions.push({
+            id: `gen-${activeDifficulty}-${Date.now()}-${uniqueNewQuestions.length}`,
+            type: q.type || 'mcq',
+            question: q.question,
+            options: q.options,
+            correctAnswerIndex: q.correctAnswerIndex,
+            explanation: q.explanation,
+            sourceCitation: q.sourceCitation,
+            scenario: q.scenario,
+            matchLeft: q.matchLeft,
+            matchRight: q.matchRight
+          });
+        }
+      });
+
+      console.log(`Gemini generated ${newQuestions.length} questions. Added ${uniqueNewQuestions.length} unique questions after duplicate filtering.`);
+
+      if (uniqueNewQuestions.length > 0) {
+        // Only take up to 10 unique ones to append
+        const finalToAppend = uniqueNewQuestions.slice(0, 10);
+        onAddQuestions(activeQuiz.id, activeDifficulty, finalToAppend);
+      }
     } catch (err) {
       console.error("Failed to generate additional questions:", err);
     } finally {
       setIsGenerating(false);
     }
   };
-
-  const currentQuestion = questionsList[currentQuestionIndex];
 
   // Helper to render question text (inserts chosen word for fill-in-the-blank)
   const renderQuestionText = () => {
@@ -190,8 +335,17 @@ export default function QuizView({
     return currentQuestion.question;
   };
 
+  // Metrics for final completion screen
+  const totalAttempted = sessionScores.easy.attempted + sessionScores.medium.attempted + sessionScores.hard.attempted;
+  const totalCorrect = sessionScores.easy.correct + sessionScores.medium.correct + sessionScores.hard.correct;
+  const totalAccuracy = totalAttempted > 0 ? Math.round((totalCorrect / totalAttempted) * 100) : 0;
+
+  // Level attempted count for the current level progress indicator
+  const levelAttemptedCount = attemptedQuestionIds.filter(id => questionsList.some(q => q.id === id)).length;
+  const progressPercent = Math.min(100, Math.round(((levelAttemptedCount) / (questionsList.length || 1)) * 100));
+
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-12 select-none relative">
+    <div className="space-y-6 max-w-4xl mx-auto pb-12 px-4 sm:px-0 select-none relative">
       
       {/* Dynamic Loader Overlay for Generate More Questions */}
       {isGenerating && (
@@ -255,7 +409,7 @@ export default function QuizView({
               theme === 'dark' ? 'bg-[#121318] border-neutral-900' : 'bg-white border-gray-200'
             }`}>
               <div className={`h-9 w-9 rounded-lg flex items-center justify-center ${
-                theme === 'dark' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-green-50 text-green-600'
+                theme === 'dark' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-green-55/10 text-green-600'
               }`}>
                 <Check className="h-5 w-5" />
               </div>
@@ -288,7 +442,7 @@ export default function QuizView({
                 // Determine question count for difficulty
                 const diffQ = q.id === 'q1' || q.id === 'q2' || q.id === 'q3'
                   ? (activeDifficulty === 'easy' ? q.easyQuestions : (activeDifficulty === 'medium' ? q.mediumQuestions : q.hardQuestions))
-                  : q.questions;
+                  : (activeDifficulty === 'easy' ? q.easyQuestions : (activeDifficulty === 'medium' ? q.mediumQuestions : q.hardQuestions));
                 const count = diffQ?.length || 0;
                 
                 return (
@@ -309,7 +463,7 @@ export default function QuizView({
                         </span>
                         {q.score !== undefined && (
                           <span className={`text-xs font-bold px-2 py-0.5 rounded ${
-                            theme === 'dark' ? 'text-emerald-400 bg-emerald-500/10' : 'text-emerald-600 bg-emerald-55'
+                            theme === 'dark' ? 'text-emerald-400 bg-emerald-500/10' : 'text-emerald-600 bg-emerald-50'
                           }`}>
                             Score: {q.score}%
                           </span>
@@ -331,8 +485,7 @@ export default function QuizView({
                       </span>
                       <button
                         onClick={() => startQuizGameplay(q.id, activeDifficulty)}
-                        disabled={count === 0}
-                        className={`rounded px-3.5 py-1.5 text-xs font-bold transition-colors active:scale-95 focus:outline-none cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
+                        className={`rounded px-3.5 py-1.5 text-xs font-bold transition-colors active:scale-95 focus:outline-none cursor-pointer ${
                           theme === 'dark' ? 'bg-white text-black hover:bg-neutral-100' : 'bg-black text-white hover:bg-gray-800'
                         }`}
                       >
@@ -345,67 +498,226 @@ export default function QuizView({
             </div>
           </div>
         </div>
+      ) : difficultyCompleted ? (
+        /* Transition Screen: Difficulty level completed */
+        <div className={`p-8 rounded-2xl border text-center max-w-lg mx-auto space-y-6 animate-fade-in ${
+          theme === 'dark' ? 'bg-[#121318] border-neutral-900 text-white' : 'bg-white border-gray-200 text-gray-900'
+        }`}>
+          <div className={`flex h-12 w-12 items-center justify-center rounded-full mx-auto ${
+            theme === 'dark' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-50 text-indigo-600'
+          }`}>
+            <Award className="h-6 w-6" />
+          </div>
+
+          <div className="space-y-2">
+            <h3 className={`font-sans font-bold text-xl capitalize ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+              {difficultyCompleted} Level Completed!
+            </h3>
+            <p className={`text-xs font-medium max-w-sm mx-auto ${theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'}`}>
+              Excellent! You have completed all questions in the <span className="text-indigo-400 font-bold capitalize">{difficultyCompleted}</span> difficulty. Let's proceed to the next stage to calibrate your mastery score.
+            </p>
+          </div>
+
+          {/* Mini Stats Card */}
+          <div className={`p-4 rounded-xl border grid grid-cols-3 gap-2 text-center ${
+            theme === 'dark' ? 'bg-neutral-950/40 border-neutral-900/60' : 'bg-gray-50/40 border-gray-100'
+          }`}>
+            <div>
+              <div className="text-[10px] font-bold text-gray-400 uppercase">Attempted</div>
+              <div className={`text-sm font-extrabold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                {sessionScores[difficultyCompleted].attempted}
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold text-gray-400 uppercase">Correct</div>
+              <div className={`text-sm font-extrabold text-emerald-500`}>
+                {sessionScores[difficultyCompleted].correct}
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold text-gray-400 uppercase">Accuracy</div>
+              <div className={`text-sm font-extrabold text-indigo-400`}>
+                {sessionScores[difficultyCompleted].attempted > 0 
+                  ? Math.round((sessionScores[difficultyCompleted].correct / sessionScores[difficultyCompleted].attempted) * 100)
+                  : 0}%
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-center pt-2">
+            <button
+              onClick={proceedToNextDifficulty}
+              className={`rounded-lg px-6 py-2.5 text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5 ${
+                theme === 'dark' ? 'bg-white text-black hover:bg-neutral-100' : 'bg-black text-white hover:bg-gray-800'
+              }`}
+            >
+              <span>Proceed to {difficultyCompleted === 'easy' ? 'Medium' : 'Hard'} Level</span>
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
       ) : isQuizFinished ? (
         /* Mode C: Score Summary Results slides */
         <div className={`p-8 rounded-2xl border text-center max-w-lg mx-auto space-y-6 animate-fade-in ${
           theme === 'dark' ? 'bg-[#121318] border-neutral-900 text-white' : 'bg-white border-gray-200 text-gray-900'
         }`}>
           <div className={`flex h-12 w-12 items-center justify-center rounded-full mx-auto ${
-            theme === 'dark' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-50 text-indigo-605'
+            theme === 'dark' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-green-50 text-green-600'
           }`}>
-            <Award className="h-6 w-6" />
+            <Check className="h-6 w-6" />
           </div>
 
           <div className="space-y-2">
-            <h3 className={`font-sans font-bold text-xl ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Quiz Completed!</h3>
+            <h3 className={`font-sans font-bold text-xl ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+              ✅ Quiz Completed
+            </h3>
             <p className={`text-xs font-medium max-w-sm mx-auto ${theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'}`}>
-              You finished the review session for <strong className={`${theme === 'dark' ? 'text-white' : 'text-gray-900'} font-semibold`}>{activeQuiz.title}</strong> in <strong className="text-indigo-400 capitalize">{activeDifficulty}</strong> level.
+              You finished the entire study path for <strong className={`${theme === 'dark' ? 'text-white' : 'text-gray-900'} font-semibold`}>{activeQuiz.title}</strong>.
             </p>
           </div>
 
-          {/* Interactive Circle Progress Card */}
-          <div className="relative flex items-center justify-center py-4">
-            <div className={`flex h-32 w-32 items-center justify-center rounded-full border-8 relative ${
-              theme === 'dark' ? 'border-neutral-900' : 'border-gray-105'
+          {/* Final Circle Progress Card */}
+          <div className="relative flex items-center justify-center py-2">
+            <div className={`flex h-28 w-28 items-center justify-center rounded-full border-8 relative ${
+              theme === 'dark' ? 'border-neutral-900' : 'border-gray-100'
             }`}>
               <div className="text-center">
-                <span className={`text-3xl font-extrabold font-mono tracking-tight ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                  {Math.round((accumulatedScore / questionsList.length) * 100)}%
+                <span className={`text-2xl font-extrabold font-mono tracking-tight ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                  {totalAccuracy}%
                 </span>
-                <div className="text-[10px] font-bold text-gray-400 uppercase mt-0.5">SCORE</div>
+                <div className="text-[9px] font-bold text-gray-400 uppercase mt-0.5">ACCURACY</div>
               </div>
             </div>
           </div>
 
-          <div className={`p-3.5 rounded-xl text-xs font-medium leading-relaxed border ${
+          {/* Stats Breakdown */}
+          <div className={`p-4 rounded-xl border text-xs leading-relaxed space-y-3 ${
             theme === 'dark' ? 'bg-neutral-950/50 border-neutral-900/60 text-neutral-350' : 'bg-gray-50 border-gray-100 text-gray-650'
           }`}>
-            {accumulatedScore / questionsList.length >= 0.8 ? (
-              <span className="text-emerald-500 font-semibold block">★ Exceptional comprehension verified! Mapped weak areas updated.</span>
-            ) : (
-              <span className="text-amber-500 font-semibold block">▲ Review suggested! This concept requires focusing on bibliography guidelines.</span>
-            )}
-            Correct answers: <strong className={`${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{accumulatedScore}</strong> of {questionsList.length} questions.
+            <div className="flex justify-between items-center">
+              <span className="font-semibold">Total Questions Attempted:</span>
+              <span className="font-mono font-bold">{totalAttempted}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="font-semibold">Correct Answers:</span>
+              <span className="font-mono font-bold text-emerald-500">{totalCorrect}</span>
+            </div>
+            
+            <div className="border-t border-neutral-900/40 dark:border-white/5 pt-2.5 space-y-2">
+              <div className="text-[10px] font-bold text-left text-gray-400 uppercase tracking-wider">Difficulty Breakdown:</div>
+              
+              <div className="flex justify-between items-center">
+                <span className="capitalize">Easy Level:</span>
+                <span className="font-mono">{sessionScores.easy.correct} / {sessionScores.easy.attempted}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="capitalize">Medium Level:</span>
+                <span className="font-mono">{sessionScores.medium.correct} / {sessionScores.medium.attempted}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="capitalize">Hard Level:</span>
+                <span className="font-mono">{sessionScores.hard.correct} / {sessionScores.hard.attempted}</span>
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3 justify-center pt-2">
+          <div className="flex flex-col sm:flex-row items-center gap-2.5 justify-center pt-2">
             <button
-              onClick={resetQuizUniverse}
-              className={`rounded-lg border px-4 py-2.5 text-xs font-bold cursor-pointer ${
-                theme === 'dark' ? 'border-neutral-855 bg-neutral-900 text-white hover:bg-neutral-850' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+              onClick={() => setShowReview(!showReview)}
+              className={`w-full sm:w-auto rounded-lg border px-4 py-2.5 text-xs font-bold cursor-pointer transition-colors ${
+                showReview 
+                  ? 'bg-indigo-600 border-indigo-600 text-white' 
+                  : (theme === 'dark' ? 'border-neutral-850 bg-neutral-900 text-white hover:bg-neutral-850' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50')
               }`}
             >
-              Back to Center
+              Review Answers
             </button>
             <button
-              onClick={() => startQuizGameplay(activeQuiz.id, activeDifficulty)}
-              className={`rounded-lg px-4.5 py-2.5 text-xs font-bold cursor-pointer transition-colors ${
+              onClick={handleGenerateMore}
+              disabled={isGenerating}
+              className={`w-full sm:w-auto rounded-lg border px-4 py-2.5 text-xs font-bold cursor-pointer transition-colors flex items-center justify-center gap-1.5 ${
+                theme === 'dark' ? 'border-neutral-850 bg-neutral-900 text-indigo-400 hover:bg-neutral-850' : 'border-gray-200 bg-white text-indigo-600 hover:bg-gray-50'
+              }`}
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>Generate More Questions</span>
+            </button>
+            <button
+              onClick={() => startQuizGameplay(activeQuiz.id, 'easy')}
+              className={`w-full sm:w-auto rounded-lg px-4.5 py-2.5 text-xs font-bold cursor-pointer transition-colors ${
                 theme === 'dark' ? 'bg-white text-black hover:bg-neutral-100' : 'bg-black text-white hover:bg-gray-800'
               }`}
             >
-              Retake Quiz
+              Restart Quiz
             </button>
           </div>
+
+          {/* Toggleable Review Section */}
+          {showReview && (
+            <div className={`mt-6 text-left space-y-4 max-h-96 overflow-y-auto p-4 rounded-xl border ${
+              theme === 'dark' ? 'bg-neutral-950/60 border-neutral-900 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
+            }`}>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400">Answer Review</h4>
+              
+              {[...easyQ, ...mediumQ, ...hardQ].filter(q => attemptedQuestionIds.includes(q.id)).map((q, idx) => {
+                const userAnswerIdx = userAnswers[q.id];
+                const isCorrect = userAnswerIdx === q.correctAnswerIndex;
+                
+                return (
+                  <div key={q.id} className={`p-3.5 rounded-lg border ${
+                    theme === 'dark' ? 'border-neutral-900 bg-neutral-900/30' : 'border-gray-200 bg-gray-50/50'
+                  } space-y-2 text-xs`}>
+                    <div className="font-bold">
+                      {idx + 1}. {q.question}
+                    </div>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1">
+                      {q.options.map((opt, oIdx) => {
+                        const isCorrectOpt = oIdx === q.correctAnswerIndex;
+                        const isUserChoice = oIdx === userAnswerIdx;
+                        
+                        let optColor = "opacity-60";
+                        if (isCorrectOpt) optColor = "text-emerald-500 font-semibold";
+                        else if (isUserChoice && !isCorrect) optColor = "text-red-500 font-semibold";
+                        
+                        return (
+                          <div key={oIdx} className="flex items-center gap-1">
+                            <span className="font-bold opacity-60">{String.fromCharCode(65 + oIdx)}.</span>
+                            <span className={optColor}>{opt}</span>
+                            {isCorrectOpt && <Check className="h-3 w-3 text-emerald-500" />}
+                            {isUserChoice && !isCorrect && <X className="h-3 w-3 text-red-500" />}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {q.explanation && (
+                      <div className={`pt-2 border-t text-[11px] ${
+                        theme === 'dark' ? 'border-neutral-900/40 text-neutral-400' : 'border-gray-200 text-gray-600'
+                      }`}>
+                        <strong>Explanation: </strong> {q.explanation}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="flex justify-center pt-2">
+            <button
+              onClick={resetQuizUniverse}
+              className={`flex items-center gap-1 text-xs font-bold text-neutral-400 hover:text-white transition-colors focus:outline-none cursor-pointer`}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Back to Quiz Center</span>
+            </button>
+          </div>
+        </div>
+      ) : !currentQuestion ? (
+        /* Dynamic Loader / Safe Exit if no questions are found in active pool */
+        <div className="p-8 text-center">
+          <BruteLoader size="md" message="Loading next level questions..." />
         </div>
       ) : (
         /* Mode B: Active Quiz Gameplay Screen */
@@ -449,8 +761,8 @@ export default function QuizView({
                 </button>
               )}
 
-              <div className={`text-xs font-bold font-mono ${theme === 'dark' ? 'text-neutral-350' : 'text-gray-900'}`}>
-                Question {currentQuestionIndex + 1} of {questionsList.length}
+              <div className={`text-xs font-bold font-mono ${theme === 'dark' ? 'text-neutral-300' : 'text-gray-900'}`}>
+                Question {levelAttemptedCount + 1} of {questionsList.length}
               </div>
             </div>
           </div>
@@ -459,7 +771,7 @@ export default function QuizView({
           <div className={`w-full h-1 ${theme === 'dark' ? 'bg-neutral-900' : 'bg-gray-100'}`}>
             <div 
               className={`h-1 transition-all duration-300 ${theme === 'dark' ? 'bg-indigo-500' : 'bg-black'}`}
-              style={{ width: `${((currentQuestionIndex + 1) / questionsList.length) * 100}%` }}
+              style={{ width: `${progressPercent}%` }}
             />
           </div>
 
@@ -467,9 +779,9 @@ export default function QuizView({
           <div className="p-6 md:p-8 space-y-6">
             <div className="space-y-2">
               <span className={`rounded border px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest ${
-                theme === 'dark' ? 'bg-indigo-950/20 border-indigo-900/40 text-indigo-400' : 'bg-indigo-50 border-indigo-100 text-indigo-605'
+                theme === 'dark' ? 'bg-indigo-950/20 border-indigo-900/40 text-indigo-400' : 'bg-indigo-50 border-indigo-100 text-indigo-600'
               }`}>
-                {currentQuestion.type ? currentQuestion.type.replace('_', ' ') : `MCQ Question`} {currentQuestionIndex + 1}
+                {currentQuestion.type ? currentQuestion.type.replace('_', ' ') : `MCQ Question`}
               </span>
               
               <h3 className={`font-sans font-bold text-base md:text-lg leading-relaxed select-none ${
@@ -484,7 +796,7 @@ export default function QuizView({
             {/* A: SCENARIO BASED card block */}
             {currentQuestion.type === 'scenario_based' && currentQuestion.scenario && (
               <div className={`p-4 rounded-xl border text-xs italic leading-relaxed ${
-                theme === 'dark' ? 'bg-neutral-950/50 border-neutral-900 text-neutral-300' : 'bg-gray-50 border-gray-205 text-gray-700'
+                theme === 'dark' ? 'bg-neutral-950/50 border-neutral-900 text-neutral-300' : 'bg-gray-50 border-gray-200 text-gray-700'
               }`}>
                 <span className="font-mono text-[9px] font-black uppercase text-indigo-400 block mb-1.5">SCENARIO CASE CONTEXT:</span>
                 "{currentQuestion.scenario}"
@@ -517,17 +829,23 @@ export default function QuizView({
 
             {/* C: MATCH FOLLOWING columns grid */}
             {currentQuestion.type === 'match_following' && currentQuestion.matchLeft && currentQuestion.matchRight && (
-              <div className="grid grid-cols-2 gap-4 p-4 bg-neutral-950/40 rounded-xl border border-neutral-900 text-xs">
+              <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl border text-xs ${
+                theme === 'dark' ? 'bg-neutral-950/40 border-neutral-900' : 'bg-gray-50 border-gray-200'
+              }`}>
                 <div className="space-y-2">
                   <div className="font-mono text-[9px] font-black uppercase text-indigo-400">Column A</div>
                   {currentQuestion.matchLeft.map((item, idx) => (
-                    <div key={idx} className="p-2.5 rounded-lg bg-neutral-900 border border-neutral-850 font-bold text-neutral-300">{item}</div>
+                    <div key={idx} className={`p-2.5 rounded-lg border font-bold ${
+                      theme === 'dark' ? 'bg-neutral-900 border-neutral-850 text-neutral-300' : 'bg-white border-gray-200 text-gray-700'
+                    }`}>{item}</div>
                   ))}
                 </div>
                 <div className="space-y-2">
                   <div className="font-mono text-[9px] font-black uppercase text-purple-400">Column B</div>
                   {currentQuestion.matchRight.map((item, idx) => (
-                    <div key={idx} className="p-2.5 rounded-lg bg-neutral-900 border border-neutral-850 font-bold text-neutral-300">{item}</div>
+                    <div key={idx} className={`p-2.5 rounded-lg border font-bold ${
+                      theme === 'dark' ? 'bg-neutral-900 border-neutral-850 text-neutral-300' : 'bg-white border-gray-200 text-gray-700'
+                    }`}>{item}</div>
                   ))}
                 </div>
               </div>
@@ -553,7 +871,7 @@ export default function QuizView({
                       checkIcon = <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />;
                     } else if (isSelected) {
                       cardClass = "border-red-500 bg-red-500/10";
-                      badgeClass = "bg-red-550 text-white border-red-500";
+                      badgeClass = "bg-red-500 text-white border-red-500";
                       textClass = "text-red-400 font-bold";
                       checkIcon = <X className="h-4 w-4 text-red-400 flex-shrink-0" />;
                     } else {
@@ -566,21 +884,21 @@ export default function QuizView({
                     badgeClass = "bg-indigo-500 text-white border-indigo-500";
                     textClass = "text-white font-bold";
                   } else {
-                    cardClass = "border-neutral-800 bg-[#121318] hover:border-indigo-550 hover:bg-[#171821]";
-                    badgeClass = "border-neutral-700 text-neutral-350 group-hover:text-white";
-                    textClass = "text-neutral-250 group-hover:text-white";
+                    cardClass = "border-neutral-800 bg-[#121318] hover:border-indigo-500 hover:bg-[#171821]";
+                    badgeClass = "border-neutral-700 text-neutral-300 group-hover:text-white";
+                    textClass = "text-neutral-300 group-hover:text-white";
                   }
                 } else {
                   // Light Theme
                   if (isAnswerRevealed) {
                     if (isCorrectIndex) {
-                      cardClass = "border-emerald-650 bg-emerald-50";
+                      cardClass = "border-emerald-600 bg-emerald-50";
                       badgeClass = "bg-emerald-600 text-white border-emerald-600";
                       textClass = "text-emerald-950 font-bold";
                       checkIcon = <Check className="h-4 w-4 text-emerald-600 flex-shrink-0" />;
                     } else if (isSelected) {
                       cardClass = "border-red-500 bg-red-50";
-                      badgeClass = "bg-red-600 text-white border-red-600";
+                      badgeClass = "bg-red-650 text-white border-red-650";
                       textClass = "text-red-950 font-bold";
                       checkIcon = <X className="h-4 w-4 text-red-600 flex-shrink-0" />;
                     } else {
@@ -636,13 +954,13 @@ export default function QuizView({
                 </div>
 
                 <div>
-                  <strong className={theme === 'dark' ? 'text-neutral-200' : 'text-gray-800'}>Correct Choice: </strong>
+                  <strong className={theme === 'dark' ? 'text-neutral-200' : 'text-gray-850'}>Correct Choice: </strong>
                   <span className="font-semibold">{currentQuestion.options[currentQuestion.correctAnswerIndex]}</span>
                 </div>
 
                 {currentQuestion.explanation && (
                   <div>
-                    <strong className={theme === 'dark' ? 'text-neutral-200' : 'text-gray-800'}>Why this is correct: </strong>
+                    <strong className={theme === 'dark' ? 'text-neutral-200' : 'text-gray-855'}>Why this is correct: </strong>
                     <span className={theme === 'dark' ? 'text-neutral-300' : 'text-gray-700'}>{currentQuestion.explanation}</span>
                   </div>
                 )}
@@ -684,7 +1002,7 @@ export default function QuizView({
                   }`}
                 >
                   <span>
-                    {currentQuestionIndex + 1 === questionsList.length ? 'Show Results' : 'Next Question'}
+                    {activeQuestions.length === 1 ? 'Show Results' : 'Next Question'}
                   </span>
                   <ArrowRight className="h-4 w-4" />
                 </button>

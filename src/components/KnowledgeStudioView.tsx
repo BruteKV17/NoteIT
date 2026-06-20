@@ -39,16 +39,17 @@ import {
   Info
 } from 'lucide-react';
 import { db, auth } from '../firebaseConfig';
-import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { generateLectureContentFromText } from '../services/gemini';
 import { getAzureUploadSasUrl, uploadBlobToAzure, extractTextFromDocument, extractTextFromUrl } from '../services/azure';
 import pptxgen from 'pptxgenjs';
 import BruteLoader from './BruteLoader';
+import PresentationWorkspace from './PresentationWorkspace';
 
 interface KnowledgeStudioViewProps {
   userId: string | undefined;
   theme: 'light' | 'dark';
-  setActivePage: (page: string) => void;
+  setActivePage: (page: any) => void;
 }
 
 interface ChatMessage {
@@ -117,6 +118,7 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
   const [uploadProgress, setUploadProgress] = useState(0);
   const [processingStatus, setProcessingStatus] = useState<string | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
+  const [uploadingFiles, setUploadingFiles] = useState<Record<string, File>>({});
 
   // Chat/Search state
   const [chatInput, setChatInput] = useState('');
@@ -134,6 +136,48 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
   
   // Multi-language Output Selector
   const [outputLanguage, setOutputLanguage] = useState<string>('English');
+
+  // Resizing Panel State
+  const [outputStudioWidth, setOutputStudioWidth] = useState<number>(550);
+  const [isResizing, setIsResizing] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobilePanelTab, setMobilePanelTab] = useState<'sources' | 'chat' | 'outputs'>('sources');
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  const startResizing = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return;
+      const newWidth = window.innerWidth - e.clientX;
+      if (newWidth >= 350 && newWidth <= window.innerWidth - 720) {
+        setOutputStudioWidth(newWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    if (isResizing) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing]);
 
   // PDF Export Modal & Settings
   const [showPdfModal, setShowPdfModal] = useState(false);
@@ -171,52 +215,71 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
   const speechIdxRef = useRef(0);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const hasSweptRef = useRef(false);
 
-  // Fetch sources
+  // Fetch sources in real-time
   useEffect(() => {
     if (!userId) return;
-    const loadSources = async () => {
-      try {
-        const q = query(collection(db, 'users', userId, 'sources'), orderBy('createdAt', 'desc'));
-        const querySnapshot = await getDocs(q);
-        const list: any[] = [];
-        querySnapshot.forEach(docSnap => {
-          list.push({ id: docSnap.id, ...docSnap.data() });
-        });
-        setSources(list);
-        if (list.length > 0 && !activeSourceId) {
-          setActiveSourceId(list[0].id);
-          setSelectedSourceIds([list[0].id]);
-        }
+    const q = query(collection(db, 'users', userId, 'sources'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const list: any[] = [];
+      snapshot.forEach(docSnap => {
+        list.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      setSources(list);
 
-        // Self-heal any YouTube sources with generic "YouTube Video - ID" titles
+      // Auto-fail any stuck uploading/processing/indexing sources from a previous session on initial load
+      if (!hasSweptRef.current && list.length > 0) {
+        hasSweptRef.current = true;
         list.forEach(async (src) => {
-          if (src.sourceType === 'youtube' && src.title.startsWith('YouTube Video - ')) {
-            const videoId = src.title.replace('YouTube Video - ', '').trim();
-            if (videoId && videoId.length === 11) {
-              try {
-                const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
-                if (res.ok) {
-                  const data = await res.json();
-                  if (data && data.title) {
-                    // Update in Firestore
-                    const srcDocRef = doc(db, 'users', userId, 'sources', src.id);
-                    await updateDoc(srcDocRef, { title: data.title });
-                    // Update in local state
-                    setSources(prev => prev.map(s => s.id === src.id ? { ...s, title: data.title } : s));
-                  }
-                }
-              } catch (e) {
-                console.error("Failed to self-heal YouTube title:", e);
-              }
+          if (src.status === 'uploading' || src.status === 'processing' || src.status === 'indexing') {
+            try {
+              const srcDocRef = doc(db, 'users', userId, 'sources', src.id);
+              await updateDoc(srcDocRef, {
+                status: 'failed',
+                error: 'Ingestion was interrupted. Please retry.'
+              });
+              console.log(`[Self-Heal] Auto-failed stuck source: ${src.title}`);
+            } catch (err) {
+              console.error("Failed to auto-fail stuck source on mount:", err);
             }
           }
         });
-      } catch (err) {
-        console.error("Failed to load sources from Firestore:", err);
       }
-    };
-    loadSources();
+      
+      // Auto-activate the first source if none is active
+      setActiveSourceId(prev => {
+        if (!prev && list.length > 0) {
+          setSelectedSourceIds([list[0].id]);
+          return list[0].id;
+        }
+        return prev;
+      });
+
+      // Self-heal any YouTube sources with generic "YouTube Video - ID" titles
+      list.forEach(async (src) => {
+        if (src.sourceType === 'youtube' && src.title.startsWith('YouTube Video - ')) {
+          const videoId = src.title.replace('YouTube Video - ', '').trim();
+          if (videoId && videoId.length === 11) {
+            try {
+              const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
+              if (res.ok) {
+                const data = await res.json();
+                if (data && data.title) {
+                  const srcDocRef = doc(db, 'users', userId, 'sources', src.id);
+                  await updateDoc(srcDocRef, { title: data.title });
+                }
+              }
+            } catch (e) {
+              console.error("Failed to self-heal YouTube title:", e);
+            }
+          }
+        }
+      });
+    }, (err) => {
+      console.error("Failed to load sources from Firestore:", err);
+    });
+    return () => unsubscribe();
   }, [userId]);
 
   // Synchronize notesFormat with activeSource's selectedMode
@@ -255,30 +318,70 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
     setUploadProgress(10);
     setProcessingStatus('Uploading...');
 
+    let docRef: any = null;
     try {
       // Create firestore document initial state
-      const docRef = await addDoc(collection(db, 'users', userId, 'sources'), {
+      docRef = await addDoc(collection(db, 'users', userId, 'sources'), {
         title: name,
         type: 'document',
         sourceType: extension,
-        status: 'processing',
+        status: 'uploading',
+        progress: 10,
         createdAt: serverTimestamp(),
         size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`
       });
 
+      // Keep file object in memory in case of retries
+      setUploadingFiles(prev => ({ ...prev, [docRef.id]: file }));
+
+      await runFileUploadSequence(docRef.id, file);
+
+    } catch (err) {
+      console.error("Upload initialization failed:", err);
+      setIsUploading(false);
+      setProcessingStatus("Failed");
+    }
+  };
+
+  const runFileUploadSequence = async (docId: string, file: File) => {
+    const name = file.name;
+    const docRef = doc(db, 'users', userId, 'sources', docId);
+
+    try {
+      setIsUploading(true);
+      setUploadProgress(20);
+      setProcessingStatus('Uploading...');
+      await updateDoc(docRef, { status: 'uploading', progress: 20 });
+
       // Local upload or Azure upload
       const sasRes = await getAzureUploadSasUrl(name);
-      setUploadProgress(40);
-      await uploadBlobToAzure(sasRes.uploadUrl, file, (progress) => {
-        setUploadProgress(40 + Math.round(progress * 0.3));
+      await updateDoc(docRef, { 
+        progress: 30,
+        blobPath: sasRes.blobPath
+      });
+      setUploadProgress(30);
+
+      // Upload to Azure with throttled progress updates to Firestore
+      let lastProgressUpdate = 30;
+      await uploadBlobToAzure(sasRes.uploadUrl, file, async (progress) => {
+        const currentProgress = 30 + Math.round(progress * 0.4); // 30% to 70%
+        setUploadProgress(currentProgress);
+        if (currentProgress - lastProgressUpdate >= 10 || currentProgress === 70) {
+          lastProgressUpdate = currentProgress;
+          await updateDoc(docRef, { progress: currentProgress });
+        }
       });
 
-      setUploadProgress(80);
+      setUploadProgress(70);
       setProcessingStatus('Extracting content...');
+      await updateDoc(docRef, { status: 'processing', progress: 70 });
       
       const extractedText = await extractTextFromDocument(sasRes.blobPath);
-      setUploadProgress(90);
+      
+      setUploadProgress(80);
       setProcessingStatus('AI Ingestion...');
+      await updateDoc(docRef, { status: 'indexing', progress: 80 });
+
       const aiData = await generateLectureContentFromText(extractedText, undefined, notesFormat);
       
       // Build slide deck structures
@@ -294,8 +397,12 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
       // Generate Podcast script
       const script = `Professor: Welcome back, class. Today we are exploring some key insights from our source, ${name}.\nStudent: That's right! Specifically looking at the central mechanics and how they interact.\nProfessor: Let's start with the key terms. We have some essential concepts we must define first.`;
 
+      setUploadProgress(95);
+      setProcessingStatus('Completing RAG Sync...');
+      await updateDoc(docRef, { progress: 95 });
+
       // Save everything to Firestore
-      await updateDoc(doc(db, 'users', userId, 'sources', docRef.id), {
+      await updateDoc(docRef, {
         status: 'ready',
         selectedMode: notesFormat,
         content: extractedText,
@@ -321,7 +428,7 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              sourceId: docRef.id,
+              sourceId: docId,
               sourceType: 'source',
               text: extractedText
             })
@@ -332,22 +439,294 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
         console.error('[RAG] Grounding failed for uploaded document:', ragErr);
       }
 
-      // Reload
-      const updatedSnapshot = await getDocs(query(collection(db, 'users', userId, 'sources'), orderBy('createdAt', 'desc')));
-      const updatedList: any[] = [];
-      updatedSnapshot.forEach(docSnap => {
-        updatedList.push({ id: docSnap.id, ...docSnap.data() });
+      // Remove from memory list on success
+      setUploadingFiles(prev => {
+        const next = { ...prev };
+        delete next[docId];
+        return next;
       });
-      setSources(updatedList);
-      setActiveSourceId(docRef.id);
-      setSelectedSourceIds([docRef.id]);
+
+      // Set active source
+      setActiveSourceId(docId);
+      setSelectedSourceIds([docId]);
 
       setIsUploading(false);
       setProcessingStatus(null);
-    } catch (err) {
+
+    } catch (err: any) {
       console.error("Upload process failed:", err);
       setIsUploading(false);
       setProcessingStatus("Failed");
+      setImportError(`Upload Process Failed: ${err.message || err}`);
+
+      // Set status to failed in Firestore
+      try {
+        await updateDoc(docRef, {
+          status: 'failed',
+          error: err.message || 'Processing failed'
+        });
+      } catch (dbErr) {
+        console.error("Failed to update firestore source status on failure:", dbErr);
+      }
+    }
+  };
+
+  const handleRetryUpload = async (docId: string) => {
+    const file = uploadingFiles[docId];
+    if (!file) return;
+    await runFileUploadSequence(docId, file);
+  };
+
+  const handleRetryIngestionFromBlob = async (docId: string, blobPath: string, title: string) => {
+    if (!userId) return;
+    const docRef = doc(db, 'users', userId, 'sources', docId);
+
+    setIsUploading(true);
+    setUploadProgress(70);
+    setProcessingStatus('Extracting content...');
+    await updateDoc(docRef, { status: 'processing', progress: 70, error: null });
+
+    try {
+      const extractedText = await extractTextFromDocument(blobPath);
+      
+      setUploadProgress(80);
+      setProcessingStatus('AI Ingestion...');
+      await updateDoc(docRef, { status: 'indexing', progress: 80 });
+
+      const aiData = await generateLectureContentFromText(extractedText, undefined, notesFormat);
+      
+      // Build slide deck structures
+      const presentationSlides = aiData.notes?.map((n: any, idx: number) => ({
+        title: n.title,
+        bulletPoints: n.content.split('\n').filter((l: string) => l.trim().startsWith('-')).map((l: string) => l.replace(/^-\s*/, '')),
+        speakerNotes: `Presenter remarks for slide ${idx + 1}: covers key themes in ${n.title}`,
+        visualSuggestions: `A neat graphical flow mapping core definitions in ${n.title}`,
+        keyTakeaways: n.title,
+        references: title
+      })) || [];
+
+      const script = `Professor: Welcome back, class. Today we are exploring some key insights from our source, ${title}.\nStudent: That's right! Specifically looking at the central mechanics and how they interact.\nProfessor: Let's start with the key terms. We have some essential concepts we must define first.`;
+
+      setUploadProgress(95);
+      setProcessingStatus('Completing RAG Sync...');
+      await updateDoc(docRef, { progress: 95 });
+
+      // Save everything to Firestore
+      await updateDoc(docRef, {
+        status: 'ready',
+        selectedMode: notesFormat,
+        content: extractedText,
+        summary: aiData.summary || 'Summary placeholder text.',
+        notes: aiData.notes || [],
+        flashcards: aiData.flashcards || [],
+        quiz: aiData.quiz || [],
+        keyConcepts: aiData.keyConcepts || [],
+        slides: presentationSlides,
+        podcastScript: script
+      });
+
+      // Call grounding engine
+      try {
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          const idToken = await currentUser.getIdToken(true);
+          const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3002';
+          await fetch(`${backendUrl}/api/storage/ground-source`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${idToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              sourceId: docId,
+              sourceType: 'source',
+              text: extractedText
+            })
+          });
+        }
+      } catch (ragErr) {
+        console.error('[RAG] Grounding failed for uploaded document:', ragErr);
+      }
+
+      setIsUploading(false);
+      setProcessingStatus(null);
+    } catch (err: any) {
+      console.error("Ingestion retry failed:", err);
+      setIsUploading(false);
+      setProcessingStatus("Failed");
+      setImportError(`Ingestion Retry Failed: ${err.message || err}`);
+
+      try {
+        await updateDoc(docRef, {
+          status: 'failed',
+          error: err.message || 'Processing failed'
+        });
+      } catch (dbErr) {
+        console.error("Failed to update firestore source status on failure:", dbErr);
+      }
+    }
+  };
+
+  const handleRetryUrlImport = async (docId: string, url: string, type: 'youtube' | 'website') => {
+    const docRef = doc(db, 'users', userId, 'sources', docId);
+    
+    setImportError(null);
+    setIsUploading(true);
+    setUploadProgress(20);
+    setProcessingStatus('Fetching URL data...');
+
+    try {
+      await updateDoc(docRef, { status: 'processing', progress: 20 });
+
+      const { text, title } = await extractTextFromUrl(url, type);
+      
+      if (type === 'youtube' && !text) {
+        throw new Error('No transcript returned for the video.');
+      }
+
+      setUploadProgress(60);
+      setProcessingStatus('AI Synthesizing...');
+      await updateDoc(docRef, { status: 'indexing', progress: 60 });
+
+      const aiData = await generateLectureContentFromText(text, undefined, notesFormat);
+
+      const presentationSlides = aiData.notes?.map((n: any, idx: number) => ({
+        title: n.title,
+        bulletPoints: n.content.split('\n').filter((l: string) => l.trim().startsWith('-')).map((l: string) => l.replace(/^-\s*/, '')),
+        speakerNotes: `Key review for slides on ${n.title}`,
+        visualSuggestions: `Concept map for ${n.title}`,
+        keyTakeaways: n.title,
+        references: title
+      })) || [];
+
+      const script = `Professor: Hello everyone. Let's study the imported web resource, ${title}.\nStudent: It details fascinating parameters about this subject.\nProfessor: Indeed, let's dissect the core findings.`;
+
+      const updatePayload: any = {
+        title: title,
+        content: text,
+        selectedMode: notesFormat,
+        summary: aiData.summary || 'Summary of url content.',
+        notes: aiData.notes || [],
+        flashcards: aiData.flashcards || [],
+        quiz: aiData.quiz || [],
+        keyConcepts: aiData.keyConcepts || [],
+        slides: presentationSlides,
+        podcastScript: script
+      };
+
+      if (type === 'youtube') {
+        updatePayload.sourceType = 'youtube';
+        updatePayload.transcript = text;
+        updatePayload.status = 'indexed';
+      } else {
+        updatePayload.status = 'ready';
+      }
+
+      await updateDoc(docRef, updatePayload);
+
+      // Call grounding engine
+      try {
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          const idToken = await currentUser.getIdToken(true);
+          const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3002';
+          await fetch(`${backendUrl}/api/storage/ground-source`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${idToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              sourceId: docId,
+              sourceType: 'source',
+              text: text
+            })
+          });
+        }
+      } catch (ragErr) {
+        console.error('[RAG] Grounding failed for URL:', ragErr);
+      }
+
+      setActiveSourceId(docId);
+      setSelectedSourceIds([docId]);
+      
+      setIsUploading(false);
+      setProcessingStatus(null);
+    } catch (err: any) {
+      console.error("URL Import retry failed:", err);
+      setIsUploading(false);
+      setProcessingStatus("Failed");
+      setImportError(`URL Ingestion Failed: ${err.message}`);
+
+      try {
+        await updateDoc(docRef, {
+          status: 'failed',
+          error: err.message || 'Import failed.'
+        });
+      } catch (dbErr) {
+        console.error("Failed to update firestore source status on failure:", dbErr);
+      }
+    }
+  };
+
+  const handleRetryDriveImport = async (docId: string, title: string) => {
+    const matchedFile = GOOGLE_DRIVE_MOCK_FILES.find(f => f.name === title);
+    if (matchedFile) {
+      const docRef = doc(db, 'users', userId, 'sources', docId);
+      setIsUploading(true);
+      setUploadProgress(30);
+      setProcessingStatus('Syncing from Drive...');
+
+      try {
+        await updateDoc(docRef, { status: 'processing', progress: 30 });
+        setUploadProgress(70);
+        setProcessingStatus('Ingesting in Gemini...');
+        await updateDoc(docRef, { status: 'indexing', progress: 70 });
+
+        const aiData = await generateLectureContentFromText(matchedFile.content, undefined, notesFormat);
+
+        const presentationSlides = aiData.notes?.map((n: any, idx: number) => ({
+          title: n.title,
+          bulletPoints: n.content.split('\n').filter((l: string) => l.trim().startsWith('-')).map((l: string) => l.replace(/^-\s*/, '')),
+          speakerNotes: `Slide details covering: ${n.title}`,
+          visualSuggestions: `Interactive diagram for: ${n.title}`,
+          keyTakeaways: n.title,
+          references: matchedFile.name
+        })) || [];
+
+        const script = `Professor: Good morning. Let's do a briefing on ${matchedFile.name}.\nStudent: The structure outlined here is direct.\nProfessor: Absolutely. Let's go over the key elements.`;
+
+        await updateDoc(docRef, {
+          status: 'ready',
+          selectedMode: notesFormat,
+          content: matchedFile.content,
+          summary: aiData.summary || 'Summary of drive file.',
+          notes: aiData.notes || [],
+          flashcards: aiData.flashcards || [],
+          quiz: aiData.quiz || [],
+          keyConcepts: aiData.keyConcepts || [],
+          slides: presentationSlides,
+          podcastScript: script
+        });
+
+        setActiveSourceId(docId);
+        setSelectedSourceIds([docId]);
+
+        setIsUploading(false);
+        setProcessingStatus(null);
+      } catch (err: any) {
+        console.error("Drive import retry failed:", err);
+        setIsUploading(false);
+        setProcessingStatus("Failed");
+        try {
+          await updateDoc(docRef, {
+            status: 'failed',
+            error: err.message || 'Import failed.'
+          });
+        } catch (dbErr) {
+          console.error("Failed to update firestore source status on failure:", dbErr);
+        }
+      }
     }
   };
 
@@ -369,6 +748,7 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
         type: 'online',
         sourceType: urlType,
         status: 'processing',
+        progress: 20,
         createdAt: serverTimestamp(),
         url: urlInput
       });
@@ -381,6 +761,7 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
 
       setUploadProgress(60);
       setProcessingStatus('AI Synthesizing...');
+      await updateDoc(doc(db, 'users', userId, 'sources', docRef.id), { status: 'indexing', progress: 60 });
 
       if (urlType === 'youtube') {
         console.log('[YOUTUBE] Content stored:', text.length);
@@ -449,13 +830,6 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
         console.error('[RAG] Grounding failed for URL:', ragErr);
       }
 
-      // Reload list
-      const updatedSnapshot = await getDocs(query(collection(db, 'users', userId, 'sources'), orderBy('createdAt', 'desc')));
-      const updatedList: any[] = [];
-      updatedSnapshot.forEach(docSnap => {
-        updatedList.push({ id: docSnap.id, ...docSnap.data() });
-      });
-      setSources(updatedList);
       setActiveSourceId(docRef.id);
       setSelectedSourceIds([docRef.id]);
       
@@ -466,7 +840,7 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
       console.error("URL Import failed:", err);
       setIsUploading(false);
       setProcessingStatus("Failed");
-      setImportError(`YouTube Ingestion Failed: ${err.message}`);
+      setImportError(`URL Ingestion Failed: ${err.message}`);
 
       if (docRef && docRef.id) {
         try {
@@ -558,18 +932,21 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
     setUploadProgress(30);
     setProcessingStatus('Syncing from Drive...');
 
+    let docRef: any = null;
     try {
-      const docRef = await addDoc(collection(db, 'users', userId, 'sources'), {
+      docRef = await addDoc(collection(db, 'users', userId, 'sources'), {
         title: driveFile.name,
         type: 'online',
         sourceType: driveFile.type,
         status: 'processing',
+        progress: 30,
         createdAt: serverTimestamp(),
         size: driveFile.size
       });
 
       setUploadProgress(70);
       setProcessingStatus('Ingesting in Gemini...');
+      await updateDoc(doc(db, 'users', userId, 'sources', docRef.id), { status: 'indexing', progress: 70 });
 
       const aiData = await generateLectureContentFromText(driveFile.content, undefined, notesFormat);
 
@@ -597,22 +974,26 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
         podcastScript: script
       });
 
-      // Reload list
-      const updatedSnapshot = await getDocs(query(collection(db, 'users', userId, 'sources'), orderBy('createdAt', 'desc')));
-      const updatedList: any[] = [];
-      updatedSnapshot.forEach(docSnap => {
-        updatedList.push({ id: docSnap.id, ...docSnap.data() });
-      });
-      setSources(updatedList);
       setActiveSourceId(docRef.id);
       setSelectedSourceIds([docRef.id]);
 
       setIsUploading(false);
       setProcessingStatus(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Drive import failed:", err);
       setIsUploading(false);
       setProcessingStatus("Failed");
+
+      if (docRef && docRef.id) {
+        try {
+          await updateDoc(doc(db, 'users', userId, 'sources', docRef.id), {
+            status: 'failed',
+            error: err.message || 'Import failed.'
+          });
+        } catch (dbErr) {
+          console.error("Failed to update firestore source status on failure:", dbErr);
+        }
+      }
     }
   };
 
@@ -941,13 +1322,6 @@ ${queryText}`;
         quiz: translated.quiz || activeSource.quiz,
         keyConcepts: translated.keyConcepts || activeSource.keyConcepts
       });
-
-      const updatedSnapshot = await getDocs(query(collection(db, 'users', userId, 'sources'), orderBy('createdAt', 'desc')));
-      const updatedList: any[] = [];
-      updatedSnapshot.forEach(docSnap => {
-        updatedList.push({ id: docSnap.id, ...docSnap.data() });
-      });
-      setSources(updatedList);
 
       setIsUploading(false);
       setProcessingStatus(null);
@@ -1882,11 +2256,42 @@ ${queryText}`;
         )}
       </div>
 
+      {/* MOBILE WORKSPACE NAVIGATION */}
+      {isMobile && (
+        <div className={`px-4 py-2 border-b flex gap-1 ${
+          theme === 'dark' ? 'bg-[#08090c] border-neutral-900' : 'bg-gray-50 border-gray-200'
+        }`}>
+          {(['sources', 'chat', 'outputs'] as const).map((tab) => {
+            const label = tab === 'sources' ? `Sources (${sources.length})` : tab === 'chat' ? 'AI Chat' : 'Output Studio';
+            const isActive = mobilePanelTab === tab;
+            return (
+              <button
+                key={tab}
+                onClick={() => setMobilePanelTab(tab)}
+                className={`flex-1 py-2 text-center text-xs font-black rounded-xl transition-all cursor-pointer ${
+                  isActive
+                    ? theme === 'dark'
+                      ? 'bg-indigo-600 text-white shadow-md'
+                      : 'bg-black text-white shadow-md'
+                    : theme === 'dark'
+                      ? 'text-neutral-400 hover:text-white hover:bg-neutral-900/50'
+                      : 'text-gray-500 hover:text-black hover:bg-gray-150'
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* 3 PANEL WORKSPACE */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         
         {/* PANEL 1: LEFT - SOURCE HUB (Knowledge Sources) */}
-        <div className={`w-full md:w-80 flex-shrink-0 flex flex-col border-r overflow-y-auto p-4 space-y-4 ${
+        <div className={`w-full md:w-80 flex-shrink-0 flex-col border-r overflow-y-auto p-4 space-y-4 ${
+          isMobile && mobilePanelTab !== 'sources' ? 'hidden' : 'flex'
+        } ${
           theme === 'dark' ? 'bg-[#08090c] border-neutral-900' : 'bg-gray-50/50 border-gray-200'
         }`}>
           <div>
@@ -2007,9 +2412,104 @@ ${queryText}`;
                         <h4 className="text-[11.5px] font-extrabold truncate mt-1 leading-snug cursor-pointer hover:underline">
                           {src.title}
                         </h4>
-                        <span className="text-[9.5px] text-neutral-400 font-mono mt-0.5 block">
-                          {src.size || 'Web Stream'} • {src.status}
-                        </span>
+                        
+                        {/* Interactive Status & Progress Display */}
+                        {(() => {
+                          const status = src.status || 'ready';
+                          switch (status) {
+                            case 'uploading':
+                              const uploadPct = src.progress || 10;
+                              return (
+                                <div className="space-y-1.5 mt-2 w-full">
+                                  <div className="flex justify-between items-center text-[9.5px] font-mono text-amber-500">
+                                    <span className="flex items-center gap-1">
+                                      <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                      Uploading...
+                                    </span>
+                                    <span>{uploadPct}%</span>
+                                  </div>
+                                  <div className="h-1.5 w-full rounded-full bg-neutral-900 overflow-hidden border border-neutral-850">
+                                    <div 
+                                      style={{ width: `${uploadPct}%` }} 
+                                      className="h-full bg-gradient-to-r from-amber-500 to-amber-300 rounded-full transition-all duration-300"
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            case 'processing':
+                              return (
+                                <div className="flex items-center gap-1 mt-1 text-[9.5px] font-mono text-yellow-500">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-yellow-500 animate-pulse" />
+                                  <span>Processing...</span>
+                                </div>
+                              );
+                            case 'indexing':
+                              return (
+                                <div className="flex items-center gap-1 mt-1 text-[9.5px] font-mono text-indigo-400">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                                  <span>Indexing...</span>
+                                </div>
+                              );
+                            case 'failed':
+                              return (
+                                <div className="flex flex-col gap-1.5 mt-1">
+                                  <div className="flex items-center gap-1 text-[9.5px] font-mono text-red-500">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                                    <span>Failed ❌</span>
+                                  </div>
+                                  
+                                  {/* Auto Retry Buttons based on type */}
+                                  <div className="flex gap-2.5">
+                                    {src.type === 'document' && uploadingFiles[src.id] && (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleRetryUpload(src.id);
+                                        }}
+                                        className="px-2 py-1 rounded bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-[9px] font-bold text-red-400 cursor-pointer focus:outline-none"
+                                      >
+                                        Retry Upload
+                                      </button>
+                                    )}
+                                    {src.type === 'document' && !uploadingFiles[src.id] && src.blobPath && (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleRetryIngestionFromBlob(src.id, src.blobPath, src.title);
+                                        }}
+                                        className="px-2 py-1 rounded bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-[9px] font-bold text-red-400 cursor-pointer focus:outline-none"
+                                      >
+                                        Retry Ingestion
+                                      </button>
+                                    )}
+                                    {src.type === 'online' && src.url && (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (src.sourceType === 'youtube' || src.sourceType === 'website') {
+                                            handleRetryUrlImport(src.id, src.url, src.sourceType);
+                                          } else {
+                                            handleRetryDriveImport(src.id, src.title);
+                                          }
+                                        }}
+                                        className="px-2 py-1 rounded bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-[9px] font-bold text-red-400 cursor-pointer focus:outline-none"
+                                      >
+                                        Retry Ingestion
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            case 'ready':
+                            case 'indexed':
+                            default:
+                              return (
+                                <span className="text-[9.5px] text-neutral-400 font-mono mt-0.5 block">
+                                  {src.size || 'Web Stream'} • <span className="text-emerald-500 font-bold">Ready ✓</span>
+                                </span>
+                              );
+                          }
+                        })()}
                       </div>
                       <button
                         onClick={() => handleDeleteSource(src.id)}
@@ -2026,7 +2526,9 @@ ${queryText}`;
         </div>
 
         {/* PANEL 2: CENTER - AI WORKSPACE */}
-        <div className={`flex-1 flex flex-col overflow-hidden p-4 space-y-4 ${
+        <div className={`flex-grow flex-1 flex-col overflow-hidden p-4 space-y-4 ${
+          isMobile && mobilePanelTab !== 'chat' ? 'hidden' : 'flex'
+        } ${
           theme === 'dark' ? 'bg-[#050608]' : 'bg-[#FAF9F5]'
         }`}>
           <div>
@@ -2149,10 +2651,30 @@ ${queryText}`;
           </form>
         </div>
 
+        {/* DRAGGABLE RESIZER HANDLE */}
+        {activeSourceId && !isMobile && (
+          <div
+            onMouseDown={startResizing}
+            className={`w-1.5 cursor-col-resize hover:bg-indigo-500/40 active:bg-indigo-600 transition-all flex-shrink-0 flex items-center justify-center border-l border-r ${
+              theme === 'dark' ? 'bg-[#0b0c10] border-neutral-900/60' : 'bg-gray-100 border-gray-200'
+            }`}
+            title="Drag to resize Output Studio"
+          >
+            <div className="h-8 w-0.5 rounded bg-neutral-650/80" />
+          </div>
+        )}
+
         {/* PANEL 3: RIGHT - OUTPUT STUDIO */}
-        <div className={`w-full md:w-[420px] flex-shrink-0 flex flex-col border-l overflow-y-auto p-4 space-y-4 ${
-          theme === 'dark' ? 'bg-[#08090c] border-neutral-900' : 'bg-gray-50/50 border-gray-200'
-        }`}>
+        <div 
+          style={activeSourceId && !isMobile ? { width: `${outputStudioWidth}px` } : undefined}
+          className={`flex-col overflow-y-auto p-4 space-y-4 ${
+            isMobile && mobilePanelTab !== 'outputs' ? 'hidden' : 'flex'
+          } ${
+            activeSourceId
+              ? `${theme === 'dark' ? 'bg-[#08090c]' : 'bg-gray-50/50'}`
+              : `w-full md:w-[420px] flex-shrink-0 border-l ${theme === 'dark' ? 'bg-[#08090c] border-neutral-900' : 'bg-gray-50/50 border-gray-200'}`
+          }`}
+        >
           <div>
             <h2 className="text-xs font-black text-indigo-400 uppercase tracking-widest font-mono">Output Studio</h2>
             <p className="text-[10px] text-neutral-400 mt-0.5">Generate, display, and export materials.</p>
@@ -2178,7 +2700,6 @@ ${queryText}`;
             </div>
           )}
 
-          {/* Mini-Tab Selector */}
           <div className={`grid grid-cols-4 gap-1 p-1 rounded-xl ${theme === 'dark' ? 'bg-neutral-950' : 'bg-gray-150'}`}>
             {(['notes', 'summary', 'flashcards', 'quiz'] as const).map(tab => (
               <button
@@ -2190,7 +2711,7 @@ ${queryText}`;
                 className={`py-1.5 rounded-lg text-[10px] font-black capitalize transition-all cursor-pointer ${
                   activeOutputTab === tab 
                     ? theme === 'dark' ? 'bg-indigo-650 text-white' : 'bg-white text-black shadow-xs' 
-                    : 'text-neutral-400 hover:text-white'
+                    : theme === 'dark' ? 'text-neutral-400 hover:text-white' : 'text-neutral-500 hover:text-neutral-900'
                 }`}
               >
                 {tab}
@@ -2209,7 +2730,7 @@ ${queryText}`;
                 className={`py-1.5 rounded-lg text-[10px] font-black capitalize transition-all cursor-pointer ${
                   activeOutputTab === tab 
                     ? theme === 'dark' ? 'bg-indigo-650 text-white' : 'bg-white text-black shadow-xs' 
-                    : 'text-neutral-400 hover:text-white'
+                    : theme === 'dark' ? 'text-neutral-400 hover:text-white' : 'text-neutral-500 hover:text-neutral-900'
                 }`}
               >
                 {tab === 'mindmap' ? 'Mind Map' : tab === 'slides' ? 'Slides' : tab === 'podcast' ? 'Podcast' : 'Infographics'}
@@ -2263,7 +2784,7 @@ ${queryText}`;
                       {activeSource.notes && activeSource.notes.map((n: any, i: number) => (
                         <div key={i} className={`p-4 rounded-xl border font-sans ${theme === 'dark' ? 'bg-[#121318] border-neutral-905' : 'bg-white border-gray-200'}`}>
                           <h4 className="text-xs font-black text-indigo-400">{n.title}</h4>
-                          <p className="text-[11.5px] mt-2 text-neutral-300 leading-relaxed whitespace-pre-wrap">
+                          <p className={`text-[11.5px] mt-2 leading-relaxed whitespace-pre-wrap ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-700'}`}>
                             {renderTextWithCitations(cleanMarkdownText(n.content))}
                           </p>
                         </div>
@@ -2310,7 +2831,7 @@ ${queryText}`;
                             theme === 'dark' ? 'bg-[#121318] border-neutral-900' : 'bg-white border-gray-200'
                           }`}>
                             <h4 className="text-xs font-black text-indigo-400 uppercase tracking-widest font-mono">{sec.label}</h4>
-                            <p className="text-[11.5px] mt-2 text-neutral-300 leading-relaxed whitespace-pre-wrap">
+                            <p className={`text-[11.5px] mt-2 leading-relaxed whitespace-pre-wrap ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-700'}`}>
                               {renderTextWithCitations(sec.content)}
                             </p>
                           </div>
@@ -2356,7 +2877,7 @@ ${queryText}`;
                         }`}>
                           <div className="text-[10px] font-bold text-indigo-400 font-mono">Q. CARD {i + 1}</div>
                           <div className="text-xs font-black">{renderTextWithCitations(cleanMarkdownText(f.q))}</div>
-                          <div className="text-[11.5px] text-neutral-350 pt-2 border-t border-neutral-900/20">
+                          <div className={`text-[11.5px] pt-2 border-t border-neutral-900/20 ${theme === 'dark' ? 'text-neutral-350' : 'text-neutral-600'}`}>
                             {renderTextWithCitations(cleanMarkdownText(f.a))}
                           </div>
                         </div>
@@ -2409,12 +2930,29 @@ ${queryText}`;
                               
                               let btnClass = "";
                               if (isQuizRevealed) {
-                                  if (isCorrect) btnClass = "border-emerald-500 bg-emerald-500/10 text-emerald-450";
-                                  else if (isSelected) btnClass = "border-red-500 bg-red-500/10 text-red-450";
-                                  else btnClass = "border-neutral-900 bg-neutral-950/20 text-neutral-500";
+                                  if (isCorrect) {
+                                    btnClass = theme === 'dark' 
+                                      ? "border-emerald-500 bg-emerald-500/10 text-emerald-450" 
+                                      : "border-green-500 bg-green-50 text-green-700";
+                                  } else if (isSelected) {
+                                    btnClass = theme === 'dark' 
+                                      ? "border-red-500 bg-red-500/10 text-red-450" 
+                                      : "border-red-400 bg-red-50 text-red-700";
+                                  } else {
+                                    btnClass = theme === 'dark' 
+                                      ? "border-neutral-900 bg-neutral-950/20 text-neutral-500" 
+                                      : "border-gray-200 bg-gray-50 text-gray-400";
+                                  }
                               } else {
-                                  if (isSelected) btnClass = "border-indigo-500 bg-indigo-500/10 text-white";
-                                  else btnClass = "border-neutral-850 bg-neutral-950/40 text-neutral-350 hover:bg-neutral-900";
+                                  if (isSelected) {
+                                    btnClass = theme === 'dark' 
+                                      ? "border-indigo-500 bg-indigo-500/10 text-white" 
+                                      : "border-indigo-650 bg-indigo-50 text-indigo-700";
+                                  } else {
+                                    btnClass = theme === 'dark' 
+                                      ? "border-neutral-850 bg-neutral-950/40 text-neutral-350 hover:bg-neutral-900 hover:text-white" 
+                                      : "border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 hover:text-gray-900";
+                                  }
                               }
 
                               return (
@@ -2552,35 +3090,39 @@ ${queryText}`;
                           </h4>
                           <button 
                             onClick={() => setSelectedMindmapNode(null)}
-                            className="text-neutral-550 hover:text-white text-xs font-bold cursor-pointer"
+                            className={`text-xs font-bold cursor-pointer ${
+                              theme === 'dark' ? 'text-neutral-550 hover:text-white' : 'text-neutral-400 hover:text-neutral-900'
+                            }`}
                           >
                             &times;
                           </button>
                         </div>
                         
-                        <div className="text-[11.5px] leading-relaxed text-neutral-350">
+                        <div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-350' : 'text-neutral-600'}`}>
                           <strong className="text-indigo-400 block text-[9.5px] uppercase font-mono tracking-wider">Definition & Explanation</strong>
                           {renderTextWithCitations(cleanMarkdownText(selectedMindmapNode.desc || selectedMindmapNode.explanation || 'Provides logical synthesis for this section.'))}
                         </div>
                         
                         {selectedMindmapNode.examples && (
-                          <div className="text-[11.5px] leading-relaxed text-neutral-350">
+                          <div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-350' : 'text-neutral-600'}`}>
                             <strong className="text-indigo-400 block text-[9.5px] uppercase font-mono tracking-wider">Examples & Analogies</strong>
                             {renderTextWithCitations(cleanMarkdownText(selectedMindmapNode.examples))}
                           </div>
                         )}
 
                         {selectedMindmapNode.formula && (
-                          <div className="text-[11.5px] leading-relaxed text-neutral-350">
+                          <div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-350' : 'text-neutral-600'}`}>
                             <strong className="text-indigo-400 block text-[9.5px] uppercase font-mono tracking-wider">Equations or Theories</strong>
-                            <code className="block bg-neutral-950/50 p-2 rounded text-[10px] font-mono mt-1 text-orange-450 border border-neutral-900">
+                            <code className={`block p-2 rounded text-[10px] font-mono mt-1 text-orange-450 border ${
+                              theme === 'dark' ? 'bg-neutral-950/50 border-neutral-900' : 'bg-gray-50 border-gray-200'
+                            }`}>
                               {selectedMindmapNode.formula}
                             </code>
                           </div>
                         )}
 
                         {selectedMindmapNode.applications && (
-                          <div className="text-[11.5px] leading-relaxed text-neutral-350">
+                          <div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-350' : 'text-neutral-600'}`}>
                             <strong className="text-indigo-400 block text-[9.5px] uppercase font-mono tracking-wider">Applications & Use Cases</strong>
                             {renderTextWithCitations(cleanMarkdownText(selectedMindmapNode.applications))}
                           </div>
@@ -2596,41 +3138,21 @@ ${queryText}`;
 
                 {/* 6. SLIDE DECK TAB */}
                 {activeOutputTab === 'slides' && (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-indigo-400 font-mono uppercase">AI Presentation Architect</span>
-                      <button
-                        onClick={() => exportPPTXFile(activeSource.slides || [], activeSource.title)}
-                        className="flex items-center gap-1.5 text-[10.5px] font-bold text-indigo-400 hover:underline cursor-pointer bg-indigo-500/10 px-2 py-1 rounded border border-indigo-500/15"
-                      >
-                        <Download className="h-3.5 w-3.5" />
-                        <span>Export PPTX</span>
-                      </button>
-                    </div>
-
-                    <div className="space-y-3">
-                      {activeSource.slides && activeSource.slides.map((s: any, idx: number) => (
-                        <div key={idx} className={`p-4 rounded-xl border flex flex-col justify-between ${
-                          theme === 'dark' ? 'bg-neutral-950/65 border-neutral-900' : 'bg-white border-gray-200'
-                        }`}>
-                          <div>
-                            <span className="text-[8px] font-bold text-indigo-400 font-mono uppercase">Slide {idx + 1} of {activeSource.slides.length}</span>
-                            <h4 className="text-xs font-black text-white mt-1">{s.title}</h4>
-                            <ul className="list-disc pl-4 mt-2.5 space-y-1.5">
-                              {(s.content || s.bulletPoints || []).map((bp: string, bidx: number) => (
-                                  <li key={bidx} className="text-[11.5px] text-neutral-350 leading-relaxed">{bp}</li>
-                              ))}
-                            </ul>
-                          </div>
-                          
-                          <div className="mt-4 pt-2.5 border-t border-neutral-900/30 flex flex-col gap-1.5 text-[9.5px] text-neutral-500">
-                            <div><strong className="text-indigo-400">Speaker Notes:</strong> {s.speakerNotes}</div>
-                            <div><strong className="text-indigo-400">Visual Suggestions:</strong> {s.visualSuggestions}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <PresentationWorkspace
+                    theme={theme}
+                    apiKey={import.meta.env.VITE_GEMINI_API_KEY || ''}
+                    contentSourceText={activeSource.content || activeSource.summary || ''}
+                    initialBlueprint={activeSource.presentationBlueprint}
+                    title={activeSource.title}
+                    onUpdateSlides={async (updatedBlueprint) => {
+                      if (!userId || !activeSource.id) return;
+                      const docRef = doc(db, 'users', userId, 'sources', activeSource.id);
+                      await updateDoc(docRef, { presentationBlueprint: updatedBlueprint });
+                      
+                      // Refresh local sources state list
+                      setSources(prev => prev.map(s => s.id === activeSource.id ? { ...s, presentationBlueprint: updatedBlueprint } : s));
+                    }}
+                  />
                 )}
 
                 {/* 7. PODCAST / AUDIO OVERVIEW */}

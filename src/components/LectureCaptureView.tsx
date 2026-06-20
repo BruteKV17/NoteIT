@@ -31,14 +31,16 @@ import {
   Globe,
   HardDrive
 } from 'lucide-react';
-import pptxgen from 'pptxgenjs';
 import BruteLoader from './BruteLoader';
 import { PageId } from '../types';
+import PresentationWorkspace from './PresentationWorkspace';
 import { db, auth } from '../firebaseConfig';
 import { doc, updateDoc } from 'firebase/firestore';
+import { saveRecordingChunks, getRecordingChunks, deleteRecordingBackup, getAllBackupKeys } from '../services/dbBackup';
 
 interface LectureCaptureViewProps {
-  onSaveCapture: (title: string, subject: string, duration: string, audioBlob: Blob) => Promise<void>;
+  onSaveCapture: (title: string, subject: string, duration: string, audioBlob: Blob, existingLectureId?: string) => Promise<void>;
+  onStartCapture?: (title: string, subject: string) => Promise<string>;
   setActivePage: (page: PageId) => void;
   theme: 'light' | 'dark';
   lectures?: any[];
@@ -48,20 +50,21 @@ interface LectureCaptureViewProps {
 }
 
 interface StructuredSummary {
-  executiveOverview: string;
+  overview: string;
   keyConcepts: string;
-  detailedExplanation: string;
+  importantDefinitions: string;
   examples: string;
-  formulas: string;
+  applications: string;
   commonMistakes: string;
   revisionNotes: string;
   examQuestions: string;
-  realWorldApplications: string;
-  quickRecap: string;
+  keyTakeaways: string;
+  oneMinuteRevision: string;
 }
 
 export default function LectureCaptureView({
   onSaveCapture,
+  onStartCapture,
   setActivePage,
   theme,
   lectures = [],
@@ -97,16 +100,36 @@ export default function LectureCaptureView({
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const secondsRef = useRef<number>(0);
 
+  // Refs and states for IndexedDB backup and recovery
+  const lectureIdRef = useRef<string | null>(null);
+  const [recoverableLecture, setRecoverableLecture] = useState<{ id: string; title: string; subject: string; duration: string } | null>(null);
+
+  // Split pane resizing states
+  const [transcriptWidth, setTranscriptWidth] = useState(30); // default to 30% to shrink transcript and enlarge output studio
+  const [isResizing, setIsResizing] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileWorkspaceTab, setMobileWorkspaceTab] = useState<'transcript' | 'tools'>('tools');
+
   // Active review workspace states
   const [activeOutputTab, setActiveOutputTab] = useState<'notes' | 'summary' | 'flashcards' | 'quiz' | 'mindmap' | 'timeline' | 'slides' | 'chat'>('notes');
-  const [localSlides, setLocalSlides] = useState<any[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
-  const [notesFormat, setNotesFormat] = useState<'academic' | 'executive' | 'revision'>('academic');
-  const [summaryFormat, setSummaryFormat] = useState<'academic' | 'revision' | 'executive' | 'beginner'>('academic');
+  
+  // Format / Mode selectors
+  const [selectedNotesMode, setSelectedNotesMode] = useState<'quick' | 'detailed' | 'academic' | 'exam'>('quick');
+  const [selectedSummaryMode, setSelectedSummaryMode] = useState<'quick_revision' | 'detailed_notes' | 'executive_summary' | 'beginner_friendly' | 'academic_format'>('quick_revision');
   const [flashcardsFormat, setFlashcardsFormat] = useState<'basic' | 'advanced'>('basic');
+  const [selectedFlashcardCategory, setSelectedFlashcardCategory] = useState<'All' | 'Basic Recall' | 'Concept Understanding' | 'Application Based'>('All');
+  const [selectedQuizDifficulty, setSelectedQuizDifficulty] = useState<'easy' | 'medium' | 'hard' | 'scenario' | 'application'>('easy');
   const [quizFormat, setQuizFormat] = useState<'mcq' | 'subjective' | 'case'>('mcq');
+
+  // Lazy loaders
+  const [isGeneratingNotes, setIsGeneratingNotes] = useState(false);
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [isGeneratingFlashcards, setIsGeneratingFlashcards] = useState(false);
+  const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
+  const [isGeneratingMindmap, setIsGeneratingMindmap] = useState(false);
   
   // Quiz gameplay state
   const [activeQuizQuestionIdx, setActiveQuizQuestionIdx] = useState(0);
@@ -121,13 +144,6 @@ export default function LectureCaptureView({
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [pdfExportData, setPdfExportData] = useState<{ title: string; data: any } | null>(null);
   const [selectedPdfTheme, setSelectedPdfTheme] = useState<'academic' | 'modern' | 'corporate' | 'dark'>('academic');
-
-  // PPTX Export Modal & Settings
-  const [showPptModal, setShowPptModal] = useState(false);
-  const [pptTheme, setPptTheme] = useState<'academic' | 'corporate' | 'startup' | 'cyber' | 'minimal' | 'glass'>('academic');
-  const [pptLength, setPptLength] = useState<5 | 10 | 15>(10);
-  const [pptDetailedMode, setPptDetailedMode] = useState<boolean>(false);
-  const [isGeneratingPresentation, setIsGeneratingPresentation] = useState(false);
 
   // Past captures list (sliced to the first 3 lectures from Firestore)
   const pastLectures = lectures.slice(0, 3).map((l: any) => ({
@@ -169,6 +185,75 @@ export default function LectureCaptureView({
       }
     };
   }, []);
+
+  // Check for recoverable crashed recordings on mount
+  useEffect(() => {
+    const checkRecoverable = async () => {
+      try {
+        const keys = await getAllBackupKeys();
+        if (keys.length > 0) {
+          const recoverableId = keys[0];
+          const match = lectures.find((l: any) => l.id === recoverableId);
+          if (match) {
+            setRecoverableLecture({
+              id: match.id,
+              title: match.title,
+              subject: match.subject,
+              duration: match.duration || '00:00:00'
+            });
+          } else {
+            setRecoverableLecture({
+              id: recoverableId,
+              title: 'Crashed Recording Session',
+              subject: 'General Review',
+              duration: '00:00:00'
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Failed to check for recoverable recordings:', err);
+      }
+    };
+    checkRecoverable();
+  }, [lectures]);
+
+  // Split pane resizing logic
+  const startResizing = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  };
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const container = document.getElementById('split-pane-container');
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const relativeX = e.clientX - rect.left;
+      const newWidth = Math.max(20, Math.min(80, (relativeX / rect.width) * 100));
+      setTranscriptWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing]);
 
   const cleanupAudio = () => {
     if (animationFrameIdRef.current) {
@@ -237,6 +322,7 @@ export default function LectureCaptureView({
   const handleStartCapture = async () => {
     setMicError(null);
     chunksRef.current = [];
+    lectureIdRef.current = null;
     
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -251,9 +337,28 @@ export default function LectureCaptureView({
       }
       
       mediaRecorderRef.current = recorder;
-      recorder.ondataavailable = (event) => {
+
+      if (onStartCapture) {
+        onStartCapture(lectureTitle, lectureSubject)
+          .then((id) => {
+            lectureIdRef.current = id;
+            console.log('Lecture document pre-created in Firestore:', id);
+          })
+          .catch((err) => {
+            console.error('Failed to pre-create lecture in Firestore:', err);
+          });
+      }
+
+      recorder.ondataavailable = async (event) => {
         if (event.data && event.data.size > 0) {
           chunksRef.current.push(event.data);
+          if (lectureIdRef.current) {
+            try {
+              await saveRecordingChunks(lectureIdRef.current, chunksRef.current);
+            } catch (err) {
+              console.error('Failed to backup recording chunks:', err);
+            }
+          }
         }
       };
       
@@ -261,8 +366,22 @@ export default function LectureCaptureView({
         const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
         const durationStr = formatTime(secondsRef.current);
         setAiStatus('synthesizing');
+
+        let finalId = lectureIdRef.current;
+        if (!finalId && onStartCapture) {
+          for (let i = 0; i < 30; i++) {
+            await new Promise((resolve) => setTimeout(resolve, 100));
+            finalId = lectureIdRef.current;
+            if (finalId) break;
+          }
+        }
+
         try {
-          await onSaveCapture(lectureTitle, lectureSubject, durationStr, audioBlob);
+          await onSaveCapture(lectureTitle, lectureSubject, durationStr, audioBlob, finalId || undefined);
+          if (finalId) {
+            await deleteRecordingBackup(finalId);
+          }
+          lectureIdRef.current = null;
         } catch (err) {
           console.error('Failed to save capture:', err);
           setAiStatus('idle');
@@ -360,31 +479,31 @@ export default function LectureCaptureView({
   const parseSummaryIntoSections = (summaryText: string): StructuredSummary => {
     const clean = (txt: string) => txt.replace(/[*#`_~]/g, '').trim();
     const sections: StructuredSummary = {
-      executiveOverview: '',
+      overview: '',
       keyConcepts: '',
-      detailedExplanation: '',
+      importantDefinitions: '',
       examples: '',
-      formulas: '',
+      applications: '',
       commonMistakes: '',
       revisionNotes: '',
       examQuestions: '',
-      realWorldApplications: '',
-      quickRecap: ''
+      keyTakeaways: '',
+      oneMinuteRevision: ''
     };
 
     if (!summaryText) return sections;
 
     const patterns = {
-      executiveOverview: /executive\s+overview|introduction/i,
+      overview: /overview|introduction/i,
       keyConcepts: /key\s+concepts/i,
-      detailedExplanation: /detailed\s+explanation|important\s+topics/i,
+      importantDefinitions: /important\s+definitions|definitions/i,
       examples: /examples/i,
-      formulas: /formulas/i,
+      applications: /applications/i,
       commonMistakes: /common\s+mistakes/i,
       revisionNotes: /revision\s+notes/i,
       examQuestions: /exam\s+questions/i,
-      realWorldApplications: /real\s+world\s+applications|applications/i,
-      quickRecap: /quick\s+recap|key\s+takeaways/i
+      keyTakeaways: /key\s+takeaways/i,
+      oneMinuteRevision: /one\s+minute\s+revision|minute\s+revision/i
     };
 
     const lines = summaryText.split('\n');
@@ -405,7 +524,7 @@ export default function LectureCaptureView({
         if (currentKey) {
           sections[currentKey] += (sections[currentKey] ? '\n' : '') + line;
         } else {
-          sections.executiveOverview += (sections.executiveOverview ? '\n' : '') + line;
+          sections.overview += (sections.overview ? '\n' : '') + line;
         }
       }
     });
@@ -487,44 +606,44 @@ export default function LectureCaptureView({
       const sections = parseSummaryIntoSections(rawData);
       contentHtml = `
         <div class="pdf-section">
-          <h2>1. Executive Overview</h2>
-          <p>${sections.executiveOverview.replace(/\n/g, '<br/>')}</p>
+          <h2>1. Overview</h2>
+          <p>${(sections.overview || '').replace(/\n/g, '<br/>')}</p>
         </div>
         <div class="pdf-section">
           <h2>2. Key Concepts</h2>
-          <p>${sections.keyConcepts.replace(/\n/g, '<br/>')}</p>
+          <p>${(sections.keyConcepts || '').replace(/\n/g, '<br/>')}</p>
         </div>
         <div class="pdf-section">
-          <h2>3. Detailed Explanation</h2>
-          <p>${sections.detailedExplanation.replace(/\n/g, '<br/>')}</p>
+          <h2>3. Important Definitions</h2>
+          <p>${(sections.importantDefinitions || '').replace(/\n/g, '<br/>')}</p>
         </div>
         <div class="pdf-section">
           <h2>4. Examples</h2>
-          <p>${sections.examples.replace(/\n/g, '<br/>')}</p>
+          <p>${(sections.examples || '').replace(/\n/g, '<br/>')}</p>
         </div>
         <div class="pdf-section">
-          <h2>5. Formulas</h2>
-          <p>${sections.formulas.replace(/\n/g, '<br/>')}</p>
+          <h2>5. Applications</h2>
+          <p>${(sections.applications || '').replace(/\n/g, '<br/>')}</p>
         </div>
         <div class="pdf-section">
           <h2>6. Common Mistakes</h2>
-          <p>${sections.commonMistakes.replace(/\n/g, '<br/>')}</p>
+          <p>${(sections.commonMistakes || '').replace(/\n/g, '<br/>')}</p>
         </div>
         <div class="pdf-section">
           <h2>7. Revision Notes</h2>
-          <p>${sections.revisionNotes.replace(/\n/g, '<br/>')}</p>
+          <p>${(sections.revisionNotes || '').replace(/\n/g, '<br/>')}</p>
         </div>
         <div class="pdf-section">
           <h2>8. Exam Questions</h2>
-          <p>${sections.examQuestions.replace(/\n/g, '<br/>')}</p>
+          <p>${(sections.examQuestions || '').replace(/\n/g, '<br/>')}</p>
         </div>
         <div class="pdf-section">
-          <h2>9. Real World Applications</h2>
-          <p>${sections.realWorldApplications.replace(/\n/g, '<br/>')}</p>
+          <h2>9. Key Takeaways</h2>
+          <p>${(sections.keyTakeaways || '').replace(/\n/g, '<br/>')}</p>
         </div>
         <div class="pdf-section">
-          <h2>10. Quick Recap</h2>
-          <p>${sections.quickRecap.replace(/\n/g, '<br/>')}</p>
+          <h2>10. One Minute Revision</h2>
+          <p>${(sections.oneMinuteRevision || '').replace(/\n/g, '<br/>')}</p>
         </div>
       `;
     } else if (Array.isArray(rawData)) {
@@ -645,194 +764,228 @@ export default function LectureCaptureView({
     printWindow.document.close();
   };
 
-  // Active review workspace PPT/Chat logic helpers
-  const getThemeColorHex = (theme: string, type: 'accent' | 'primary' | 'bg' | 'cardBg') => {
-    const themeColors = {
-      academic: { bg: "#0f172a", text: "#ffffff", primary: "#e2e8f0", accent: "#d97706", cardBg: "#1e293b" },
-      corporate: { bg: "#1e293b", text: "#ffffff", primary: "#cbd5e1", accent: "#2563eb", cardBg: "#0f172a" },
-      startup: { bg: "#09090b", text: "#ffffff", primary: "#f4f4f5", accent: "#8b5cf6", cardBg: "#18181b" },
-      cyber: { bg: "#050508", text: "#ffffff", primary: "#39ff14", accent: "#ff007f", cardBg: "#0d0e12" },
-      minimal: { bg: "#ffffff", text: "#1e293b", primary: "#0f172a", accent: "#000000", cardBg: "#f8fafc" },
-      glass: { bg: "#18181b", text: "#ffffff", primary: "#f4f4f5", accent: "#06b6d4", cardBg: "#27272a" }
-    };
-    const c = (themeColors as any)[theme] || themeColors.academic;
-    return c[type];
+  // Dynamic On-Demand Asset Generators
+  const triggerGenerateNotes = async (mode: 'quick' | 'detailed' | 'academic' | 'exam') => {
+    const activeLecture = lectures.find(l => l.id === activeLectureId);
+    if (!activeLecture || isGeneratingNotes) return;
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
+
+    setIsGeneratingNotes(true);
+    try {
+      const { generateNotes: callGenerateNotes } = await import('../services/gemini');
+      const textContent = activeLecture.transcript || activeLecture.cleanTranscript || '';
+      const generated = await callGenerateNotes(textContent, mode, import.meta.env.VITE_GEMINI_API_KEY || '');
+      
+      const docRef = doc(db, 'users', uid, 'lectures', activeLecture.id);
+      await updateDoc(docRef, {
+        [`notes.${mode}`]: generated
+      });
+    } catch (err: any) {
+      console.error("Notes generation failed:", err);
+      alert(`Failed to generate notes: ${err.message || err}`);
+    } finally {
+      setIsGeneratingNotes(false);
+    }
   };
 
-  const auditPPTQuality = (slides: any[]) => {
-    if (!slides || slides.length === 0) {
-      return { score: 0, narrativeFlow: 0, visualDensity: 0, imageRelevance: 0, completeness: 0, redundancy: 0, citations: 0 };
+  const triggerGenerateSummary = async (mode: 'quick_revision' | 'detailed_notes' | 'executive_summary' | 'beginner_friendly' | 'academic_format') => {
+    const activeLecture = lectures.find(l => l.id === activeLectureId);
+    if (!activeLecture || isGeneratingSummary) return;
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
+
+    setIsGeneratingSummary(true);
+    try {
+      const { generateSummary: callGenerateSummary } = await import('../services/gemini');
+      const textContent = activeLecture.transcript || activeLecture.cleanTranscript || '';
+      const generated = await callGenerateSummary(textContent, mode, import.meta.env.VITE_GEMINI_API_KEY || '');
+
+      const docRef = doc(db, 'users', uid, 'lectures', activeLecture.id);
+      await updateDoc(docRef, {
+        [`summaries.${mode}`]: generated
+      });
+    } catch (err: any) {
+      console.error("Summary generation failed:", err);
+      alert(`Failed to generate summary: ${err.message || err}`);
+    } finally {
+      setIsGeneratingSummary(false);
     }
-
-    let flowScore = 70;
-    if (slides[0]?.layout === 'title_slide') flowScore += 10;
-    let layoutChanges = 0;
-    for (let i = 1; i < slides.length; i++) {
-      if (slides[i].layout !== slides[i-1].layout) layoutChanges++;
-    }
-    const transitionRatio = layoutChanges / (slides.length - 1 || 1);
-    flowScore += Math.min(20, transitionRatio * 20);
-
-    let densityScore = 100;
-    let densityViolations = 0;
-    slides.forEach(s => {
-      const wordCount = (s.title || "").split(/\s+/).length + (s.content || []).reduce((acc: number, bp: string) => acc + bp.split(/\s+/).length, 0);
-      if (wordCount > 50 || wordCount < 10) {
-        densityViolations++;
-      }
-    });
-    densityScore -= (densityViolations / slides.length) * 45;
-
-    let imageScore = 80;
-    let emptyQueries = 0;
-    slides.forEach(s => {
-      if (!s.imageSearchQuery && !s.imagePrompt) emptyQueries++;
-    });
-    imageScore -= (emptyQueries / slides.length) * 35;
-
-    let completenessScore = Math.min(100, slides.length * 9);
-
-    let redundancyScore = 100;
-    let duplicateCount = 0;
-    for (let i = 0; i < slides.length; i++) {
-      for (let j = i + 1; j < slides.length; j++) {
-        const getTokens = (str: string) => new Set((str || "").toLowerCase().trim().split(/\s+/).filter(w => w.length > 3));
-        const s1 = getTokens(slides[i].title);
-        const s2 = getTokens(slides[j].title);
-        if (s1.size > 0 && s2.size > 0) {
-          const intersection = new Set([...s1].filter(x => s2.has(x)));
-          const union = new Set([...s1, ...s2]);
-          if (intersection.size / union.size > 0.6) {
-            duplicateCount++;
-          }
-        }
-      }
-    }
-    redundancyScore -= Math.min(50, duplicateCount * 18);
-
-    let citationScore = 55;
-    let slidesWithCitations = 0;
-    slides.forEach(s => {
-      if (s.references || s.keyTakeaway?.includes('[Source') || (s.content && s.content.some((bp: string) => bp.includes('[Source')))) {
-        slidesWithCitations++;
-      }
-    });
-    citationScore += (slidesWithCitations / slides.length) * 45;
-
-    const totalScore = Math.round(
-      (flowScore + densityScore + imageScore + completenessScore + redundancyScore + citationScore) / 6
-    );
-
-    return {
-      score: Math.max(10, Math.min(100, totalScore)),
-      narrativeFlow: Math.max(10, Math.min(100, Math.round(flowScore))),
-      visualDensity: Math.max(10, Math.min(100, Math.round(densityScore))),
-      imageRelevance: Math.max(10, Math.min(100, Math.round(imageScore))),
-      completeness: Math.max(10, Math.min(100, Math.round(completenessScore))),
-      redundancy: Math.max(10, Math.min(100, Math.round(redundancyScore))),
-      citations: Math.max(10, Math.min(100, Math.round(citationScore)))
-    };
   };
 
-  const generatePreviewBaselineSlides = () => {
+  const triggerGenerateFlashcards = async () => {
+    const activeLecture = lectures.find(l => l.id === activeLectureId);
+    if (!activeLecture || isGeneratingFlashcards) return;
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
+
+    setIsGeneratingFlashcards(true);
+    try {
+      const { generateFlashcards: callGenerateFlashcards } = await import('../services/gemini');
+      const textContent = activeLecture.transcript || activeLecture.cleanTranscript || '';
+      
+      // Flashcard count based on lecture size
+      const textLen = textContent.length;
+      const count = textLen < 3000 ? 15 : textLen < 10000 ? 30 : 50;
+
+      const generated = await callGenerateFlashcards(textContent, count, [], import.meta.env.VITE_GEMINI_API_KEY || '');
+      
+      const docRef = doc(db, 'users', uid, 'lectures', activeLecture.id);
+      await updateDoc(docRef, {
+        flashcards: generated
+      });
+    } catch (err: any) {
+      console.error("Flashcards generation failed:", err);
+      alert(`Failed to generate flashcards: ${err.message || err}`);
+    } finally {
+      setIsGeneratingFlashcards(false);
+    }
+  };
+
+  const triggerGenerateMoreFlashcards = async () => {
+    const activeLecture = lectures.find(l => l.id === activeLectureId);
+    if (!activeLecture || isGeneratingFlashcards) return;
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
+
+    setIsGeneratingFlashcards(true);
+    try {
+      const { generateFlashcards: callGenerateFlashcards } = await import('../services/gemini');
+      const textContent = activeLecture.transcript || activeLecture.cleanTranscript || '';
+      const existing = activeLecture.flashcards || [];
+
+      const generated = await callGenerateFlashcards(textContent, 10, existing, import.meta.env.VITE_GEMINI_API_KEY || '');
+      
+      const docRef = doc(db, 'users', uid, 'lectures', activeLecture.id);
+      await updateDoc(docRef, {
+        flashcards: [...existing, ...generated]
+      });
+    } catch (err: any) {
+      console.error("Generating more flashcards failed:", err);
+      alert(`Failed to generate more flashcards: ${err.message || err}`);
+    } finally {
+      setIsGeneratingFlashcards(false);
+    }
+  };
+
+  const triggerGenerateQuiz = async () => {
+    const activeLecture = lectures.find(l => l.id === activeLectureId);
+    if (!activeLecture || isGeneratingQuiz) return;
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
+
+    setIsGeneratingQuiz(true);
+    try {
+      const { generateQuiz: callGenerateQuiz } = await import('../services/gemini');
+      const textContent = activeLecture.transcript || activeLecture.cleanTranscript || '';
+      
+      const generated = await callGenerateQuiz(textContent, import.meta.env.VITE_GEMINI_API_KEY || '');
+      
+      const docRef = doc(db, 'users', uid, 'lectures', activeLecture.id);
+      await updateDoc(docRef, {
+        quiz: generated
+      });
+    } catch (err: any) {
+      console.error("Quiz generation failed:", err);
+      alert(`Failed to generate quiz: ${err.message || err}`);
+    } finally {
+      setIsGeneratingQuiz(false);
+    }
+  };
+
+  const triggerGenerateMoreQuiz = async () => {
+    const activeLecture = lectures.find(l => l.id === activeLectureId);
+    if (!activeLecture || isGeneratingQuiz) return;
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
+
+    setIsGeneratingQuiz(true);
+    try {
+      const { generateMoreQuestions: callGenerateMoreQuiz } = await import('../services/gemini');
+      const textContent = activeLecture.transcript || activeLecture.cleanTranscript || '';
+      const existing = activeLecture.quiz || [];
+      const difficultyQuestions = existing.filter((q: any) => q.difficulty === selectedQuizDifficulty);
+      const questionTexts = difficultyQuestions.map((q: any) => q.question);
+
+      const generated = await callGenerateMoreQuiz(textContent, selectedQuizDifficulty, questionTexts, import.meta.env.VITE_GEMINI_API_KEY || '');
+      
+      const docRef = doc(db, 'users', uid, 'lectures', activeLecture.id);
+      await updateDoc(docRef, {
+        quiz: [...existing, ...generated]
+      });
+    } catch (err: any) {
+      console.error("Generating more quiz questions failed:", err);
+      alert(`Failed to generate more questions: ${err.message || err}`);
+    } finally {
+      setIsGeneratingQuiz(false);
+    }
+  };
+
+  const triggerGenerateMindmap = async () => {
+    const activeLecture = lectures.find(l => l.id === activeLectureId);
+    if (!activeLecture || isGeneratingMindmap) return;
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
+
+    setIsGeneratingMindmap(true);
+    try {
+      const { generateMindmap: callGenerateMindmap } = await import('../services/gemini');
+      const textContent = activeLecture.transcript || activeLecture.cleanTranscript || '';
+      const sections = activeLecture.sections || [];
+
+      const generated = await callGenerateMindmap(textContent, sections, import.meta.env.VITE_GEMINI_API_KEY || '');
+      
+      const docRef = doc(db, 'users', uid, 'lectures', activeLecture.id);
+      await updateDoc(docRef, {
+        keyConcepts: generated
+      });
+    } catch (err: any) {
+      console.error("Mindmap generation failed:", err);
+      alert(`Failed to generate mind map: ${err.message || err}`);
+    } finally {
+      setIsGeneratingMindmap(false);
+    }
+  };
+
+  // Automatic on-demand assets generation and caching
+  useEffect(() => {
+    if (!activeLectureId) return;
     const activeLecture = lectures.find(l => l.id === activeLectureId);
     if (!activeLecture) return;
-    const lecNotes = notes.filter((n: any) => n.lectureId === activeLectureId);
-    const slides = [];
-    const layouts = ['split_column', 'timeline', 'key_metrics', 'grid_quadrant', 'bold_quote', 'diagram', 'comparison_table', 'process_flow', 'case_study'];
 
-    slides.push({
-      title: activeLecture.title,
-      layout: 'title_slide',
-      content: ['Comprehensive Study Deck', 'Powered by Note-IT AI Smart Workspace'],
-      imagePrompt: `An academic lecture library, classic design`,
-      keyTakeaway: `Initial review baseline`
-    });
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+    if (!apiKey) return;
 
-    for (let i = 0; i < pptLength - 1; i++) {
-      const note = lecNotes[i % lecNotes.length] || { title: `Topic Section ${i + 1}`, content: `Details for section ${i + 1} content.` };
-      const layout = layouts[i % layouts.length];
-      const textLines = note.content.split('\n').filter((l: string) => l.trim().length > 0).slice(0, 4);
-      const cleanLines = textLines.map((l: string) => l.replace(/[*#-]/g, '').trim());
-
-      let chart = undefined;
-      if (layout === 'key_metrics') {
-        chart = {
-          chartType: 'bar',
-          labels: ['Q1', 'Q2', 'Q3', 'Q4'],
-          values: [30, 45, 60, 85]
-        };
+    if (activeOutputTab === 'notes') {
+      if (!activeLecture.notes?.[selectedNotesMode] && !isGeneratingNotes) {
+        triggerGenerateNotes(selectedNotesMode);
       }
-
-      slides.push({
-        title: note.title,
-        layout,
-        content: cleanLines.slice(0, 3),
-        imageSearchQuery: note.title.split(' ')[0] || 'study',
-        imagePrompt: `Professional design representing ${note.title}`,
-        keyTakeaway: `Key understanding of ${note.title}`,
-        chart
-      });
+    } else if (activeOutputTab === 'summary') {
+      if (!activeLecture.summaries?.[selectedSummaryMode] && !isGeneratingSummary) {
+        triggerGenerateSummary(selectedSummaryMode);
+      }
+    } else if (activeOutputTab === 'flashcards') {
+      const isLegacyCards = activeLecture.flashcards && activeLecture.flashcards.length > 0 && !activeLecture.flashcards.some((c: any) => c.category);
+      if ((!activeLecture.flashcards || activeLecture.flashcards.length === 0 || isLegacyCards) && !isGeneratingFlashcards) {
+        triggerGenerateFlashcards();
+      }
+    } else if (activeOutputTab === 'quiz') {
+      const isLegacyQuiz = activeLecture.quiz && activeLecture.quiz.length > 0 && !activeLecture.quiz.some((q: any) => q.difficulty);
+      if ((!activeLecture.quiz || activeLecture.quiz.length === 0 || isLegacyQuiz) && !isGeneratingQuiz) {
+        triggerGenerateQuiz();
+      }
+    } else if (activeOutputTab === 'mindmap') {
+      if ((!activeLecture.keyConcepts || activeLecture.keyConcepts.length === 0) && !isGeneratingMindmap) {
+        triggerGenerateMindmap();
+      }
     }
-    setLocalSlides(slides);
-  };
+  }, [activeOutputTab, activeLectureId, selectedNotesMode, selectedSummaryMode, lectures, isGeneratingNotes, isGeneratingSummary, isGeneratingFlashcards, isGeneratingQuiz, isGeneratingMindmap]);
 
-  const handleUpdatePptLength = (l: 5 | 10 | 15) => {
-    setPptLength(l);
-  };
-
-  const handleRefreshImages = async () => {
-    if (localSlides.length === 0 || !activeLectureId) return;
-    setIsGeneratingPresentation(true);
-    try {
-      const { searchImages } = await import('../services/images');
-      const usedImages = new Set<string>();
-      const updatedSlides = await Promise.all(localSlides.map(async (s: any) => {
-        if (s.imageSearchQuery) {
-          try {
-            const urls = await searchImages(s.imageSearchQuery);
-            if (urls && urls.length > 0) {
-              let selectedUrl = urls[Math.floor(Math.random() * urls.length)];
-              for (const u of urls) {
-                if (!usedImages.has(u)) {
-                  selectedUrl = u;
-                  break;
-                }
-              }
-              usedImages.add(selectedUrl);
-              return { ...s, imageUrl: selectedUrl };
-            }
-          } catch (err) {
-            console.error(err);
-          }
-        }
-        return s;
-      }));
-      setLocalSlides(updatedSlides);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsGeneratingPresentation(false);
-    }
-  };
-
-  const handleExportPpt = async () => {
+  const sendMessageText = async (text: string) => {
     const activeLecture = lectures.find(l => l.id === activeLectureId);
-    if (localSlides.length === 0 || !activeLecture) return;
-    await buildAndDownloadPPTX(localSlides, activeLecture.title, pptTheme, pptDetailedMode);
-  };
-
-  const handleRegenerateDeck = async () => {
-    await generateCustomPresentationDeck();
-  };
-
-  const handleSendChatMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const activeLecture = lectures.find(l => l.id === activeLectureId);
-    if (!chatInput.trim() || !activeLecture || isChatLoading) return;
+    if (!text.trim() || !activeLecture || isChatLoading) return;
     
-    const userMsg = chatInput.trim();
-    setChatInput('');
+    const userMsg = text.trim();
     setIsChatLoading(true);
 
     try {
@@ -861,646 +1014,19 @@ export default function LectureCaptureView({
     }
   };
 
+  const handleSendChatMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
+    const msg = chatInput;
+    setChatInput('');
+    await sendMessageText(msg);
+  };
+
   useEffect(() => {
     if (chatEndRef.current) {
       chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [activeLectureId, isChatLoading]);
-
-  useEffect(() => {
-    if (activeLectureId) {
-      generatePreviewBaselineSlides();
-    }
-  }, [activeLectureId, notes, pptLength]);
-
-  const pptReport = auditPPTQuality(localSlides);
-
-  const buildAndDownloadPPTX = async (
-    rawSlides: any[],
-    deckTitle: string,
-    themeName: 'academic' | 'corporate' | 'startup' | 'cyber' | 'minimal' | 'glass',
-    isDetailed: boolean
-  ) => {
-    const calculateJaccardSimilarity = (t1: string, t2: string): number => {
-      const getTokens = (str: string) => new Set((str || "").toLowerCase().trim().split(/\s+/).filter(w => w.length > 3));
-      const s1 = getTokens(t1);
-      const s2 = getTokens(t2);
-      if (s1.size === 0 || s2.size === 0) return 0.0;
-      
-      const intersection = new Set([...s1].filter(x => s2.has(x)));
-      const union = new Set([...s1, ...s2]);
-      return intersection.size / union.size;
-    };
-
-    const deduplicatedSlides: any[] = [];
-    rawSlides.forEach(slide => {
-      const slideContent = slide.content || slide.bulletPoints || [];
-      let isDuplicate = false;
-      for (const existing of deduplicatedSlides) {
-        const similarity = calculateJaccardSimilarity(slide.title || "", existing.title || "");
-        if (similarity > 0.6) {
-          const existingContent = existing.content || existing.bulletPoints || [];
-          existing.content = Array.from(new Set([...existingContent, ...slideContent]));
-          existing.bulletPoints = existing.content;
-          isDuplicate = true;
-          break;
-        }
-      }
-      if (!isDuplicate) {
-        deduplicatedSlides.push({
-          ...slide,
-          content: slideContent,
-          bulletPoints: slideContent
-        });
-      }
-    });
-
-    const processedSlides: any[] = [];
-    deduplicatedSlides.forEach(slide => {
-      const slideContent = slide.content || [];
-      const titleWords = (slide.title || "").split(/\s+/).filter(Boolean).length;
-      const contentWords = slideContent.reduce((acc: number, bp: string) => acc + bp.split(/\s+/).filter(Boolean).length, 0);
-      const totalWords = titleWords + contentWords;
-      
-      if (!isDetailed && totalWords > 40 && slideContent.length > 1) {
-        const halfIndex = Math.ceil(slideContent.length / 2);
-        const contentPart1 = slideContent.slice(0, halfIndex);
-        const contentPart2 = slideContent.slice(halfIndex);
-        
-        processedSlides.push({
-          ...slide,
-          title: `${slide.title} (Part 1)`,
-          content: contentPart1,
-          bulletPoints: contentPart1
-        });
-        processedSlides.push({
-          ...slide,
-          title: `${slide.title} (Part 2)`,
-          content: contentPart2,
-          bulletPoints: contentPart2
-        });
-      } else {
-        processedSlides.push(slide);
-      }
-    });
-
-    const pptx = new pptxgen();
-    pptx.title = deckTitle;
-
-    const themeColors = {
-      academic: { bg: "0f172a", text: "ffffff", primary: "e2e8f0", accent: "d97706", cardBg: "1e293b" },
-      corporate: { bg: "1e293b", text: "ffffff", primary: "cbd5e1", accent: "2563eb", cardBg: "0f172a" },
-      startup: { bg: "09090b", text: "ffffff", primary: "f4f4f5", accent: "8b5cf6", cardBg: "18181b" },
-      cyber: { bg: "050508", text: "ffffff", primary: "39ff14", accent: "ff007f", cardBg: "0d0e12" },
-      minimal: { bg: "ffffff", text: "1e293b", primary: "0f172a", accent: "000000", cardBg: "f8fafc" },
-      glass: { bg: "18181b", text: "ffffff", primary: "f4f4f5", accent: "06b6d4", cardBg: "27272a" }
-    };
-
-    const colors = themeColors[themeName] || themeColors.academic;
-
-    const getRoyaltyFreeImage = (query: string): string => {
-      const clean = (query || "").toLowerCase();
-      if (clean.includes("tech") || clean.includes("computer") || clean.includes("software") || clean.includes("code") || clean.includes("digital") || clean.includes("web") || clean.includes("programming") || clean.includes("ai") || clean.includes("artificial")) {
-        return "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80";
-      }
-      if (clean.includes("science") || clean.includes("biology") || clean.includes("chemistry") || clean.includes("physics") || clean.includes("lab") || clean.includes("medicine") || clean.includes("dna") || clean.includes("molecular") || clean.includes("cell")) {
-        return "https://images.unsplash.com/photo-1507413245164-6160d8298b31?w=800&auto=format&fit=crop&q=80";
-      }
-      if (clean.includes("business") || clean.includes("corporate") || clean.includes("finance") || clean.includes("office") || clean.includes("market") || clean.includes("meeting") || clean.includes("money") || clean.includes("strategy") || clean.includes("leadership")) {
-        return "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&auto=format&fit=crop&q=80";
-      }
-      if (clean.includes("education") || clean.includes("learn") || clean.includes("history") || clean.includes("book") || clean.includes("study") || clean.includes("academic") || clean.includes("student") || clean.includes("class") || clean.includes("philosophy") || clean.includes("ethics")) {
-        return "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&auto=format&fit=crop&q=80";
-      }
-      if (clean.includes("art") || clean.includes("design") || clean.includes("creative") || clean.includes("paint") || clean.includes("draw") || clean.includes("graphic")) {
-        return "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=800&auto=format&fit=crop&q=80";
-      }
-      if (clean.includes("growth") || clean.includes("success") || clean.includes("startup") || clean.includes("idea") || clean.includes("analytics") || clean.includes("chart") || clean.includes("diagram")) {
-        return "https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=800&auto=format&fit=crop&q=80";
-      }
-      if (clean.includes("math") || clean.includes("calculus") || clean.includes("algebra") || clean.includes("derivative") || clean.includes("limit") || clean.includes("geometry") || clean.includes("equation")) {
-        return "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=800&auto=format&fit=crop&q=80";
-      }
-      
-      const keywords = clean.split(/\s+/).filter(Boolean);
-      const queryParam = keywords.length > 0 ? keywords.slice(0, 2).join(",") : "abstract,academia";
-      return `https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&auto=format&fit=crop&q=80&sig=${Math.abs(queryParam.split('').reduce((a,b)=>(((a<<5)-a)+b.charCodeAt(0))|0,0))%100}`;
-    };
-
-    processedSlides.forEach((s, idx) => {
-      const slide = pptx.addSlide();
-      slide.background = { fill: colors.bg };
-
-      if (s.layout === 'title_slide' || idx === 0) {
-        slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: '100%', h: 0.15, fill: { color: colors.accent } });
-        slide.addShape(pptx.ShapeType.rect, { x: 0.5, y: 4.5, w: 9.0, h: 0.05, fill: { color: colors.accent } });
-        slide.addText(s.title, {
-          x: 0.5, y: 1.8, w: 9.0, h: 1.5,
-          fontSize: 32, fontFace: "Helvetica",
-          color: colors.text, bold: true, align: "center"
-        });
-        slide.addText(s.content ? s.content.join(' • ') : "Knowledge Deck", {
-          x: 0.5, y: 3.5, w: 9.0, h: 0.8,
-          fontSize: 14, fontFace: "Helvetica",
-          color: colors.primary, align: "center", italic: true
-        });
-      } else if (s.layout === 'split_column') {
-        slide.addText(s.title, {
-          x: 0.5, y: 0.5, w: 4.5, h: 0.8,
-          fontSize: 20, fontFace: "Helvetica",
-          color: colors.accent, bold: true
-        });
-        const bulletLines = s.content.map((bp: string) => ({ text: bp, options: { bullet: true, color: colors.text } }));
-        slide.addText(bulletLines, {
-          x: 0.5, y: 1.4, w: 4.5, h: 3.8,
-          fontSize: 13, fontFace: "Helvetica",
-          color: colors.text, lineSpacing: 18
-        });
-
-        const query = s.imageSearchQuery || s.imagePrompt || s.title;
-        slide.addImage({
-          path: s.imageUrl || getRoyaltyFreeImage(query),
-          x: 5.3, y: 1.0, w: 4.2, h: 3.8
-        });
-      } else if (s.layout === 'timeline') {
-        slide.addText(s.title, {
-          x: 0.5, y: 0.4, w: 9.0, h: 0.6,
-          fontSize: 20, fontFace: "Helvetica",
-          color: colors.accent, bold: true
-        });
-        slide.addShape(pptx.ShapeType.line, {
-          x: 1.0, y: 2.6, w: 8.0, h: 0,
-          line: { color: colors.accent, width: 3, dashType: 'dash' }
-        });
-        const steps = s.content.slice(0, 4);
-        const stepWidth = 8.0 / steps.length;
-        steps.forEach((stepText: string, stepIdx: number) => {
-          const xPos = 1.0 + (stepIdx * stepWidth);
-          slide.addShape(pptx.ShapeType.ellipse, {
-            x: xPos + (stepWidth / 2) - 0.25, y: 2.35, w: 0.5, h: 0.5,
-            fill: { color: colors.accent }
-          });
-          slide.addText(`0${stepIdx + 1}`, {
-            x: xPos + (stepWidth / 2) - 0.25, y: 2.35, w: 0.5, h: 0.5,
-            fontSize: 12, color: colors.text, bold: true, align: "center"
-          });
-          slide.addShape(pptx.ShapeType.roundRect, {
-            x: xPos + 0.1, y: 1.0, w: stepWidth - 0.2, h: 1.2,
-            fill: { color: colors.cardBg }
-          });
-          slide.addText(`Step ${stepIdx + 1}`, {
-            x: xPos + 0.1, y: 1.1, w: stepWidth - 0.2, h: 0.3,
-            fontSize: 11, color: colors.accent, bold: true, align: "center"
-          });
-          slide.addText(stepText, {
-            x: xPos + 0.1, y: 3.0, w: stepWidth - 0.2, h: 1.8,
-            fontSize: 11, color: colors.text, align: "center"
-          });
-        });
-      } else if (s.layout === 'key_metrics' || s.layout === 'metrics') {
-        slide.addText(s.title, {
-          x: 0.5, y: 0.4, w: 9.0, h: 0.6,
-          fontSize: 20, fontFace: "Helvetica",
-          color: colors.accent, bold: true
-        });
-        const metrics = s.content.slice(0, 3);
-        const cardWidth = 8.8 / metrics.length;
-        metrics.forEach((m: string, mIdx: number) => {
-          const xPos = 0.6 + (mIdx * cardWidth);
-          slide.addShape(pptx.ShapeType.roundRect, {
-            x: xPos + 0.1, y: 1.2, w: cardWidth - 0.2, h: 3.5,
-            fill: { color: colors.cardBg }, line: { color: colors.accent, width: 1 }
-          });
-          const split = m.split(':');
-          const numberText = split[0] ? split[0].trim() : `0${mIdx + 1}`;
-          const labelText = split[1] ? split.slice(1).join(':').trim() : m;
-          
-          slide.addText(numberText, {
-            x: xPos + 0.2, y: 1.5, w: cardWidth - 0.4, h: 1.0,
-            fontSize: 40, color: colors.accent, bold: true, align: "center"
-          });
-          slide.addText(labelText, {
-            x: xPos + 0.2, y: 2.6, w: cardWidth - 0.4, h: 1.8,
-            fontSize: 12, color: colors.text, align: "center"
-          });
-        });
-      } else if (s.layout === 'grid_quadrant') {
-        slide.addText(s.title, {
-          x: 0.5, y: 0.4, w: 9.0, h: 0.6,
-          fontSize: 20, fontFace: "Helvetica",
-          color: colors.accent, bold: true
-        });
-        const gridItems = s.content.slice(0, 4);
-        const gridPositions = [
-          { x: 0.8, y: 1.2 },
-          { x: 5.2, y: 1.2 },
-          { x: 0.8, y: 3.1 },
-          { x: 5.2, y: 3.1 }
-        ];
-        gridItems.forEach((text: string, gIdx: number) => {
-          const pos = gridPositions[gIdx];
-          slide.addShape(pptx.ShapeType.roundRect, {
-            x: pos.x, y: pos.y, w: 4.0, h: 1.6,
-            fill: { color: colors.cardBg }
-          });
-          slide.addShape(pptx.ShapeType.rect, {
-            x: pos.x, y: pos.y, w: 0.1, h: 1.6,
-            fill: { color: colors.accent }
-          });
-          slide.addText(`0${gIdx + 1}.`, {
-            x: pos.x + 0.2, y: pos.y + 0.15, w: 3.6, h: 0.3,
-            fontSize: 11, color: colors.accent, bold: true
-          });
-          slide.addText(text, {
-            x: pos.x + 0.2, y: pos.y + 0.45, w: 3.6, h: 1.0,
-            fontSize: 11, color: colors.text
-          });
-        });
-      } else if (s.layout === 'bold_quote' || s.layout === 'quote') {
-        slide.addText(s.title, {
-          x: 0.5, y: 0.4, w: 9.0, h: 0.6,
-          fontSize: 20, fontFace: "Helvetica",
-          color: colors.accent, bold: true
-        });
-        slide.addShape(pptx.ShapeType.roundRect, {
-          x: 1.2, y: 1.3, w: 7.6, h: 3.2,
-          fill: { color: colors.cardBg }, line: { color: colors.accent, width: 2 }
-        });
-        slide.addText("“", {
-          x: 1.5, y: 1.5, w: 1.0, h: 0.6,
-          fontSize: 48, fontFace: "Georgia", color: colors.accent, bold: true
-        });
-        slide.addText(`"${s.content.join(' ')}"`, {
-          x: 1.5, y: 2.0, w: 7.0, h: 1.8,
-          fontSize: 18, fontFace: "Helvetica",
-          color: colors.text, italic: true, align: "center", bold: true
-        });
-      } else if (s.layout === 'diagram') {
-        slide.addText(s.title, {
-          x: 0.5, y: 0.4, w: 9.0, h: 0.6,
-          fontSize: 20, fontFace: "Helvetica",
-          color: colors.accent, bold: true
-        });
-
-        const diag = s.diagramData || {
-          nodes: [
-            { id: "n1", label: s.content[0] || "Start" },
-            { id: "n2", label: s.content[1] || "Process" },
-            { id: "n3", label: s.content[2] || "End" }
-          ],
-          connections: [
-            { from: "n1", to: "n2" },
-            { from: "n2", to: "n3" }
-          ]
-        };
-
-        const nodeMap: { [key: string]: { x: number, y: number, w: number, h: number } } = {};
-        const nodeWidth = 2.0;
-        const nodeHeight = 1.0;
-        
-        diag.nodes.forEach((node: any, nidx: number) => {
-          const x = 1.2 + (nidx * 2.8);
-          const y = 2.2;
-          nodeMap[node.id] = { x, y, w: nodeWidth, h: nodeHeight };
-          
-          slide.addShape(pptx.ShapeType.roundRect, {
-            x, y, w: nodeWidth, h: nodeHeight,
-            fill: { color: colors.cardBg }, line: { color: colors.accent, width: 2 }
-          });
-          slide.addText(node.label, {
-            x: x + 0.1, y: y + 0.2, w: nodeWidth - 0.2, h: nodeHeight - 0.4,
-            fontSize: 11, color: colors.text, bold: true, align: "center", valign: "middle"
-          });
-        });
-
-        diag.connections.forEach((conn: any) => {
-          const fromNode = nodeMap[conn.from];
-          const toNode = nodeMap[conn.to];
-          if (fromNode && toNode) {
-            const startX = fromNode.x + fromNode.w;
-            const startY = fromNode.y + (fromNode.h / 2);
-            const endX = toNode.x;
-            const endY = toNode.y + (toNode.h / 2);
-            
-            slide.addShape(pptx.ShapeType.line, {
-              x: startX, y: startY, w: endX - startX, h: endY - startY,
-              line: { color: colors.accent, width: 2.5, endArrowType: 'arrow' }
-            });
-          }
-        });
-      } else if (s.layout === 'comparison_table' || s.layout === 'comparison') {
-        slide.addText(s.title, {
-          x: 0.5, y: 0.4, w: 9.0, h: 0.6,
-          fontSize: 20, fontFace: "Helvetica",
-          color: colors.accent, bold: true
-        });
-
-        const tableData = s.tableData || {
-          headers: ["Aspect", "Parameter A", "Parameter B"],
-          rows: s.content.map((c: string, cidx: number) => [`Metric ${cidx+1}`, c.substring(0, 25), c.substring(25, 55) || "Aligned Outline"])
-        };
-
-        const formattedRows: any[] = [];
-        const headerCells = tableData.headers.map((h: string) => ({
-          text: h,
-          options: {
-            fill: { color: colors.accent },
-            bold: true,
-            color: colors.bg === "ffffff" ? "ffffff" : "000000",
-            fontSize: 12,
-            align: "center",
-            valign: "middle",
-            margin: [8, 8, 8, 8]
-          }
-        }));
-        formattedRows.push(headerCells);
-
-        tableData.rows.forEach((row: string[], rIdx: number) => {
-          const cells = row.map((cellText: string, cIdx: number) => ({
-            text: cellText,
-            options: {
-              fill: { color: rIdx % 2 === 0 ? colors.cardBg : colors.bg },
-              color: colors.text,
-              fontSize: 11,
-              align: cIdx === 0 ? "left" : "center",
-              valign: "middle",
-              margin: [8, 8, 8, 8]
-            }
-          }));
-          formattedRows.push(cells);
-        });
-
-        slide.addTable(formattedRows, {
-          x: 1.0, y: 1.4, w: 8.0, h: 3.0,
-          border: { type: "solid", color: colors.accent, pt: 1 }
-        });
-      } else if (s.layout === 'process_flow' || s.layout === 'process') {
-        slide.addText(s.title, {
-          x: 0.5, y: 0.4, w: 9.0, h: 0.6,
-          fontSize: 20, fontFace: "Helvetica",
-          color: colors.accent, bold: true
-        });
-
-        const steps = s.processSteps || s.content.slice(0, 3);
-        const cardWidth = 2.2;
-        const cardHeight = 1.4;
-        const totalCards = steps.length;
-        const spacing = 8.0 / Math.max(1, totalCards);
-        
-        steps.forEach((stepText: string, stepIdx: number) => {
-          const xPos = 1.0 + (stepIdx * spacing) + (spacing/2 - cardWidth/2);
-          const yPos = 2.0;
-
-          slide.addShape(pptx.ShapeType.roundRect, {
-            x: xPos, y: yPos, w: cardWidth, h: cardHeight,
-            fill: { color: colors.cardBg }, line: { color: colors.accent, width: 2 }
-          });
-          
-          slide.addText(`Stage 0${stepIdx + 1}`, {
-            x: xPos + 0.1, y: yPos + 0.1, w: cardWidth - 0.2, h: 0.3,
-            fontSize: 10, color: colors.accent, bold: true, align: "center"
-          });
-
-          slide.addText(stepText, {
-            x: xPos + 0.1, y: yPos + 0.4, w: cardWidth - 0.2, h: 0.9,
-            fontSize: 11, color: colors.text, align: "center", valign: "middle"
-          });
-
-          if (stepIdx < totalCards - 1) {
-            const arrowStartX = xPos + cardWidth;
-            const arrowEndX = xPos + spacing;
-            const arrowY = yPos + (cardHeight / 2);
-            slide.addShape(pptx.ShapeType.line, {
-              x: arrowStartX + 0.15, y: arrowY, w: (arrowEndX - arrowStartX) - 0.3, h: 0,
-              line: { color: colors.accent, width: 3, endArrowType: 'arrow' }
-            });
-          }
-        });
-      } else if (s.layout === 'case_study') {
-        slide.addText(s.title, {
-          x: 0.5, y: 0.4, w: 9.0, h: 0.6,
-          fontSize: 20, fontFace: "Helvetica",
-          color: colors.accent, bold: true
-        });
-
-        const storyText = s.content.slice(0, 2).join('\n\n');
-        slide.addText(storyText, {
-          x: 0.5, y: 1.2, w: 5.2, h: 3.6,
-          fontSize: 12, fontFace: "Helvetica",
-          color: colors.text, lineSpacing: 18
-        });
-
-        slide.addShape(pptx.ShapeType.roundRect, {
-          x: 6.0, y: 1.2, w: 3.5, h: 3.6,
-          fill: { color: colors.cardBg }, line: { color: colors.accent, width: 2 }
-        });
-
-        slide.addText("CASE INSIGHT", {
-          x: 6.2, y: 1.4, w: 3.1, h: 0.3,
-          fontSize: 10, fontFace: "Helvetica", color: colors.accent, bold: true, align: "center"
-        });
-
-        const outcomeText = s.content[2] || "Detailed operational outcome, findings, and strategic lessons learned from the subject review.";
-        slide.addText(outcomeText, {
-          x: 6.2, y: 1.8, w: 3.1, h: 2.8,
-          fontSize: 11, fontFace: "Helvetica", color: colors.text, align: "center", valign: "middle"
-        });
-      }
-
-      if (s.chart) {
-        const chartTypeMap = {
-          bar: pptx.ChartType.bar,
-          line: pptx.ChartType.line,
-          pie: pptx.ChartType.pie
-        };
-        const type = chartTypeMap[s.chart.chartType as 'bar' | 'line' | 'pie'] || pptx.ChartType.bar;
-        const chartData = [
-          {
-            name: s.title || "Metrics",
-            labels: s.chart.labels,
-            values: s.chart.values
-          }
-        ];
-        slide.addChart(type as any, chartData, {
-          x: 5.3, y: 1.2, w: 4.2, h: 3.5,
-          showLegend: true,
-          legendPos: 'b'
-        });
-      }
-
-      if (s.keyTakeaway) {
-        slide.addText(`Takeaway: ${s.keyTakeaway}`, {
-          x: 0.5, y: 5.2, w: 9.0, h: 0.4,
-          fontSize: 10.5, fontFace: "Helvetica",
-          color: colors.accent, italic: true
-        });
-      }
-      slide.addText(`Slide ${idx + 1} of ${processedSlides.length}`, {
-        x: 8.5, y: 5.2, w: 1.5, h: 0.4,
-        fontSize: 9, fontFace: "Helvetica",
-        color: colors.primary, align: "right"
-      });
-    });
-
-    pptx.writeFile({ fileName: `${deckTitle.replace(/\s+/g, "_")}.pptx` });
-  };
-
-  const generateCustomPresentationDeck = async () => {
-    const activeLecture = lectures.find(l => l.id === activeLectureId);
-    if (!activeLecture) return;
-    setIsGeneratingPresentation(true);
-
-    try {
-      const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-
-      const prompt = `
-        Create a structured PowerPoint presentation deck based on the following lecture materials.
-        
-        Lecture Title: "${activeLecture.title}"
-        Lecture Content:
-        ${activeLecture.cleanTranscript ? activeLecture.cleanTranscript.substring(0, 8000) : activeLecture.summary}
-        
-        Configuration Requirements:
-        - Theme style: ${pptTheme}
-        - Slide count: Exactly ${pptLength} slides
-        - Text limit: ${pptDetailedMode ? 'detailed explanations' : 'strictly under 40 words total per slide (short bullet points)'}
-        
-        For each slide, you must define:
-        1. "title": A short title for the slide
-        2. "layout": One of ['title_slide', 'split_column', 'timeline', 'key_metrics', 'grid_quadrant', 'bold_quote', 'diagram', 'comparison_table', 'process_flow', 'case_study'].
-        3. "content": An array of bullet points (each 6-12 words max).
-        4. "imageSearchQuery": A single high-level search keyword (e.g., "molecule" or "office") representing the slide's visual topic.
-        5. "imagePrompt": A detailed prompt for illustrating the content.
-        6. "keyTakeaway": A short 1-sentence takeaway displayed at the bottom of the slide.
-        7. "chart": (Optional) If the slide contains statistics, metrics, or comparisons, include a chart plan:
-           - "chartType": one of ['bar', 'line', 'pie']
-           - "labels": array of strings (e.g. ["Q1", "Q2", "Q3"])
-           - "values": array of numbers (e.g. [45, 67, 89])
-        
-        Return the response strictly as a JSON object with a "slides" array.
-      `;
-
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            responseMimeType: 'application/json',
-            responseSchema: {
-              type: 'OBJECT',
-              properties: {
-                slides: {
-                  type: 'ARRAY',
-                  items: {
-                    type: 'OBJECT',
-                    properties: {
-                      title: { type: 'STRING' },
-                      layout: { type: 'STRING' },
-                      content: { type: 'ARRAY', items: { type: 'STRING' } },
-                      imageSearchQuery: { type: 'STRING' },
-                      imagePrompt: { type: 'STRING' },
-                      keyTakeaway: { type: 'STRING' },
-                      chart: {
-                        type: 'OBJECT',
-                        properties: {
-                          chartType: { type: 'STRING' },
-                          labels: { type: 'ARRAY', items: { type: 'STRING' } },
-                          values: { type: 'ARRAY', items: { type: 'INTEGER' } }
-                        },
-                        required: ['chartType', 'labels', 'values']
-                      }
-                    },
-                    required: ['title', 'layout', 'content', 'imageSearchQuery', 'imagePrompt', 'keyTakeaway']
-                  }
-                }
-              },
-              required: ['slides']
-            }
-          }
-        })
-      });
-
-      let slides = [];
-      if (res.ok) {
-        const data = await res.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        const startIdx = text.indexOf('{');
-        const endIdx = text.lastIndexOf('}');
-        const parsed = JSON.parse(text.substring(startIdx, endIdx + 1));
-        slides = parsed.slides || [];
-      } else {
-        throw new Error("Failed to generate slides via Gemini API");
-      }
-
-      // Concurrently fetch images for each slide using the secure image service
-      const { searchImages } = await import('../services/images');
-      const usedImages = new Set<string>();
-      
-      const slideImagePromises = slides.map(async (s: any) => {
-        if (s.imageSearchQuery) {
-          try {
-            const urls = await searchImages(s.imageSearchQuery);
-            if (urls && urls.length > 0) {
-              let selectedUrl = urls[0];
-              for (const u of urls) {
-                if (!usedImages.has(u)) {
-                  selectedUrl = u;
-                  break;
-                }
-              }
-              usedImages.add(selectedUrl);
-              s.imageUrl = selectedUrl;
-            }
-          } catch (imgErr) {
-            console.error(`Failed to prefetch image for query "${s.imageSearchQuery}":`, imgErr);
-          }
-        }
-      });
-      await Promise.all(slideImagePromises);
-
-      setLocalSlides(slides);
-      await buildAndDownloadPPTX(slides, activeLecture.title, pptTheme, pptDetailedMode);
-      setIsGeneratingPresentation(false);
-      setShowPptModal(false);
-    } catch (err) {
-      console.error("Custom slide generation failed, using local fallback...", err);
-      // Fallback slide deck building from notes
-      const lecNotes = notes.filter((n: any) => n.lectureId === activeLectureId);
-      const slides = [];
-      const layouts = ['split_column', 'timeline', 'key_metrics', 'grid_quadrant', 'bold_quote', 'diagram', 'comparison_table', 'process_flow', 'case_study'];
-
-      slides.push({
-        title: activeLecture.title,
-        layout: 'title_slide',
-        content: ['Comprehensive Study Deck', 'Powered by Note-IT AI Smart Workspace'],
-        imagePrompt: `An academic lecture library, classic design`,
-        keyTakeaway: `Initial review baseline`
-      });
-
-      for (let i = 0; i < pptLength - 1; i++) {
-        const note = lecNotes[i % lecNotes.length] || { title: `Topic Section ${i + 1}`, content: `Details for section ${i + 1} content.` };
-        const layout = layouts[i % layouts.length];
-        const textLines = note.content.split('\n').filter((l: string) => l.trim().length > 0).slice(0, 4);
-        const cleanLines = textLines.map((l: string) => l.replace(/[*#-]/g, '').trim());
-
-        slides.push({
-          title: note.title,
-          layout,
-          content: cleanLines.slice(0, 3),
-          imagePrompt: `Professional design representing ${note.title}`,
-          keyTakeaway: `Key understanding of ${note.title}`
-        });
-      }
-
-      setLocalSlides(slides);
-      await buildAndDownloadPPTX(slides, activeLecture.title, pptTheme, pptDetailedMode);
-      setIsGeneratingPresentation(false);
-      setShowPptModal(false);
-    }
-  };
-
   // ----------------------------------------------------
   // MAIN ROUTING
   // ----------------------------------------------------
@@ -1551,7 +1077,7 @@ export default function LectureCaptureView({
                   {activeLecture.duration || '00:00:00'} Duration
                 </span>
               </div>
-              <h1 className="text-sm font-black tracking-tight font-sans mt-0.5 truncate max-w-md">
+              <h1 className="text-sm font-black tracking-tight font-sans mt-0.5 truncate max-w-[200px] sm:max-w-md">
                 {activeLecture.title.toUpperCase()}
               </h1>
             </div>
@@ -1560,18 +1086,54 @@ export default function LectureCaptureView({
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-500 font-mono">
               <CheckCircle className="h-3.5 w-3.5" />
-              WORKSPACE RESOLVED
+              <span className="hidden sm:inline">WORKSPACE RESOLVED</span>
+              <span className="inline sm:hidden">READY</span>
             </span>
           </div>
         </div>
 
-        {/* SPLIT PANE CONTENT CONTAINER */}
-        <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-          
-          {/* PANE 1: LEFT - TRANSCRIPT COLUMN (40%) */}
-          <div className={`w-full md:w-[40%] flex-shrink-0 flex flex-col border-r overflow-hidden ${
-            theme === 'dark' ? 'bg-[#08090c] border-neutral-900' : 'bg-gray-50/50 border-gray-200'
+        {/* Mobile Workspace Toggle Header */}
+        {isMobile && (
+          <div className={`flex border-b text-xs font-bold font-sans ${
+            theme === 'dark' ? 'bg-[#0d0e12] border-neutral-900 text-neutral-450' : 'bg-white border-gray-200 text-gray-550'
           }`}>
+            <button
+              onClick={() => setMobileWorkspaceTab('transcript')}
+              className={`flex-1 py-3 text-center border-b-2 transition-all cursor-pointer ${
+                mobileWorkspaceTab === 'transcript'
+                  ? theme === 'dark'
+                    ? 'border-indigo-500 text-white font-black'
+                    : 'border-black text-black font-black'
+                  : 'border-transparent'
+              }`}
+            >
+              Lecture Transcript
+            </button>
+            <button
+              onClick={() => setMobileWorkspaceTab('tools')}
+              className={`flex-1 py-3 text-center border-b-2 transition-all cursor-pointer ${
+                mobileWorkspaceTab === 'tools'
+                  ? theme === 'dark'
+                    ? 'border-indigo-500 text-white font-black'
+                    : 'border-black text-black font-black'
+                  : 'border-transparent'
+              }`}
+            >
+              Workspace Tools
+            </button>
+          </div>
+        )}
+
+        {/* SPLIT PANE CONTENT CONTAINER */}
+        <div id="split-pane-container" className="flex-1 flex flex-col md:flex-row overflow-hidden">
+          
+          {/* PANE 1: LEFT - TRANSCRIPT COLUMN */}
+          <div 
+            className={`w-full md:flex-shrink-0 flex flex-col border-r overflow-hidden ${
+              theme === 'dark' ? 'bg-[#08090c] border-neutral-900' : 'bg-gray-50/50 border-gray-200'
+            } ${isMobile && mobileWorkspaceTab !== 'transcript' ? 'hidden' : 'flex'}`}
+            style={!isMobile ? { width: `${transcriptWidth}%` } : {}}
+          >
             <div className="p-4 border-b border-neutral-900/10 dark:border-neutral-900/50">
               <h2 className="text-xs font-black text-indigo-400 uppercase tracking-widest font-mono">Lecture Transcript</h2>
               <p className="text-[10px] text-neutral-400 mt-0.5">Click timestamps to sync milestone highlights.</p>
@@ -1582,8 +1144,27 @@ export default function LectureCaptureView({
             </div>
           </div>
 
-          {/* PANE 2: RIGHT - STUDY TABS COLUMN (60%) */}
-          <div className="flex-grow flex-1 flex flex-col overflow-hidden p-4 space-y-4">
+          {/* Drag Handle Divider */}
+          <div 
+            onMouseDown={startResizing}
+            className={`hidden md:block w-1.5 hover:w-2 transition-all cursor-col-resize self-stretch flex-shrink-0 relative group ${
+              isResizing 
+                ? 'bg-indigo-650' 
+                : theme === 'dark' ? 'bg-neutral-900 hover:bg-indigo-500/50' : 'bg-gray-200 hover:bg-indigo-500/50'
+            }`}
+          >
+            <div className={`absolute inset-y-0 left-1/2 -translate-x-1/2 w-[2px] transition-colors ${
+              isResizing ? 'bg-indigo-400' : 'bg-transparent group-hover:bg-indigo-400'
+            }`} />
+          </div>
+
+          {/* PANE 2: RIGHT - STUDY TABS COLUMN */}
+          <div 
+            className={`flex-grow flex-1 flex flex-col overflow-hidden p-4 space-y-4 ${
+              isMobile && mobileWorkspaceTab !== 'tools' ? 'hidden' : 'flex'
+            }`}
+            style={!isMobile ? { width: `${100 - transcriptWidth}%` } : {}}
+          >
             
             {/* MINI TAB ROW SELECTOR */}
             <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none whitespace-nowrap bg-neutral-950/20 p-1 rounded-xl border border-neutral-900/10 dark:border-neutral-900/40">
@@ -1597,7 +1178,7 @@ export default function LectureCaptureView({
                   className={`px-4 py-1.5 rounded-lg text-[10px] font-black capitalize transition-all cursor-pointer ${
                     activeOutputTab === tab 
                       ? theme === 'dark' ? 'bg-indigo-650 text-white' : 'bg-white text-black shadow-xs' 
-                      : 'text-neutral-450 hover:text-white'
+                      : theme === 'dark' ? 'text-neutral-450 hover:text-white' : 'text-neutral-500 hover:text-neutral-900'
                   }`}
                 >
                   {tab === 'mindmap' ? 'Mind Map' : tab === 'chat' ? 'Ask Lecture AI' : tab}
@@ -1613,24 +1194,33 @@ export default function LectureCaptureView({
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex gap-1">
-                      {(['academic', 'executive', 'revision'] as const).map(f => (
+                      {([
+                        { mode: 'quick', label: 'Quick Notes' },
+                        { mode: 'detailed', label: 'Detailed Notes' },
+                        { mode: 'academic', label: 'Academic Notes' },
+                        { mode: 'exam', label: 'Exam Notes' }
+                      ] as const).map(nOpt => (
                         <button
-                          key={f}
-                          onClick={() => setNotesFormat(f)}
+                          key={nOpt.mode}
+                          onClick={() => setSelectedNotesMode(nOpt.mode)}
                           className={`px-2.5 py-1 rounded-lg text-[9px] font-extrabold uppercase ${
-                            notesFormat === f ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-455'
+                            selectedNotesMode === nOpt.mode ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-455'
                           }`}
                         >
-                          {f === 'executive' ? 'Quick Outline' : f}
+                          {nOpt.label}
                         </button>
                       ))}
                     </div>
                     <button
                       onClick={() => {
-                        setPdfExportData({ title: `${activeLecture.title} - Notes`, data: filteredNotes });
+                        setPdfExportData({ 
+                          title: `${activeLecture.title} - ${selectedNotesMode} Notes`, 
+                          data: activeLecture.notes?.[selectedNotesMode] || '' 
+                        });
                         setShowPdfModal(true);
                       }}
-                      className="flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:underline cursor-pointer"
+                      disabled={!activeLecture.notes?.[selectedNotesMode]}
+                      className="flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:underline cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Download className="h-3 w-3" />
                       <span>Export PDF</span>
@@ -1638,31 +1228,27 @@ export default function LectureCaptureView({
                   </div>
 
                   <div className="space-y-3">
-                    {filteredNotes.length === 0 ? (
-                      <div className="text-center py-12 text-neutral-500 font-mono text-[10.5px]">No lecture notes processed.</div>
+                    {activeLecture.notes?.[selectedNotesMode] ? (
+                      <div className={`p-4 rounded-xl border font-sans leading-relaxed whitespace-pre-wrap text-[11.5px] ${
+                        theme === 'dark' ? 'bg-[#121318] border-neutral-905 text-neutral-305' : 'bg-white border-gray-200 text-gray-755'
+                      }`}>
+                        {renderTextWithCitations(cleanMarkdownText(activeLecture.notes[selectedNotesMode]))}
+                      </div>
+                    ) : isGeneratingNotes ? (
+                      <div className="py-16 flex flex-col items-center justify-center border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5">
+                        <BruteLoader size="md" message={`Generating ${selectedNotesMode} notes...`} />
+                      </div>
                     ) : (
-                      filteredNotes.map((n: any, i: number) => {
-                        // Apply simulated local formatting based on notesFormat
-                        let displayContent = n.content || '';
-                        if (notesFormat === 'executive') {
-                          // Quick outline: Filter only key bullets
-                          const lines = displayContent.split('\n');
-                          const bullets = lines.filter((l: string) => l.trim().startsWith('-') || l.trim().startsWith('*')).slice(0, 5);
-                          displayContent = bullets.length > 0 ? bullets.join('\n') : lines.slice(0, 5).join('\n');
-                        } else if (notesFormat === 'revision') {
-                          // High summary cards
-                          displayContent = `[REVISION SUMMARY CARD]\n${displayContent.substring(0, 250)}...`;
-                        }
-
-                        return (
-                          <div key={i} className={`p-4 rounded-xl border font-sans ${theme === 'dark' ? 'bg-[#121318] border-neutral-905' : 'bg-white border-gray-200'}`}>
-                            <h4 className="text-xs font-black text-indigo-400">{n.title}</h4>
-                            <p className="text-[11.5px] mt-2 text-neutral-305 leading-relaxed whitespace-pre-wrap">
-                              {renderTextWithCitations(cleanMarkdownText(displayContent))}
-                            </p>
-                          </div>
-                        );
-                      })
+                      <div className="text-center py-16 border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4">
+                        <FileText className="h-10 w-10 text-neutral-600 mx-auto animate-pulse" />
+                        <h4 className="text-xs font-bold text-neutral-400">Notes for this mode have not been generated yet.</h4>
+                        <button
+                          onClick={() => triggerGenerateNotes(selectedNotesMode)}
+                          className="px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
+                        >
+                          Generate {selectedNotesMode} Notes
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1672,25 +1258,35 @@ export default function LectureCaptureView({
               {activeOutputTab === 'summary' && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <div className="flex gap-1">
-                      {(['academic', 'revision', 'executive', 'beginner'] as const).map(sf => (
+                    <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none max-w-full">
+                      {([
+                        { mode: 'quick_revision', label: 'Quick Revision' },
+                        { mode: 'detailed_notes', label: 'Detailed Notes' },
+                        { mode: 'executive_summary', label: 'Executive Summary' },
+                        { mode: 'beginner_friendly', label: 'Beginner Friendly' },
+                        { mode: 'academic_format', label: 'Academic Format' }
+                      ] as const).map(sf => (
                         <button
-                          key={sf}
-                          onClick={() => setSummaryFormat(sf)}
-                          className={`px-2.5 py-1 rounded-lg text-[9px] font-extrabold uppercase ${
-                            summaryFormat === sf ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-455'
+                          key={sf.mode}
+                          onClick={() => setSelectedSummaryMode(sf.mode)}
+                          className={`px-2.5 py-1 rounded-lg text-[9px] font-extrabold uppercase whitespace-nowrap ${
+                            selectedSummaryMode === sf.mode ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-455'
                           }`}
                         >
-                          {sf} Mode
+                          {sf.label}
                         </button>
                       ))}
                     </div>
                     <button
                       onClick={() => {
-                        setPdfExportData({ title: `${activeLecture.title} - Summary`, data: activeLecture.summary });
+                        setPdfExportData({ 
+                          title: `${activeLecture.title} - Summary (${selectedSummaryMode})`, 
+                          data: activeLecture.summaries?.[selectedSummaryMode] || '' 
+                        });
                         setShowPdfModal(true);
                       }}
-                      className="flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:underline cursor-pointer"
+                      disabled={!activeLecture.summaries?.[selectedSummaryMode]}
+                      className="flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:underline cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                     >
                       <Download className="h-3 w-3" />
                       <span>Export PDF</span>
@@ -1698,48 +1294,69 @@ export default function LectureCaptureView({
                   </div>
 
                   <div className="space-y-4">
-                    {(() => {
-                      const sections = parseSummaryIntoSections(activeLecture.summary || '');
-                      
-                      // Map local filter summary mode configurations to specific headers
-                      const allSections = [
-                        { key: 'executiveOverview', label: 'Executive Overview', content: sections.executiveOverview },
-                        { key: 'keyConcepts', label: 'Key Concepts', content: sections.keyConcepts },
-                        { key: 'detailedExplanation', label: 'Detailed Explanation', content: sections.detailedExplanation },
-                        { key: 'examples', label: 'Examples', content: sections.examples },
-                        { key: 'formulas', label: 'Formulas', content: sections.formulas },
-                        { key: 'commonMistakes', label: 'Common Mistakes', content: sections.commonMistakes },
-                        { key: 'revisionNotes', label: 'Revision Notes', content: sections.revisionNotes },
-                        { key: 'examQuestions', label: 'Exam Questions', content: sections.examQuestions },
-                        { key: 'realWorldApplications', label: 'Real World Applications', content: sections.realWorldApplications },
-                        { key: 'quickRecap', label: 'Quick Recap', content: sections.quickRecap }
-                      ];
+                    {activeLecture.summaries?.[selectedSummaryMode] ? (
+                      <div className="space-y-4 animate-fade-in">
+                        {(() => {
+                          const sections = parseSummaryIntoSections(activeLecture.summaries[selectedSummaryMode]);
+                          
+                          const allSections = [
+                            { key: 'overview', label: 'Overview', content: sections.overview },
+                            { key: 'keyConcepts', label: 'Key Concepts', content: sections.keyConcepts },
+                            { key: 'importantDefinitions', label: 'Important Definitions', content: sections.importantDefinitions },
+                            { key: 'examples', label: 'Examples', content: sections.examples },
+                            { key: 'applications', label: 'Applications', content: sections.applications },
+                            { key: 'commonMistakes', label: 'Common Mistakes', content: sections.commonMistakes },
+                            { key: 'revisionNotes', label: 'Revision Notes', content: sections.revisionNotes },
+                            { key: 'examQuestions', label: 'Exam Questions', content: sections.examQuestions },
+                            { key: 'keyTakeaways', label: 'Key Takeaways', content: sections.keyTakeaways },
+                            { key: 'oneMinuteRevision', label: 'One Minute Revision', content: sections.oneMinuteRevision }
+                          ];
 
-                      // Filter sections displayed locally depending on summaryFormat selection
-                      const filteredSections = allSections.filter(sec => {
-                        if (summaryFormat === 'academic') {
-                          return ['executiveOverview', 'keyConcepts', 'detailedExplanation'].includes(sec.key);
-                        } else if (summaryFormat === 'revision') {
-                          return ['revisionNotes', 'quickRecap', 'commonMistakes'].includes(sec.key);
-                        } else if (summaryFormat === 'executive') {
-                          return ['executiveOverview', 'realWorldApplications', 'formulas'].includes(sec.key);
-                        } else if (summaryFormat === 'beginner') {
-                          return ['keyConcepts', 'examples', 'examQuestions'].includes(sec.key);
-                        }
-                        return true;
-                      });
+                          const filteredSections = allSections.filter(sec => {
+                            if (!sec.content || sec.content.trim().length === 0) return false;
+                            
+                            if (selectedSummaryMode === 'quick_revision') {
+                              return ['revisionNotes', 'commonMistakes', 'keyTakeaways', 'oneMinuteRevision'].includes(sec.key);
+                            } else if (selectedSummaryMode === 'detailed_notes') {
+                              return ['overview', 'keyConcepts', 'examples', 'applications', 'importantDefinitions'].includes(sec.key);
+                            } else if (selectedSummaryMode === 'executive_summary') {
+                              return ['overview', 'applications', 'keyTakeaways'].includes(sec.key);
+                            } else if (selectedSummaryMode === 'beginner_friendly') {
+                              return ['keyConcepts', 'examples', 'oneMinuteRevision'].includes(sec.key);
+                            } else if (selectedSummaryMode === 'academic_format') {
+                              return ['overview', 'keyConcepts', 'importantDefinitions', 'applications'].includes(sec.key);
+                            }
+                            return true;
+                          });
 
-                      return filteredSections.map((sec, idx) => (
-                        <div key={idx} className={`p-4 rounded-xl border ${
-                          theme === 'dark' ? 'bg-[#121318] border-neutral-900' : 'bg-white border-gray-200'
-                        }`}>
-                          <h4 className="text-xs font-black text-indigo-400 uppercase tracking-widest font-mono">{sec.label}</h4>
-                          <p className="text-[11.5px] mt-2 text-neutral-300 leading-relaxed whitespace-pre-wrap">
-                            {renderTextWithCitations(sec.content)}
-                          </p>
-                        </div>
-                      ));
-                    })()}
+                          return filteredSections.map((sec, idx) => (
+                            <div key={idx} className={`p-4 rounded-xl border ${
+                              theme === 'dark' ? 'bg-[#121318] border-neutral-900' : 'bg-white border-gray-200'
+                            }`}>
+                              <h4 className="text-xs font-black text-indigo-400 uppercase tracking-widest font-mono">{sec.label}</h4>
+                              <p className="text-[11.5px] mt-2 text-neutral-300 leading-relaxed whitespace-pre-wrap">
+                                {renderTextWithCitations(cleanMarkdownText(sec.content))}
+                              </p>
+                            </div>
+                          ));
+                        })()}
+                      </div>
+                    ) : isGeneratingSummary ? (
+                      <div className="py-16 flex flex-col items-center justify-center border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5">
+                        <BruteLoader size="md" message={`Generating ${selectedSummaryMode.replace('_', ' ')} summary...`} />
+                      </div>
+                    ) : (
+                      <div className="text-center py-16 border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4">
+                        <FileText className="h-10 w-10 text-neutral-600 mx-auto animate-pulse" />
+                        <h4 className="text-xs font-bold text-neutral-400">Summary for this mode has not been generated yet.</h4>
+                        <button
+                          onClick={() => triggerGenerateSummary(selectedSummaryMode)}
+                          className="px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
+                        >
+                          Generate Summary
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -1748,25 +1365,26 @@ export default function LectureCaptureView({
               {activeOutputTab === 'flashcards' && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <div className="flex gap-1">
-                      {(['basic', 'advanced'] as const).map(f => (
+                    <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none max-w-full">
+                      {(['All', 'Basic Recall', 'Concept Understanding', 'Application Based'] as const).map(cat => (
                         <button
-                          key={f}
-                          onClick={() => setFlashcardsFormat(f)}
-                          className={`px-2.5 py-1 rounded-lg text-[9px] font-extrabold uppercase ${
-                            flashcardsFormat === f ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-455'
+                          key={cat}
+                          onClick={() => setSelectedFlashcardCategory(cat)}
+                          className={`px-2.5 py-1 rounded-lg text-[9px] font-extrabold uppercase whitespace-nowrap ${
+                            selectedFlashcardCategory === cat ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-455'
                           }`}
                         >
-                          {f} Recall
+                          {cat}
                         </button>
                       ))}
                     </div>
                     <button
                       onClick={() => {
-                        setPdfExportData({ title: `${activeLecture.title} - Flashcards`, data: activeLecture.flashcards });
+                        setPdfExportData({ title: `${activeLecture.title} - Flashcards`, data: activeLecture.flashcards || [] });
                         setShowPdfModal(true);
                       }}
-                      className="flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:underline cursor-pointer"
+                      disabled={!activeLecture.flashcards || activeLecture.flashcards.length === 0 || !activeLecture.flashcards.some((c: any) => c.category)}
+                      className="flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:underline cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                     >
                       <Download className="h-3 w-3" />
                       <span>Export PDF</span>
@@ -1774,28 +1392,66 @@ export default function LectureCaptureView({
                   </div>
 
                   <div className="space-y-3">
-                    {activeLecture.flashcards && activeLecture.flashcards.length > 0 ? (
-                      activeLecture.flashcards.map((f: any, i: number) => {
-                        const showDetailed = flashcardsFormat === 'advanced';
-                        return (
-                          <div key={i} className={`p-4.5 rounded-xl border font-sans space-y-2 ${
-                            theme === 'dark' ? 'bg-[#121318] border-neutral-900' : 'bg-white border-gray-200'
-                          }`}>
-                            <div className="text-[10px] font-bold text-indigo-400 font-mono">Q. CARD {i + 1}</div>
-                            <div className="text-xs font-black">{renderTextWithCitations(cleanMarkdownText(f.q))}</div>
-                            <div className="text-[11.5px] text-neutral-350 pt-2 border-t border-neutral-900/20">
-                              {renderTextWithCitations(cleanMarkdownText(f.a))}
-                            </div>
-                            {showDetailed && (
-                              <div className="text-[9.5px] text-indigo-400 pt-1 font-mono italic">
-                                Recall telemetry target calibrated for lecture review.
+                    {activeLecture.flashcards && activeLecture.flashcards.length > 0 && activeLecture.flashcards.some((c: any) => c.category) ? (
+                      <>
+                        {(() => {
+                          const filteredCards = activeLecture.flashcards.filter(
+                            (c: any) => selectedFlashcardCategory === 'All' || c.category === selectedFlashcardCategory
+                          );
+
+                          if (filteredCards.length === 0) {
+                            return (
+                              <div className="text-center py-12 text-neutral-500 font-mono text-[11px] border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl p-6 bg-gray-50/10 dark:bg-neutral-900/5">
+                                No flashcards in category: {selectedFlashcardCategory}
                               </div>
-                            )}
-                          </div>
-                        );
-                      })
+                            );
+                          }
+
+                          return filteredCards.map((f: any, i: number) => (
+                            <div key={i} className={`p-4.5 rounded-xl border font-sans space-y-2 ${
+                              theme === 'dark' ? 'bg-[#121318] border-neutral-900' : 'bg-white border-gray-200'
+                            }`}>
+                              <div className="flex items-center justify-between text-[10px] font-bold font-mono">
+                                <span className="text-indigo-400">Q. CARD {i + 1}</span>
+                                <span className="text-neutral-500 uppercase tracking-widest">{f.category || 'Concept'}</span>
+                              </div>
+                              <div className="text-xs font-black">{renderTextWithCitations(cleanMarkdownText(f.q))}</div>
+                              <div className={`text-[11.5px] pt-2 border-t border-neutral-900/20 ${theme === 'dark' ? 'text-neutral-350' : 'text-neutral-600'}`}>
+                                {renderTextWithCitations(cleanMarkdownText(f.a))}
+                              </div>
+                            </div>
+                          ));
+                        })()}
+
+                        {/* Generate More Button */}
+                        <div className="pt-4 flex justify-center">
+                          {isGeneratingFlashcards ? (
+                            <BruteLoader size="sm" message="Generating 10 more flashcards..." />
+                          ) : (
+                            <button
+                              onClick={triggerGenerateMoreFlashcards}
+                              className="px-5 py-2.5 rounded-lg border border-indigo-500/25 bg-indigo-500/5 hover:bg-indigo-500/10 text-indigo-400 text-xs font-bold transition-all focus:outline-none cursor-pointer"
+                            >
+                              Generate 10 More Flashcards
+                            </button>
+                          )}
+                        </div>
+                      </>
+                    ) : isGeneratingFlashcards ? (
+                      <div className="py-16 flex flex-col items-center justify-center border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5">
+                        <BruteLoader size="md" message="Generating comprehensive flashcard deck..." />
+                      </div>
                     ) : (
-                      <div className="text-center py-12 text-neutral-500 font-mono text-[10.5px]">No flashcards indexed.</div>
+                      <div className="text-center py-16 border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4">
+                        <Brain className="h-10 w-10 text-neutral-600 mx-auto animate-pulse" />
+                        <h4 className="text-xs font-bold text-neutral-400">Flashcards have not been generated yet.</h4>
+                        <button
+                          onClick={triggerGenerateFlashcards}
+                          className="px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
+                        >
+                          Generate Flashcard Deck
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1805,104 +1461,188 @@ export default function LectureCaptureView({
               {activeOutputTab === 'quiz' && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <div className="flex gap-1">
-                      {(['mcq', 'subjective'] as const).map(f => (
+                    <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none max-w-full">
+                      {([
+                        { difficulty: 'easy', label: 'Easy' },
+                        { difficulty: 'medium', label: 'Medium' },
+                        { difficulty: 'hard', label: 'Hard' },
+                        { difficulty: 'scenario', label: 'Scenario' },
+                        { difficulty: 'application', label: 'Application' }
+                      ] as const).map(dOpt => (
                         <button
-                          key={f}
-                          onClick={() => setQuizFormat(f)}
-                          className={`px-2.5 py-1 rounded-lg text-[9px] font-extrabold uppercase ${
-                            quizFormat === f ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-455'
+                          key={dOpt.difficulty}
+                          onClick={() => {
+                            setSelectedQuizDifficulty(dOpt.difficulty);
+                            setActiveQuizQuestionIdx(0);
+                            setSelectedQuizAnswerIdx(null);
+                            setIsQuizRevealed(false);
+                            setQuizScore(0);
+                          }}
+                          className={`px-2.5 py-1 rounded-lg text-[9px] font-extrabold uppercase whitespace-nowrap ${
+                            selectedQuizDifficulty === dOpt.difficulty ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-455'
                           }`}
                         >
-                          {f}
+                          {dOpt.label}
                         </button>
                       ))}
                     </div>
                     <button
                       onClick={() => {
-                        setPdfExportData({ title: `${activeLecture.title} - Quiz`, data: activeLecture.quiz });
+                        setPdfExportData({ title: `${activeLecture.title} - Quiz`, data: activeLecture.quiz || [] });
                         setShowPdfModal(true);
                       }}
-                      className="flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:underline cursor-pointer"
+                      disabled={!activeLecture.quiz || activeLecture.quiz.length === 0 || !activeLecture.quiz.some((q: any) => q.difficulty)}
+                      className="flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:underline cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                     >
                       <Download className="h-3 w-3" />
                       <span>Export PDF</span>
                     </button>
                   </div>
 
-                  {activeLecture.quiz && activeLecture.quiz.length > 0 ? (
+                  {activeLecture.quiz && activeLecture.quiz.length > 0 && activeLecture.quiz.some((q: any) => q.difficulty) ? (
                     <div className="space-y-4">
-                      <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#121318] border-neutral-900' : 'bg-white border-gray-200'}`}>
-                        <div className="text-[10px] font-black text-indigo-400 font-mono">QUESTION {activeQuizQuestionIdx + 1} of {activeLecture.quiz.length}</div>
-                        <h4 className="text-xs font-bold font-sans mt-2 leading-relaxed">
-                          {renderTextWithCitations(cleanMarkdownText(activeLecture.quiz[activeQuizQuestionIdx].question))}
-                        </h4>
-                        
-                        <div className="grid grid-cols-1 gap-2 mt-4">
-                          {activeLecture.quiz[activeQuizQuestionIdx].options.map((opt: string, optIdx: number) => {
-                            const isSelected = selectedQuizAnswerIdx === optIdx;
-                            const isCorrect = optIdx === activeLecture.quiz[activeQuizQuestionIdx].correctAnswer;
-                            
-                            let btnClass = "";
-                            if (isQuizRevealed) {
-                                if (isCorrect) btnClass = "border-emerald-500 bg-emerald-500/10 text-emerald-450";
-                                else if (isSelected) btnClass = "border-red-500 bg-red-500/10 text-red-450";
-                                else btnClass = "border-neutral-900 bg-neutral-950/20 text-neutral-500";
-                            } else {
-                                if (isSelected) btnClass = "border-indigo-500 bg-indigo-500/10 text-white";
-                                else btnClass = "border-neutral-850 bg-neutral-950/40 text-neutral-350 hover:bg-neutral-900";
-                            }
+                      {(() => {
+                        const filteredQuestions = activeLecture.quiz.filter((q: any) => q.difficulty === selectedQuizDifficulty);
 
-                            return (
+                        if (filteredQuestions.length === 0) {
+                          return (
+                            <div className="text-center py-16 border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4">
+                              <HelpCircle className="h-10 w-10 text-neutral-600 mx-auto animate-pulse" />
+                              <h4 className="text-xs font-bold text-neutral-400">No questions of this type generated yet.</h4>
                               <button
-                                key={optIdx}
-                                onClick={() => !isQuizRevealed && setSelectedQuizAnswerIdx(optIdx)}
-                                className={`rounded-lg py-2.5 px-3.5 text-left text-xs font-semibold border outline-none transition-all cursor-pointer ${btnClass}`}
+                                onClick={triggerGenerateMoreQuiz}
+                                className="px-4 py-2 bg-indigo-650 hover:bg-indigo-750 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
                               >
-                                {opt}
+                                Generate Questions
                               </button>
-                            );
-                          })}
-                        </div>
+                            </div>
+                          );
+                        }
 
-                        {isQuizRevealed && (
-                          <div className="mt-4 pt-3 border-t border-dashed border-neutral-900 text-[11px] text-neutral-455">
-                            <span className="font-mono text-[9px] font-bold text-indigo-400 block mb-1">COGNITIVE ANALYSIS:</span>
-                            {renderTextWithCitations(cleanMarkdownText(activeLecture.quiz[activeQuizQuestionIdx].explanation))}
-                            {activeLecture.quiz[activeQuizQuestionIdx].sourceCitation && (
-                              <div className="mt-2 text-[10px] font-bold text-indigo-350 font-mono">
-                                Citation: {activeLecture.quiz[activeQuizQuestionIdx].sourceCitation}
+                        const activeQuestion = filteredQuestions[activeQuizQuestionIdx];
+
+                        return (
+                          <div className="space-y-4 animate-fade-in">
+                            <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#121318] border-neutral-905' : 'bg-white border-gray-200'}`}>
+                              <div className="text-[10px] font-black text-indigo-400 font-mono uppercase">
+                                QUESTION {activeQuizQuestionIdx + 1} of {filteredQuestions.length} ({selectedQuizDifficulty})
                               </div>
-                            )}
-                          </div>
-                        )}
+                              <h4 className="text-xs font-bold font-sans mt-2 leading-relaxed">
+                                {renderTextWithCitations(cleanMarkdownText(activeQuestion.question))}
+                              </h4>
+                              
+                              <div className="grid grid-cols-1 gap-2 mt-4">
+                                {activeQuestion.options.map((opt: string, optIdx: number) => {
+                                  const isSelected = selectedQuizAnswerIdx === optIdx;
+                                  const isCorrect = optIdx === activeQuestion.correctAnswer;
+                                  
+                                  let btnClass = "";
+                                  if (isQuizRevealed) {
+                                      if (isCorrect) {
+                                        btnClass = theme === 'dark' 
+                                          ? "border-emerald-500 bg-emerald-500/10 text-emerald-450" 
+                                          : "border-green-500 bg-green-50 text-green-700";
+                                      } else if (isSelected) {
+                                        btnClass = theme === 'dark' 
+                                          ? "border-red-500 bg-red-500/10 text-red-450" 
+                                          : "border-red-400 bg-red-50 text-red-700";
+                                      } else {
+                                        btnClass = theme === 'dark' 
+                                          ? "border-neutral-900 bg-neutral-950/20 text-neutral-500" 
+                                          : "border-gray-200 bg-gray-50 text-gray-400";
+                                      }
+                                  } else {
+                                      if (isSelected) {
+                                        btnClass = theme === 'dark' 
+                                          ? "border-indigo-500 bg-indigo-500/10 text-white" 
+                                          : "border-indigo-650 bg-indigo-50 text-indigo-700";
+                                      } else {
+                                        btnClass = theme === 'dark' 
+                                          ? "border-neutral-850 bg-neutral-950/40 text-neutral-350 hover:bg-neutral-900 hover:text-white" 
+                                          : "border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 hover:text-gray-900";
+                                      }
+                                  }
 
-                        <div className="flex justify-between items-center mt-5 pt-3 border-t border-neutral-900/30">
-                          {!isQuizRevealed ? (
-                            <button
-                              disabled={selectedQuizAnswerIdx === null}
-                              onClick={() => setIsQuizRevealed(true)}
-                              className="px-4 py-2 bg-indigo-650 hover:bg-indigo-600 text-white rounded-lg text-[11px] font-bold disabled:opacity-30 cursor-pointer"
-                            >
-                              Verify Choice
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => {
-                                setIsQuizRevealed(false);
-                                setSelectedQuizAnswerIdx(null);
-                                setActiveQuizQuestionIdx(prev => (prev + 1) % activeLecture.quiz.length);
-                              }}
-                              className="px-4 py-2 bg-white text-black hover:bg-neutral-100 rounded-lg text-[11px] font-bold cursor-pointer"
-                            >
-                              Next question
-                            </button>
-                          )}
-                        </div>
-                      </div>
+                                  return (
+                                    <button
+                                      key={optIdx}
+                                      onClick={() => !isQuizRevealed && setSelectedQuizAnswerIdx(optIdx)}
+                                      className={`rounded-lg py-2.5 px-3.5 text-left text-xs font-semibold border outline-none transition-all cursor-pointer ${btnClass}`}
+                                    >
+                                      {opt}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+
+                              {isQuizRevealed && (
+                                <div className="mt-4 pt-3 border-t border-dashed border-neutral-900 text-[11px] text-neutral-455">
+                                  <span className="font-mono text-[9px] font-bold text-indigo-400 block mb-1">COGNITIVE ANALYSIS:</span>
+                                  {renderTextWithCitations(cleanMarkdownText(activeQuestion.explanation))}
+                                  {activeQuestion.sourceCitation && (
+                                    <div className="mt-2 text-[10px] font-bold text-indigo-350 font-mono">
+                                      Citation: {activeQuestion.sourceCitation}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              <div className="flex justify-between items-center mt-5 pt-3 border-t border-neutral-900/30">
+                                {!isQuizRevealed ? (
+                                  <button
+                                    disabled={selectedQuizAnswerIdx === null}
+                                    onClick={() => setIsQuizRevealed(true)}
+                                    className="px-4 py-2 bg-indigo-650 hover:bg-indigo-600 text-white rounded-lg text-[11px] font-bold disabled:opacity-30 cursor-pointer"
+                                  >
+                                    Verify Choice
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => {
+                                      setIsQuizRevealed(false);
+                                      setSelectedQuizAnswerIdx(null);
+                                      setActiveQuizQuestionIdx(prev => (prev + 1) % filteredQuestions.length);
+                                    }}
+                                    className="px-4 py-2 bg-white text-black hover:bg-neutral-100 rounded-lg text-[11px] font-bold cursor-pointer"
+                                  >
+                                    Next question
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Generate More Questions Button */}
+                            <div className="flex justify-center pt-2">
+                              {isGeneratingQuiz ? (
+                                <BruteLoader size="sm" message={`Generating 10 more ${selectedQuizDifficulty} questions...`} />
+                              ) : (
+                                <button
+                                  onClick={triggerGenerateMoreQuiz}
+                                  className="px-5 py-2.5 rounded-lg border border-indigo-500/25 bg-indigo-500/5 hover:bg-indigo-500/10 text-indigo-400 text-xs font-bold transition-all focus:outline-none cursor-pointer"
+                                >
+                                  Generate 10 More {selectedQuizDifficulty} Questions
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  ) : isGeneratingQuiz ? (
+                    <div className="py-16 flex flex-col items-center justify-center border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5">
+                      <BruteLoader size="md" message="Generating comprehensive 40-question quiz..." />
                     </div>
                   ) : (
-                    <div className="text-center py-6 text-neutral-500 font-mono text-[10px]">No questions loaded.</div>
+                    <div className="text-center py-16 border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4">
+                      <HelpCircle className="h-10 w-10 text-neutral-600 mx-auto animate-pulse" />
+                      <h4 className="text-xs font-bold text-neutral-400">Quiz has not been generated yet.</h4>
+                      <button
+                        onClick={triggerGenerateQuiz}
+                        className="px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
+                      >
+                        Generate 40-Question Quiz
+                      </button>
+                    </div>
                   )}
                 </div>
               )}
@@ -2011,8 +1751,14 @@ export default function LectureCaptureView({
                           Click nodes to view detail drawers.
                         </div>
                       </>
+                    ) : isGeneratingMindmap ? (
+                      <div className="h-full min-h-[160px] flex flex-col items-center justify-center border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5">
+                        <BruteLoader size="md" message="Synthesizing Concept Mind Map..." />
+                      </div>
                     ) : (
-                      <div className="h-full flex items-center justify-center text-[10px] text-neutral-500 font-mono">No nodes compiled.</div>
+                      <div className="h-full min-h-[160px] flex items-center justify-center text-[11px] text-neutral-505 font-mono border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl p-6 bg-gray-50/10 dark:bg-neutral-900/5">
+                        Concept Map has not been generated yet.
+                      </div>
                     )}
                   </div>
 
@@ -2026,37 +1772,56 @@ export default function LectureCaptureView({
                         </h4>
                         <button 
                           onClick={() => setSelectedMindmapNode(null)}
-                          className="text-neutral-550 hover:text-white text-xs font-bold cursor-pointer"
+                          className={`text-xs font-bold cursor-pointer ${
+                            theme === 'dark' ? 'text-neutral-550 hover:text-white' : 'text-neutral-400 hover:text-neutral-900'
+                          }`}
                         >
                           &times;
                         </button>
                       </div>
                       
-                      <div className="text-[11.5px] leading-relaxed text-neutral-350">
+                      <div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-350' : 'text-neutral-600'}`}>
                         <strong className="text-indigo-400 block text-[9.5px] uppercase font-mono tracking-wider">Definition & Explanation</strong>
                         {renderTextWithCitations(cleanMarkdownText(selectedMindmapNode.desc || selectedMindmapNode.explanation || 'Provides logical synthesis for this section.'))}
                       </div>
                       
                       {selectedMindmapNode.examples && (
-                        <div className="text-[11.5px] leading-relaxed text-neutral-350">
+                        <div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-350' : 'text-neutral-600'}`}>
                           <strong className="text-indigo-400 block text-[9.5px] uppercase font-mono tracking-wider">Examples & Analogies</strong>
                           {renderTextWithCitations(cleanMarkdownText(selectedMindmapNode.examples))}
                         </div>
                       )}
 
                       {selectedMindmapNode.formula && (
-                        <div className="text-[11.5px] leading-relaxed text-neutral-350">
+                        <div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-350' : 'text-neutral-600'}`}>
                           <strong className="text-indigo-400 block text-[9.5px] uppercase font-mono tracking-wider">Equations or Theories</strong>
-                          <code className="block bg-neutral-950/50 p-2 rounded text-[10px] font-mono mt-1 text-orange-450 border border-neutral-900">
+                          <code className={`block p-2 rounded text-[10px] font-mono mt-1 text-orange-450 border ${
+                            theme === 'dark' ? 'bg-neutral-950/50 border-neutral-900' : 'bg-gray-50 border-gray-200'
+                          }`}>
                             {selectedMindmapNode.formula}
                           </code>
                         </div>
                       )}
 
                       {selectedMindmapNode.applications && (
-                        <div className="text-[11.5px] leading-relaxed text-neutral-350">
+                        <div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-350' : 'text-neutral-600'}`}>
                           <strong className="text-indigo-400 block text-[9.5px] uppercase font-mono tracking-wider">Applications & Use Cases</strong>
                           {renderTextWithCitations(cleanMarkdownText(selectedMindmapNode.applications))}
+                        </div>
+                      )}
+
+                      {selectedMindmapNode.examImportance && (
+                        <div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-350' : 'text-neutral-600'}`}>
+                          <strong className="text-indigo-400 block text-[9.5px] uppercase font-mono tracking-wider">Exam Importance</strong>
+                          <span className={`inline-block px-2.5 py-0.5 rounded text-[10px] font-mono font-bold mt-1 ${
+                            selectedMindmapNode.examImportance.toLowerCase().includes('high')
+                              ? 'bg-red-500/15 text-red-400 border border-red-500/25'
+                              : selectedMindmapNode.examImportance.toLowerCase().includes('medium')
+                                ? 'bg-amber-500/15 text-amber-400 border border-amber-500/25'
+                                : 'bg-emerald-500/15 text-emerald-450 border border-emerald-500/25'
+                          }`}>
+                            🎯 {selectedMindmapNode.examImportance}
+                          </span>
                         </div>
                       )}
 
@@ -2087,18 +1852,24 @@ export default function LectureCaptureView({
 
                   <div className="space-y-4">
                     {activeLecture.timeline && activeLecture.timeline.length > 0 ? (
-                      <div className="relative border-l border-neutral-800 ml-4 py-2 space-y-5">
+                      <div className={`relative ml-4 py-2 space-y-5 border-l ${
+                        theme === 'dark' ? 'border-neutral-800' : 'border-gray-200'
+                      }`}>
                         {activeLecture.timeline.map((event: any, idx: number) => (
                           <div key={idx} className="relative pl-6">
                             <span 
                               onClick={() => handleTimelineTimestampClick(event.time)}
-                              className="absolute -left-2.5 top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-indigo-650 border-2 border-[#0a0b0e] text-[8.5px] font-mono font-bold text-indigo-300 cursor-pointer hover:bg-indigo-500 hover:text-white transition-all shadow-md"
+                              className={`absolute -left-2.5 top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-indigo-650 border-2 text-[8.5px] font-mono font-bold text-indigo-300 cursor-pointer hover:bg-indigo-500 hover:text-white transition-all shadow-md ${
+                                theme === 'dark' ? 'border-[#0a0b0e]' : 'border-[#FAF9F5]'
+                              }`}
                             >
                               {event.time}
                             </span>
                             <div className="space-y-1">
                               <h4 className="text-xs font-black text-indigo-400">{event.title}</h4>
-                              <p className="text-[11px] text-neutral-350 leading-relaxed">{event.description}</p>
+                              <p className={`text-[11px] leading-relaxed ${
+                                theme === 'dark' ? 'text-neutral-350' : 'text-neutral-600'
+                              }`}>{event.description}</p>
                             </div>
                           </div>
                         ))}
@@ -2111,229 +1882,20 @@ export default function LectureCaptureView({
               )}
 
               {/* 7. SLIDES TAB */}
-              {/* 7. SLIDES TAB */}
               {activeOutputTab === 'slides' && (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
-                  {/* Left 2 columns: Slide Deck Preview list */}
-                  <div className="lg:col-span-2 space-y-4 max-h-[600px] overflow-y-auto pr-1">
-                    {localSlides.map((slide: any, idx: number) => {
-                      const query = slide.imageSearchQuery || slide.imagePrompt || slide.title;
-                      const getRoyaltyFreeImage = (q: string): string => {
-                        const clean = q.toLowerCase();
-                        if (clean.includes("tech") || clean.includes("computer") || clean.includes("software") || clean.includes("code") || clean.includes("digital") || clean.includes("web") || clean.includes("programming") || clean.includes("ai") || clean.includes("artificial")) {
-                          return "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80";
-                        }
-                        if (clean.includes("science") || clean.includes("biology") || clean.includes("chemistry") || clean.includes("physics") || clean.includes("lab") || clean.includes("medicine") || clean.includes("dna") || clean.includes("molecular") || clean.includes("cell")) {
-                          return "https://images.unsplash.com/photo-1507413245164-6160d8298b31?w=800&auto=format&fit=crop&q=80";
-                        }
-                        if (clean.includes("business") || clean.includes("corporate") || clean.includes("finance") || clean.includes("office") || clean.includes("market") || clean.includes("meeting") || clean.includes("money") || clean.includes("strategy") || clean.includes("leadership")) {
-                          return "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&auto=format&fit=crop&q=80";
-                        }
-                        if (clean.includes("education") || clean.includes("learn") || clean.includes("history") || clean.includes("book") || clean.includes("study") || clean.includes("academic") || clean.includes("student") || clean.includes("class") || clean.includes("philosophy") || clean.includes("ethics")) {
-                          return "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&auto=format&fit=crop&q=80";
-                        }
-                        if (clean.includes("art") || clean.includes("design") || clean.includes("creative") || clean.includes("paint") || clean.includes("draw") || clean.includes("graphic")) {
-                          return "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=800&auto=format&fit=crop&q=80";
-                        }
-                        if (clean.includes("growth") || clean.includes("success") || clean.includes("startup") || clean.includes("idea") || clean.includes("analytics") || clean.includes("chart") || clean.includes("diagram")) {
-                          return "https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=800&auto=format&fit=crop&q=80";
-                        }
-                        if (clean.includes("math") || clean.includes("calculus") || clean.includes("algebra") || clean.includes("derivative") || clean.includes("limit") || clean.includes("geometry") || clean.includes("equation")) {
-                          return "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=800&auto=format&fit=crop&q=80";
-                        }
-                        return "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&auto=format&fit=crop&q=80";
-                      };
-
-                      const imgUrl = slide.imageUrl || getRoyaltyFreeImage(query);
-                      
-                      return (
-                        <div key={idx} className={`p-5 rounded-xl border flex flex-col justify-between relative overflow-hidden ${
-                          theme === 'dark' ? 'bg-neutral-950/65 border-neutral-900 text-white' : 'bg-white border-gray-200 text-gray-900'
-                        }`}>
-                          <div className="h-1 absolute top-0 left-0 right-0" style={{ backgroundColor: getThemeColorHex(pptTheme, 'accent') }} />
-                          
-                          <div className="flex flex-col md:flex-row gap-4 mt-2">
-                            <div className="flex-1 space-y-2">
-                              <span className="text-[9px] font-bold font-mono px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/15 uppercase">
-                                Slide {idx + 1}: {slide.layout ? slide.layout.replace('_', ' ') : 'Layout'}
-                              </span>
-                              <h4 className="text-xs font-black mt-1 leading-tight">{slide.title}</h4>
-                              
-                              {slide.layout === 'bold_quote' || slide.layout === 'quote' ? (
-                                <p className="text-xs italic text-neutral-450 border-l-2 border-indigo-500 pl-3.5 my-3">
-                                  "{slide.content ? slide.content.join(' ') : ''}"
-                                </p>
-                              ) : (
-                                <ul className="list-disc pl-4 space-y-1 text-xs text-neutral-400">
-                                  {slide.content && slide.content.map((bp: string, bidx: number) => (
-                                    <li key={bidx} className="leading-normal">{bp}</li>
-                                  ))}
-                                </ul>
-                              )}
-                              
-                              {slide.chart && (
-                                <div className="mt-3 p-3 bg-neutral-950/45 rounded-lg border border-neutral-900">
-                                  <span className="text-[8px] font-mono font-bold text-indigo-400 uppercase block mb-1">
-                                    📊 Dynamic AI Chart ({slide.chart.chartType})
-                                  </span>
-                                  <div className="flex items-end gap-1.5 h-16 pt-2">
-                                    {slide.chart.values.map((v: number, vidx: number) => (
-                                      <div key={vidx} className="flex-1 flex flex-col items-center gap-1">
-                                        <div 
-                                          className="w-full bg-indigo-550 rounded-t"
-                                          style={{ height: `${Math.max(15, Math.min(100, (v / Math.max(...slide.chart.values)) * 100))}%` }}
-                                        />
-                                        <span className="text-[7px] font-mono text-neutral-500 truncate w-full text-center">
-                                          {slide.chart.labels[vidx]}: {v}
-                                        </span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-
-                            {['split_column', 'title_slide', 'case_study'].includes(slide.layout) && (
-                              <div className="w-full md:w-40 h-24 rounded-lg overflow-hidden border border-neutral-905/60 relative flex-shrink-0">
-                                <img src={imgUrl} alt={slide.title} className="w-full h-full object-cover" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-1.5">
-                                  <span className="text-[7.5px] font-mono font-bold text-white uppercase truncate w-full">
-                                    🔍 {query.substring(0, 18)}
-                                  </span>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                          
-                          <div className="mt-4 pt-2 border-t border-neutral-900/30 flex justify-between items-center text-[9px] font-mono text-neutral-550">
-                            <span className="truncate max-w-[70%]">Takeaway: {slide.keyTakeaway || 'Key understanding.'}</span>
-                            {slide.references && <span className="text-indigo-400">Ref: {slide.references}</span>}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Right column: Slide configuration & Quality Score report dashboard */}
-                  <div className={`p-4 rounded-xl border space-y-4 flex flex-col justify-between ${
-                    theme === 'dark' ? 'bg-neutral-950/65 border-neutral-900 text-white' : 'bg-white border-gray-200 text-gray-900'
-                  }`}>
-                    <div className="space-y-4">
-                      <h4 className="text-[10px] font-bold text-indigo-400 font-mono uppercase tracking-wider">Slide Quality Audit</h4>
-                      
-                      <div className="flex items-center gap-4 p-3 rounded-lg bg-neutral-950/40 border border-neutral-900">
-                        <div className="relative h-12 w-12 flex items-center justify-center rounded-full border border-indigo-500/35">
-                          <div className="text-center">
-                            <span className="text-xs font-black text-indigo-400">{pptReport.score}</span>
-                            <span className="text-[6px] text-neutral-500 block uppercase font-mono leading-none">Score</span>
-                          </div>
-                        </div>
-                        <div className="flex-1 space-y-0.5">
-                          <span className="text-[8px] font-bold text-neutral-450 uppercase font-mono">Auditor Grade</span>
-                          <div className="text-[11px] font-extrabold text-neutral-200">
-                            {pptReport.score >= 85 ? '🌟 PREMIUM DECK' : pptReport.score >= 70 ? '👍 GOOD DESIGN' : '⚠️ TUNING REQUIRED'}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        {[
-                          { label: 'Narrative Flow', val: pptReport.narrativeFlow },
-                          { label: 'Visual Density', val: pptReport.visualDensity },
-                          { label: 'Image Relevance', val: pptReport.imageRelevance },
-                          { label: 'Completeness', val: pptReport.completeness },
-                          { label: 'Redundancy Check', val: pptReport.redundancy },
-                          { label: 'Citations coverage', val: pptReport.citations }
-                        ].map((item, i) => (
-                          <div key={i} className="space-y-0.5">
-                            <div className="flex justify-between text-[8px] font-bold font-mono">
-                              <span className="text-neutral-500 uppercase">{item.label}</span>
-                              <span className="text-indigo-400">{item.val}/100</span>
-                            </div>
-                            <div className="h-1 w-full bg-neutral-900 rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-indigo-550 rounded-full transition-all duration-500" 
-                                style={{ width: `${item.val}%` }} 
-                              />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="space-y-3 border-t border-neutral-900/60 pt-3">
-                        <div>
-                          <label className="block text-[8px] font-bold text-neutral-400 uppercase font-mono">Presentation Length</label>
-                          <div className="flex gap-2 mt-1">
-                            {([5, 10, 15] as const).map(l => (
-                              <button
-                                key={l}
-                                onClick={() => handleUpdatePptLength(l)}
-                                className={`flex-1 py-1 rounded border text-[9px] font-bold cursor-pointer transition-all ${
-                                  pptLength === l ? 'bg-indigo-650 text-white border-indigo-500' : 'bg-transparent border-neutral-900 text-neutral-450 hover:border-neutral-800'
-                                }`}
-                              >
-                                {l} Slides
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-[8px] font-bold text-neutral-400 uppercase font-mono">Select Design Theme Style</label>
-                          <div className="grid grid-cols-3 gap-1 mt-1">
-                            {(['academic', 'corporate', 'startup', 'cyber', 'minimal', 'glass'] as const).map(t => (
-                              <button
-                                key={t}
-                                onClick={() => setPptTheme(t)}
-                                className={`py-1 text-[8px] rounded border font-bold capitalize cursor-pointer transition-all ${
-                                  pptTheme === t ? 'bg-indigo-650 text-white border-indigo-500' : 'bg-transparent border-neutral-900 text-neutral-450 hover:border-neutral-800'
-                                }`}
-                              >
-                                {t}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between p-2 rounded border border-neutral-900 bg-neutral-950/20">
-                          <div>
-                            <span className="text-[10px] font-bold block">Detailed Bullet Mode</span>
-                            <span className="text-[7.5px] text-neutral-550">Overrides 40-word limit.</span>
-                          </div>
-                          <input
-                            type="checkbox"
-                            checked={pptDetailedMode}
-                            onChange={(e) => setPptDetailedMode(e.target.checked)}
-                            className="accent-indigo-550 cursor-pointer"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-1.5 border-t border-neutral-900/60 pt-3">
-                      <button
-                        onClick={handleRegenerateDeck}
-                        className="w-full py-2 bg-indigo-650 hover:bg-indigo-600 active:scale-98 transition-all text-white text-[10px] font-black rounded-lg cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
-                      >
-                        <Sparkles className="h-3.5 w-3.5 animate-pulse" />
-                        <span>REGENERATE DECK PREVIEW</span>
-                      </button>
-                      <button
-                        onClick={handleRefreshImages}
-                        className="w-full py-2 bg-transparent border border-neutral-900 hover:bg-neutral-950 active:scale-98 transition-all text-neutral-350 text-[10px] font-bold rounded-lg cursor-pointer"
-                      >
-                        REFRESH IMAGE VARIETY
-                      </button>
-                      <button
-                        onClick={handleExportPpt}
-                        className="w-full py-2 bg-white text-black hover:bg-neutral-100 active:scale-98 transition-all text-[10px] font-black rounded-lg cursor-pointer flex items-center justify-center gap-1.5"
-                      >
-                        <Download className="h-3.5 w-3.5 text-black" />
-                        <span>DOWNLOAD PPTX FILE</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <PresentationWorkspace
+                  theme={theme}
+                  apiKey={import.meta.env.VITE_GEMINI_API_KEY || ''}
+                  contentSourceText={activeLecture.transcript || activeLecture.summary || ''}
+                  initialBlueprint={activeLecture.presentationBlueprint}
+                  title={activeLecture.title}
+                  onUpdateSlides={async (updatedBlueprint) => {
+                    const uid = auth.currentUser?.uid;
+                    if (!uid) return;
+                    const docRef = doc(db, 'users', uid, 'lectures', activeLecture.id);
+                    await updateDoc(docRef, { presentationBlueprint: updatedBlueprint });
+                  }}
+                />
               )}
 
               {/* 8. LECTURE CHAT TAB */}
@@ -2380,6 +1942,31 @@ export default function LectureCaptureView({
                       </div>
                     )}
                     <div ref={chatEndRef} />
+                  </div>
+
+                  {/* Preset prompts for Ask Lecture AI */}
+                  <div className="flex gap-1.5 overflow-x-auto px-3 pb-2 scrollbar-none pt-2 border-t border-neutral-900/40">
+                    {[
+                      { label: 'Explain Chapter 2', prompt: 'Explain chapter 2' },
+                      { label: 'What formula was discussed?', prompt: 'What formula was discussed?' },
+                      { label: 'Give Revision Notes', prompt: 'Give revision notes' },
+                      { label: 'Create 5 Difficult Questions', prompt: 'Create 5 difficult questions' },
+                      { label: 'Translate in Hindi', prompt: 'Translate in Hindi' }
+                    ].map((p, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => sendMessageText(p.prompt)}
+                        disabled={isChatLoading}
+                        className={`px-2.5 py-1 rounded-full text-[9px] font-bold border transition-all whitespace-nowrap cursor-pointer ${
+                          theme === 'dark'
+                            ? 'border-neutral-850 bg-neutral-900 text-neutral-300 hover:bg-neutral-800 hover:text-white'
+                            : 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                        }`}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
                   </div>
 
                   {/* Input form */}
@@ -2473,110 +2060,6 @@ export default function LectureCaptureView({
           </div>
         )}
 
-        {/* PPT PRESENTATION CUSTOMIZATION MODAL */}
-        {showPptModal && (
-          <div className="fixed inset-0 bg-neutral-950/65 backdrop-blur-xs flex items-center justify-center z-50 p-4 select-none animate-fade-in">
-            <div className={`rounded-2xl max-w-md w-full border p-6 space-y-4 shadow-2xl relative ${
-              theme === 'dark' ? 'bg-[#0d0e12] border-neutral-855 text-white' : 'bg-white border-gray-200 text-gray-900'
-            }`}>
-              <div className="flex items-center justify-between pb-3 border-b border-neutral-900/40">
-                <h3 className="font-sans font-black text-sm flex items-center gap-1.5">
-                  <Sparkles className="h-4 w-4 text-indigo-400" />
-                  <span>AI PowerPoint Presentation Settings</span>
-                </h3>
-                <button 
-                  onClick={() => setShowPptModal(false)}
-                  className="text-neutral-500 hover:text-white text-xs font-bold cursor-pointer"
-                >
-                  Close
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                {isGeneratingPresentation && (
-                  <div className="flex flex-col items-center justify-center py-6 text-center space-y-2">
-                    <BruteLoader size="sm" message="Generating slides..." />
-                    <span className="text-[10px] text-indigo-400 font-mono animate-pulse">Running title similarity audits & stock photo query fetches...</span>
-                  </div>
-                )}
-                
-                {!isGeneratingPresentation && (
-                  <>
-                    <div>
-                      <label className="block text-[10px] font-black text-neutral-500 uppercase font-mono">Select Design Theme Style</label>
-                      <div className="grid grid-cols-3 gap-1.5 mt-2">
-                        {(['academic', 'corporate', 'startup', 'cyber', 'minimal', 'glass'] as const).map(t => (
-                          <button
-                            key={t}
-                            type="button"
-                            onClick={() => setPptTheme(t)}
-                            className={`py-2 px-1 text-[10px] font-bold border rounded-lg cursor-pointer capitalize transition-all ${
-                              pptTheme === t 
-                                ? 'bg-indigo-650 border-indigo-500 text-white' 
-                                : theme === 'dark' ? 'border-neutral-800 text-neutral-450 hover:border-neutral-700' : 'border-gray-200 text-gray-700 hover:border-gray-300'
-                            }`}
-                          >
-                            {t === 'startup' ? 'Startup' : t === 'cyber' ? 'Cyber Neon' : t === 'glass' ? 'Dark Glass' : t}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-black text-neutral-500 uppercase font-mono">Presentation Length</label>
-                      <div className="flex gap-2 mt-2">
-                        {([5, 10, 15] as const).map(l => (
-                          <button
-                            key={l}
-                            type="button"
-                            onClick={() => setPptLength(l)}
-                            className={`flex-1 py-2 text-xs font-bold border rounded-lg cursor-pointer transition-all ${
-                              pptLength === l 
-                                ? 'bg-indigo-650 border-indigo-500 text-white' 
-                                : theme === 'dark' ? 'border-neutral-800 text-neutral-450' : 'border-gray-200 text-gray-700'
-                            }`}
-                          >
-                            {l} Slides
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between p-2.5 rounded-xl border border-neutral-850 bg-neutral-950/20">
-                      <div>
-                        <span className="text-xs font-bold block">Detailed Mode</span>
-                        <span className="text-[9.5px] text-neutral-455">Overrides the standard 40-word limit per slide.</span>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={pptDetailedMode}
-                        onChange={(e) => setPptDetailedMode(e.target.checked)}
-                        className="accent-indigo-500 h-4.5 w-4.5 cursor-pointer"
-                      />
-                    </div>
-
-                    <div className="flex justify-end gap-2.5 pt-3">
-                      <button
-                        type="button"
-                        onClick={() => setShowPptModal(false)}
-                        className="rounded-lg px-4 py-2 text-xs font-bold border border-neutral-800 text-neutral-400 cursor-pointer"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="button"
-                        onClick={generateCustomPresentationDeck}
-                        className="rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 text-xs font-bold cursor-pointer"
-                      >
-                        Generate Deck
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
 
       </div>
     );
@@ -2646,6 +2129,84 @@ export default function LectureCaptureView({
             <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.01)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.01)_1px,transparent_1px)] bg-[size:16px_16px] opacity-20" />
 
             <div className="space-y-6 relative z-10 w-full flex flex-col items-center">
+              {recoverableLecture && (
+                <div className={`w-full rounded-xl border p-4 text-left space-y-3 relative z-25 ${
+                  theme === 'dark'
+                    ? 'bg-amber-500/10 border-amber-500/20 text-amber-300'
+                    : 'bg-amber-50 border-amber-200 text-amber-800'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-widest font-mono">
+                      ⚠️ Crashed Session Discovered
+                    </span>
+                    <button
+                      onClick={async () => {
+                        try {
+                          await deleteRecordingBackup(recoverableLecture.id);
+                          setRecoverableLecture(null);
+                        } catch (err) {
+                          console.error(err);
+                        }
+                      }}
+                      className="text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 text-xs focus:outline-none cursor-pointer"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <p className="text-xs font-semibold leading-normal">
+                    We saved your previous draft of <strong>"{recoverableLecture.title}"</strong>. Click Recover to process it now.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={async () => {
+                        try {
+                          const chunks = await getRecordingChunks(recoverableLecture.id);
+                          if (chunks && chunks.length > 0) {
+                            const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+                            setAiStatus('synthesizing');
+                            await onSaveCapture(
+                              recoverableLecture.title,
+                              recoverableLecture.subject,
+                              recoverableLecture.duration,
+                              audioBlob,
+                              recoverableLecture.id
+                            );
+                            await deleteRecordingBackup(recoverableLecture.id);
+                            setRecoverableLecture(null);
+                          } else {
+                            alert("No backup recording chunks found in database.");
+                            await deleteRecordingBackup(recoverableLecture.id);
+                            setRecoverableLecture(null);
+                          }
+                        } catch (err) {
+                          console.error('Failed to recover recording:', err);
+                          setAiStatus('idle');
+                        }
+                      }}
+                      className="flex-1 py-2 px-3 rounded-lg text-xs font-bold bg-amber-600 text-white hover:bg-amber-700 transition-all text-center focus:outline-none cursor-pointer"
+                    >
+                      Recover Recording
+                    </button>
+                    <button
+                      onClick={async () => {
+                        try {
+                          await deleteRecordingBackup(recoverableLecture.id);
+                          setRecoverableLecture(null);
+                        } catch (err) {
+                          console.error(err);
+                        }
+                      }}
+                      className={`py-2 px-3 rounded-lg text-xs font-bold border transition-all text-center focus:outline-none cursor-pointer ${
+                        theme === 'dark'
+                          ? 'border-neutral-800 text-neutral-450 hover:bg-neutral-900/40'
+                          : 'border-gray-200 text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      Discard
+                    </button>
+                  </div>
+                </div>
+              )}
               
               {/* Lecture Title & Subject Settings Inputs */}
               <div className="w-full space-y-3 mb-2 text-left">

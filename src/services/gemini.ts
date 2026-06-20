@@ -380,6 +380,293 @@ export const generateStudyAssets = async (
   return executeGeminiCall(prompt, apiKey, undefined, schema, onBusy);
 };
 
+export const generateIngestedAssetsFromText = async (
+  rawText: string,
+  apiKey: string,
+  mode: 'academic' | 'executive' | 'revision' = 'academic',
+  onBusy?: (isBusy: boolean) => void
+): Promise<any> => {
+  const prompt = `
+    You are an expert academic tutor and editor. Analyze the following raw source text.
+    
+    Active Mode: ${mode}
+    
+    Tasks to perform:
+    1. Clean up the raw text, converting spoken language or raw layout text into clean, professional academic prose. Preserve any bracketed timestamps (e.g. [00:00], [01:15]) at their approximate correct locations if present in the source. Save this cleaned text under the 'cleanTranscript' field.
+    2. Segment the cleaned text into logical topics or sections. For each section, define:
+       - 'id': A unique string id (e.g. 'sec-1', 'sec-2')
+       - 'title': A short, descriptive title of the section/topic
+       - 'startTime': The start timestamp of the section (e.g. '00:00')
+       - 'endTime': The end timestamp of the section (e.g. '01:30')
+       - 'content': A detailed summary of what was discussed in this section
+       Save this under the 'sections' array.
+    3. Generate a structured knowledge document representing the summary of the lecture in clean Markdown format, containing exactly 10 headers:
+       ### Executive Overview
+       ### Key Concepts
+       ### Detailed Explanation
+       ### Examples
+       ### Formulas
+       ### Common Mistakes
+       ### Revision Notes
+       ### Exam Questions
+       ### Real World Applications
+       ### Quick Recap
+    4. Generate a list of key detailed notes.
+       ${mode === 'executive' ? `
+       Each note must be concise, professional, focused on strategic recommendations, and target a word count of 300-600 words in total. Structure each note with the following exact subsections:
+       - 📊 **Executive Overview & Major Findings**
+       - 📈 **Key Metrics & Bullet Points**
+       - 🎯 **Actionable Insights & Deliverables**
+       - 🛑 **Strategic Takeaways**
+       ` : mode === 'revision' ? `
+       Each note must be high-yield, exam-oriented, focused on memory recall, and target a word count of 200-500 words in total. Structure each note with the following exact subsections:
+       - 🔑 **Key Facts & Flash Recall Points**
+       - 📝 **Exam-Oriented Explanations & Common Mistakes**
+       - 💡 **Formula Sheet & Memory Tricks**
+       - 🎯 **High-Yield Practice Questions / High-Intensity Review**
+       ` : `
+       Each note must be highly detailed, academic, and target a word count of 1500+ words in total across the notes. Structure each note with the following exact subsections:
+       - 🧠 **Key Terms & Definitions**
+       - 📝 **Detailed Explanations & Examples**
+       - 💡 **Core Formula or Analogy** (if applicable)
+       - 🎯 **Actionable Summary / Study Focus**
+       `}
+    5. Generate a list of 4 conceptual flashcards. Each card must have a question "q" and a detailed answer "a" in Markdown.
+    6. Generate a quiz of 4 multiple-choice questions from the lecture. Every question must cite the exact section/topic or timestamp from the source context it originated from inside the 'sourceCitation' field. Each question must have:
+       - "question": string
+       - "options": array of 4 strings
+       - "correctAnswer": 0-based index (integer)
+       - "explanation": detailed explanation of why the correct answer is correct
+       - "sourceCitation": string citation
+    7. Generate a list of 6-8 keyConcepts for a mind map representing the lecture. One concept MUST be the root concept with id "root", x: 50, y: 50, and group "center". Other concepts must have an id, label, parent (referencing parent's id, e.g. "root"), x and y coordinates (numbers between 10 and 90 representing positions on a 2D canvas), and a group name (e.g. "math", "concepts", "applications"). For each concept, also include:
+       - "desc": definition/explanation
+       - "examples": examples/analogies
+       - "formula": mathematical formulas or core theories (if any, otherwise empty string)
+       - "applications": real-world applications/cases
+    8. Generate a list of 1-2 weakTopics that this lecture covers, diagnosing typical student struggles. Each topic must have a "topicName", "subject", "aiDiagnosis", and a list of 3 "actionPlan" recommendations.
+    9. Generate a timeline of chronological milestones. Each item must have:
+       - "time": A timestamp matching the lecture (e.g. '01:15' or '05:30'). Must be from the transcript's bracketed timestamps.
+       - "title": A brief title of the event/topic discussed at this time
+       - "description": A short explanation of the concept discussed at this milestone
+    10. Generate sourceIntelligence containing:
+       - "keyPeople": array of names of people/researchers mentioned (e.g. "Sartre", "Einstein")
+       - "keyTerms": array of technical terms/jargon (e.g. "Fisher Esterification", "Categorical Imperative")
+       - "formulas": array of equations/formulas mentioned (e.g. "f'(x) = lim...")
+       - "dates": array of important dates mentioned (e.g. "1781", "Q1 2026")
+       - "statistics": array of statistics or metrics (e.g. "72% yield", "34.2% market share")
+       - "references": array of documents, books, papers, or video sources cited
+    
+    CRITICAL GROUNDING INSTRUCTION:
+    Throughout the markdown text of the summary, notes, and flashcard answers, you MUST integrate inline citations referencing the source timestamps or pages in brackets where appropriate (e.g. '[Source: Timestamp 01:30]' or '[Source: Page 3]').
+    
+    Raw Source Text:
+    ${rawText.length > 20000 ? rawText.substring(0, 20000) + "\n[Text truncated for rapid processing...]" : rawText}
+    
+    Return the result STRICTLY as a JSON object matching the requested schema.
+  `;
+
+  const schema = {
+    type: 'OBJECT',
+    properties: {
+      cleanTranscript: { type: 'STRING' },
+      sections: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          properties: {
+            id: { type: 'STRING' },
+            title: { type: 'STRING' },
+            startTime: { type: 'STRING' },
+            endTime: { type: 'STRING' },
+            content: { type: 'STRING' }
+          },
+          required: ['id', 'title', 'startTime', 'endTime', 'content']
+        }
+      },
+      summary: { type: 'STRING' },
+      notes: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          properties: {
+            title: { type: 'STRING' },
+            content: { type: 'STRING' }
+          },
+          required: ['title', 'content']
+        }
+      },
+      flashcards: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          properties: {
+            q: { type: 'STRING' },
+            a: { type: 'STRING' }
+          },
+          required: ['q', 'a']
+        }
+      },
+      quiz: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          properties: {
+            question: { type: 'STRING' },
+            options: { type: 'ARRAY', items: { type: 'STRING' } },
+            correctAnswer: { type: 'INTEGER' },
+            explanation: { type: 'STRING' },
+            sourceCitation: { type: 'STRING' }
+          },
+          required: ['question', 'options', 'correctAnswer', 'explanation', 'sourceCitation']
+        }
+      },
+      keyConcepts: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          properties: {
+            id: { type: 'STRING' },
+            label: { type: 'STRING' },
+            desc: { type: 'STRING' },
+            parent: { type: 'STRING' },
+            x: { type: 'INTEGER' },
+            y: { type: 'INTEGER' },
+            group: { type: 'STRING' },
+            examples: { type: 'STRING' },
+            formula: { type: 'STRING' },
+            applications: { type: 'STRING' }
+          },
+          required: ['id', 'label', 'desc', 'x', 'y', 'group']
+        }
+      },
+      weakTopics: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          properties: {
+            topicName: { type: 'STRING' },
+            subject: { type: 'STRING' },
+            aiDiagnosis: { type: 'STRING' },
+            actionPlan: { type: 'ARRAY', items: { type: 'STRING' } }
+          },
+          required: ['topicName', 'subject', 'aiDiagnosis', 'actionPlan']
+        }
+      },
+      timeline: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          properties: {
+            time: { type: 'STRING' },
+            title: { type: 'STRING' },
+            description: { type: 'STRING' }
+          },
+          required: ['time', 'title', 'description']
+        }
+      },
+      sourceIntelligence: {
+        type: 'OBJECT',
+        properties: {
+          keyPeople: { type: 'ARRAY', items: { type: 'STRING' } },
+          keyTerms: { type: 'ARRAY', items: { type: 'STRING' } },
+          formulas: { type: 'ARRAY', items: { type: 'STRING' } },
+          dates: { type: 'ARRAY', items: { type: 'STRING' } },
+          statistics: { type: 'ARRAY', items: { type: 'STRING' } },
+          references: { type: 'ARRAY', items: { type: 'STRING' } }
+        },
+        required: ['keyPeople', 'keyTerms', 'formulas', 'dates', 'statistics', 'references']
+      }
+    },
+    required: ['cleanTranscript', 'sections', 'summary', 'notes', 'flashcards', 'quiz', 'keyConcepts', 'weakTopics', 'timeline', 'sourceIntelligence']
+  };
+
+  return executeGeminiCall(prompt, apiKey, undefined, schema, onBusy);
+};
+
+export const generateInitialLectureAssets = async (
+  rawText: string,
+  apiKey: string,
+  onBusy?: (isBusy: boolean) => void
+): Promise<any> => {
+  const prompt = `
+    You are an expert academic tutor and editor. Analyze the following raw source text.
+    
+    Tasks to perform:
+    1. Clean up the raw text, converting spoken language or raw layout text into clean, professional academic prose. Preserve any bracketed timestamps (e.g. [00:00], [01:15]) at their approximate correct locations if present in the source. Save this cleaned text under the 'cleanTranscript' field.
+    2. Segment the cleaned text into logical topics or sections (Chapters). For each section, define:
+       - 'id': A unique string id (e.g. 'sec-1', 'sec-2')
+       - 'title': A short, descriptive title of the section/topic
+       - 'startTime': The start timestamp of the section (e.g. '00:00')
+       - 'endTime': The end timestamp of the section (e.g. '01:30')
+       - 'content': A detailed summary of what was discussed in this section
+       Save this under the 'sections' array.
+    3. Generate a timeline of chronological milestones. Each item must have:
+       - 'time': A timestamp matching the lecture (e.g. '01:15' or '05:30'). Must be from the transcript's bracketed timestamps.
+       - 'title': A brief title of the event/topic discussed at this time
+       - 'description': A short explanation of the concept discussed at this milestone
+    4. Generate sourceIntelligence (Metadata) containing:
+       - 'keyPeople': array of names of people/researchers mentioned
+       - 'keyTerms': array of technical terms/jargon
+       - 'formulas': array of equations/formulas mentioned
+       - 'dates': array of important dates mentioned
+       - 'statistics': array of statistics or metrics
+       - 'references': array of documents, books, papers, or video sources cited
+
+    Raw Source Text:
+    ${rawText.length > 20000 ? rawText.substring(0, 20000) + "\n[Text truncated for rapid processing...]" : rawText}
+    
+    Return the result STRICTLY as a JSON object matching the requested schema.
+  `;
+
+  const schema = {
+    type: 'OBJECT',
+    properties: {
+      cleanTranscript: { type: 'STRING' },
+      sections: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          properties: {
+            id: { type: 'STRING' },
+            title: { type: 'STRING' },
+            startTime: { type: 'STRING' },
+            endTime: { type: 'STRING' },
+            content: { type: 'STRING' }
+          },
+          required: ['id', 'title', 'startTime', 'endTime', 'content']
+        }
+      },
+      timeline: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          properties: {
+            time: { type: 'STRING' },
+            title: { type: 'STRING' },
+            description: { type: 'STRING' }
+          },
+          required: ['time', 'title', 'description']
+        }
+      },
+      sourceIntelligence: {
+        type: 'OBJECT',
+        properties: {
+          keyPeople: { type: 'ARRAY', items: { type: 'STRING' } },
+          keyTerms: { type: 'ARRAY', items: { type: 'STRING' } },
+          formulas: { type: 'ARRAY', items: { type: 'STRING' } },
+          dates: { type: 'ARRAY', items: { type: 'STRING' } },
+          statistics: { type: 'ARRAY', items: { type: 'STRING' } },
+          references: { type: 'ARRAY', items: { type: 'STRING' } }
+        },
+        required: ['keyPeople', 'keyTerms', 'formulas', 'dates', 'statistics', 'references']
+      }
+    },
+    required: ['cleanTranscript', 'sections', 'timeline', 'sourceIntelligence']
+  };
+
+  return executeGeminiCall(prompt, apiKey, undefined, schema, onBusy);
+};
+
 export const generateLectureContent = async (
   base64Audio: string, 
   mimeType: string = 'audio/webm',
@@ -396,23 +683,17 @@ export const generateLectureContent = async (
   if (onProgress) onProgress(1, "Deciphering Speech...");
   const rawTranscript = await transcribeAudio(base64Audio, mimeType, apiKey, onBusy);
 
-  // Phase 2: Clean Transcript
-  if (onProgress) onProgress(2, "Cleaning Transcript...");
-  const cleanTranscript = await cleanTranscriptText(rawTranscript, apiKey, onBusy);
-
-  // Phase 3: Segment Topics
-  if (onProgress) onProgress(3, "Detecting Topics...");
-  const sections = await segmentTranscriptIntoTopics(cleanTranscript, apiKey, onBusy);
-
-  // Phase 4: Asset Extraction
-  if (onProgress) onProgress(4, "Extracting Study Assets...");
-  const assets = await generateStudyAssets(cleanTranscript, sections, apiKey, mode, onBusy);
+  // Phase 2: Ingest Assets (Lightweight)
+  if (onProgress) onProgress(2, "Analyzing and extracting transcript timeline and chapters...");
+  const data = await generateInitialLectureAssets(rawTranscript, apiKey, onBusy);
 
   return {
     transcript: rawTranscript,
-    cleanTranscript,
-    sections,
-    ...assets
+    cleanTranscript: data.cleanTranscript || rawTranscript,
+    sections: data.sections || [],
+    timeline: data.timeline || [],
+    sourceIntelligence: data.sourceIntelligence || null,
+    keyConcepts: [] // Will generate Mindmap keyConcepts on demand
   };
 };
 
@@ -427,23 +708,16 @@ export const generateLectureContentFromText = async (
     throw new Error("Gemini API key is not configured in .env. Please configure VITE_GEMINI_API_KEY.");
   }
 
-  // Phase 1: Clean Transcript (adds estimated timestamps and professional format)
-  if (onProgress) onProgress(1, "Cleaning Transcript...");
-  const cleanTranscript = await cleanTranscriptText(extractedText, apiKey, onBusy);
-
-  // Phase 2: Segment Topics
-  if (onProgress) onProgress(2, "Detecting Topics...");
-  const sections = await segmentTranscriptIntoTopics(cleanTranscript, apiKey, onBusy);
-
-  // Phase 3: Asset Extraction
-  if (onProgress) onProgress(3, "Extracting Study Assets...");
-  const assets = await generateStudyAssets(cleanTranscript, sections, apiKey, mode, onBusy);
+  if (onProgress) onProgress(1, "Analyzing text and extracting transcript timeline and chapters...");
+  const data = await generateInitialLectureAssets(extractedText, apiKey, onBusy);
 
   return {
     transcript: extractedText,
-    cleanTranscript,
-    sections,
-    ...assets
+    cleanTranscript: data.cleanTranscript || extractedText,
+    sections: data.sections || [],
+    timeline: data.timeline || [],
+    sourceIntelligence: data.sourceIntelligence || null,
+    keyConcepts: [] // Will generate Mindmap keyConcepts on demand
   };
 };
 
@@ -462,16 +736,18 @@ export const generateAdditionalQuizQuestions = async (
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
   const prompt = `
-    You are an expert academic tutor. Generate 10 unique additional quiz questions about the topic "${topic}" with difficulty level "${difficulty}" directly from the provided source context.
+    You are an expert academic tutor. Generate 12 unique additional quiz questions about the topic "${topic}" with difficulty level "${difficulty}" directly from the provided source context.
     The output must be returned in the language: "${outputLanguage}".
     
     Source Context:
     ${contextText || 'Use general knowledge for topic: ' + topic}
     
-    To ensure these questions are unique and do not overlap with existing questions, DO NOT generate questions similar to these existing ones:
+    CRITICAL UNIQUE REQUIREMENT:
+    Generate 12 NEW questions.
+    Do NOT repeat concepts, wording, or answer structures already present in the existing questions below:
     ${existingQuestions.map((q, idx) => `${idx + 1}. ${q}`).join('\n')}
 
-    Generate a diverse mix of the following 6 question formats across the 10 questions:
+    Generate a diverse mix of the following 6 question formats across the 12 questions:
     1. MCQ: standard multiple choice.
     2. True/False: options must be exactly ["True", "False"].
     3. Fill Blank: question text must contain a "____" (blank), options must represent possible words, and the correct option fills the blank.
@@ -493,7 +769,7 @@ export const generateAdditionalQuizQuestions = async (
     - "scenario": only for scenario_based and assertion_reason questions.
     - "matchLeft" and "matchRight": only for match_following.
 
-    Return the result STRICTLY as a JSON object with a "questions" key containing the array of 10 questions.
+    Return the result STRICTLY as a JSON object with a "questions" key containing the array of 12 questions.
   `;
 
   try {
@@ -746,6 +1022,348 @@ export const askLectureAI = async (
     answer: res.answer || "I'm sorry, I couldn't process the answer.",
     citations: res.citationsUsed || []
   };
+};
+
+export const generateSummary = async (
+  transcriptText: string,
+  mode: 'quick_revision' | 'detailed_notes' | 'executive_summary' | 'beginner_friendly' | 'academic_format',
+  apiKey: string,
+  onBusy?: (isBusy: boolean) => void
+): Promise<string> => {
+  let modeInstructions = '';
+  switch (mode) {
+    case 'quick_revision':
+      modeInstructions = 'Focus on high-yield exam revision, highly compressed pointers, and bulleted takeaways.';
+      break;
+    case 'detailed_notes':
+      modeInstructions = 'Provide a deeply structured, comprehensive explanation of all lecture materials with examples and definitions.';
+      break;
+    case 'executive_summary':
+      modeInstructions = 'Focus on a strategic, high-level business or industry overview, outlining major themes and conclusions.';
+      break;
+    case 'beginner_friendly':
+      modeInstructions = 'Simplify all terminology, use intuitive everyday analogies, and explain the ideas from absolute first principles.';
+      break;
+    case 'academic_format':
+      modeInstructions = 'Maintain a formal scientific, scholarly tone with rigorous academic language and research-oriented explanations.';
+      break;
+  }
+
+  const prompt = `
+    You are an expert academic tutor. Generate a premium study summary based on the following lecture transcript.
+    
+    Summary Mode: ${mode}
+    Mode Focus: ${modeInstructions}
+    
+    CRITICAL GROUNDING INSTRUCTION:
+    Throughout the markdown text of the summary, you MUST integrate inline citations referencing the source timestamps (e.g. '[Source: Timestamp 01:30]') from the transcript. This is essential for verification.
+    
+    You MUST structure the summary exactly with the following 10 Markdown headers:
+    
+    ### Overview
+    [Strategic overview of this summary mode and main themes]
+    
+    ### Key Concepts
+    [Core concepts, models, and baseline conceptual framework]
+    
+    ### Important Definitions
+    [Definitions of key jargon and terminology with citations]
+    
+    ### Examples
+    [Concrete, walk-through examples and case explanations]
+    
+    ### Applications
+    [Real-world, industrial, clinical, or practical applications]
+    
+    ### Common Mistakes
+    [Typical student misconceptions, exam traps, and errors to avoid]
+    
+    ### Revision Notes
+    [High-intensity exam-oriented review pointers]
+    
+    ### Exam Questions
+    [Potential exam questions derived from the content]
+    
+    ### Key Takeaways
+    [Major strategic takeaways and bulleted findings]
+    
+    ### One Minute Revision
+    [A highly condensed, 1-minute summary recap of the entire lecture]
+
+    Transcript:
+    ${transcriptText}
+  `;
+
+  return executeGeminiCall(prompt, apiKey, undefined, undefined, onBusy);
+};
+
+export const generateNotes = async (
+  transcriptText: string,
+  mode: 'quick' | 'detailed' | 'academic' | 'exam',
+  apiKey: string,
+  onBusy?: (isBusy: boolean) => void
+): Promise<string> => {
+  let modeInstructions = '';
+  switch (mode) {
+    case 'quick':
+      modeInstructions = 'Generate Quick Notes. Keep it high-yield, formatted in clean, structured bullet points, tables, and short checklists. Highlight essential metrics.';
+      break;
+    case 'detailed':
+      modeInstructions = 'Generate Detailed Notes. Provide comprehensive, structured explanations of all lecture topics with concrete examples, terminology tables, and full applications.';
+      break;
+    case 'academic':
+      modeInstructions = 'Generate Academic Notes. Maintain a formal, scientific, research-oriented scholarly tone. Detail the methodologies, theories, and citations.';
+      break;
+    case 'exam':
+      modeInstructions = 'Generate Exam Notes. Focus on memory retention, formulas, cheat sheets, common pitfalls, and study guide questions with model answers.';
+      break;
+  }
+
+  const prompt = `
+    You are an expert academic tutor. Generate a premium structured note document based on the following lecture transcript.
+    
+    Selected Notes Mode: ${mode}
+    Style Instructions: ${modeInstructions}
+    
+    CRITICAL GROUNDING INSTRUCTION:
+    Throughout the notes text, you MUST integrate inline citations referencing the source timestamps (e.g. '[Source: Timestamp 01:30]') from the transcript.
+    
+    Structure your notes cleanly with professional Markdown syntax (headings, bullet points, code blocks for equations). Return raw Markdown content. Do not output JSON.
+    
+    Transcript:
+    ${transcriptText}
+  `;
+
+  return executeGeminiCall(prompt, apiKey, undefined, undefined, onBusy);
+};
+
+export const generateFlashcards = async (
+  transcriptText: string,
+  count: number,
+  existingCards: { q: string; a: string }[] = [],
+  apiKey: string,
+  onBusy?: (isBusy: boolean) => void
+): Promise<any[]> => {
+  const prompt = `
+    You are an expert academic tutor. Generate a list of exactly ${count} high-quality study flashcards from the following lecture transcript.
+    
+    Categories to divide the flashcards into:
+    - Basic Recall: testing terms, dates, and simple facts.
+    - Concept Understanding: testing explanations of frameworks, formulas, and concepts.
+    - Application Based: testing scenario analysis, problem-solving, and practical situations.
+    
+    CRITICAL DUPLICATE PREVENTION:
+    Do NOT generate cards that are similar in question or answer to the existing flashcards listed below:
+    ${existingCards.map((c, i) => `${i + 1}. Q: ${c.q} | A: ${c.a}`).join('\n')}
+    
+    CRITICAL GROUNDING INSTRUCTION:
+    Throughout the answers of the flashcards, you MUST integrate inline citations referencing the source timestamps (e.g. '[Source: Timestamp 01:30]') from the transcript.
+    
+    Return the response STRICTLY as a JSON object with a 'flashcards' array, where each card contains:
+    - 'q': The question/prompt (string)
+    - 'a': The detailed answer with inline citations (string)
+    - 'category': One of ['Basic Recall', 'Concept Understanding', 'Application Based']
+    
+    Transcript:
+    ${transcriptText}
+  `;
+
+  const schema = {
+    type: 'OBJECT',
+    properties: {
+      flashcards: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          properties: {
+            q: { type: 'STRING' },
+            a: { type: 'STRING' },
+            category: { type: 'STRING', enum: ['Basic Recall', 'Concept Understanding', 'Application Based'] }
+          },
+          required: ['q', 'a', 'category']
+        }
+      }
+    },
+    required: ['flashcards']
+  };
+
+  const res = await executeGeminiCall(prompt, apiKey, undefined, schema, onBusy);
+  return res.flashcards || [];
+};
+
+export const generateQuiz = async (
+  transcriptText: string,
+  apiKey: string,
+  onBusy?: (isBusy: boolean) => void
+): Promise<any[]> => {
+  const prompt = `
+    You are an expert academic tutor. Generate a premium comprehensive quiz of exactly 40 multiple-choice questions from the following lecture transcript.
+    
+    You MUST generate exactly:
+    - 10 Easy questions
+    - 10 Medium questions
+    - 10 Hard questions
+    - 5 Scenario questions (questions posing a situational case/scenario)
+    - 5 Application questions (questions testing practical calculations, formulas, or applications)
+    
+    Every question must be generated directly from the source context. Every question must cite the exact timestamp from the source transcript (e.g. '[Source: Timestamp 01:15]') inside the 'sourceCitation' field.
+    
+    For each question, you MUST include:
+    - "question": string
+    - "options": array of exactly 4 strings
+    - "correctAnswer": 0-based index of correct option (integer)
+    - "explanation": detailed explanation of why the correct option is correct
+    - "sourceCitation": exact timestamp citation from the transcript
+    - "difficulty": must be one of ['easy', 'medium', 'hard', 'scenario', 'application']
+    
+    Transcript:
+    ${transcriptText}
+  `;
+
+  const schema = {
+    type: 'OBJECT',
+    properties: {
+      quiz: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          properties: {
+            question: { type: 'STRING' },
+            options: { type: 'ARRAY', items: { type: 'STRING' } },
+            correctAnswer: { type: 'INTEGER' },
+            explanation: { type: 'STRING' },
+            sourceCitation: { type: 'STRING' },
+            difficulty: { type: 'STRING', enum: ['easy', 'medium', 'hard', 'scenario', 'application'] }
+          },
+          required: ['question', 'options', 'correctAnswer', 'explanation', 'sourceCitation', 'difficulty']
+        }
+      }
+    },
+    required: ['quiz']
+  };
+
+  const res = await executeGeminiCall(prompt, apiKey, undefined, schema, onBusy);
+  return res.quiz || [];
+};
+
+export const generateMoreQuestions = async (
+  transcriptText: string,
+  difficulty: 'easy' | 'medium' | 'hard' | 'scenario' | 'application',
+  existingQuestions: string[] = [],
+  apiKey: string,
+  onBusy?: (isBusy: boolean) => void
+): Promise<any[]> => {
+  const prompt = `
+    You are an expert academic tutor. Generate 10 additional multiple-choice questions from the following lecture transcript.
+    
+    Required Type/Difficulty: ${difficulty}
+    
+    CRITICAL DUPLICATE PREVENTION:
+    Do NOT repeat any questions or concepts similar to the existing questions listed below:
+    ${existingQuestions.map((q, idx) => `${idx + 1}. ${q}`).join('\n')}
+    
+    Every question must cite the exact timestamp from the source transcript (e.g. '[Source: Timestamp 01:15]') inside the 'sourceCitation' field.
+    
+    For each question, you MUST include:
+    - "question": string
+    - "options": array of exactly 4 strings
+    - "correctAnswer": 0-based index of correct option (integer)
+    - "explanation": detailed explanation of why the correct option is correct
+    - "sourceCitation": exact timestamp citation
+    - "difficulty": "${difficulty}"
+    
+    Transcript:
+    ${transcriptText}
+  `;
+
+  const schema = {
+    type: 'OBJECT',
+    properties: {
+      quiz: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          properties: {
+            question: { type: 'STRING' },
+            options: { type: 'ARRAY', items: { type: 'STRING' } },
+            correctAnswer: { type: 'INTEGER' },
+            explanation: { type: 'STRING' },
+            sourceCitation: { type: 'STRING' },
+            difficulty: { type: 'STRING', enum: [difficulty] }
+          },
+          required: ['question', 'options', 'correctAnswer', 'explanation', 'sourceCitation', 'difficulty']
+        }
+      }
+    },
+    required: ['quiz']
+  };
+
+  const res = await executeGeminiCall(prompt, apiKey, undefined, schema, onBusy);
+  return res.quiz || [];
+};
+
+export const generateMindmap = async (
+  transcriptText: string,
+  sections: any[],
+  apiKey: string,
+  onBusy?: (isBusy: boolean) => void
+): Promise<any[]> => {
+  const prompt = `
+    You are an expert academic tutor. Construct a structural mind map representing the lecture.
+    
+    We already have the following chapters/sections from the lecture:
+    ${sections.map((s, idx) => `- Chapter ${idx + 1}: ${s.title} (ID: ${s.id})`).join('\n')}
+    
+    Generate a mind map containing:
+    1. The root node (ID: "root", label: "Root Topic", x: 50, y: 50, group: "center")
+    2. Chapter nodes (one for each section/chapter listed above, parent: "root", group: "chapters")
+    3. Key concept nodes (parent should be one of the Chapter IDs, group: "concepts")
+    4. Detail nodes (Definition, Example, Formula, Application nodes; parent: Concept ID, group: "details")
+    
+    You MUST calculate coordinates (x and y between 10 and 90 representing 2D canvas coordinates) such that they are spread out nicely and don't overlap.
+    
+    For every node, provide details for a drawer including:
+    - 'desc': Clear definition or explanation
+    - 'examples': Concrete everyday examples
+    - 'formula': Mathematical formulas, core models or theories (if any, otherwise empty string)
+    - 'applications': Real-world applications or case studies
+    - 'examImportance': Importance rating (High/Medium/Low) and typical exam question style
+    
+    Return the result STRICTLY as a JSON object with a 'keyConcepts' array matching the requested schema.
+    
+    Transcript:
+    ${transcriptText}
+  `;
+
+  const schema = {
+    type: 'OBJECT',
+    properties: {
+      keyConcepts: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          properties: {
+            id: { type: 'STRING' },
+            label: { type: 'STRING' },
+            desc: { type: 'STRING' },
+            parent: { type: 'STRING' },
+            x: { type: 'INTEGER' },
+            y: { type: 'INTEGER' },
+            group: { type: 'STRING', enum: ['center', 'chapters', 'concepts', 'details'] },
+            examples: { type: 'STRING' },
+            formula: { type: 'STRING' },
+            applications: { type: 'STRING' },
+            examImportance: { type: 'STRING' }
+          },
+          required: ['id', 'label', 'desc', 'x', 'y', 'group']
+        }
+      }
+    },
+    required: ['keyConcepts']
+  };
+
+  const res = await executeGeminiCall(prompt, apiKey, undefined, schema, onBusy);
+  return res.keyConcepts || [];
 };
 
 

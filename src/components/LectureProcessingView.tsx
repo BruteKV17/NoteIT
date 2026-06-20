@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { PageId } from '../types';
 import { blobToBase64, generateLectureContent } from '../services/gemini';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebaseConfig';
 import BruteLoader from './BruteLoader';
 
@@ -30,21 +30,15 @@ const COMPILATION_STEPS = [
   { label: "Uploading Audio", description: "Saving raw audio bytes to Azure Blob Storage." },
   { label: "Deciphering Speech", description: "Converting acoustic frequencies into clean text transcription via Gemini 2.5." },
   { label: "Cleaning Transcript", description: "Removing stutters, filler words, and converting to professional academic prose." },
-  { label: "Detecting Topics", description: "Identifying semantic segments and lecture milestones." },
-  { label: "Generating Notes", description: "Synthesizing multi-level academic outlines (Quick, Detailed, Academic)." },
-  { label: "Assembling Concept Graph", description: "Constructing expandable conceptual node relationships for mind mapping." },
-  { label: "Compiling Quiz & Assets", description: "Creating situational quizzes with source citations and timeline markers." },
+  { label: "Detecting Chapters", description: "Segmenting lecture sections and milestones." },
   { label: "Saving Results", description: "Persisting the completed academic workspace directly to Firestore." }
 ];
 
 const DOCUMENT_COMPILATION_STEPS = [
   { label: "Uploading Document", description: "Uploading document file payload to Azure Storage." },
   { label: "Extracting Content", description: "Extracting structural text data from file format (PDF/DOCX/PPTX)." },
-  { label: "Cleaning Transcript", description: "Removing stutters, formatting text, and prepending estimated timestamps." },
-  { label: "Detecting Topics", description: "Identifying semantic segments and milestone markers." },
-  { label: "Generating Notes", description: "Synthesizing multi-level academic outlines (Quick, Detailed, Academic)." },
-  { label: "Assembling Concept Graph", description: "Constructing expandable conceptual node relationships for mind mapping." },
-  { label: "Compiling Quiz & Assets", description: "Creating situational quizzes with source citations and timeline markers." },
+  { label: "Cleaning Transcript", description: "Formatting text and generating transcript lines." },
+  { label: "Detecting Chapters", description: "Segmenting lecture sections and milestones." },
   { label: "Saving Results", description: "Persisting the completed academic workspace directly to Firestore." }
 ];
 
@@ -65,6 +59,7 @@ export default function LectureProcessingView({
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isGeminiBusy, setIsGeminiBusy] = useState<boolean>(false);
+  const [retryTrigger, setRetryTrigger] = useState(0);
 
   const steps = documentFile ? DOCUMENT_COMPILATION_STEPS : COMPILATION_STEPS;
 
@@ -79,30 +74,52 @@ export default function LectureProcessingView({
 
     const startProcessing = async () => {
       try {
+        if (!userId || !lectureId) return;
+
+        const lectureRef = doc(db, 'users', userId, 'lectures', lectureId);
+        const lectureSnap = await getDoc(lectureRef);
+        const existingData = lectureSnap.exists() ? lectureSnap.data() : null;
+
+        let audioUrl = existingData?.audioUrl || '';
+        let blobPath = existingData?.blobPath || '';
+
         if (documentFile) {
           if (!uploadLectureDocument) {
             throw new Error("Document upload handler is missing.");
           }
           // --- DOCUMENT WORKFLOW ---
           // 1. UPLOADING DOCUMENT
-          setUploadStatus('uploading');
-          setCurrentStepIndex(0);
-          await updateLecture(lectureId, { status: 'uploading' });
+          let uploadResult = { audioUrl, blobPath };
+          if (!audioUrl || !blobPath) {
+            setUploadStatus('uploading');
+            setCurrentStepIndex(0);
+            await updateLecture(lectureId, { 
+              status: 'uploading',
+              uploadStartedAt: serverTimestamp()
+            });
 
-          const uploadResult = await uploadLectureDocument(lectureId, documentFile, (progress) => {
-            if (isSubscribed) {
-              setUploadProgress(Math.round(progress));
-            }
-          });
-          if (!isSubscribed) return;
+            uploadResult = await uploadLectureDocument(lectureId, documentFile, (progress) => {
+              if (isSubscribed) {
+                setUploadProgress(Math.round(progress));
+              }
+            });
+            if (!isSubscribed) return;
 
-          setUploadStatus('uploaded');
+            await updateLecture(lectureId, {
+              uploadFinishedAt: serverTimestamp()
+            });
+          } else {
+            console.log('Skipping document upload, file already exists in Azure:', blobPath);
+            setUploadProgress(100);
+            setUploadStatus('uploaded');
+          }
 
           // 2. EXTRACTING CONTENT
           setUploadStatus('extracting');
           setCurrentStepIndex(1);
           await updateLecture(lectureId, { 
             status: 'extracting',
+            transcriptionStartedAt: serverTimestamp(),
             processingStartedAt: serverTimestamp()
           });
 
@@ -110,10 +127,17 @@ export default function LectureProcessingView({
           const extractedText = await extractTextFromDocument(uploadResult.blobPath);
           if (!isSubscribed) return;
 
+          await updateLecture(lectureId, {
+            transcriptionFinishedAt: serverTimestamp()
+          });
+
           // 3. AI ANALYSIS & SYNTHESIS
           setUploadStatus('analyzing');
           setCurrentStepIndex(2);
-          await updateLecture(lectureId, { status: 'analyzing' });
+          await updateLecture(lectureId, { 
+            status: 'analyzing',
+            generationStartedAt: serverTimestamp()
+          });
 
           const startTime = Date.now();
           const { generateLectureContentFromText } = await import('../services/gemini');
@@ -129,8 +153,6 @@ export default function LectureProcessingView({
             (stepNum, msg) => {
               if (isSubscribed) {
                 if (stepNum === 1) setCurrentStepIndex(2); // Cleaning Transcript
-                else if (stepNum === 2) setCurrentStepIndex(3); // Detecting Topics
-                else if (stepNum === 3) setCurrentStepIndex(4); // Generating Notes
               }
             }
           );
@@ -138,35 +160,28 @@ export default function LectureProcessingView({
 
           const processingTimeMs = Date.now() - startTime;
 
-          // Simulation details for the remaining premium graph and asset compilation steps
           if (isSubscribed) {
-            setCurrentStepIndex(5); // Assembling Concept Graph
+            setCurrentStepIndex(3); // Detecting Chapters
             await new Promise(r => setTimeout(r, 1200));
           }
           if (isSubscribed) {
-            setCurrentStepIndex(6); // Compiling Quiz & Assets
-            await new Promise(r => setTimeout(r, 1200));
-          }
-          if (isSubscribed) {
-            setCurrentStepIndex(7); // Saving Results
+            setCurrentStepIndex(4); // Saving Results
             setUploadStatus('saving');
             await updateLecture(lectureId, { status: 'saving' });
           }
 
-          // Save transcript, summary, flashcards, quiz, keyConcepts, cleanTranscript, sections, timeline, sourceIntelligence directly in the lecture document
+          // Save transcript, cleanTranscript, sections, timeline, sourceIntelligence directly in the lecture document
           await updateLecture(lectureId, {
             transcript: aiData.transcript || '',
             cleanTranscript: aiData.cleanTranscript || '',
             sections: aiData.sections || [],
             timeline: aiData.timeline || [],
             sourceIntelligence: aiData.sourceIntelligence || null,
-            summary: aiData.summary || '',
-            flashcards: aiData.flashcards || [],
-            quiz: aiData.quiz || [],
-            keyConcepts: aiData.keyConcepts || [],
+            keyConcepts: [], // Initial empty mind map concepts
             geminiModel: 'gemini-2.5-flash',
             processingTimeMs,
             status: 'generated',
+            generationFinishedAt: serverTimestamp(),
             processingCompletedAt: serverTimestamp()
           });
 
@@ -194,38 +209,6 @@ export default function LectureProcessingView({
             console.error('[RAG] Grounding failed for lecture document:', ragErr);
           }
 
-          // Save notes to general users/{uid}/notes
-          if (userId && aiData.notes && Array.isArray(aiData.notes)) {
-            const { collection, addDoc, serverTimestamp: firestoreServerTimestamp } = await import('firebase/firestore');
-            const notesRef = collection(db, 'users', userId, 'notes');
-            for (const note of aiData.notes) {
-              await addDoc(notesRef, {
-                title: note.title || 'Lecture Note',
-                content: note.content || '',
-                lectureId: lectureId,
-                createdAt: firestoreServerTimestamp(),
-                updatedAt: firestoreServerTimestamp()
-              });
-            }
-          }
-
-          // Save weak topics to users/{uid}/weakTopics
-          if (userId && aiData.weakTopics && Array.isArray(aiData.weakTopics)) {
-            const { collection, addDoc, serverTimestamp: firestoreServerTimestamp } = await import('firebase/firestore');
-            const weakTopicsRef = collection(db, 'users', userId, 'weakTopics');
-            for (const wt of aiData.weakTopics) {
-              await addDoc(weakTopicsRef, {
-                topicName: wt.topicName || 'Unknown Topic',
-                subject: wt.subject || 'General',
-                masteryScore: Math.floor(Math.random() * 21) + 20, // baseline 20-40%
-                lastAttempt: 'Just now',
-                aiDiagnosis: wt.aiDiagnosis || 'Needs review.',
-                actionPlan: wt.actionPlan || [],
-                createdAt: firestoreServerTimestamp()
-              });
-            }
-          }
-
           if (!isSubscribed) return;
           setUploadStatus('completed');
           setCurrentStepIndex(DOCUMENT_COMPILATION_STEPS.length);
@@ -241,24 +224,35 @@ export default function LectureProcessingView({
 
         } else {
           // --- AUDIO WORKFLOW ---
-          setUploadStatus('uploading');
-          setCurrentStepIndex(0);
-          await updateLecture(lectureId, { status: 'uploading' });
+          if (!audioUrl || !blobPath) {
+            setUploadStatus('uploading');
+            setCurrentStepIndex(0);
+            await updateLecture(lectureId, { 
+              status: 'uploading',
+              uploadStartedAt: serverTimestamp()
+            });
 
-          await uploadLectureAudio(lectureId, audioBlob!, (progress) => {
-            if (isSubscribed) {
-              setUploadProgress(Math.round(progress));
-            }
-          });
+            await uploadLectureAudio(lectureId, audioBlob!, (progress) => {
+              if (isSubscribed) {
+                setUploadProgress(Math.round(progress));
+              }
+            });
+            if (!isSubscribed) return;
 
-          if (!isSubscribed) return;
-
-          setUploadStatus('uploaded');
+            await updateLecture(lectureId, {
+              uploadFinishedAt: serverTimestamp()
+            });
+          } else {
+            console.log('Skipping audio upload, file already exists in Azure:', blobPath);
+            setUploadProgress(100);
+            setUploadStatus('uploaded');
+          }
 
           setUploadStatus('transcribing');
           setCurrentStepIndex(1);
           await updateLecture(lectureId, { 
             status: 'transcribing',
+            transcriptionStartedAt: serverTimestamp(),
             processingStartedAt: serverTimestamp()
           });
 
@@ -278,10 +272,13 @@ export default function LectureProcessingView({
             'academic',
             (stepNum, msg) => {
               if (isSubscribed) {
-                if (stepNum === 1) setCurrentStepIndex(1); // Deciphering Speech
-                else if (stepNum === 2) setCurrentStepIndex(2); // Cleaning Transcript
-                else if (stepNum === 3) setCurrentStepIndex(3); // Detecting Topics
-                else if (stepNum === 4) setCurrentStepIndex(4); // Generating Notes
+                if (stepNum === 1) {
+                  setCurrentStepIndex(1); // Deciphering Speech
+                }
+                else if (stepNum === 2) {
+                  setCurrentStepIndex(3); // Detecting Chapters
+                  updateLecture(lectureId, { transcriptionFinishedAt: serverTimestamp() }).catch(console.error);
+                }
               }
             }
           );
@@ -289,17 +286,8 @@ export default function LectureProcessingView({
 
           const processingTimeMs = Date.now() - startTime;
 
-          // Simulation details for the remaining premium graph and asset compilation steps
           if (isSubscribed) {
-            setCurrentStepIndex(5); // Assembling Concept Graph
-            await new Promise(r => setTimeout(r, 1200));
-          }
-          if (isSubscribed) {
-            setCurrentStepIndex(6); // Compiling Quiz & Assets
-            await new Promise(r => setTimeout(r, 1200));
-          }
-          if (isSubscribed) {
-            setCurrentStepIndex(7); // Saving Results
+            setCurrentStepIndex(4); // Saving Results
             setUploadStatus('saving');
             await updateLecture(lectureId, { status: 'saving' });
           }
@@ -310,13 +298,11 @@ export default function LectureProcessingView({
             sections: aiData.sections || [],
             timeline: aiData.timeline || [],
             sourceIntelligence: aiData.sourceIntelligence || null,
-            summary: aiData.summary || '',
-            flashcards: aiData.flashcards || [],
-            quiz: aiData.quiz || [],
-            keyConcepts: aiData.keyConcepts || [],
+            keyConcepts: [], // Initial empty mind map concepts
             geminiModel: 'gemini-2.5-flash',
             processingTimeMs,
             status: 'generated',
+            generationFinishedAt: serverTimestamp(),
             processingCompletedAt: serverTimestamp()
           });
 
@@ -342,34 +328,6 @@ export default function LectureProcessingView({
             }
           } catch (ragErr) {
             console.error('[RAG] Grounding failed for lecture audio:', ragErr);
-          }
-
-          if (userId && aiData.notes && Array.isArray(aiData.notes)) {
-            const notesRef = collection(db, 'users', userId, 'notes');
-            for (const note of aiData.notes) {
-              await addDoc(notesRef, {
-                title: note.title || 'Lecture Note',
-                content: note.content || '',
-                lectureId: lectureId,
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp()
-              });
-            }
-          }
-
-          if (userId && aiData.weakTopics && Array.isArray(aiData.weakTopics)) {
-            const weakTopicsRef = collection(db, 'users', userId, 'weakTopics');
-            for (const wt of aiData.weakTopics) {
-              await addDoc(weakTopicsRef, {
-                topicName: wt.topicName || 'Unknown Topic',
-                subject: wt.subject || 'General',
-                masteryScore: Math.floor(Math.random() * 21) + 20,
-                lastAttempt: 'Just now',
-                aiDiagnosis: wt.aiDiagnosis || 'Needs review.',
-                actionPlan: wt.actionPlan || [],
-                createdAt: serverTimestamp()
-              });
-            }
           }
 
           if (!isSubscribed) return;
@@ -400,7 +358,7 @@ export default function LectureProcessingView({
     return () => {
       isSubscribed = false;
     };
-  }, [lectureId, audioBlob, documentFile, userId]);
+  }, [lectureId, audioBlob, documentFile, userId, retryTrigger]);
 
   return (
     <div className="max-w-3xl mx-auto space-y-8 pb-16 pt-4 md:pt-8 select-none">
@@ -553,15 +511,30 @@ export default function LectureProcessingView({
  
         {errorMsg ? (
           <div className="p-5 rounded-xl border border-red-500/20 bg-red-500/5 text-center space-y-3">
-            <AlertCircle className="h-10 w-10 text-red-500 mx-auto" />
+            <AlertCircle className="h-10 w-10 text-red-500 mx-auto animate-pulse" />
             <div className="text-sm font-bold text-gray-900 dark:text-neutral-50">Upload & Sync Failed</div>
+            <div className="text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 rounded-lg p-2.5 max-w-md mx-auto">
+              Your lecture recording is safe. Click Continue Processing.
+            </div>
             <p className="text-xs text-gray-400 leading-relaxed max-w-md mx-auto">{errorMsg}</p>
-            <button
-              onClick={() => setActivePage('academic-library')}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-black dark:bg-white text-white dark:text-black px-4 py-2.5 text-xs font-bold hover:opacity-90 transition-all focus:outline-none"
-            >
-              <span>Return to Library</span>
-            </button>
+            <div className="flex justify-center gap-3">
+              <button
+                onClick={() => {
+                  setErrorMsg(null);
+                  setUploadStatus('uploading');
+                  setRetryTrigger(prev => prev + 1);
+                }}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 text-xs font-bold transition-all focus:outline-none cursor-pointer"
+              >
+                Continue Processing
+              </button>
+              <button
+                onClick={() => setActivePage('academic-library')}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-gray-250 dark:border-neutral-800 text-gray-700 dark:text-neutral-350 px-4 py-2.5 text-xs font-bold hover:bg-gray-50 dark:hover:bg-neutral-800 transition-all focus:outline-none cursor-pointer"
+              >
+                <span>Return to Library</span>
+              </button>
+            </div>
           </div>
         ) : (
           <div className="space-y-4">

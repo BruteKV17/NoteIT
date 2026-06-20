@@ -443,10 +443,154 @@ export default function LibraryView({
         </div>
       ) : (
         /* List layout mode */
-        <div className={`rounded-2xl border overflow-hidden shadow-2xl ${
+        <div className={`rounded-2xl border overflow-hidden shadow-2xl transition-all ${
           theme === 'dark' ? 'bg-[#0d0e12]/60 border-neutral-900' : 'bg-white border-gray-200'
         }`}>
-          <div className="overflow-x-auto">
+          {/* Mobile Stacked List View */}
+          <div className="block md:hidden divide-y divide-gray-100 dark:divide-neutral-900">
+            {filteredLectures.map((lec) => {
+              const isRecording = lec.type === 'recording';
+              const isTranscribing = lec.status === 'transcribing';
+              return (
+                <div key={lec.id} className="p-4 space-y-3 font-sans relative">
+                  <div className="flex items-center justify-between">
+                    <span className={`rounded px-2.5 py-0.5 text-[8.5px] font-black tracking-wide uppercase ${
+                      theme === 'dark' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {lec.subject}
+                    </span>
+                    <div className={`p-1.5 rounded-lg border ${
+                      isRecording 
+                        ? theme === 'dark' ? 'bg-orange-500/10 border-orange-500/10 text-orange-400' : 'bg-orange-50 text-orange-600'
+                        : theme === 'dark' ? 'bg-blue-500/10 border-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'
+                    }`}>
+                      {isRecording ? <Volume2 className="h-3.5 w-3.5" /> : <FileText className="h-3.5 w-3.5" />}
+                    </div>
+                  </div>
+
+                  <div>
+                    {renamingLectureId === lec.id ? (
+                      <form
+                        onSubmit={async (e) => {
+                          e.preventDefault();
+                          if (!renamingTitle.trim()) return;
+                          try {
+                            if (onUpdateLecture) {
+                              await onUpdateLecture(lec.id, { title: renamingTitle.trim() });
+                            }
+                            setRenamingLectureId(null);
+                          } catch (err) {
+                            console.error("Failed to rename lecture:", err);
+                          }
+                        }}
+                        className="flex items-center gap-1.5"
+                      >
+                        <input
+                          type="text"
+                          value={renamingTitle}
+                          onChange={(e) => setRenamingTitle(e.target.value)}
+                          className={`rounded-lg text-xs font-semibold px-2 py-1.5 focus:border-indigo-500 outline-none w-full ${
+                            theme === 'dark' ? 'bg-neutral-900 border border-neutral-800 text-white' : 'bg-[#F9FAFB] border border-gray-200 text-gray-900'
+                          }`}
+                          autoFocus
+                        />
+                        <button
+                          type="submit"
+                          className="px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-sans text-[10px] font-bold cursor-pointer hover:bg-emerald-500/20 focus:outline-none"
+                        >
+                          Save
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setRenamingLectureId(null)}
+                          className="px-2 py-1 rounded bg-neutral-900/65 border border-neutral-850 text-neutral-400 font-sans text-[10px] font-bold cursor-pointer hover:bg-neutral-850 focus:outline-none"
+                        >
+                          Cancel
+                        </button>
+                      </form>
+                    ) : (
+                      <span className={`text-xs font-bold block ${
+                        theme === 'dark' ? 'text-white' : 'text-gray-900'
+                      }`}>
+                        {lec.title}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between text-[10px] font-mono text-gray-400">
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3 text-indigo-400/50" />
+                      {lec.addedAt}
+                    </span>
+                    {lec.pages && <span>{lec.pages} pages</span>}
+                    {lec.duration && <span>{lec.duration}</span>}
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-neutral-900/10 dark:border-neutral-900/40">
+                    <div>
+                      {isTranscribing ? (
+                        <span className="inline-flex items-center gap-1 text-amber-500 font-bold text-[10px] animate-pulse">
+                          <RotateCw className="h-3.5 w-3.5 animate-spin" />
+                          <span>Transcribing...</span>
+                        </span>
+                      ) : lec.status === 'uploading' ? (
+                        <span className="inline-flex items-center gap-1 text-indigo-500 font-bold text-[10px] animate-pulse">
+                          <RotateCw className="h-3.5 w-3.5 animate-spin" />
+                          <span>Uploading...</span>
+                        </span>
+                      ) : (
+                        <span className={`inline-flex items-center gap-1 font-bold text-[10px] ${
+                          theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'
+                        }`}>
+                          <CheckCircle className="h-3 w-3 fill-emerald-500/10" />
+                          <span>Synthesized</span>
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {!isTranscribing && (
+                        <button
+                          onClick={() => setActivePage('research-hub')}
+                          className={`rounded px-2.5 py-1 text-[10px] font-black transition-all cursor-pointer ${
+                            theme === 'dark' ? 'bg-white text-black hover:bg-neutral-100' : 'bg-black text-white hover:bg-gray-800'
+                          }`}
+                        >
+                          Workspace
+                        </button>
+                      )}
+                      <button
+                        onClick={() => {
+                          setRenamingLectureId(lec.id);
+                          setRenamingTitle(lec.title);
+                        }}
+                        className={`rounded p-1 hover:bg-indigo-500/10 cursor-pointer ${
+                          theme === 'dark' ? 'text-neutral-450 hover:text-indigo-400' : 'text-gray-400 hover:text-indigo-650'
+                        }`}
+                      >
+                        <Edit className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (window.confirm("Are you sure you want to delete this lecture?")) {
+                            onDeleteLecture(lec.id);
+                          }
+                        }}
+                        className={`rounded p-1 hover:bg-red-500/10 cursor-pointer ${
+                          theme === 'dark' ? 'text-neutral-450 hover:text-red-400' : 'text-gray-400 hover:text-red-500'
+                        }`}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop Table List View */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse select-text">
               <thead>
                 <tr className={`border-b ${theme === 'dark' ? 'bg-neutral-950/60 border-neutral-900' : 'bg-gray-50/60 border-gray-200'}`}>

@@ -56,6 +56,9 @@ import LectureProcessingView from './components/LectureProcessingView';
 import LandingView from './components/LandingView';
 import OnboardingView from './components/OnboardingView';
 import BruteLoader from './components/BruteLoader';
+import ErrorBoundary from './components/ErrorBoundary';
+import FeedbackWidget from './components/FeedbackWidget';
+import AILogo from './components/AILogo';
 import { generateAdditionalQuizQuestions } from './services/gemini';
 
 export default function App() {
@@ -178,34 +181,64 @@ export default function App() {
 
   // Aggregate quizzes dynamically from processed lectures in Firestore
   useEffect(() => {
-    const generatedQuizzes: Quiz[] = [...INITIAL_QUIZZES];
-    combinedLectures.forEach(lecture => {
-      if (lecture.quiz && lecture.quiz.length > 0) {
-        const mappedQuestions = lecture.quiz.map((q: any, idx: number) => ({
-          id: `q-${lecture.id}-${idx}`,
-          question: q.question,
-          options: q.options,
-          correctAnswerIndex: q.correctAnswer,
-          explanation: q.explanation || 'Review concepts in your study outline.',
-          sourceCitation: q.sourceCitation || `[Source: ${lecture.title}]`
-        }));
+    setQuizzes(prevQuizzes => {
+      const generatedQuizzes: Quiz[] = [];
+      
+      // Process INITIAL_QUIZZES first
+      INITIAL_QUIZZES.forEach(initialQuiz => {
+        const existing = prevQuizzes.find(q => q.id === initialQuiz.id);
+        if (existing) {
+          generatedQuizzes.push({
+            ...initialQuiz,
+            easyQuestions: existing.easyQuestions.length > 0 ? existing.easyQuestions : initialQuiz.easyQuestions,
+            mediumQuestions: existing.mediumQuestions.length > 0 ? existing.mediumQuestions : initialQuiz.mediumQuestions,
+            hardQuestions: existing.hardQuestions.length > 0 ? existing.hardQuestions : initialQuiz.hardQuestions,
+            score: existing.score !== undefined ? existing.score : initialQuiz.score,
+            scores: existing.scores || initialQuiz.scores,
+            status: existing.status
+          });
+        } else {
+          generatedQuizzes.push(initialQuiz);
+        }
+      });
 
-        generatedQuizzes.push({
-          id: `quiz-${lecture.id}`,
-          title: `${lecture.title} Review`,
-          topic: lecture.subject,
-          questionsCount: lecture.quiz.length,
-          estimatedTime: `${lecture.quiz.length * 1} mins`,
-          status: 'available',
-          questions: mappedQuestions,
-          easyQuestions: mappedQuestions,
-          mediumQuestions: [],
-          hardQuestions: [],
-          contextText: lecture.transcript || lecture.summary || ""
-        });
-      }
+      // Process lecture quizzes
+      combinedLectures.forEach(lecture => {
+        if (lecture.quiz && lecture.quiz.length > 0) {
+          const quizId = `quiz-${lecture.id}`;
+          const existing = prevQuizzes.find(q => q.id === quizId);
+          
+          if (existing) {
+            generatedQuizzes.push(existing);
+          } else {
+            const mappedQuestions = lecture.quiz.map((q: any, idx: number) => ({
+              id: `q-${lecture.id}-${idx}`,
+              question: q.question,
+              options: q.options,
+              correctAnswerIndex: q.correctAnswer,
+              explanation: q.explanation || 'Review concepts in your study outline.',
+              sourceCitation: q.sourceCitation || `[Source: ${lecture.title}]`
+            }));
+            
+            generatedQuizzes.push({
+              id: quizId,
+              title: `${lecture.title} Review`,
+              topic: lecture.subject,
+              questionsCount: lecture.quiz.length,
+              estimatedTime: `${lecture.quiz.length * 1} mins`,
+              status: 'available',
+              questions: mappedQuestions,
+              easyQuestions: mappedQuestions,
+              mediumQuestions: [],
+              hardQuestions: [],
+              contextText: lecture.transcript || lecture.summary || ""
+            });
+          }
+        }
+      });
+      
+      return generatedQuizzes;
     });
-    setQuizzes(generatedQuizzes);
   }, [combinedLectures]);
 
   // High-level dashboard states
@@ -303,16 +336,40 @@ export default function App() {
     }
   };
 
-  const handleSaveCapture = async (title: string, subject: string, duration: string, audioBlob: Blob) => {
+  const handleStartCapture = async (title: string, subject: string) => {
+    if (!sessionUser) throw new Error('User not authenticated');
+    const lectureId = await addLecture({
+      title,
+      subject,
+      type: 'recording',
+      status: 'recording',
+      duration: '00:00:00'
+    });
+    const userDocRef = doc(db, 'users', sessionUser.uid, 'lectures', lectureId);
+    await setDoc(userDocRef, { recordingStartedAt: serverTimestamp() }, { merge: true });
+    return lectureId;
+  };
+
+  const handleSaveCapture = async (title: string, subject: string, duration: string, audioBlob: Blob, existingLectureId?: string) => {
     if (!sessionUser) return;
     try {
-      const lectureId = await addLecture({
-        title,
-        subject,
-        duration,
-        type: 'recording',
-        status: 'recording'
-      });
+      let lectureId = existingLectureId;
+      if (!lectureId) {
+        lectureId = await addLecture({
+          title,
+          subject,
+          duration,
+          type: 'recording',
+          status: 'recording'
+        });
+      } else {
+        await updateLecture(lectureId, {
+          title,
+          subject,
+          duration,
+          status: 'recording'
+        });
+      }
       
       setProcessingLectureId(lectureId);
       setProcessingAudioBlob(audioBlob);
@@ -346,10 +403,10 @@ export default function App() {
   };
 
   // Callbacks: Quiz scoring updates
-  const handleUpdateQuizScore = (quizId: string, score: number) => {
+  const handleUpdateQuizScore = (quizId: string, score: number, scores?: { easy?: number; medium?: number; hard?: number }) => {
     setQuizzes(prev => prev.map(q => {
       if (q.id === quizId) {
-        return { ...q, score, status: 'completed' as const };
+        return { ...q, score, scores: scores || q.scores, status: 'completed' as const };
       }
       return q;
     }));
@@ -383,16 +440,19 @@ export default function App() {
   const handleAddQuestions = (quizId: string, difficulty: 'easy' | 'medium' | 'hard', newQuestions: QuizQuestion[]) => {
     setQuizzes(prev => prev.map(q => {
       if (q.id === quizId) {
-        if (difficulty === 'easy') {
-          const updated = [...(q.easyQuestions || []), ...newQuestions];
-          return { ...q, easyQuestions: updated, questionsCount: updated.length };
-        } else if (difficulty === 'medium') {
-          const updated = [...(q.mediumQuestions || []), ...newQuestions];
-          return { ...q, mediumQuestions: updated, questionsCount: updated.length };
-        } else {
-          const updated = [...(q.hardQuestions || []), ...newQuestions];
-          return { ...q, hardQuestions: updated, questionsCount: updated.length };
-        }
+        const easy = difficulty === 'easy' ? [...(q.easyQuestions || []), ...newQuestions] : (q.easyQuestions || []);
+        const medium = difficulty === 'medium' ? [...(q.mediumQuestions || []), ...newQuestions] : (q.mediumQuestions || []);
+        const hard = difficulty === 'hard' ? [...(q.hardQuestions || []), ...newQuestions] : (q.hardQuestions || []);
+        const totalCount = easy.length + medium.length + hard.length;
+        
+        return {
+          ...q,
+          easyQuestions: easy,
+          mediumQuestions: medium,
+          hardQuestions: hard,
+          questionsCount: totalCount,
+          estimatedTime: `${totalCount * 1} mins`
+        };
       }
       return q;
     }));
@@ -512,6 +572,7 @@ export default function App() {
         return (
           <LectureCaptureView
             onSaveCapture={handleSaveCapture}
+            onStartCapture={handleStartCapture}
             setActivePage={setActivePage}
             theme={theme}
             lectures={combinedLectures}
@@ -560,6 +621,7 @@ export default function App() {
             updateLecture={updateLecture}
             deleteLecture={handleDeleteLecture}
             setActivePage={setActivePage}
+            theme={theme}
           />
         );
       case 'academic-library':
@@ -611,6 +673,7 @@ export default function App() {
             settings={settings}
             onUpdateSettings={handleUpdateSettings}
             setActivePage={setActivePage}
+            theme={theme}
           />
         );
       case 'help-support':
@@ -629,6 +692,8 @@ export default function App() {
             onEnterApp={() => setActivePage('dashboard')}
             onLoginSuccess={handleLoginSuccess}
             onNavigateToPricing={() => setActivePage('pricing')}
+            onGetStarted={() => setActivePage('auth')}
+            onSignIn={() => setActivePage('auth')}
           />
         );
     }
@@ -638,102 +703,158 @@ export default function App() {
 
   if (checkingOnboarding) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${
-        theme === 'dark' ? 'bg-[#0a0a0c]' : 'bg-[#FAF9F5]'
-      }`}>
-        <BruteLoader size="lg" message="Loading Note-IT AI Interface..." />
-      </div>
+      <ErrorBoundary theme={theme}>
+        <div className={`min-h-screen flex items-center justify-center ${
+          theme === 'dark' ? 'bg-[#0a0a0c]' : 'bg-[#FAF9F5]'
+        }`}>
+          <BruteLoader size="lg" message="Loading Note-IT AI Interface..." />
+        </div>
+        <FeedbackWidget theme={theme} />
+      </ErrorBoundary>
     );
   }
 
   if (sessionUser === null) {
+    if (activePage === 'landing') {
+      return (
+        <ErrorBoundary theme={theme}>
+          <LandingView
+            onEnterApp={() => setActivePage('dashboard')}
+            onLoginSuccess={handleLoginSuccess}
+            onNavigateToPricing={() => setActivePage('pricing')}
+            onGetStarted={() => setActivePage('auth')}
+            onSignIn={() => setActivePage('auth')}
+          />
+          <FeedbackWidget theme={theme} />
+        </ErrorBoundary>
+      );
+    }
+    if (activePage === 'pricing') {
+      return (
+        <ErrorBoundary theme={theme}>
+          <div className="bg-[#FAF9F5] min-h-screen text-gray-900 overflow-x-hidden font-sans relative pb-12">
+            <header className="sticky top-0 z-50 bg-[#FAF9F5]/80 backdrop-blur-md border-b border-[#EAE3D2] transition-colors">
+              <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+                <div className="flex items-center gap-2 cursor-pointer" onClick={() => setActivePage('landing')}>
+                  <AILogo size={38} showText={true} theme="light" />
+                </div>
+                <button 
+                  onClick={() => setActivePage('landing')}
+                  className="text-xs font-bold text-gray-600 hover:text-black cursor-pointer uppercase tracking-widest focus:outline-none"
+                >
+                  ← Back to Home
+                </button>
+              </div>
+            </header>
+            <main className="p-6">
+              <PricingView
+                settings={settings}
+                onUpgradePlan={() => setActivePage('auth')}
+                setActivePage={setActivePage}
+              />
+            </main>
+          </div>
+          <FeedbackWidget theme={theme} />
+        </ErrorBoundary>
+      );
+    }
     return (
-      <AuthView 
-        onLoginSuccess={handleLoginSuccess}
-        theme={theme}
-      />
+      <ErrorBoundary theme={theme}>
+        <AuthView 
+          onLoginSuccess={handleLoginSuccess}
+          theme={theme}
+          onNavigateToLanding={() => setActivePage('landing')}
+        />
+        <FeedbackWidget theme={theme} />
+      </ErrorBoundary>
     );
   }
 
   if (isOnboarding) {
     return (
-      <OnboardingView
-        userId={sessionUser.uid}
-        email={sessionUser.emailAddress}
-        fullName={sessionUser.fullName}
-        theme={theme}
-        onComplete={(userData) => {
-          setSettings(prev => ({
-            ...prev,
-            profile: {
-              ...prev.profile,
-              fullName: `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || sessionUser.fullName,
-              firstName: userData.first_name || '',
-              lastName: userData.last_name || '',
-              emailAddress: userData.email || sessionUser.emailAddress,
-              institution: userData.school_or_university || '',
-              countryCode: userData.country_code || '',
-              phoneNumber: userData.phone_number || '',
-              avatarUrl: userData.profile_image_url || '',
-              onboardingCompleted: true
-            }
-          }));
-          setIsOnboarding(false);
-          setActivePage('dashboard');
-        }}
-      />
+      <ErrorBoundary theme={theme}>
+        <OnboardingView
+          userId={sessionUser.uid}
+          email={sessionUser.emailAddress}
+          fullName={sessionUser.fullName}
+          theme={theme}
+          onComplete={(userData) => {
+            setSettings(prev => ({
+              ...prev,
+              profile: {
+                ...prev.profile,
+                fullName: `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || sessionUser.fullName,
+                firstName: userData.first_name || '',
+                lastName: userData.last_name || '',
+                emailAddress: userData.email || sessionUser.emailAddress,
+                institution: userData.school_or_university || '',
+                countryCode: userData.country_code || '',
+                phoneNumber: userData.phone_number || '',
+                avatarUrl: userData.profile_image_url || '',
+                onboardingCompleted: true
+              }
+            }));
+            setIsOnboarding(false);
+            setActivePage('dashboard');
+          }}
+        />
+        <FeedbackWidget theme={theme} />
+      </ErrorBoundary>
     );
   }
 
   return (
-    <div className={`flex h-screen w-screen overflow-hidden transition-all duration-300 ${
-      theme === 'dark' ? 'bg-[#0a0a0c] text-neutral-100' : 'bg-[#FAF9F5] text-gray-900'
-    }`}>
-      
-      {/* Sidebar - hides completely on landing page layout */}
-      {!isLanding && (
-        <Sidebar
-          activePage={activePage}
-          setActivePage={setActivePage}
-          isOpenMobile={isOpenMobile}
-          setIsOpenMobile={setIsOpenMobile}
-          settings={settings}
-          onNewAnalysis={handleNewAnalysisShortcut}
-          theme={theme}
-          onLogOut={handleLogOut}
-        />
-      )}
-
-      {/* Main core layout frame container */}
-      <div className="flex flex-1 flex-col overflow-hidden h-full">
-        {/* Navbar - hides on landing page layout */}
+    <ErrorBoundary theme={theme}>
+      <div className={`flex h-screen w-screen overflow-hidden transition-all duration-300 ${
+        theme === 'dark' ? 'bg-[#0a0a0c] text-neutral-100' : 'bg-[#FAF9F5] text-gray-900'
+      }`}>
+        
+        {/* Sidebar - hides completely on landing page layout */}
         {!isLanding && (
-          <Navbar
+          <Sidebar
             activePage={activePage}
             setActivePage={setActivePage}
+            isOpenMobile={isOpenMobile}
             setIsOpenMobile={setIsOpenMobile}
             settings={settings}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
             onNewAnalysis={handleNewAnalysisShortcut}
             theme={theme}
-            setTheme={setTheme}
             onLogOut={handleLogOut}
           />
         )}
 
-        {/* Dynamic page contents viewer */}
-        <main className={`flex-1 overflow-y-auto ${
-          isLanding 
-            ? 'p-0 text-gray-900 bg-[#FAF9F5]' 
-            : theme === 'dark' 
-              ? 'p-4 md:p-6 bg-[#0a0a0c]' 
-              : 'p-4 md:p-6 bg-[#FAF9F5]'
-        }`}>
-          {renderActiveView()}
-        </main>
-      </div>
+        {/* Main core layout frame container */}
+        <div className="flex flex-1 flex-col overflow-hidden h-full">
+          {/* Navbar - hides on landing page layout */}
+          {!isLanding && (
+            <Navbar
+              activePage={activePage}
+              setActivePage={setActivePage}
+              setIsOpenMobile={setIsOpenMobile}
+              settings={settings}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              onNewAnalysis={handleNewAnalysisShortcut}
+              theme={theme}
+              setTheme={setTheme}
+              onLogOut={handleLogOut}
+            />
+          )}
 
-    </div>
+          {/* Dynamic page contents viewer */}
+          <main className={`flex-1 overflow-y-auto ${
+            isLanding 
+              ? 'p-0 text-gray-900 bg-[#FAF9F5]' 
+              : theme === 'dark' 
+                ? 'p-4 md:p-6 bg-[#0a0a0c]' 
+                : 'p-4 md:p-6 bg-[#FAF9F5]'
+          }`}>
+            {renderActiveView()}
+          </main>
+        </div>
+
+      </div>
+      <FeedbackWidget theme={theme} />
+    </ErrorBoundary>
   );
 }
