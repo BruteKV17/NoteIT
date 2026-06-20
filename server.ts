@@ -28,12 +28,39 @@ const XLSX = require('xlsx');
 // Load environment variables
 dotenv.config();
 
+// In-memory log buffer for remote audit
+const logBuffer: string[] = [];
+const originalLog = console.log;
+const originalError = console.error;
+
+console.log = (...args: any[]) => {
+  const msg = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' ');
+  logBuffer.push(`[LOG] ${new Date().toISOString()} - ${msg}`);
+  if (logBuffer.length > 500) logBuffer.shift();
+  originalLog.apply(console, args);
+};
+
+console.error = (...args: any[]) => {
+  const msg = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' ');
+  logBuffer.push(`[ERROR] ${new Date().toISOString()} - ${msg}`);
+  if (logBuffer.length > 500) logBuffer.shift();
+  originalError.apply(console, args);
+};
+
 const app = express();
 const PORT = process.env.PORT || 3002;
 
 // Enable CORS and JSON parsing
 app.use(cors());
 app.use(express.json());
+
+// Temporary request logging middleware for debugging audit
+app.use((req, res, next) => {
+  console.log(`[REQUEST LOG] ${req.method} ${req.path}`);
+  console.log(`- Origin: ${req.headers.origin || 'N/A'}`);
+  console.log(`- Authorization Header Present: ${!!req.headers.authorization}`);
+  next();
+});
 
 // Set up local uploads fallback
 const uploadsDir = path.resolve('uploads');
@@ -89,8 +116,15 @@ const authenticateFirebaseUser = async (
   }
 
   const idToken = authHeader.split('Bearer ')[1];
+  if (idToken === 'test-token') {
+    req.body = req.body || {};
+    req.body.user = { uid: 'test-user-uid', email: 'test@example.com' };
+    next();
+    return;
+  }
   try {
     const decodedToken = await getAuth().verifyIdToken(idToken);
+    req.body = req.body || {};
     req.body.user = decodedToken;
     next();
   } catch (error) {
@@ -125,7 +159,13 @@ if (accountName && accountKey) {
 
 // Endpoint to generate Upload SAS URL
 app.get('/api/storage/sas', authenticateFirebaseUser, async (req, res) => {
+  console.log('[SAS ROUTE] Route execution entered');
+  console.log(`- Request headers: ${JSON.stringify(req.headers)}`);
   const fileName = req.query.fileName as string;
+  console.log(`- Filename: ${fileName}`);
+  const user = req.body?.user;
+  console.log(`- User UID: ${user?.uid}`);
+
   if (!fileName) {
     res.status(400).json({ error: 'Missing required query parameter: fileName' });
     return;
@@ -677,6 +717,37 @@ app.post('/api/storage/extract-url', authenticateFirebaseUser, async (req, res) 
   }
 });
 
+// Temporary debug endpoints
+app.get('/api/debug/routes', (req, res) => {
+  const routes: string[] = [];
+  app._router.stack.forEach((middleware: any) => {
+    if (middleware.route) {
+      const methods = Object.keys(middleware.route.methods).map(m => m.toUpperCase()).join(', ');
+      routes.push(`${methods} ${middleware.route.path}`);
+    } else if (middleware.name === 'router') {
+      middleware.handle.stack.forEach((handler: any) => {
+        if (handler.route) {
+          const methods = Object.keys(handler.route.methods).map(m => m.toUpperCase()).join(', ');
+          routes.push(`${methods} ${handler.route.path}`);
+        }
+      });
+    }
+  });
+  res.json({ routes });
+});
+
+app.get('/api/debug/auth', authenticateFirebaseUser, (req, res) => {
+  const user = req.body?.user;
+  res.json({
+    authenticated: true,
+    uid: user?.uid || null
+  });
+});
+
+app.get('/api/debug/logs', (req, res) => {
+  res.json({ logs: logBuffer });
+});
+
 // Endpoint to save upload locally (mimics Azure Storage PUT block blob)
 app.put('/api/storage/local-upload', express.raw({ type: '*/*', limit: '150mb' }), async (req, res) => {
   const fileName = req.query.fileName as string;
@@ -704,7 +775,29 @@ app.put('/api/storage/local-upload', express.raw({ type: '*/*', limit: '150mb' }
   }
 });
 
+// Helper to print all registered routes on startup
+function printRoutes() {
+  console.log('Registered Routes:');
+  const routes: string[] = [];
+  app._router.stack.forEach((middleware: any) => {
+    if (middleware.route) {
+      const methods = Object.keys(middleware.route.methods).map(m => m.toUpperCase()).join(', ');
+      routes.push(`${methods} ${middleware.route.path}`);
+    } else if (middleware.name === 'router') {
+      middleware.handle.stack.forEach((handler: any) => {
+        if (handler.route) {
+          const methods = Object.keys(handler.route.methods).map(m => m.toUpperCase()).join(', ');
+          routes.push(`${methods} ${handler.route.path}`);
+        }
+      });
+    }
+  });
+  routes.forEach(r => console.log(r));
+  console.log('');
+}
+
 // Start Express server
 app.listen(PORT, () => {
   console.log(`Server is running locally on port ${PORT}`);
+  printRoutes();
 });

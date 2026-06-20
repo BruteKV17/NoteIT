@@ -1,6 +1,24 @@
 import { auth } from '../firebaseConfig';
 import { API_BASE_URL } from '../config';
 
+const logDiagnostic = (
+  method: string,
+  url: string,
+  tokenPresent: boolean,
+  status?: number,
+  body?: any
+) => {
+  console.log(`[FRONTEND REQUEST AUDIT]`);
+  console.log(`- API_BASE_URL: ${API_BASE_URL}`);
+  console.log(`- Endpoint URL: ${url}`);
+  console.log(`- Method: ${method}`);
+  console.log(`- Token Present: ${tokenPresent}`);
+  if (status !== undefined) {
+    console.log(`- Response Status: ${status}`);
+    console.log(`- Response Body:`, body);
+  }
+};
+
 export interface AzureSasResponse {
   uploadUrl: string;
   audioUrl: string;
@@ -12,15 +30,13 @@ export interface AzureSasResponse {
  */
 export const getAzureUploadSasUrl = async (fileName: string): Promise<AzureSasResponse> => {
   const currentUser = auth.currentUser;
-  console.log("getAzureUploadSasUrl: auth.currentUser =", currentUser);
   if (!currentUser) {
     throw new Error('User not authenticated with Firebase Auth.');
   }
   const idToken = await currentUser.getIdToken(true);
-  console.log("getAzureUploadSasUrl: token existence =", !!idToken);
-
   const requestUrl = `${API_BASE_URL}/api/storage/sas?fileName=${encodeURIComponent(fileName)}`;
-  console.log("getAzureUploadSasUrl: request URL =", requestUrl);
+  
+  logDiagnostic('GET', requestUrl, !!idToken);
 
   const response = await fetch(
     requestUrl,
@@ -33,18 +49,14 @@ export const getAzureUploadSasUrl = async (fileName: string): Promise<AzureSasRe
     }
   );
 
-  console.log(`[API Diagnostic] Base: ${API_BASE_URL}, Endpoint: ${requestUrl}, Status: ${response.status}`);
-
-  console.log("getAzureUploadSasUrl: response status =", response.status);
-
   if (!response.ok) {
     const errorText = await response.text();
-    console.log("getAzureUploadSasUrl: response body errorText =", errorText);
+    logDiagnostic('GET', requestUrl, !!idToken, response.status, errorText);
     throw new Error(`Backend SAS error: ${response.status} - ${errorText}`);
   }
 
   const responseBody = await response.json();
-  console.log("getAzureUploadSasUrl: response body =", responseBody);
+  logDiagnostic('GET', requestUrl, !!idToken, response.status, responseBody);
   return responseBody;
 };
 
@@ -96,15 +108,13 @@ export const uploadBlobToAzure = (
  */
 export const getAzureReadSasUrl = async (blobPath: string): Promise<string> => {
   const currentUser = auth.currentUser;
-  console.log("getAzureReadSasUrl: auth.currentUser =", currentUser);
   if (!currentUser) {
     throw new Error('User not authenticated with Firebase Auth.');
   }
   const idToken = await currentUser.getIdToken(true);
-  console.log("getAzureReadSasUrl: token existence =", !!idToken);
-
   const requestUrl = `${API_BASE_URL}/api/storage/read-sas?blobPath=${encodeURIComponent(blobPath)}`;
-  console.log("getAzureReadSasUrl: request URL =", requestUrl);
+
+  logDiagnostic('GET', requestUrl, !!idToken);
 
   const response = await fetch(
     requestUrl,
@@ -117,18 +127,14 @@ export const getAzureReadSasUrl = async (blobPath: string): Promise<string> => {
     }
   );
 
-  console.log(`[API Diagnostic] Base: ${API_BASE_URL}, Endpoint: ${requestUrl}, Status: ${response.status}`);
-
-  console.log("getAzureReadSasUrl: response status =", response.status);
-
   if (!response.ok) {
     const errorText = await response.text();
-    console.log("getAzureReadSasUrl: response body errorText =", errorText);
+    logDiagnostic('GET', requestUrl, !!idToken, response.status, errorText);
     throw new Error(`Backend read SAS error: ${response.status} - ${errorText}`);
   }
 
   const responseBody = await response.json();
-  console.log("getAzureReadSasUrl: response body =", responseBody);
+  logDiagnostic('GET', requestUrl, !!idToken, response.status, responseBody);
   return responseBody.readUrl;
 };
 
@@ -143,6 +149,8 @@ export const extractTextFromDocument = async (blobPath: string): Promise<string>
   const idToken = await currentUser.getIdToken(true);
 
   const requestUrl = `${API_BASE_URL}/api/storage/extract-text`;
+  logDiagnostic('POST', requestUrl, !!idToken);
+
   const response = await fetch(requestUrl, {
     method: 'POST',
     headers: {
@@ -152,14 +160,14 @@ export const extractTextFromDocument = async (blobPath: string): Promise<string>
     body: JSON.stringify({ blobPath })
   });
 
-  console.log(`[API Diagnostic] Base: ${API_BASE_URL}, Endpoint: ${requestUrl}, Status: ${response.status}`);
-
   if (!response.ok) {
     const errorText = await response.text();
+    logDiagnostic('POST', requestUrl, !!idToken, response.status, errorText);
     throw new Error(`Failed to extract text: ${response.status} - ${errorText}`);
   }
 
   const result = await response.json();
+  logDiagnostic('POST', requestUrl, !!idToken, response.status, result);
   return result.text;
 };
 
@@ -174,6 +182,8 @@ export const extractTextFromUrl = async (url: string, type: 'youtube' | 'website
   const idToken = await currentUser.getIdToken(true);
 
   const requestUrl = `${API_BASE_URL}/api/storage/extract-url`;
+  logDiagnostic('POST', requestUrl, !!idToken);
+
   const response = await fetch(requestUrl, {
     method: 'POST',
     headers: {
@@ -183,13 +193,14 @@ export const extractTextFromUrl = async (url: string, type: 'youtube' | 'website
     body: JSON.stringify({ url, type })
   });
 
-  console.log(`[API Diagnostic] Base: ${API_BASE_URL}, Endpoint: ${requestUrl}, Status: ${response.status}`);
-
   if (!response.ok) {
     const errorText = await response.text();
+    logDiagnostic('POST', requestUrl, !!idToken, response.status, errorText);
     throw new Error(`Failed to extract text from URL: ${response.status} - ${errorText}`);
   }
 
-  return await response.json();
+  const responseBody = await response.json();
+  logDiagnostic('POST', requestUrl, !!idToken, response.status, responseBody);
+  return responseBody;
 };
 
