@@ -195,6 +195,8 @@ export const generateStudyAssets = async (
     CRITICAL GROUNDING INSTRUCTION:
     Throughout the markdown text of the summary, notes, and flashcard answers, you MUST integrate inline citations referencing the source timestamps or pages in brackets where appropriate (e.g. '[Source: Timestamp 01:30]' or '[Source: Page 3]'). This is essential for verification.
     
+    CRITICAL FORMATTING RULE: For any mathematical equations, numbers, variables, or exponents, NEVER use caret notation (like '3^2', 'x^y', 'x^2', '2^n'). Instead, write them with actual superscript Unicode characters representing the power/exponent directly above the base (e.g., '3²', 'xʸ', 'x²', '2ⁿ'). Apply this rule strictly to all mathematical powers and exponents throughout the output.
+    
     1. Generate a structured knowledge document representing the summary of the lecture in clean Markdown format, containing exactly 10 headers:
        ### Executive Overview
        [Strategic high-level overview of the subject]
@@ -459,6 +461,8 @@ export const generateIngestedAssetsFromText = async (
     CRITICAL GROUNDING INSTRUCTION:
     Throughout the markdown text of the summary, notes, and flashcard answers, you MUST integrate inline citations referencing the source timestamps or pages in brackets where appropriate (e.g. '[Source: Timestamp 01:30]' or '[Source: Page 3]').
     
+    CRITICAL FORMATTING RULE: For any mathematical equations, numbers, variables, or exponents, NEVER use caret notation (like '3^2', 'x^y', 'x^2', '2^n'). Instead, write them with actual superscript Unicode characters representing the power/exponent directly above the base (e.g., '3²', 'xʸ', 'x²', '2ⁿ'). Apply this rule strictly to all mathematical powers and exponents throughout the output.
+    
     Raw Source Text:
     ${rawText.length > 20000 ? rawText.substring(0, 20000) + "\n[Text truncated for rapid processing...]" : rawText}
     
@@ -700,7 +704,7 @@ export const generateLectureContent = async (
 export const generateLectureContentFromText = async (
   extractedText: string,
   onBusy?: (isBusy: boolean) => void,
-  mode: 'academic' | 'executive' | 'revision' = 'academic',
+  mode: 'academic' | 'executive' | 'revision' | 'bhailang' = 'academic',
   onProgress?: (step: number, message: string) => void
 ): Promise<any> => {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
@@ -708,8 +712,8 @@ export const generateLectureContentFromText = async (
     throw new Error("Gemini API key is not configured in .env. Please configure VITE_GEMINI_API_KEY.");
   }
 
-  if (onProgress) onProgress(1, "Analyzing text and generating study workspace assets...");
-  const data = await generateIngestedAssetsFromText(extractedText, apiKey, mode, onBusy);
+  if (onProgress) onProgress(1, "Analyzing text and generating initial workspace chapters...");
+  const data = await generateInitialLectureAssets(extractedText, apiKey, onBusy);
 
   return {
     transcript: extractedText,
@@ -717,12 +721,7 @@ export const generateLectureContentFromText = async (
     sections: data.sections || [],
     timeline: data.timeline || [],
     sourceIntelligence: data.sourceIntelligence || null,
-    summary: data.summary || '',
-    notes: data.notes || [],
-    flashcards: data.flashcards || [],
-    quiz: data.quiz || [],
-    keyConcepts: data.keyConcepts || [],
-    weakTopics: data.weakTopics || []
+    keyConcepts: [] // Will generate Mindmap keyConcepts on demand
   };
 };
 
@@ -763,6 +762,7 @@ export const generateAdditionalQuizQuestions = async (
     Requirements:
     1. Every question must be generated directly from the provided source context. Avoid generic textbook questions.
     2. Every question must cite the exact section/topic or page from the source context it originated from (e.g., [Source: Section 2.1 - Vector Space] or [Source: Page 4, Paragraph 2]) inside the 'sourceCitation' field. Do not make up fake general filenames if specific sections or details are available in the context.
+    3. CRITICAL FORMATTING RULE: For any mathematical equations, numbers, variables, or exponents, NEVER use caret notation (like '3^2', 'x^y', 'x^2', '2^n'). Instead, write them with actual superscript Unicode characters representing the power/exponent directly above the base (e.g., '3²', 'xʸ', 'x²', '2ⁿ'). Apply this rule strictly to all mathematical powers and exponents throughout the output.
 
     For each question, you MUST include:
     - "type": one of ['mcq', 'true_false', 'fill_blank', 'match_following', 'assertion_reason', 'scenario_based']
@@ -1031,7 +1031,7 @@ export const askLectureAI = async (
 
 export const generateSummary = async (
   transcriptText: string,
-  mode: 'quick_revision' | 'detailed_notes' | 'executive_summary' | 'beginner_friendly' | 'academic_format',
+  mode: 'quick_revision' | 'detailed_notes' | 'executive_summary' | 'beginner_friendly' | 'academic_format' | 'bhailang',
   apiKey: string,
   onBusy?: (isBusy: boolean) => void
 ): Promise<string> => {
@@ -1052,6 +1052,9 @@ export const generateSummary = async (
     case 'academic_format':
       modeInstructions = 'Maintain a formal scientific, scholarly tone with rigorous academic language and research-oriented explanations.';
       break;
+    case 'bhailang':
+      modeInstructions = 'Style/Format Focus: BhaiLang (casual Hinglish). Explain the content in a very easy, friendly, and informal way in Hinglish (a mix of Hindi and English like "bhai iska mtlb ye ki tu..."). Use casual phrasing, Indian slang terms like "bhai", "yaar", "tu", "apna", "scena", etc., but keep the core concept technically accurate. Frame it as if an older friendly brother or college senior is explaining it to a junior.';
+      break;
   }
 
   const prompt = `
@@ -1062,6 +1065,8 @@ export const generateSummary = async (
     
     CRITICAL GROUNDING INSTRUCTION:
     Throughout the markdown text of the summary, you MUST integrate inline citations referencing the source timestamps (e.g. '[Source: Timestamp 01:30]') from the transcript. This is essential for verification.
+    
+    CRITICAL FORMATTING RULE: For any mathematical equations, numbers, variables, or exponents, NEVER use caret notation (like '3^2', 'x^y', 'x^2', '2^n'). Instead, write them with actual superscript Unicode characters representing the power/exponent directly above the base (e.g., '3²', 'xʸ', 'x²', '2ⁿ'). Apply this rule strictly to all mathematical powers and exponents throughout the output.
     
     You MUST structure the summary exactly with the following 10 Markdown headers:
     
@@ -1104,7 +1109,7 @@ export const generateSummary = async (
 
 export const generateNotes = async (
   transcriptText: string,
-  mode: 'quick' | 'detailed' | 'academic' | 'exam',
+  mode: 'quick' | 'detailed' | 'academic' | 'exam' | 'bhailang',
   apiKey: string,
   onBusy?: (isBusy: boolean) => void
 ): Promise<string> => {
@@ -1122,6 +1127,9 @@ export const generateNotes = async (
     case 'exam':
       modeInstructions = 'Generate Exam Notes. Focus on memory retention, formulas, cheat sheets, common pitfalls, and study guide questions with model answers.';
       break;
+    case 'bhailang':
+      modeInstructions = 'Style/Format Focus: BhaiLang (casual Hinglish). Explain the content in a very easy, friendly, and informal way in Hinglish (a mix of Hindi and English like "bhai iska mtlb ye ki tu..."). Use casual phrasing, Indian slang terms like "bhai", "yaar", "tu", "apna", "scena", etc., but keep the core concept technically accurate. Frame it as if an older friendly brother or college senior is explaining it to a junior.';
+      break;
   }
 
   const prompt = `
@@ -1133,6 +1141,8 @@ export const generateNotes = async (
     CRITICAL GROUNDING INSTRUCTION:
     Throughout the notes text, you MUST integrate inline citations referencing the source timestamps (e.g. '[Source: Timestamp 01:30]') from the transcript.
     
+    CRITICAL FORMATTING RULE: For any mathematical equations, numbers, variables, or exponents, NEVER use caret notation (like '3^2', 'x^y', 'x^2', '2^n'). Instead, write them with actual superscript Unicode characters representing the power/exponent directly above the base (e.g., '3²', 'xʸ', 'x²', '2ⁿ'). Apply this rule strictly to all mathematical powers and exponents throughout the output.
+    
     Structure your notes cleanly with professional Markdown syntax (headings, bullet points, code blocks for equations). Return raw Markdown content. Do not output JSON.
     
     Transcript:
@@ -1140,6 +1150,67 @@ export const generateNotes = async (
   `;
 
   return executeGeminiCall(prompt, apiKey, undefined, undefined, onBusy);
+};
+
+export const generateStructuredNotes = async (
+  transcriptText: string,
+  mode: 'academic' | 'executive' | 'revision' | 'bhailang',
+  apiKey: string,
+  onBusy?: (isBusy: boolean) => void
+): Promise<any[]> => {
+  let modeInstructions = '';
+  switch (mode) {
+    case 'academic':
+      modeInstructions = 'Generate highly detailed academic notes. Maintain a formal scientific, scholarly tone with rigorous academic language and research-oriented explanations.';
+      break;
+    case 'executive':
+      modeInstructions = 'Generate concise, professional notes focused on strategic recommendations, metrics, and actionable deliverables.';
+      break;
+    case 'revision':
+      modeInstructions = 'Generate high-yield notes optimized for memory retention, cheat sheets, common pitfalls, and study guide questions with model answers.';
+      break;
+    case 'bhailang':
+      modeInstructions = 'Style/Format Focus: BhaiLang (casual Hinglish). Explain the content in a very easy, friendly, and informal way in Hinglish (a mix of Hindi and English like "bhai iska mtlb ye ki tu..."). Use casual phrasing, Indian slang terms like "bhai", "yaar", "tu", "apna", "scena", etc., but keep the core concept technically accurate. Frame it as if an older friendly brother or college senior is explaining it to a junior.';
+      break;
+  }
+
+  const prompt = `
+    You are an expert academic tutor. Generate a premium structured note document based on the following lecture transcript.
+    
+    Selected Notes Mode: ${mode}
+    Style Instructions: ${modeInstructions}
+    
+    CRITICAL GROUNDING INSTRUCTION:
+    Throughout the notes text, you MUST integrate inline citations referencing the source timestamps (e.g. '[Source: Timestamp 01:30]') from the transcript.
+    
+    CRITICAL FORMATTING RULE: For any mathematical equations, numbers, variables, or exponents, NEVER use caret notation (like '3^2', 'x^y', 'x^2', '2^n'). Instead, write them with actual superscript Unicode characters representing the power/exponent directly above the base (e.g., '3²', 'xʸ', 'x²', '2ⁿ'). Apply this rule strictly to all mathematical powers and exponents throughout the output.
+    
+    Transcript:
+    ${transcriptText}
+    
+    Return the result STRICTLY as a JSON object with a 'notes' array of objects containing 'title' and 'content' keys.
+  `;
+
+  const schema = {
+    type: 'OBJECT',
+    properties: {
+      notes: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          properties: {
+            title: { type: 'STRING' },
+            content: { type: 'STRING' }
+          },
+          required: ['title', 'content']
+        }
+      }
+    },
+    required: ['notes']
+  };
+
+  const res = await executeGeminiCall(prompt, apiKey, undefined, schema, onBusy);
+  return res.notes || [];
 };
 
 export const generateFlashcards = async (
@@ -1163,6 +1234,8 @@ export const generateFlashcards = async (
     
     CRITICAL GROUNDING INSTRUCTION:
     Throughout the answers of the flashcards, you MUST integrate inline citations referencing the source timestamps (e.g. '[Source: Timestamp 01:30]') from the transcript.
+    
+    CRITICAL FORMATTING RULE: For any mathematical equations, numbers, variables, or exponents, NEVER use caret notation (like '3^2', 'x^y', 'x^2', '2^n'). Instead, write them with actual superscript Unicode characters representing the power/exponent directly above the base (e.g., '3²', 'xʸ', 'x²', '2ⁿ'). Apply this rule strictly to all mathematical powers and exponents throughout the output.
     
     Return the response STRICTLY as a JSON object with a 'flashcards' array, where each card contains:
     - 'q': The question/prompt (string)
@@ -1212,6 +1285,8 @@ export const generateQuiz = async (
     - 5 Application questions (questions testing practical calculations, formulas, or applications)
     
     Every question must be generated directly from the source context. Every question must cite the exact timestamp from the source transcript (e.g. '[Source: Timestamp 01:15]') inside the 'sourceCitation' field.
+    
+    CRITICAL FORMATTING RULE: For any mathematical equations, numbers, variables, or exponents, NEVER use caret notation (like '3^2', 'x^y', 'x^2', '2^n'). Instead, write them with actual superscript Unicode characters representing the power/exponent directly above the base (e.g., '3²', 'xʸ', 'x²', '2ⁿ'). Apply this rule strictly to all mathematical powers and exponents throughout the output.
     
     For each question, you MUST include:
     - "question": string
@@ -1268,6 +1343,8 @@ export const generateMoreQuestions = async (
     ${existingQuestions.map((q, idx) => `${idx + 1}. ${q}`).join('\n')}
     
     Every question must cite the exact timestamp from the source transcript (e.g. '[Source: Timestamp 01:15]') inside the 'sourceCitation' field.
+    
+    CRITICAL FORMATTING RULE: For any mathematical equations, numbers, variables, or exponents, NEVER use caret notation (like '3^2', 'x^y', 'x^2', '2^n'). Instead, write them with actual superscript Unicode characters representing the power/exponent directly above the base (e.g., '3²', 'xʸ', 'x²', '2ⁿ'). Apply this rule strictly to all mathematical powers and exponents throughout the output.
     
     For each question, you MUST include:
     - "question": string

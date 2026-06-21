@@ -117,8 +117,8 @@ export default function LectureCaptureView({
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   
   // Format / Mode selectors
-  const [selectedNotesMode, setSelectedNotesMode] = useState<'quick' | 'detailed' | 'academic' | 'exam'>('quick');
-  const [selectedSummaryMode, setSelectedSummaryMode] = useState<'quick_revision' | 'detailed_notes' | 'executive_summary' | 'beginner_friendly' | 'academic_format'>('quick_revision');
+  const [selectedNotesMode, setSelectedNotesMode] = useState<'quick' | 'detailed' | 'academic' | 'exam' | 'bhailang'>('quick');
+  const [selectedSummaryMode, setSelectedSummaryMode] = useState<'quick_revision' | 'detailed_notes' | 'executive_summary' | 'beginner_friendly' | 'academic_format' | 'bhailang'>('quick_revision');
   const [flashcardsFormat, setFlashcardsFormat] = useState<'basic' | 'advanced'>('basic');
   const [selectedFlashcardCategory, setSelectedFlashcardCategory] = useState<'All' | 'Basic Recall' | 'Concept Understanding' | 'Application Based'>('All');
   const [selectedQuizDifficulty, setSelectedQuizDifficulty] = useState<'easy' | 'medium' | 'hard' | 'scenario' | 'application'>('easy');
@@ -765,7 +765,7 @@ export default function LectureCaptureView({
   };
 
   // Dynamic On-Demand Asset Generators
-  const triggerGenerateNotes = async (mode: 'quick' | 'detailed' | 'academic' | 'exam') => {
+  const triggerGenerateNotes = async (mode: 'quick' | 'detailed' | 'academic' | 'exam' | 'bhailang') => {
     const activeLecture = lectures.find(l => l.id === activeLectureId);
     if (!activeLecture || isGeneratingNotes) return;
     const uid = auth.currentUser?.uid;
@@ -789,7 +789,7 @@ export default function LectureCaptureView({
     }
   };
 
-  const triggerGenerateSummary = async (mode: 'quick_revision' | 'detailed_notes' | 'executive_summary' | 'beginner_friendly' | 'academic_format') => {
+  const triggerGenerateSummary = async (mode: 'quick_revision' | 'detailed_notes' | 'executive_summary' | 'beginner_friendly' | 'academic_format' | 'bhailang') => {
     const activeLecture = lectures.find(l => l.id === activeLectureId);
     if (!activeLecture || isGeneratingSummary) return;
     const uid = auth.currentUser?.uid;
@@ -1198,7 +1198,8 @@ export default function LectureCaptureView({
                         { mode: 'quick', label: 'Quick Notes' },
                         { mode: 'detailed', label: 'Detailed Notes' },
                         { mode: 'academic', label: 'Academic Notes' },
-                        { mode: 'exam', label: 'Exam Notes' }
+                        { mode: 'exam', label: 'Exam Notes' },
+                        { mode: 'bhailang', label: 'BhaiLang' }
                       ] as const).map(nOpt => (
                         <button
                           key={nOpt.mode}
@@ -1264,7 +1265,8 @@ export default function LectureCaptureView({
                         { mode: 'detailed_notes', label: 'Detailed Notes' },
                         { mode: 'executive_summary', label: 'Executive Summary' },
                         { mode: 'beginner_friendly', label: 'Beginner Friendly' },
-                        { mode: 'academic_format', label: 'Academic Format' }
+                        { mode: 'academic_format', label: 'Academic Format' },
+                        { mode: 'bhailang', label: 'BhaiLang' }
                       ] as const).map(sf => (
                         <button
                           key={sf.mode}

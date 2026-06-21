@@ -41,7 +41,7 @@ import {
 import { db, auth } from '../firebaseConfig';
 import { API_BASE_URL } from '../config';
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp, query, orderBy, onSnapshot } from 'firebase/firestore';
-import { generateLectureContentFromText } from '../services/gemini';
+import { generateLectureContentFromText, generateStructuredNotes, generateSummary, generateFlashcards, generateQuiz, generateMoreQuestions, generateMindmap } from '../services/gemini';
 import { getAzureUploadSasUrl, uploadBlobToAzure, extractTextFromDocument, extractTextFromUrl } from '../services/azure';
 import pptxgen from 'pptxgenjs';
 import BruteLoader from './BruteLoader';
@@ -129,8 +129,12 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
 
   // Output Studio state
   const [activeOutputTab, setActiveOutputTab] = useState<'notes' | 'summary' | 'flashcards' | 'quiz' | 'mindmap' | 'slides' | 'podcast' | 'infographics'>('notes');
-  const [notesFormat, setNotesFormat] = useState<'academic' | 'executive' | 'revision'>('academic');
-  const [summaryFormat, setSummaryFormat] = useState<'academic' | 'revision' | 'executive' | 'beginner'>('academic');
+  const [notesFormat, setNotesFormat] = useState<'academic' | 'executive' | 'revision' | 'bhailang'>('academic');
+  const [summaryFormat, setSummaryFormat] = useState<'academic' | 'revision' | 'executive' | 'beginner' | 'bhailang'>('academic');
+  const [isGeneratingNotes, setIsGeneratingNotes] = useState(false);
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [isGeneratingFlashcards, setIsGeneratingFlashcards] = useState(false);
+  const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
   const [flashcardsFormat, setFlashcardsFormat] = useState<'basic' | 'advanced' | 'exam'>('basic');
   const [quizFormat, setQuizFormat] = useState<'mcq' | 'subjective' | 'case'>('mcq');
   const [showTranscript, setShowTranscript] = useState(true);
@@ -194,6 +198,212 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
   // Mindmap Interactive Drawer
   const [selectedMindmapNode, setSelectedMindmapNode] = useState<any | null>(null);
   
+  const [isGeneratingMindmap, setIsGeneratingMindmap] = useState(false);
+
+  const activeSource = sources.find(s => s.id === activeSourceId);
+
+  // Helper functions to retrieve active formatted content with legacy fallback
+  const getActiveNotes = () => {
+    if (!activeSource) return [];
+    const key = `notes_${notesFormat}`;
+    if (activeSource[key] && activeSource[key].length > 0) {
+      return activeSource[key];
+    }
+    // Fallback to legacy notes field if the mode matches selectedMode
+    if (notesFormat === (activeSource.selectedMode || 'academic') && activeSource.notes && activeSource.notes.length > 0) {
+      return activeSource.notes;
+    }
+    return [];
+  };
+
+  const getActiveSummary = () => {
+    if (!activeSource) return '';
+    const key = `summary_${summaryFormat}`;
+    if (activeSource[key] && activeSource[key].trim().length > 0) {
+      return activeSource[key];
+    }
+    // Fallback to legacy summary field if the mode matches selectedSummaryMode
+    const activeSummaryMode = activeSource.selectedSummaryMode || 'academic';
+    const isMatch = (summaryFormat === 'academic' && activeSummaryMode === 'academic') || 
+                    (summaryFormat === 'revision' && activeSummaryMode === 'revision') ||
+                    (summaryFormat === 'executive' && activeSummaryMode === 'executive') ||
+                    (summaryFormat === 'beginner' && activeSummaryMode === 'beginner') ||
+                    (summaryFormat === 'bhailang' && activeSummaryMode === 'bhailang');
+    if (isMatch && activeSource.summary && activeSource.summary.trim().length > 0) {
+      return activeSource.summary;
+    }
+    return '';
+  };
+
+  const triggerGenerateNotes = async (format: 'academic' | 'executive' | 'revision' | 'bhailang') => {
+    if (!activeSourceId || !userId || !activeSource || isGeneratingNotes) return;
+    setIsGeneratingNotes(true);
+    try {
+      const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
+      const notesData = await generateStructuredNotes(
+        activeSource.content || activeSource.transcript || '',
+        format,
+        apiKey
+      );
+      const docRef = doc(db, 'users', userId, 'sources', activeSourceId);
+      await updateDoc(docRef, {
+        [`notes_${format}`]: notesData,
+        selectedMode: format
+      });
+    } catch (err: any) {
+      console.error("Failed to generate notes:", err);
+      setImportError(`Failed to generate notes: ${err.message || err}`);
+    } finally {
+      setIsGeneratingNotes(false);
+    }
+  };
+
+  const triggerGenerateSummary = async (format: 'academic' | 'revision' | 'executive' | 'beginner' | 'bhailang') => {
+    if (!activeSourceId || !userId || !activeSource || isGeneratingSummary) return;
+    setIsGeneratingSummary(true);
+    try {
+      const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
+      let serviceMode: 'quick_revision' | 'detailed_notes' | 'executive_summary' | 'beginner_friendly' | 'academic_format' | 'bhailang' = 'academic_format';
+      if (format === 'academic') serviceMode = 'academic_format';
+      else if (format === 'revision') serviceMode = 'quick_revision';
+      else if (format === 'executive') serviceMode = 'executive_summary';
+      else if (format === 'beginner') serviceMode = 'beginner_friendly';
+      else if (format === 'bhailang') serviceMode = 'bhailang';
+
+      const summaryText = await generateSummary(
+        activeSource.content || activeSource.transcript || '',
+        serviceMode,
+        apiKey
+      );
+      const docRef = doc(db, 'users', userId, 'sources', activeSourceId);
+      await updateDoc(docRef, {
+        [`summary_${format}`]: summaryText,
+        selectedSummaryMode: format
+      });
+    } catch (err: any) {
+      console.error("Failed to generate summary:", err);
+      setImportError(`Failed to generate summary: ${err.message || err}`);
+    } finally {
+      setIsGeneratingSummary(false);
+    }
+  };
+
+  const triggerGenerateFlashcards = async () => {
+    if (!activeSourceId || !userId || !activeSource || isGeneratingFlashcards) return;
+    setIsGeneratingFlashcards(true);
+    try {
+      const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
+      const textContent = activeSource.content || activeSource.transcript || '';
+      const textLen = textContent.length;
+      const count = textLen < 3000 ? 15 : textLen < 10000 ? 30 : 50;
+
+      const generated = await generateFlashcards(textContent, count, [], apiKey);
+      const docRef = doc(db, 'users', userId, 'sources', activeSourceId);
+      await updateDoc(docRef, {
+        flashcards: generated
+      });
+    } catch (err: any) {
+      console.error("Failed to generate flashcards:", err);
+      setImportError(`Failed to generate flashcards: ${err.message || err}`);
+    } finally {
+      setIsGeneratingFlashcards(false);
+    }
+  };
+
+  const triggerGenerateQuiz = async () => {
+    if (!activeSourceId || !userId || !activeSource || isGeneratingQuiz) return;
+    setIsGeneratingQuiz(true);
+    try {
+      const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
+      const textContent = activeSource.content || activeSource.transcript || '';
+      const generated = await generateQuiz(textContent, apiKey);
+      const docRef = doc(db, 'users', userId, 'sources', activeSourceId);
+      await updateDoc(docRef, {
+        quiz: generated
+      });
+    } catch (err: any) {
+      console.error("Failed to generate quiz:", err);
+      setImportError(`Failed to generate quiz: ${err.message || err}`);
+    } finally {
+      setIsGeneratingQuiz(false);
+    }
+  };
+
+  const triggerGenerateMoreQuiz = async () => {
+    if (!activeSourceId || !userId || !activeSource || isGeneratingQuiz) return;
+    setIsGeneratingQuiz(true);
+    try {
+      const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
+      const textContent = activeSource.content || activeSource.transcript || '';
+      const existing = activeSource.quiz || [];
+      const questionTexts = existing.map((q: any) => q.question);
+
+      const generated = await generateMoreQuestions(textContent, 'medium', questionTexts, apiKey);
+      const docRef = doc(db, 'users', userId, 'sources', activeSourceId);
+      await updateDoc(docRef, {
+        quiz: [...existing, ...generated]
+      });
+    } catch (err: any) {
+      console.error("Failed to generate more quiz questions:", err);
+      setImportError(`Failed to generate more questions: ${err.message || err}`);
+    } finally {
+      setIsGeneratingQuiz(false);
+    }
+  };
+
+  const triggerGenerateMindmap = async () => {
+    if (!activeSourceId || !userId || !activeSource || isGeneratingMindmap) return;
+    setIsGeneratingMindmap(true);
+    try {
+      const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
+      const textContent = activeSource.content || activeSource.transcript || '';
+      const sections = activeSource.sections || [];
+
+      const generated = await generateMindmap(textContent, sections, apiKey);
+      const docRef = doc(db, 'users', userId, 'sources', activeSourceId);
+      await updateDoc(docRef, {
+        keyConcepts: generated
+      });
+    } catch (err: any) {
+      console.error("Failed to generate mind map:", err);
+      setImportError(`Failed to generate mind map: ${err.message || err}`);
+    } finally {
+      setIsGeneratingMindmap(false);
+    }
+  };
+
+  // Automatic on-demand assets generation and caching
+  useEffect(() => {
+    if (!activeSourceId || !activeSource) return;
+
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+    if (!apiKey) return;
+
+    if (activeOutputTab === 'notes') {
+      const currentNotes = getActiveNotes();
+      if (currentNotes.length === 0 && !isGeneratingNotes) {
+        triggerGenerateNotes(notesFormat);
+      }
+    } else if (activeOutputTab === 'summary') {
+      const currentSummary = getActiveSummary();
+      if (currentSummary.trim().length === 0 && !isGeneratingSummary) {
+        triggerGenerateSummary(summaryFormat);
+      }
+    } else if (activeOutputTab === 'flashcards') {
+      if ((!activeSource.flashcards || activeSource.flashcards.length === 0) && !isGeneratingFlashcards) {
+        triggerGenerateFlashcards();
+      }
+    } else if (activeOutputTab === 'quiz') {
+      if ((!activeSource.quiz || activeSource.quiz.length === 0) && !isGeneratingQuiz) {
+        triggerGenerateQuiz();
+      }
+    } else if (activeOutputTab === 'mindmap') {
+      if ((!activeSource.keyConcepts || activeSource.keyConcepts.length === 0) && !isGeneratingMindmap) {
+        triggerGenerateMindmap();
+      }
+    }
+  }, [activeOutputTab, activeSourceId, notesFormat, summaryFormat, activeSource, isGeneratingNotes, isGeneratingSummary, isGeneratingFlashcards, isGeneratingQuiz, isGeneratingMindmap]);
+
   // Quiz gameplay state
   const [activeQuizQuestionIdx, setActiveQuizQuestionIdx] = useState(0);
   const [selectedQuizAnswerIdx, setSelectedQuizAnswerIdx] = useState<number | null>(null);
@@ -291,8 +501,6 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
     }
   }, [activeSourceId, sources]);
 
-  const activeSource = sources.find(s => s.id === activeSourceId);
-
   // Helper to get Source Type Icon
   const getSourceIcon = (srcType: string) => {
     switch (srcType) {
@@ -385,19 +593,6 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
 
       const aiData = await generateLectureContentFromText(extractedText, undefined, notesFormat);
       
-      // Build slide deck structures
-      const presentationSlides = aiData.notes?.map((n: any, idx: number) => ({
-        title: n.title,
-        bulletPoints: n.content.split('\n').filter((l: string) => l.trim().startsWith('-')).map((l: string) => l.replace(/^-\s*/, '')),
-        speakerNotes: `Presenter remarks for slide ${idx + 1}: covers key themes in ${n.title}`,
-        visualSuggestions: `A neat graphical flow mapping core definitions in ${n.title}`,
-        keyTakeaways: n.title,
-        references: name
-      })) || [];
-
-      // Generate Podcast script
-      const script = `Professor: Welcome back, class. Today we are exploring some key insights from our source, ${name}.\nStudent: That's right! Specifically looking at the central mechanics and how they interact.\nProfessor: Let's start with the key terms. We have some essential concepts we must define first.`;
-
       setUploadProgress(95);
       setProcessingStatus('Completing RAG Sync...');
       await updateDoc(docRef, { progress: 95 });
@@ -406,14 +601,20 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
       await updateDoc(docRef, {
         status: 'ready',
         selectedMode: notesFormat,
+        selectedSummaryMode: 'academic',
         content: extractedText,
-        summary: aiData.summary || 'Summary placeholder text.',
-        notes: aiData.notes || [],
-        flashcards: aiData.flashcards || [],
-        quiz: aiData.quiz || [],
-        keyConcepts: aiData.keyConcepts || [],
-        slides: presentationSlides,
-        podcastScript: script
+        transcript: extractedText,
+        cleanTranscript: aiData.cleanTranscript || extractedText,
+        sections: aiData.sections || [],
+        timeline: aiData.timeline || [],
+        sourceIntelligence: aiData.sourceIntelligence || null,
+        summary: '',
+        notes: [],
+        flashcards: [],
+        quiz: [],
+        keyConcepts: [],
+        slides: [],
+        podcastScript: ''
       });
 
       // Call grounding engine
@@ -497,18 +698,6 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
 
       const aiData = await generateLectureContentFromText(extractedText, undefined, notesFormat);
       
-      // Build slide deck structures
-      const presentationSlides = aiData.notes?.map((n: any, idx: number) => ({
-        title: n.title,
-        bulletPoints: n.content.split('\n').filter((l: string) => l.trim().startsWith('-')).map((l: string) => l.replace(/^-\s*/, '')),
-        speakerNotes: `Presenter remarks for slide ${idx + 1}: covers key themes in ${n.title}`,
-        visualSuggestions: `A neat graphical flow mapping core definitions in ${n.title}`,
-        keyTakeaways: n.title,
-        references: title
-      })) || [];
-
-      const script = `Professor: Welcome back, class. Today we are exploring some key insights from our source, ${title}.\nStudent: That's right! Specifically looking at the central mechanics and how they interact.\nProfessor: Let's start with the key terms. We have some essential concepts we must define first.`;
-
       setUploadProgress(95);
       setProcessingStatus('Completing RAG Sync...');
       await updateDoc(docRef, { progress: 95 });
@@ -517,14 +706,20 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
       await updateDoc(docRef, {
         status: 'ready',
         selectedMode: notesFormat,
+        selectedSummaryMode: 'academic',
         content: extractedText,
-        summary: aiData.summary || 'Summary placeholder text.',
-        notes: aiData.notes || [],
-        flashcards: aiData.flashcards || [],
-        quiz: aiData.quiz || [],
-        keyConcepts: aiData.keyConcepts || [],
-        slides: presentationSlides,
-        podcastScript: script
+        transcript: extractedText,
+        cleanTranscript: aiData.cleanTranscript || extractedText,
+        sections: aiData.sections || [],
+        timeline: aiData.timeline || [],
+        sourceIntelligence: aiData.sourceIntelligence || null,
+        summary: '',
+        notes: [],
+        flashcards: [],
+        quiz: [],
+        keyConcepts: [],
+        slides: [],
+        podcastScript: ''
       });
 
       // Call grounding engine
@@ -593,33 +788,27 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
 
       const aiData = await generateLectureContentFromText(text, undefined, notesFormat);
 
-      const presentationSlides = aiData.notes?.map((n: any, idx: number) => ({
-        title: n.title,
-        bulletPoints: n.content.split('\n').filter((l: string) => l.trim().startsWith('-')).map((l: string) => l.replace(/^-\s*/, '')),
-        speakerNotes: `Key review for slides on ${n.title}`,
-        visualSuggestions: `Concept map for ${n.title}`,
-        keyTakeaways: n.title,
-        references: title
-      })) || [];
-
-      const script = `Professor: Hello everyone. Let's study the imported web resource, ${title}.\nStudent: It details fascinating parameters about this subject.\nProfessor: Indeed, let's dissect the core findings.`;
-
       const updatePayload: any = {
         title: title,
         content: text,
         selectedMode: notesFormat,
-        summary: aiData.summary || 'Summary of url content.',
-        notes: aiData.notes || [],
-        flashcards: aiData.flashcards || [],
-        quiz: aiData.quiz || [],
-        keyConcepts: aiData.keyConcepts || [],
-        slides: presentationSlides,
-        podcastScript: script
+        selectedSummaryMode: 'academic',
+        transcript: text,
+        cleanTranscript: aiData.cleanTranscript || text,
+        sections: aiData.sections || [],
+        timeline: aiData.timeline || [],
+        sourceIntelligence: aiData.sourceIntelligence || null,
+        summary: '',
+        notes: [],
+        flashcards: [],
+        quiz: [],
+        keyConcepts: [],
+        slides: [],
+        podcastScript: ''
       };
 
       if (type === 'youtube') {
         updatePayload.sourceType = 'youtube';
-        updatePayload.transcript = text;
         updatePayload.status = 'indexed';
       } else {
         updatePayload.status = 'ready';
@@ -689,28 +878,23 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
 
         const aiData = await generateLectureContentFromText(matchedFile.content, undefined, notesFormat);
 
-        const presentationSlides = aiData.notes?.map((n: any, idx: number) => ({
-          title: n.title,
-          bulletPoints: n.content.split('\n').filter((l: string) => l.trim().startsWith('-')).map((l: string) => l.replace(/^-\s*/, '')),
-          speakerNotes: `Slide details covering: ${n.title}`,
-          visualSuggestions: `Interactive diagram for: ${n.title}`,
-          keyTakeaways: n.title,
-          references: matchedFile.name
-        })) || [];
-
-        const script = `Professor: Good morning. Let's do a briefing on ${matchedFile.name}.\nStudent: The structure outlined here is direct.\nProfessor: Absolutely. Let's go over the key elements.`;
-
         await updateDoc(docRef, {
           status: 'ready',
           selectedMode: notesFormat,
+          selectedSummaryMode: 'academic',
           content: matchedFile.content,
-          summary: aiData.summary || 'Summary of drive file.',
-          notes: aiData.notes || [],
-          flashcards: aiData.flashcards || [],
-          quiz: aiData.quiz || [],
-          keyConcepts: aiData.keyConcepts || [],
-          slides: presentationSlides,
-          podcastScript: script
+          transcript: matchedFile.content,
+          cleanTranscript: aiData.cleanTranscript || matchedFile.content,
+          sections: aiData.sections || [],
+          timeline: aiData.timeline || [],
+          sourceIntelligence: aiData.sourceIntelligence || null,
+          summary: '',
+          notes: [],
+          flashcards: [],
+          quiz: [],
+          keyConcepts: [],
+          slides: [],
+          podcastScript: ''
         });
 
         setActiveSourceId(docId);
@@ -776,33 +960,27 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
 
       const aiData = await generateLectureContentFromText(text, undefined, notesFormat);
 
-      const presentationSlides = aiData.notes?.map((n: any, idx: number) => ({
-        title: n.title,
-        bulletPoints: n.content.split('\n').filter((l: string) => l.trim().startsWith('-')).map((l: string) => l.replace(/^-\s*/, '')),
-        speakerNotes: `Key review for slides on ${n.title}`,
-        visualSuggestions: `Concept map for ${n.title}`,
-        keyTakeaways: n.title,
-        references: title
-      })) || [];
-
-      const script = `Professor: Hello everyone. Let's study the imported web resource, ${title}.\nStudent: It details fascinating parameters about this subject.\nProfessor: Indeed, let's dissect the core findings.`;
-
       const updatePayload: any = {
         title: title,
         content: text,
         selectedMode: notesFormat,
-        summary: aiData.summary || 'Summary of url content.',
-        notes: aiData.notes || [],
-        flashcards: aiData.flashcards || [],
-        quiz: aiData.quiz || [],
-        keyConcepts: aiData.keyConcepts || [],
-        slides: presentationSlides,
-        podcastScript: script
+        selectedSummaryMode: 'academic',
+        transcript: text,
+        cleanTranscript: aiData.cleanTranscript || text,
+        sections: aiData.sections || [],
+        timeline: aiData.timeline || [],
+        sourceIntelligence: aiData.sourceIntelligence || null,
+        summary: '',
+        notes: [],
+        flashcards: [],
+        quiz: [],
+        keyConcepts: [],
+        slides: [],
+        podcastScript: ''
       };
 
       if (urlType === 'youtube') {
         updatePayload.sourceType = 'youtube';
-        updatePayload.transcript = text;
         updatePayload.status = 'indexed';
       } else {
         updatePayload.status = 'ready';
@@ -955,28 +1133,23 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
 
       const aiData = await generateLectureContentFromText(driveFile.content, undefined, notesFormat);
 
-      const presentationSlides = aiData.notes?.map((n: any, idx: number) => ({
-        title: n.title,
-        bulletPoints: n.content.split('\n').filter((l: string) => l.trim().startsWith('-')).map((l: string) => l.replace(/^-\s*/, '')),
-        speakerNotes: `Slide details covering: ${n.title}`,
-        visualSuggestions: `Interactive diagram for: ${n.title}`,
-        keyTakeaways: n.title,
-        references: driveFile.name
-      })) || [];
-
-      const script = `Professor: Good morning. Let's do a briefing on ${driveFile.name}.\nStudent: The structure outlined here is direct.\nProfessor: Absolutely. Let's go over the key elements.`;
-
       await updateDoc(doc(db, 'users', userId, 'sources', docRef.id), {
         status: 'ready',
         selectedMode: notesFormat,
+        selectedSummaryMode: 'academic',
         content: driveFile.content,
-        summary: aiData.summary || 'Summary of drive file.',
-        notes: aiData.notes || [],
-        flashcards: aiData.flashcards || [],
-        quiz: aiData.quiz || [],
-        keyConcepts: aiData.keyConcepts || [],
-        slides: presentationSlides,
-        podcastScript: script
+        transcript: driveFile.content,
+        cleanTranscript: aiData.cleanTranscript || driveFile.content,
+        sections: aiData.sections || [],
+        timeline: aiData.timeline || [],
+        sourceIntelligence: aiData.sourceIntelligence || null,
+        summary: '',
+        notes: [],
+        flashcards: [],
+        quiz: [],
+        keyConcepts: [],
+        slides: [],
+        podcastScript: ''
       });
 
       setActiveSourceId(docRef.id);
@@ -2758,27 +2931,28 @@ ${queryText}`;
                 
                 {/* 1. NOTES TAB */}
                 {activeOutputTab === 'notes' && (
-                  <div className="space-y-3">
+                  <div className="space-y-3 animate-fade-in">
                     <div className="flex items-center justify-between">
                       <div className="flex gap-1">
-                        {(['academic', 'executive', 'revision'] as const).map(f => (
+                        {(['academic', 'executive', 'revision', 'bhailang'] as const).map(f => (
                           <button
                             key={f}
-                            onClick={() => handleFormatChange(f)}
+                            onClick={() => setNotesFormat(f)}
                             className={`px-2.5 py-1 rounded-lg text-[9px] font-extrabold uppercase ${
                               notesFormat === f ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-455'
                             }`}
                           >
-                            {f}
+                            {f === 'bhailang' ? 'BhaiLang' : f}
                           </button>
                         ))}
                       </div>
                       <button
                         onClick={() => {
-                          setPdfExportData({ title: `${activeSource.title} - Notes`, data: activeSource.notes });
+                          setPdfExportData({ title: `${activeSource.title} - ${notesFormat} Notes`, data: getActiveNotes() });
                           setShowPdfModal(true);
                         }}
-                        className="flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:underline cursor-pointer"
+                        disabled={getActiveNotes().length === 0}
+                        className="flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:underline cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Download className="h-3 w-3" />
                         <span>Export PDF</span>
@@ -2786,29 +2960,59 @@ ${queryText}`;
                     </div>
 
                     <div className="space-y-3">
-                      {activeSource.notes && activeSource.notes.map((n: any, i: number) => (
-                        <div key={i} className={`p-4 rounded-xl border font-sans ${theme === 'dark' ? 'bg-[#121318] border-neutral-905' : 'bg-white border-gray-200'}`}>
-                          <h4 className="text-xs font-black text-indigo-400">{n.title}</h4>
-                          <p className={`text-[11.5px] mt-2 leading-relaxed whitespace-pre-wrap ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-700'}`}>
-                            {renderTextWithCitations(cleanMarkdownText(n.content))}
-                          </p>
+                      {isGeneratingNotes ? (
+                        <div className="py-16 flex flex-col items-center justify-center border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5">
+                          <BruteLoader size="md" message={`Generating ${notesFormat} notes...`} />
                         </div>
-                      ))}
+                      ) : getActiveNotes().length > 0 ? (
+                        getActiveNotes().map((n: any, i: number) => (
+                          <div key={i} className={`p-4 rounded-xl border font-sans ${theme === 'dark' ? 'bg-[#121318] border-neutral-905' : 'bg-white border-gray-200'}`}>
+                            <h4 className="text-xs font-black text-indigo-400">{n.title}</h4>
+                            <p className={`text-[11.5px] mt-2 leading-relaxed whitespace-pre-wrap ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-700'}`}>
+                              {renderTextWithCitations(cleanMarkdownText(n.content))}
+                            </p>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-16 border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4">
+                          <FileText className="h-10 w-10 text-neutral-600 mx-auto animate-pulse" />
+                          <h4 className="text-xs font-bold text-neutral-400">Notes have not been generated yet.</h4>
+                          <button
+                            onClick={() => triggerGenerateNotes(notesFormat)}
+                            className="px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
+                          >
+                            Generate {notesFormat} Notes
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
 
                 {/* 2. SUMMARY TAB */}
                 {activeOutputTab === 'summary' && (
-                  <div className="space-y-3">
+                  <div className="space-y-3 animate-fade-in">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-indigo-400 font-mono uppercase">Structured Summary</span>
+                      <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none max-w-full">
+                        {(['academic', 'revision', 'executive', 'beginner', 'bhailang'] as const).map(f => (
+                          <button
+                            key={f}
+                            onClick={() => setSummaryFormat(f)}
+                            className={`px-2.5 py-1 rounded-lg text-[9px] font-extrabold uppercase whitespace-nowrap ${
+                              summaryFormat === f ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-455'
+                            }`}
+                          >
+                            {f === 'bhailang' ? 'BhaiLang' : f}
+                          </button>
+                        ))}
+                      </div>
                       <button
                         onClick={() => {
-                          setPdfExportData({ title: `${activeSource.title} - Summary`, data: activeSource.summary });
+                          setPdfExportData({ title: `${activeSource.title} - Summary (${summaryFormat})`, data: getActiveSummary() });
                           setShowPdfModal(true);
                         }}
-                        className="flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:underline cursor-pointer"
+                        disabled={getActiveSummary().trim().length === 0}
+                        className="flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:underline cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                       >
                         <Download className="h-3 w-3" />
                         <span>Export PDF</span>
@@ -2816,39 +3020,55 @@ ${queryText}`;
                     </div>
 
                     <div className="space-y-4">
-                      {(() => {
-                        const sections = parseSummaryIntoSections(activeSource.summary);
-                        const allSections = [
-                          { key: 'executiveOverview', label: 'Executive Overview', content: sections.executiveOverview },
-                          { key: 'keyConcepts', label: 'Key Concepts', content: sections.keyConcepts },
-                          { key: 'detailedExplanation', label: 'Detailed Explanation', content: sections.detailedExplanation },
-                          { key: 'examples', label: 'Examples', content: sections.examples },
-                          { key: 'formulas', label: 'Formulas', content: sections.formulas },
-                          { key: 'commonMistakes', label: 'Common Mistakes', content: sections.commonMistakes },
-                          { key: 'revisionNotes', label: 'Revision Notes', content: sections.revisionNotes },
-                          { key: 'examQuestions', label: 'Exam Questions', content: sections.examQuestions },
-                          { key: 'realWorldApplications', label: 'Real World Applications', content: sections.realWorldApplications },
-                          { key: 'quickRecap', label: 'Quick Recap', content: sections.quickRecap }
-                        ];
+                      {isGeneratingSummary ? (
+                        <div className="py-16 flex flex-col items-center justify-center border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5">
+                          <BruteLoader size="md" message={`Generating ${summaryFormat} summary...`} />
+                        </div>
+                      ) : getActiveSummary().trim().length > 0 ? (
+                        (() => {
+                          const sections = parseSummaryIntoSections(getActiveSummary());
+                          const allSections = [
+                            { key: 'executiveOverview', label: 'Executive Overview', content: sections.executiveOverview },
+                            { key: 'keyConcepts', label: 'Key Concepts', content: sections.keyConcepts },
+                            { key: 'detailedExplanation', label: 'Detailed Explanation', content: sections.detailedExplanation },
+                            { key: 'examples', label: 'Examples', content: sections.examples },
+                            { key: 'formulas', label: 'Formulas', content: sections.formulas },
+                            { key: 'commonMistakes', label: 'Common Mistakes', content: sections.commonMistakes },
+                            { key: 'revisionNotes', label: 'Revision Notes', content: sections.revisionNotes },
+                            { key: 'examQuestions', label: 'Exam Questions', content: sections.examQuestions },
+                            { key: 'realWorldApplications', label: 'Real World Applications', content: sections.realWorldApplications },
+                            { key: 'quickRecap', label: 'Quick Recap', content: sections.quickRecap }
+                          ];
 
-                        return allSections.map((sec, idx) => (
-                          <div key={idx} className={`p-4 rounded-xl border ${
-                            theme === 'dark' ? 'bg-[#121318] border-neutral-900' : 'bg-white border-gray-200'
-                          }`}>
-                            <h4 className="text-xs font-black text-indigo-400 uppercase tracking-widest font-mono">{sec.label}</h4>
-                            <p className={`text-[11.5px] mt-2 leading-relaxed whitespace-pre-wrap ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-700'}`}>
-                              {renderTextWithCitations(sec.content)}
-                            </p>
-                          </div>
-                        ));
-                      })()}
+                          return allSections.map((sec, idx) => (
+                            <div key={idx} className={`p-4 rounded-xl border ${
+                              theme === 'dark' ? 'bg-[#121318] border-neutral-900' : 'bg-white border-gray-200'
+                            }`}>
+                              <h4 className="text-xs font-black text-indigo-400 uppercase tracking-widest font-mono">{sec.label}</h4>
+                              <p className={`text-[11.5px] mt-2 leading-relaxed whitespace-pre-wrap ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-705'}`}>
+                                {renderTextWithCitations(sec.content)}
+                              </p>
+                            </div>
+                          ));
+                        })()
+                      ) : (
+                        <div className="text-center py-16 border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4">
+                          <FileText className="h-10 w-10 text-neutral-600 mx-auto animate-pulse" />
+                          <h4 className="text-xs font-bold text-neutral-400">Summary has not been generated yet.</h4>
+                          <button
+                            onClick={() => triggerGenerateSummary(summaryFormat)}
+                            className="px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
+                          >
+                            Generate Summary
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
-
-                {/* 3. FLASHCARDS TAB */}
+                        {/* 3. FLASHCARDS TAB */}
                 {activeOutputTab === 'flashcards' && (
-                  <div className="space-y-3">
+                  <div className="space-y-3 animate-fade-in">
                     <div className="flex items-center justify-between">
                       <div className="flex gap-1">
                         {(['basic', 'advanced', 'exam'] as const).map(f => (
@@ -2865,10 +3085,11 @@ ${queryText}`;
                       </div>
                       <button
                         onClick={() => {
-                          setPdfExportData({ title: `${activeSource.title} - Flashcards`, data: activeSource.flashcards });
+                          setPdfExportData({ title: `${activeSource.title} - Flashcards`, data: activeSource.flashcards || [] });
                           setShowPdfModal(true);
                         }}
-                        className="flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:underline cursor-pointer"
+                        disabled={!activeSource.flashcards || activeSource.flashcards.length === 0}
+                        className="flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:underline cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Download className="h-3 w-3" />
                         <span>Export PDF</span>
@@ -2876,24 +3097,41 @@ ${queryText}`;
                     </div>
 
                     <div className="space-y-3">
-                      {activeSource.flashcards && activeSource.flashcards.map((f: any, i: number) => (
-                        <div key={i} className={`p-4.5 rounded-xl border font-sans space-y-2 ${
-                          theme === 'dark' ? 'bg-[#121318] border-neutral-900' : 'bg-white border-gray-200'
-                        }`}>
-                          <div className="text-[10px] font-bold text-indigo-400 font-mono">Q. CARD {i + 1}</div>
-                          <div className="text-xs font-black">{renderTextWithCitations(cleanMarkdownText(f.q))}</div>
-                          <div className={`text-[11.5px] pt-2 border-t border-neutral-900/20 ${theme === 'dark' ? 'text-neutral-350' : 'text-neutral-600'}`}>
-                            {renderTextWithCitations(cleanMarkdownText(f.a))}
-                          </div>
+                      {isGeneratingFlashcards ? (
+                        <div className="py-16 flex flex-col items-center justify-center border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5">
+                          <BruteLoader size="md" message="Generating Flashcards..." />
                         </div>
-                      ))}
+                      ) : activeSource.flashcards && activeSource.flashcards.length > 0 ? (
+                        activeSource.flashcards.map((f: any, i: number) => (
+                          <div key={i} className={`p-4.5 rounded-xl border font-sans space-y-2 ${
+                            theme === 'dark' ? 'bg-[#121318] border-neutral-900' : 'bg-white border-gray-200'
+                          }`}>
+                            <div className="text-[10px] font-bold text-indigo-400 font-mono">Q. CARD {i + 1}</div>
+                            <div className="text-xs font-black">{renderTextWithCitations(cleanMarkdownText(f.q))}</div>
+                            <div className={`text-[11.5px] pt-2 border-t border-neutral-900/20 ${theme === 'dark' ? 'text-neutral-350' : 'text-neutral-600'}`}>
+                              {renderTextWithCitations(cleanMarkdownText(f.a))}
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-16 border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4">
+                          <Award className="h-10 w-10 text-neutral-600 mx-auto animate-pulse" />
+                          <h4 className="text-xs font-bold text-neutral-400">Flashcards have not been generated yet.</h4>
+                          <button
+                            onClick={triggerGenerateFlashcards}
+                            className="px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
+                          >
+                            Generate Flashcards
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
 
                 {/* 4. QUIZ TAB */}
                 {activeOutputTab === 'quiz' && (
-                  <div className="space-y-3">
+                  <div className="space-y-3 animate-fade-in">
                     <div className="flex items-center justify-between">
                       <div className="flex gap-1">
                         {(['mcq', 'subjective', 'case'] as const).map(f => (
@@ -2910,17 +3148,22 @@ ${queryText}`;
                       </div>
                       <button
                         onClick={() => {
-                          setPdfExportData({ title: `${activeSource.title} - Quiz`, data: activeSource.quiz });
+                          setPdfExportData({ title: `${activeSource.title} - Quiz`, data: activeSource.quiz || [] });
                           setShowPdfModal(true);
                         }}
-                        className="flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:underline cursor-pointer"
+                        disabled={!activeSource.quiz || activeSource.quiz.length === 0}
+                        className="flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:underline cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Download className="h-3 w-3" />
                         <span>Export PDF</span>
                       </button>
                     </div>
 
-                    {activeSource.quiz && activeSource.quiz.length > 0 ? (
+                    {isGeneratingQuiz ? (
+                      <div className="py-16 flex flex-col items-center justify-center border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5">
+                        <BruteLoader size="md" message="Generating Quiz questions..." />
+                      </div>
+                    ) : activeSource.quiz && activeSource.quiz.length > 0 ? (
                       <div className="space-y-4">
                         <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#121318] border-neutral-900' : 'bg-white border-gray-200'}`}>
                           <div className="text-[10px] font-black text-indigo-400 font-mono">QUESTION {activeQuizQuestionIdx + 1} of {activeSource.quiz.length}</div>
@@ -3007,16 +3250,35 @@ ${queryText}`;
                             )}
                           </div>
                         </div>
+
+                        {/* Generate More Questions Button */}
+                        <div className="flex justify-center pt-2">
+                          <button
+                            onClick={triggerGenerateMoreQuiz}
+                            className="px-5 py-2.5 rounded-lg border border-indigo-500/25 bg-indigo-500/5 hover:bg-indigo-500/10 text-indigo-455 text-xs font-bold transition-all focus:outline-none cursor-pointer"
+                          >
+                            Generate 10 More Questions
+                          </button>
+                        </div>
                       </div>
                     ) : (
-                      <div className="text-center py-6 text-neutral-500 font-mono text-[10px]">No questions loaded.</div>
+                      <div className="text-center py-16 border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4">
+                        <HelpCircle className="h-10 w-10 text-neutral-600 mx-auto animate-pulse" />
+                        <h4 className="text-xs font-bold text-neutral-400">Quiz has not been generated yet.</h4>
+                      <button
+                          onClick={triggerGenerateQuiz}
+                          className="px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
+                        >
+                          Generate Quiz
+                        </button>
+                      </div>
                     )}
                   </div>
                 )}
 
                 {/* 5. MIND MAP TAB */}
                 {activeOutputTab === 'mindmap' && (
-                  <div className="space-y-3 text-center">
+                  <div className="space-y-3 text-center animate-fade-in">
                     <div className="flex justify-between items-center">
                       <span className="text-[10px] font-bold text-indigo-400 font-mono uppercase">Interactive Concept Net</span>
                       <button
@@ -3024,7 +3286,8 @@ ${queryText}`;
                           setPdfExportData({ title: `${activeSource.title} - Concept Map`, data: activeSource.keyConcepts });
                           setShowPdfModal(true);
                         }}
-                        className="flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:underline cursor-pointer"
+                        disabled={!activeSource.keyConcepts || activeSource.keyConcepts.length === 0}
+                        className="flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:underline cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Download className="h-3 w-3" />
                         <span>Export PDF</span>
@@ -3034,54 +3297,72 @@ ${queryText}`;
                     <div className={`h-64 rounded-xl border overflow-hidden relative ${
                       theme === 'dark' ? 'bg-[#0d0e12] border-neutral-900' : 'bg-white border-gray-200'
                     }`}>
-                      <svg className="w-full h-full">
-                        {activeSource.keyConcepts && activeSource.keyConcepts.map((node: any, idx: number) => {
-                          if (node.parent) {
-                            const parentNode = activeSource.keyConcepts.find((n: any) => n.id === node.parent);
-                            if (parentNode) {
-                              return (
-                                <line
-                                  key={idx}
-                                  x1={`${parentNode.x}%`}
-                                  y1={`${parentNode.y}%`}
-                                  x2={`${node.x}%`}
-                                  y2={`${node.y}%`}
-                                  stroke={theme === 'dark' ? '#312e81' : '#e2e8f0'}
-                                  strokeWidth="1.5"
-                                  strokeDasharray="4"
-                                />
-                              );
-                            }
-                          }
-                          return null;
-                        })}
+                      {activeSource.keyConcepts && activeSource.keyConcepts.length > 0 ? (
+                        <>
+                          <svg className="w-full h-full">
+                            {activeSource.keyConcepts.map((node: any, idx: number) => {
+                              if (node.parent) {
+                                const parentNode = activeSource.keyConcepts.find((n: any) => n.id === node.parent);
+                                if (parentNode) {
+                                  return (
+                                    <line
+                                      key={idx}
+                                      x1={`${parentNode.x}%`}
+                                      y1={`${parentNode.y}%`}
+                                      x2={`${node.x}%`}
+                                      y2={`${node.y}%`}
+                                      stroke={theme === 'dark' ? '#312e81' : '#e2e8f0'}
+                                      strokeWidth="1.5"
+                                      strokeDasharray="4"
+                                    />
+                                  );
+                                }
+                              }
+                              return null;
+                            })}
 
-                        {activeSource.keyConcepts && activeSource.keyConcepts.map((node: any, idx: number) => (
-                          <g key={idx} onClick={() => setSelectedMindmapNode(node)} className="cursor-pointer group">
-                            <circle
-                              cx={`${node.x}%`}
-                              cy={`${node.y}%`}
-                              r={node.id === 'root' ? 14 : 9}
-                              fill={getNodeColor(node, selectedMindmapNode?.id === node.id)}
-                              className="transition-all hover:scale-115"
-                            />
-                            <text
-                              x={`${node.x}%`}
-                              y={`${node.y - 4}%`}
-                              textAnchor="middle"
-                              fill={theme === 'dark' ? '#d1d5db' : '#1e293b'}
-                              fontSize="9px"
-                              fontWeight="bold"
-                              className="font-mono select-none"
-                            >
-                              {node.label}
-                            </text>
-                          </g>
-                        ))}
-                      </svg>
-                      <div className="absolute bottom-2 left-2 text-[8px] font-mono text-neutral-500 bg-neutral-950/45 p-1 rounded">
-                        Click on nodes to show conceptual details drawer.
-                      </div>
+                            {activeSource.keyConcepts.map((node: any, idx: number) => (
+                              <g key={idx} onClick={() => setSelectedMindmapNode(node)} className="cursor-pointer group">
+                                <circle
+                                  cx={`${node.x}%`}
+                                  cy={`${node.y}%`}
+                                  r={node.id === 'root' ? 14 : 9}
+                                  fill={getNodeColor(node, selectedMindmapNode?.id === node.id)}
+                                  className="transition-all hover:scale-115"
+                                />
+                                <text
+                                  x={`${node.x}%`}
+                                  y={`${node.y - 4}%`}
+                                  textAnchor="middle"
+                                  fill={theme === 'dark' ? '#d1d5db' : '#1e293b'}
+                                  fontSize="9px"
+                                  fontWeight="bold"
+                                  className="font-mono select-none"
+                                >
+                                  {node.label}
+                                </text>
+                              </g>
+                            ))}
+                          </svg>
+                          <div className="absolute bottom-2 left-2 text-[8px] font-mono text-neutral-505 bg-neutral-955/45 p-1 rounded">
+                            Click on nodes to show conceptual details drawer.
+                          </div>
+                        </>
+                      ) : isGeneratingMindmap ? (
+                        <div className="h-full flex flex-col items-center justify-center bg-neutral-950/5">
+                          <BruteLoader size="md" message="Synthesizing Concept Mind Map..." />
+                        </div>
+                      ) : (
+                        <div className="h-full flex flex-col items-center justify-center p-6 space-y-4">
+                          <p className="text-[10px] text-neutral-500 font-mono">Concept Net has not been generated yet.</p>
+                          <button
+                            onClick={triggerGenerateMindmap}
+                            className="px-4 py-2 bg-indigo-650 hover:bg-indigo-755 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
+                          >
+                            Generate Concept Net
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     {/* Expandable Mind Map Details Panel */}
