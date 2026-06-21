@@ -95,23 +95,11 @@ function formatFirebasePrivateKey(key: string): string {
 try {
   if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
     console.log('Initializing Firebase Admin using environment variables...');
-    const rawKey = process.env.FIREBASE_PRIVATE_KEY || '';
-    console.log(`[FIREBASE KEY DIAGNOSTIC] Length: ${rawKey.length}`);
-    console.log(`- Starts with: "${rawKey.slice(0, 30)}"`);
-    console.log(`- Ends with: "${rawKey.slice(-30)}"`);
-    console.log(`- Contains actual newlines: ${rawKey.includes('\n')}`);
-    console.log(`- Contains escaped newlines (\\n): ${rawKey.includes('\\n')}`);
-    console.log(`- Contains spaces: ${rawKey.includes(' ')}`);
-    const formatted = formatFirebasePrivateKey(rawKey);
-    console.log(`- Formatted Key Starts with: "${formatted.slice(0, 30)}"`);
-    console.log(`- Formatted Key Ends with: "${formatted.slice(-30)}"`);
-    console.log(`- Formatted Key Contains actual newlines: ${formatted.includes('\n')}`);
-
     initializeApp({
       credential: cert({
-        projectId: process.env.FIREBASE_PROJECT_ID || 'noteit-ai-fd7eb',
+        projectId: process.env.FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: formatted
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
       })
     });
   } else if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY_PATH) {
