@@ -167,6 +167,23 @@ if (accountName && accountKey) {
       credential
     );
     console.log('Azure Blob Service Client initialized successfully.');
+
+    // Programmatically configure CORS rules for the Azure Storage Account
+    blobServiceClient.setProperties({
+      cors: [
+        {
+          allowedOrigins: ["*"],
+          allowedMethods: ["GET", "POST", "PUT", "OPTIONS", "HEAD", "DELETE"],
+          allowedHeaders: ["*"],
+          exposedHeaders: ["*"],
+          maxAgeInSeconds: 86400
+        }
+      ]
+    }).then(() => {
+      console.log('Azure Storage CORS rules configured successfully.');
+    }).catch((corsError) => {
+      console.error('Failed to configure Azure Storage CORS rules:', corsError);
+    });
   } catch (error) {
     console.error('Failed to initialize Azure Blob Service Client:', error);
   }
