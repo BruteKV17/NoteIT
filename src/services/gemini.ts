@@ -708,8 +708,8 @@ export const generateLectureContentFromText = async (
     throw new Error("Gemini API key is not configured in .env. Please configure VITE_GEMINI_API_KEY.");
   }
 
-  if (onProgress) onProgress(1, "Analyzing text and extracting transcript timeline and chapters...");
-  const data = await generateInitialLectureAssets(extractedText, apiKey, onBusy);
+  if (onProgress) onProgress(1, "Analyzing text and generating study workspace assets...");
+  const data = await generateIngestedAssetsFromText(extractedText, apiKey, mode, onBusy);
 
   return {
     transcript: extractedText,
@@ -717,7 +717,12 @@ export const generateLectureContentFromText = async (
     sections: data.sections || [],
     timeline: data.timeline || [],
     sourceIntelligence: data.sourceIntelligence || null,
-    keyConcepts: [] // Will generate Mindmap keyConcepts on demand
+    summary: data.summary || '',
+    notes: data.notes || [],
+    flashcards: data.flashcards || [],
+    quiz: data.quiz || [],
+    keyConcepts: data.keyConcepts || [],
+    weakTopics: data.weakTopics || []
   };
 };
 
