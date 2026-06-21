@@ -172,10 +172,10 @@ if (accountName && accountKey) {
     blobServiceClient.setProperties({
       cors: [
         {
-          allowedOrigins: ["*"],
-          allowedMethods: ["GET", "POST", "PUT", "OPTIONS", "HEAD", "DELETE"],
-          allowedHeaders: ["*"],
-          exposedHeaders: ["*"],
+          allowedOrigins: "*",
+          allowedMethods: "GET,POST,PUT,OPTIONS,HEAD,DELETE",
+          allowedHeaders: "*",
+          exposedHeaders: "*",
           maxAgeInSeconds: 86400
         }
       ]
