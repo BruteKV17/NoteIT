@@ -737,13 +737,13 @@ export default function SettingsView({
                 <div className="flex-1">
                   <h4 className={`text-xs font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>High-Intensity Synthesis Engine</h4>
                   <p className="text-[11px] text-gray-400 mt-0.5 leading-normal">
-                    Apply deeper token-scanning parameters for massive 100+ page textbook outlines. (Requires Researcher tier subscription).
+                    Apply deeper token-scanning parameters for massive 100+ page textbook outlines. (Requires Premium tier subscription).
                   </p>
                 </div>
                 <input
                   type="checkbox"
                   checked={synthesis}
-                  disabled={settings.subscription.planName === 'Scholar'}
+                  disabled={settings.subscription.planName === 'BYOK'}
                   onChange={(e) => setSynthesis(e.target.checked)}
                   className={`rounded h-4.5 w-4.5 mt-0.5 accent-indigo-500 cursor-pointer disabled:opacity-50 ${
                     theme === 'dark' ? 'border-neutral-700 bg-neutral-900 text-indigo-600' : 'border-gray-300 text-black'

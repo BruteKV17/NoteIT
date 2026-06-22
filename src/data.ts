@@ -1112,15 +1112,15 @@ export const INITIAL_SETTINGS: UserSettings = {
     role: 'Senior Researcher'
   },
   subscription: {
-    planName: 'Researcher',
-    price: '$12',
+    planName: 'BYOK',
+    price: '₹0',
     billingCycle: 'monthly',
     nextBillDate: 'Dec 15, 2026',
     features: [
-      'Unlimited AI Synthesis',
-      'Advanced PDF OCR Engine',
-      'Instant Weak Topic Radar',
-      'Persistent AI Knowledge Graphs'
+      'Bring Your Own Key (BYOK)',
+      'Unlimited AI Synthesis & Chats',
+      '100 GB High-Speed Storage',
+      'Academic Library & Quiz Workspace'
     ]
   },
   integrations: {
@@ -1161,37 +1161,37 @@ export const FAQ_ITEMS: FAQItem[] = [
 
 export const PRICING_PLANS: PricingPlan[] = [
   {
-    name: 'Scholar',
+    name: 'BYOK',
     tierLabel: 'TIER 01',
-    price: '$0',
+    price: '₹0',
     period: 'forever',
-    tagline: 'Ideal for independent students beginning their academic reviews.',
-    description: 'Essential research layout for individual review sessions.',
+    tagline: 'Bring your own API key for unlimited analysis.',
+    description: 'Use your own Gemini or OpenAI API keys directly.',
     ctaText: 'Get Started',
     features: [
-      'Standard AI Synthesis (5 / mo)',
-      '5 GB Encrypted Cloud Storage',
-      'Familiar multi-source research hub',
-      'Standard PDF Document Reader'
+      'Bring Your Own Key (BYOK)',
+      'Unlimited AI Synthesis & Chats',
+      '100 GB High-Speed Storage',
+      'Academic Library & Quiz Workspace'
     ],
     isPopular: false,
     highlighted: false
   },
   {
-    name: 'Researcher',
+    name: 'Premium',
     tierLabel: 'TIER 02',
-    price: '$12',
+    price: '₹400',
     period: 'month',
-    tagline: 'The full power of cognitive AI models for serious researchers.',
-    description: 'Our most sought-after plan for university and lab-scale work.',
-    ctaText: 'Upgrade to Researcher',
+    tagline: 'No API key needed. Managed high-speed academic AI model access.',
+    description: 'We provide high-speed, managed Gemini API keys.',
+    ctaText: 'Upgrade to Premium',
     features: [
-      'Unlimited AI Synthesis & Chats',
+      'Direct API access (We provide keys)',
+      'Unlimited managed AI runs',
       '100 GB High-Speed Storage',
       'Instant OCR & Math Formula Parsing',
       'Weak Topic Tracker Radar',
-      'Proactive Concept Recommendations',
-      'Priority Email Support'
+      'Priority Email & Chat Support'
     ],
     isPopular: true,
     highlighted: true
@@ -1205,7 +1205,7 @@ export const PRICING_PLANS: PricingPlan[] = [
     description: 'Engineered safely for full-scale universities, laboratories, or hospitals.',
     ctaText: 'Contact Sales',
     features: [
-      'Everything in Researcher plus:',
+      'Everything in Premium plus:',
       'SSO & SAML Security Auditing',
       'Dedicated Academic Success Manager',
       'Unlimited Shared Workspaces',

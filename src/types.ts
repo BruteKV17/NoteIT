@@ -158,7 +158,7 @@ export interface UserSettings {
     onboardingCompleted?: boolean;
   };
   subscription: {
-    planName: 'Scholar' | 'Researcher' | 'Institution';
+    planName: 'BYOK' | 'Premium' | 'Institution';
     price: string;
     billingCycle: 'monthly' | 'yearly';
     nextBillDate: string;

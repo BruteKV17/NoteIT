@@ -527,14 +527,14 @@ export default function App() {
     }
   };
 
-  const handleUpgradePlan = (planName: 'Scholar' | 'Researcher' | 'Institution', price: string, billingCycle: 'monthly' | 'yearly') => {
+  const handleUpgradePlan = (planName: 'BYOK' | 'Premium' | 'Institution', price: string, billingCycle: 'monthly' | 'yearly') => {
     const upgradedFeatures = [
-      'Unlimited AI Synthesis & Chats',
+      'Direct API access (We provide keys)',
+      'Unlimited managed AI runs',
       '100 GB High-Speed Storage',
       'Instant OCR & Math Formula Parsing',
       'Weak Topic Tracker Radar',
-      'Proactive Concept Recommendations',
-      'Priority Email Support'
+      'Priority Email & Chat Support'
     ];
 
     setSettings(prev => ({
@@ -544,7 +544,14 @@ export default function App() {
         price,
         billingCycle,
         nextBillDate: billingCycle === 'yearly' ? 'Dec 15, 2027' : 'Jan 15, 2027',
-        features: planName === 'Scholar' ? ['Standard AI Synthesis (5)', '5GB Storage'] : upgradedFeatures
+        features: planName === 'BYOK' 
+          ? [
+              'Bring Your Own Key (BYOK)',
+              'Unlimited AI Synthesis & Chats',
+              '100 GB High-Speed Storage',
+              'Academic Library & Quiz Workspace'
+            ] 
+          : upgradedFeatures
       }
     }));
   };

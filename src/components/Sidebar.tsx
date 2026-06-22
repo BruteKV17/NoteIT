@@ -67,7 +67,7 @@ export default function Sidebar({
     setIsOpenMobile(false);
   };
 
-  const isPro = settings.subscription.planName !== 'Scholar';
+  const isPro = settings.subscription.planName !== 'BYOK';
 
   const sidebarContent = (
     <div className={`flex h-full flex-col select-none transition-all duration-300 ${
@@ -245,10 +245,10 @@ export default function Sidebar({
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-xs font-bold text-gray-900 dark:text-neutral-50 truncate">
-                  Note-IT {settings.subscription.planName}
+                  Note-IT {settings.subscription.planName} Plan
                 </div>
                 <div className="text-[10px] text-gray-400 mt-0.5 leading-tight">
-                  {isPro ? 'AI models fully optimized' : '5 summaries limit / mo'}
+                  {isPro ? 'Direct API Key Mode' : 'Bring Your Own Key Mode'}
                 </div>
               </div>
             </div>

@@ -19,7 +19,7 @@ import { PRICING_PLANS } from '../data';
 
 interface PricingViewProps {
   settings: UserSettings;
-  onUpgradePlan: (planName: 'Scholar' | 'Researcher' | 'Institution', price: string, billingCycle: 'monthly' | 'yearly') => void;
+  onUpgradePlan: (planName: 'BYOK' | 'Premium' | 'Institution', price: string, billingCycle: 'monthly' | 'yearly') => void;
   setActivePage: (page: PageId) => void;
 }
 
@@ -34,14 +34,14 @@ export default function PricingView({
   const [upgradedPlanName, setUpgradedPlanName] = useState<string | null>(null);
 
   const calculatePrice = (basePrice: string, planName: string) => {
-    if (planName === 'Scholar') return '$0';
+    if (planName === 'BYOK') return '₹0';
     if (planName === 'Institution') return 'Custom';
     
-    // Researcher Plan details
+    // Premium Plan details
     if (billingCycle === 'yearly') {
-      return '$10'; // 20% discount on yearly
+      return '₹320'; // 20% discount on yearly
     }
-    return '$12';
+    return '₹400';
   };
 
   const handleUpgradeSimulated = (planName: string, priceText: string) => {
@@ -50,7 +50,7 @@ export default function PricingView({
       return;
     }
 
-    const castPlan = planName as 'Scholar' | 'Researcher';
+    const castPlan = planName as 'BYOK' | 'Premium';
     onUpgradePlan(castPlan, priceText, billingCycle);
     setUpgradedPlanName(planName);
     
@@ -116,7 +116,7 @@ export default function PricingView({
         {PRICING_PLANS.map((plan) => {
           const isActive = settings.subscription.planName === plan.name;
           const displayPrice = calculatePrice(plan.price, plan.name);
-          const isProPopular = plan.name === 'Researcher';
+          const isProPopular = plan.name === 'Premium';
 
           return (
             <div 
@@ -166,18 +166,24 @@ export default function PricingView({
                 <div className="pt-2">
                   <button
                     onClick={() => handleUpgradeSimulated(plan.name, displayPrice)}
-                    disabled={isActive && plan.name !== 'Institution'}
-                    className={`w-full py-3.5 px-4 font-sans text-xs font-bold rounded-xl transition-all active:scale-98 cursor-pointer focus:outline-none ${
-                      isProPopular
-                        ? isActive 
-                          ? 'bg-neutral-800 text-neutral-400' 
-                          : 'bg-white text-black hover:bg-neutral-100'
-                        : isActive
-                          ? 'bg-gray-100 text-gray-400 border border-gray-200'
-                          : 'bg-black text-white hover:bg-gray-800'
+                    disabled={plan.name === 'Premium' || (isActive && plan.name !== 'Institution')}
+                    className={`w-full py-3.5 px-4 font-sans text-xs font-bold rounded-xl transition-all active:scale-98 focus:outline-none ${
+                      plan.name === 'Premium'
+                        ? 'bg-neutral-800 text-neutral-500 cursor-not-allowed border border-neutral-700/50'
+                        : isProPopular
+                          ? isActive 
+                            ? 'bg-neutral-800 text-neutral-400 cursor-pointer' 
+                            : 'bg-white text-black hover:bg-neutral-100 cursor-pointer'
+                          : isActive
+                            ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-default'
+                            : 'bg-black text-white hover:bg-gray-800 cursor-pointer'
                     }`}
                   >
-                    {isActive ? 'Current Active Tier' : plan.ctaText}
+                    {plan.name === 'Premium' 
+                      ? 'Coming Soon (Gateway Pending)' 
+                      : isActive 
+                        ? 'Current Active Tier' 
+                        : plan.ctaText}
                   </button>
                 </div>
               </div>

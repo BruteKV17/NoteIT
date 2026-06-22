@@ -154,7 +154,7 @@ export default function Navbar({
       <div className="flex items-center gap-2.5 relative">
         
         {/* Pro Badge */}
-        {settings.subscription.planName === 'Scholar' ? (
+        {settings.subscription.planName === 'BYOK' ? (
           <button
             onClick={() => setActivePage('pricing')}
             className="hidden lg:flex items-center gap-1.5 rounded-xl bg-indigo-50 border border-indigo-100 dark:bg-indigo-950/20 dark:border-indigo-900/30 px-4 py-2.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100/50 focus:outline-none cursor-pointer"
@@ -165,7 +165,7 @@ export default function Navbar({
         ) : (
           <span className="hidden lg:inline-flex items-center gap-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/15 px-3 py-1.5 text-xs font-bold text-indigo-400">
             <Sparkles className="h-3.5 w-3.5 text-indigo-400 fill-indigo-400" />
-            <span>Researcher Active</span>
+            <span>Premium Active</span>
           </span>
         )}
 
