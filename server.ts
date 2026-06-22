@@ -303,6 +303,15 @@ app.post('/api/ai/gemini-proxy', authenticateFirebaseUser, async (req, res) => {
       return;
     }
 
+    // Log last 6 chars of key for verification
+    if (decryptedKey && decryptedKey.length > 6) {
+      const prefix = decryptedKey.substring(0, 4);
+      const suffix = decryptedKey.substring(decryptedKey.length - 6);
+      console.log(`[BYOK AUDIT] Decrypted API Key: ${prefix}********${suffix}`);
+    } else {
+      console.log(`[BYOK AUDIT] Decrypted API Key: ${decryptedKey}`);
+    }
+
     const adapter = getAIAdapter(provider, decryptedKey, model);
     const result = await adapter.generateContent(prompt, inlineData, responseSchema);
     res.json(result);
