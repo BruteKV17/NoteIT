@@ -741,27 +741,31 @@ export default function LandingView({
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             
-            {/* Free pricing Card */}
+            {/* Free BYOK pricing Card */}
             <div className="bg-white/3 backdrop-blur-md p-8.5 rounded-3xl border border-white/8 flex flex-col justify-between space-y-8 text-left transition-all hover:border-[#5F6DF8]/20 text-white">
               <div className="space-y-4">
-                <span className="font-sans font-black text-sm text-neutral-200 uppercase tracking-widest">Free</span>
+                <span className="font-sans font-black text-sm text-neutral-200 uppercase tracking-widest">BYOK</span>
                 <div className="space-y-1">
-                  <span className="text-4xl font-extrabold text-white font-sans">$0</span>
-                  <span className="text-xs font-bold text-neutral-400">/ month</span>
+                  <span className="text-4xl font-extrabold text-white font-sans">₹0</span>
+                  <span className="text-xs font-bold text-neutral-400">/ forever</span>
                 </div>
                 <div className="h-px bg-white/10" />
                 <ul className="space-y-3.5 text-xs text-neutral-300 font-bold">
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-4.5 w-4.5 text-[#5F6DF8]" />
-                    <span>5 Recordings / Mo</span>
+                    <span>Bring Your Own Key (BYOK)</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-4.5 w-4.5 text-[#5F6DF8]" />
-                    <span>Standard Transcription</span>
+                    <span>Unlimited AI Synthesis & Chats</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-4.5 w-4.5 text-[#5F6DF8]" />
-                    <span>Basic Summaries</span>
+                    <span>100 GB High-Speed Storage</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="h-4.5 w-4.5 text-[#5F6DF8]" />
+                    <span>Academic Library & Quiz Workspace</span>
                   </li>
                 </ul>
               </div>
@@ -774,44 +778,48 @@ export default function LandingView({
               </button>
             </div>
 
-            {/* Pro tier pricing Card with Popular badge */}
-            <div className="bg-[#030408]/80 backdrop-blur-md p-8.5 rounded-3xl border-2 border-[#5F6DF8] flex flex-col justify-between space-y-8 text-left relative shadow-2xl shadow-indigo-500/10 text-white">
-              <span className="absolute -top-3.5 left-1/2 -ml-14.5 bg-[#5F6DF8] text-white text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full">
-                MOST POPULAR
+            {/* Pro tier pricing Card with Popular badge - locked */}
+            <div className="bg-[#030408]/80 backdrop-blur-md p-8.5 rounded-3xl border-2 border-neutral-700/60 flex flex-col justify-between space-y-8 text-left relative shadow-2xl shadow-indigo-500/5 text-white">
+              <span className="absolute -top-3.5 left-1/2 -ml-14.5 bg-neutral-800 text-neutral-400 border border-neutral-700/50 text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full">
+                GATEWAY PENDING
               </span>
               
               <div className="space-y-4">
-                <span className="font-sans font-black text-sm text-[#5F6DF8] uppercase tracking-widest">Student Pro</span>
+                <span className="font-sans font-black text-sm text-neutral-400 uppercase tracking-widest">Premium</span>
                 <div className="space-y-1">
-                  <span className="text-4xl font-extrabold text-white font-sans">$12</span>
-                  <span className="text-xs font-bold text-neutral-400">/ month</span>
+                  <span className="text-4xl font-extrabold text-neutral-300 font-sans">₹400</span>
+                  <span className="text-xs font-bold text-neutral-500">/ month</span>
                 </div>
-                <div className="h-px bg-white/10" />
-                <ul className="space-y-3.5 text-xs text-neutral-200 font-bold">
+                <div className="h-px bg-white/5" />
+                <ul className="space-y-3.5 text-xs text-neutral-400 font-bold">
                   <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4.5 w-4.5 text-[#5F6DF8]" />
-                    <span>Unlimited Recordings</span>
+                    <CheckCircle className="h-4.5 w-4.5 text-neutral-600" />
+                    <span>Direct API access (We provide keys)</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4.5 w-4.5 text-[#5F6DF8]" />
-                    <span>High-Fidelity AI Processing</span>
+                    <CheckCircle className="h-4.5 w-4.5 text-neutral-600" />
+                    <span>Unlimited managed AI runs</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4.5 w-4.5 text-[#5F6DF8]" />
-                    <span>Persistent AI Memory</span>
+                    <CheckCircle className="h-4.5 w-4.5 text-neutral-600" />
+                    <span>100 GB High-Speed Storage</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4.5 w-4.5 text-[#5F6DF8]" />
-                    <span>Weak Topic Radar</span>
+                    <CheckCircle className="h-4.5 w-4.5 text-neutral-600" />
+                    <span>Instant OCR & Math Formula Parsing</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="h-4.5 w-4.5 text-neutral-600" />
+                    <span>Weak Topic Tracker Radar</span>
                   </li>
                 </ul>
               </div>
 
               <button
-                onClick={onGetStarted}
-                className="w-full rounded-2xl bg-[#5F6DF8] hover:bg-indigo-600 py-3.5 font-sans text-xs font-black text-white transition-all text-center focus:outline-none cursor-pointer"
+                disabled
+                className="w-full rounded-2xl bg-neutral-800 text-neutral-500 cursor-not-allowed border border-neutral-700/50 py-3.5 font-sans text-xs font-bold transition-all text-center focus:outline-none"
               >
-                Go Pro
+                Coming Soon (Gateway Pending)
               </button>
             </div>
 

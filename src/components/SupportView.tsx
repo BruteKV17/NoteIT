@@ -158,7 +158,7 @@ export default function SupportView() {
               className="w-full rounded-lg border border-gray-200 bg-[#F9FAFB] p-2.5 text-xs font-semibold text-gray-900 mt-1 focus:border-black focus:bg-white outline-none"
             >
               <option value="Standard">Standard Review</option>
-              <option value="Urgent">Urgent Block (Researcher plan only)</option>
+              <option value="Urgent">Urgent Block (Premium plan only)</option>
             </select>
           </div>
 

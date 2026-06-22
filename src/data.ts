@@ -1093,8 +1093,8 @@ export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
   },
   {
     id: 'n5',
-    title: 'Subscription renewed successfully',
-    description: 'Your Note-IT AI Researcher plan has been renewed. Thank you for continuing your research journey with us.',
+    title: 'BYOK Plan Activated',
+    description: 'Your Note-IT AI BYOK plan is active. Thank you for utilizing Note-IT AI for your studies!',
     timeLabel: '2 days ago',
     category: 'system',
     read: true,
