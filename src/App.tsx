@@ -103,7 +103,14 @@ export default function App() {
         try {
           console.log("Checking onboarding status for user UID:", user.uid);
           const userDocRef = doc(db, 'users', user.uid);
-          const userDocSnap = await getDoc(userDocRef);
+          
+          // Race getDoc against a 5-second timeout to prevent infinite loading screens on connectivity/websocket hangs
+          const userDocSnap = await Promise.race([
+            getDoc(userDocRef),
+            new Promise<never>((_, reject) => 
+              setTimeout(() => reject(new Error('Timeout fetching user document from Firestore.')), 5000)
+            )
+          ]);
           
           if (userDocSnap.exists() && userDocSnap.data().onboarding_completed) {
             const data = userDocSnap.data();

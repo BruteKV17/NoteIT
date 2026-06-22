@@ -8,7 +8,7 @@ import {
   RefreshCw,
   AlertCircle
 } from 'lucide-react';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebaseConfig';
 import { API_BASE_URL } from '../config';
 
@@ -93,7 +93,6 @@ export default function OnboardingView({
     if (!userId) return;
     const fetchUserData = async () => {
       try {
-        const { getDoc, doc } = await import('firebase/firestore');
         const userDocRef = doc(db, 'users', userId);
         const userDocSnap = await getDoc(userDocRef);
         if (userDocSnap.exists()) {
