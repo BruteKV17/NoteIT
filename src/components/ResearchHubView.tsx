@@ -412,14 +412,14 @@ export default function ResearchHubView({
               <Play className="h-2.5 w-2.5 fill-current" />
               <span>{timeStr}</span>
             </button>
-            <p className="text-xs md:text-sm text-neutral-350 leading-relaxed font-sans select-text">
+            <p className="text-xs md:text-sm text-neutral-300 leading-relaxed font-sans select-text">
               {content}
             </p>
           </div>
         );
       }
       return (
-        <p key={idx} className="text-xs md:text-sm text-neutral-350 leading-relaxed font-sans py-1.5 select-text">
+        <p key={idx} className="text-xs md:text-sm text-neutral-300 leading-relaxed font-sans py-1.5 select-text">
           {line}
         </p>
       );
@@ -448,7 +448,7 @@ export default function ResearchHubView({
             </button>
             <button
               onClick={() => setActivePage && setActivePage('lecture-capture')}
-              className="rounded-xl bg-neutral-900 border border-neutral-850 hover:bg-neutral-850 px-4 py-2.5 text-xs font-black text-white transition-all cursor-pointer focus:outline-none"
+              className="rounded-xl bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 px-4 py-2.5 text-xs font-black text-white transition-all cursor-pointer focus:outline-none"
             >
               Record Lecture
             </button>
@@ -488,8 +488,8 @@ export default function ResearchHubView({
             <div className="absolute inset-8 rounded-full border border-indigo-400/20 animate-spin [animation-duration:6s]" />
             
             <div className="relative h-24 w-24 rounded-full bg-[#0c0e14] border border-indigo-500/30 flex flex-col items-center justify-center shadow-2xl shadow-indigo-500/10">
-              <Sparkles className="h-10 w-10 text-indigo-450 animate-pulse" />
-              <div className="absolute -bottom-1 text-[9px] font-black tracking-widest text-indigo-450 font-mono">
+              <Sparkles className="h-10 w-10 text-indigo-400 animate-pulse" />
+              <div className="absolute -bottom-1 text-[9px] font-black tracking-widest text-indigo-400 font-mono">
                 {Math.floor((generationStep / generationLogs.length) * 100)}%
               </div>
             </div>
@@ -534,7 +534,7 @@ export default function ResearchHubView({
               onClick={() => {
                 setActiveTab(null);
               }}
-              className="group flex items-center gap-2 bg-neutral-900 hover:bg-neutral-850 px-4 py-2.5 rounded-xl text-xs font-bold transition-all border border-neutral-850/60 focus:outline-none"
+              className="group flex items-center gap-2 bg-neutral-900 hover:bg-neutral-800 px-4 py-2.5 rounded-xl text-xs font-bold transition-all border border-neutral-800/60 focus:outline-none"
             >
               <ArrowLeft className="h-3.5 w-3.5 text-indigo-400 group-hover:-translate-x-1 transition-transform" />
               <span>Back to Output Studio</span>
@@ -548,7 +548,7 @@ export default function ResearchHubView({
               <div className="h-7 w-px bg-neutral-800" />
               <button 
                 onClick={() => handleCopyText(JSON.stringify({ selectedLecture, activeOutput: activeTab }), 'Course Payload')}
-                className="flex items-center gap-1.5 py-2 px-3 bg-indigo-500/15 border border-indigo-500/10 rounded-lg text-[11px] font-bold text-indigo-400 hover:bg-indigo-550/20 active:scale-95 transition-all focus:outline-none"
+                className="flex items-center gap-1.5 py-2 px-3 bg-indigo-500/15 border border-indigo-500/10 rounded-lg text-[11px] font-bold text-indigo-400 hover:bg-indigo-500/20 active:scale-95 transition-all focus:outline-none"
               >
                 <Download className="h-3.5 w-3.5" />
                 <span>Export Module</span>
@@ -579,8 +579,8 @@ export default function ResearchHubView({
                   }}
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all border whitespace-nowrap cursor-pointer focus:outline-none ${
                     isActive
-                      ? 'bg-indigo-500/10 border-indigo-500/35 text-indigo-400 shadow-lg shadow-indigo-550/5'
-                      : 'bg-[#0c0d12]/60 border-neutral-900/60 text-neutral-450 hover:text-neutral-200 hover:bg-[#121318]'
+                      ? 'bg-indigo-500/10 border-indigo-500/35 text-indigo-400 shadow-lg shadow-indigo-500/5'
+                      : 'bg-[#0c0d12]/60 border-neutral-900/60 text-neutral-400 hover:text-neutral-200 hover:bg-[#121318]'
                   }`}
                 >
                   <Icon className={`h-4 w-4 ${isActive ? 'text-indigo-400' : 'text-neutral-500'}`} />
@@ -606,7 +606,7 @@ export default function ResearchHubView({
                 {selectedLecture.summary && (
                   <button
                     onClick={() => handleCopyText(selectedLecture.summary || '', 'Detailed Summary')}
-                    className="self-start flex items-center gap-1.5 bg-neutral-900 hover:bg-neutral-850 py-2.5 px-4 rounded-xl border border-neutral-850 text-xs font-semibold focus:outline-none"
+                    className="self-start flex items-center gap-1.5 bg-neutral-900 hover:bg-neutral-800 py-2.5 px-4 rounded-xl border border-neutral-800 text-xs font-semibold focus:outline-none"
                   >
                     <Copy className="h-4 w-4 text-neutral-400" />
                     <span>Copy Summary</span>
@@ -615,13 +615,13 @@ export default function ResearchHubView({
               </div>
 
               {selectedLecture.summary ? (
-                <div className="text-xs md:text-sm text-neutral-350 leading-relaxed font-serif whitespace-pre-wrap p-5 bg-neutral-950/45 rounded-2xl border border-neutral-900/60 max-h-[500px] overflow-y-auto">
+                <div className="text-xs md:text-sm text-neutral-300 leading-relaxed font-serif whitespace-pre-wrap p-5 bg-neutral-950/45 rounded-2xl border border-neutral-900/60 max-h-[500px] overflow-y-auto">
                   {selectedLecture.summary}
                 </div>
               ) : (
                 <div className="text-center py-12 text-neutral-500 font-sans border border-dashed border-neutral-900/40 rounded-2xl bg-[#0c0d12]/50">
-                  <FileText className="h-10 w-10 mx-auto opacity-35 mb-3 text-indigo-405" />
-                  <p className="font-bold text-xs text-neutral-350">No Summary Available</p>
+                  <FileText className="h-10 w-10 mx-auto opacity-35 mb-3 text-indigo-400" />
+                  <p className="font-bold text-xs text-neutral-300">No Summary Available</p>
                   <p className="text-[10px] text-neutral-500 mt-1 max-w-xs mx-auto">
                     A summary has not been generated for this lecture. Please process this lecture with Gemini.
                   </p>
@@ -644,7 +644,7 @@ export default function ResearchHubView({
                 </div>
                 <button
                   onClick={() => handleCopyText(selectedLecture.transcript || '', 'Transcript')}
-                  className="self-start flex items-center gap-1.5 bg-neutral-900 hover:bg-neutral-850 py-2.5 px-4 rounded-xl border border-neutral-850 text-xs font-semibold focus:outline-none"
+                  className="self-start flex items-center gap-1.5 bg-neutral-900 hover:bg-neutral-800 py-2.5 px-4 rounded-xl border border-neutral-800 text-xs font-semibold focus:outline-none"
                 >
                   <Copy className="h-4 w-4 text-neutral-400" />
                   <span>Copy Full Transcript</span>
@@ -723,7 +723,7 @@ export default function ResearchHubView({
                             audioRef.current.playbackRate = parseFloat(spd);
                           }
                         }}
-                        className="px-2 py-1 rounded bg-neutral-900 border border-neutral-850 hover:border-pink-500/30 text-[10px] font-mono font-bold text-neutral-400 hover:text-white transition-all focus:outline-none cursor-pointer"
+                        className="px-2 py-1 rounded bg-neutral-900 border border-neutral-800 hover:border-pink-500/30 text-[10px] font-mono font-bold text-neutral-400 hover:text-white transition-all focus:outline-none cursor-pointer"
                       >
                         {spd}
                       </button>
@@ -732,12 +732,12 @@ export default function ResearchHubView({
                 </div>
               )}
 
-              <div className="space-y-4 font-serif text-xs md:text-sm text-neutral-350 leading-relaxed whitespace-pre-wrap p-4 bg-neutral-950/45 rounded-2xl border border-neutral-900/60 max-h-[500px] overflow-y-auto">
+              <div className="space-y-4 font-serif text-xs md:text-sm text-neutral-300 leading-relaxed whitespace-pre-wrap p-4 bg-neutral-950/45 rounded-2xl border border-neutral-900/60 max-h-[500px] overflow-y-auto">
                 {selectedLecture.transcript ? (
                   renderTranscriptWithTimestamps(selectedLecture.transcript)
                 ) : (
-                  <div className="text-center py-12 text-neutral-550 font-sans">
-                    <Volume2 className="h-10 w-10 mx-auto opacity-35 mb-3 text-indigo-450" />
+                  <div className="text-center py-12 text-neutral-500 font-sans">
+                    <Volume2 className="h-10 w-10 mx-auto opacity-35 mb-3 text-indigo-400" />
                     <p className="font-bold text-xs">No Transcript Available</p>
                     <p className="text-[10px] text-neutral-500 mt-1 max-w-xs mx-auto">
                       This is a mock lecture without a real audio source. Try recording a real lecture to view its transcript!
@@ -802,7 +802,7 @@ export default function ResearchHubView({
                           <span className="rounded bg-teal-500/10 px-2 py-0.5 text-[9px] font-bold text-teal-400 font-mono">ANSWERS VERIFIED</span>
                         </div>
 
-                        <div className="overflow-y-auto max-h-[140px] text-xs md:text-sm text-neutral-350 leading-relaxed font-sans px-2 text-center select-text">
+                        <div className="overflow-y-auto max-h-[140px] text-xs md:text-sm text-neutral-300 leading-relaxed font-sans px-2 text-center select-text">
                           {FLASHCARDS_DECK[flashcardIndex].a}
                         </div>
 
@@ -824,7 +824,7 @@ export default function ResearchHubView({
                         className={`px-4 py-2 rounded-xl text-xs font-bold transition-all focus:outline-none ${
                           flashcardMastery[flashcardIndex] === 'mastered'
                             ? 'bg-emerald-500 text-white'
-                            : 'bg-neutral-900 text-neutral-300 hover:bg-neutral-850 border border-neutral-850'
+                            : 'bg-neutral-900 text-neutral-300 hover:bg-neutral-800 border border-neutral-800'
                         }`}
                       >
                         Mark Mastered ✓
@@ -834,7 +834,7 @@ export default function ResearchHubView({
                         className={`px-4 py-2 rounded-xl text-xs font-bold transition-all focus:outline-none ${
                           flashcardMastery[flashcardIndex] === 'review'
                             ? 'bg-amber-500 text-white'
-                            : 'bg-neutral-900 text-neutral-300 hover:bg-neutral-850 border border-neutral-850'
+                            : 'bg-neutral-900 text-neutral-300 hover:bg-neutral-800 border border-neutral-800'
                         }`}
                       >
                         Flag For Review ⚠
@@ -848,7 +848,7 @@ export default function ResearchHubView({
                           setIsCardFlipped(false);
                           setFlashcardIndex(prev => prev - 1);
                         }}
-                        className="p-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-850 border border-neutral-850 text-white disabled:opacity-30 disabled:pointer-events-none focus:outline-none"
+                        className="p-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-white disabled:opacity-30 disabled:pointer-events-none focus:outline-none"
                       >
                         <ChevronLeft className="h-4 w-4" />
                       </button>
@@ -861,7 +861,7 @@ export default function ResearchHubView({
                           setIsCardFlipped(false);
                           setFlashcardIndex(prev => prev + 1);
                         }}
-                        className="p-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-850 border border-neutral-850 text-white disabled:opacity-30 disabled:pointer-events-none focus:outline-none"
+                        className="p-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-white disabled:opacity-30 disabled:pointer-events-none focus:outline-none"
                       >
                         <ChevronRight className="h-4 w-4" />
                       </button>
@@ -952,7 +952,7 @@ export default function ResearchHubView({
 
                           {/* Explicit Explainer Section */}
                           {(showQuizExplains[qIdx] || isSubmitted) && (
-                            <div className="rounded-xl bg-neutral-950 p-4 border border-dashed border-neutral-900 text-xs text-neutral-450 leading-relaxed font-sans mt-3">
+                            <div className="rounded-xl bg-neutral-950 p-4 border border-dashed border-neutral-900 text-xs text-neutral-400 leading-relaxed font-sans mt-3">
                               <span className="font-bold text-indigo-400 uppercase tracking-widest block font-mono text-[9px] mb-1">COGNITIVE RATIO CONCEPTUAL EXPLAINER</span>
                               <p>{q.explanation}</p>
                             </div>
@@ -968,7 +968,7 @@ export default function ResearchHubView({
                       <button
                         disabled={Object.keys(selectedAnswers).length < QUIZ_QUESTIONS.length}
                         onClick={() => submitQuiz(QUIZ_QUESTIONS.length, QUIZ_QUESTIONS)}
-                        className="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-550 text-white font-bold rounded-xl py-3 px-6 text-xs shadow-md transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer focus:outline-none"
+                        className="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl py-3 px-6 text-xs shadow-md transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer focus:outline-none"
                       >
                         SUBMIT KNOWLEDGE ASSESSMENT
                       </button>
@@ -983,7 +983,7 @@ export default function ResearchHubView({
 
                         <button
                           onClick={resetQuiz}
-                          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-neutral-900 hover:bg-neutral-850 px-5 py-3 rounded-xl border border-neutral-850 text-xs font-bold text-white cursor-pointer focus:outline-none"
+                          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-neutral-900 hover:bg-neutral-800 px-5 py-3 rounded-xl border border-neutral-800 text-xs font-bold text-white cursor-pointer focus:outline-none"
                         >
                           <RotateCcw className="h-4 w-4" />
                           <span>RETRY EXAM STEPS</span>
@@ -1045,7 +1045,7 @@ export default function ResearchHubView({
                             className={`rounded-2xl border px-3.5 py-2.5 text-[10.5px] font-bold transition-all relative z-10 cursor-pointer shadow-md select-none group ${
                               isActive
                                 ? 'bg-cyan-500 text-black border-cyan-400 font-black scale-108'
-                                : 'bg-[#0d0e12] border-neutral-850 text-neutral-300 hover:border-cyan-500/35 hover:scale-102'
+                                : 'bg-[#0d0e12] border-neutral-800 text-neutral-300 hover:border-cyan-500/35 hover:scale-102'
                             }`}
                           >
                             <div className="flex items-center gap-1.5">
@@ -1135,16 +1135,16 @@ export default function ResearchHubView({
                     theme === 'dark' ? 'bg-neutral-950/90 border-neutral-900' : 'bg-white border-gray-200'
                   }`}>
                     {/* Horizontal slide transition glowing effect */}
-                    <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-rose-500 via-rose-450 to-indigo-550 opacity-80" />
+                    <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-rose-500 via-rose-400 to-indigo-500 opacity-80" />
                     
                     <div className="flex items-center justify-between">
                       <span className={`text-[10px] font-black font-mono tracking-widest uppercase ${
-                        theme === 'dark' ? 'text-rose-450' : 'text-rose-600'
+                        theme === 'dark' ? 'text-rose-400' : 'text-rose-600'
                       }`}>
                         {SLIDES_DECK[currentSlide].tag}
                       </span>
                       <span className={`rounded font-mono px-2 py-0.5 text-[9px] font-bold ${
-                        theme === 'dark' ? 'bg-rose-500/10 text-rose-400' : 'bg-rose-50 text-rose-605 border border-rose-100'
+                        theme === 'dark' ? 'bg-rose-500/10 text-rose-400' : 'bg-rose-50 text-rose-600 border border-rose-100'
                       }`}>
                         WIDESCREEN 16:9 MOCKUP
                       </span>
@@ -1164,7 +1164,7 @@ export default function ResearchHubView({
                             theme === 'dark' ? 'text-neutral-300' : 'text-gray-700'
                           }`}>
                             <span className={`font-bold select-none mt-0.5 ${
-                              theme === 'dark' ? 'text-rose-400' : 'text-rose-650'
+                              theme === 'dark' ? 'text-rose-400' : 'text-rose-600'
                             }`}>•</span>
                             <span>{bullet}</span>
                           </li>
@@ -1179,13 +1179,13 @@ export default function ResearchHubView({
                       <div className="text-left">
                         <span className="text-[10px] uppercase font-bold tracking-widest text-neutral-500 block font-mono">Slide Executive Takeaway</span>
                         <span className={`text-xs font-serif leading-none truncate max-w-[420px] block font-medium ${
-                          theme === 'dark' ? 'text-neutral-400' : 'text-gray-650'
+                          theme === 'dark' ? 'text-neutral-400' : 'text-gray-600'
                         }`}>
                           "{SLIDES_DECK[currentSlide].takeaway}"
                         </span>
                       </div>
                       <span className={`text-[11px] font-mono font-black ${
-                        theme === 'dark' ? 'text-neutral-550' : 'text-gray-500'
+                        theme === 'dark' ? 'text-neutral-500' : 'text-gray-500'
                       }`}>
                         {currentSlide + 1} / {SLIDES_DECK.length}
                       </span>
@@ -1199,7 +1199,7 @@ export default function ResearchHubView({
                       onClick={() => setCurrentSlide(prev => prev - 1)}
                       className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold border disabled:opacity-30 disabled:pointer-events-none cursor-pointer focus:outline-none ${
                         theme === 'dark'
-                          ? 'bg-neutral-900 hover:bg-neutral-850 border-neutral-850 text-white'
+                          ? 'bg-neutral-900 hover:bg-neutral-800 border-neutral-800 text-white'
                           : 'bg-white hover:bg-gray-50 border-gray-200 text-gray-700 shadow-sm'
                       }`}
                     >
@@ -1229,7 +1229,7 @@ export default function ResearchHubView({
                       onClick={() => setCurrentSlide(prev => prev + 1)}
                       className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold border disabled:opacity-30 disabled:pointer-events-none cursor-pointer focus:outline-none ${
                         theme === 'dark'
-                          ? 'bg-neutral-900 hover:bg-neutral-850 border-neutral-850 text-white'
+                          ? 'bg-neutral-900 hover:bg-neutral-800 border-neutral-800 text-white'
                           : 'bg-white hover:bg-gray-50 border-gray-200 text-gray-700 shadow-sm'
                       }`}
                     >
@@ -1320,7 +1320,7 @@ export default function ResearchHubView({
 
                 {/* Progress Timeline bar */}
                 <div className="space-y-2 select-none">
-                  <div className="flex justify-between text-[10px] font-mono text-neutral-550">
+                  <div className="flex justify-between text-[10px] font-mono text-neutral-500">
                     <span>{podcastPlaying ? '0:22' : '0:00'}</span>
                     <span>1:45 mins</span>
                   </div>
@@ -1413,7 +1413,7 @@ export default function ResearchHubView({
                         <label 
                           htmlFor={milestone.id} 
                           className={`text-[10.5px] leading-tight font-medium cursor-pointer select-none truncate max-w-[170px] ${
-                            completedMilestones[milestone.id] ? 'line-through text-neutral-550' : 'text-neutral-400'
+                            completedMilestones[milestone.id] ? 'line-through text-neutral-500' : 'text-neutral-400'
                           }`}
                         >
                           {milestone.label}
@@ -1428,7 +1428,7 @@ export default function ResearchHubView({
               <div className="lg:col-span-3 p-6 md:p-9 space-y-6 select-text overflow-y-auto">
                 <div className="flex items-center justify-between pb-4 border-b border-[#121318]">
                   <div className="space-y-0.5">
-                    <span className="text-[9px] font-mono font-bold uppercase text-neutral-450">Syllabus Handbook</span>
+                    <span className="text-[9px] font-mono font-bold uppercase text-neutral-400">Syllabus Handbook</span>
                     <h3 className="font-sans font-black text-lg text-white">
                       {activeGuideChapter === 'chap-1' && "Chapter 1: Multi-Dimensional Spaces and Systems Constraints"}
                       {activeGuideChapter === 'chap-2' && "Chapter 2: Derivative Gradients Transformations Matrix Laws"}
@@ -1446,7 +1446,7 @@ export default function ResearchHubView({
                   
                   <div className="p-4 rounded-xl bg-purple-500/5 border border-purple-500/10 select-text">
                     <h4 className="font-sans text-xs font-extrabold text-purple-400 block pb-1">Essential Mathematical Definition:</h4>
-                    <p className="font-serif italic text-neutral-350">
+                    <p className="font-serif italic text-neutral-300">
                       "In general, functions are bounded inside state-space coordinates. Under dynamic derivations, changes represent gradients vector chains. Formulas converges precisely when inputs scale as configured."
                     </p>
                   </div>
@@ -1511,7 +1511,7 @@ export default function ResearchHubView({
                         setIsRenaming(false);
                         setTempTitle(selectedLecture.title);
                       }}
-                      className="px-2.5 py-1.5 rounded-lg bg-neutral-900 border border-neutral-850 text-neutral-400 font-sans text-[10px] font-bold focus:outline-none cursor-pointer hover:bg-neutral-850 transition-all"
+                      className="px-2.5 py-1.5 rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-400 font-sans text-[10px] font-bold focus:outline-none cursor-pointer hover:bg-neutral-800 transition-all"
                     >
                       Cancel
                     </button>
@@ -1593,9 +1593,9 @@ export default function ResearchHubView({
                   }}
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all border whitespace-nowrap cursor-pointer focus:outline-none ${
                     isActive
-                      ? 'bg-indigo-500/10 border-indigo-500/35 text-indigo-400 shadow-lg shadow-indigo-550/5'
+                      ? 'bg-indigo-500/10 border-indigo-500/35 text-indigo-400 shadow-lg shadow-indigo-500/5'
                       : theme === 'dark'
-                        ? 'bg-[#0c0d12]/60 border-neutral-900/60 text-neutral-450 hover:text-neutral-200 hover:bg-[#121318]'
+                        ? 'bg-[#0c0d12]/60 border-neutral-900/60 text-neutral-400 hover:text-neutral-200 hover:bg-[#121318]'
                         : 'bg-white border-gray-200 text-neutral-500 hover:text-neutral-900 hover:bg-gray-50'
                   }`}
                 >
@@ -1623,7 +1623,7 @@ export default function ResearchHubView({
                   Your Lecture Is Ready
                 </h2>
                 <p className={`text-sm md:text-base font-medium leading-relaxed max-w-lg mx-auto ${
-                  theme === 'dark' ? 'text-neutral-450' : 'text-gray-600'
+                  theme === 'dark' ? 'text-neutral-400' : 'text-gray-600'
                 }`}>
                   Choose how you want AI to transform your lecture. Convert speech structures into customized academic products.
                 </p>
@@ -1725,7 +1725,7 @@ export default function ResearchHubView({
                   </div>
 
                   <span className={`text-[9.5px] font-black font-mono tracking-widest flex items-center gap-1 uppercase ${
-                    theme === 'dark' ? 'text-orange-400' : 'text-orange-655'
+                    theme === 'dark' ? 'text-orange-400' : 'text-orange-600'
                   }`}>
                     <span>Practice Deck</span>
                     <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
@@ -1759,7 +1759,7 @@ export default function ResearchHubView({
                   </div>
 
                   <span className={`text-[9.5px] font-black font-mono tracking-widest flex items-center gap-1 uppercase ${
-                    theme === 'dark' ? 'text-emerald-400' : 'text-emerald-655'
+                    theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'
                   }`}>
                     <span>Test Recall</span>
                     <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
@@ -1941,7 +1941,7 @@ export default function ResearchHubView({
                       setNoteTitle('');
                       setNoteContent('');
                     }}
-                    className="flex items-center gap-1 rounded-xl bg-indigo-600 hover:bg-indigo-550 text-[11px] font-black px-3.5 py-2 text-white transition-all active:scale-95 shadow-lg focus:outline-none cursor-pointer"
+                    className="flex items-center gap-1 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-[11px] font-black px-3.5 py-2 text-white transition-all active:scale-95 shadow-lg focus:outline-none cursor-pointer"
                   >
                     <Plus className="h-3.5 w-3.5" />
                     <span>NEW NOTE</span>
@@ -1963,7 +1963,7 @@ export default function ResearchHubView({
                       type="button"
                       onClick={handleCancelEdit}
                       className={`text-[10px] font-bold transition-colors cursor-pointer ${
-                        theme === 'dark' ? 'text-neutral-400 hover:text-white' : 'text-gray-550 hover:text-gray-800'
+                        theme === 'dark' ? 'text-neutral-400 hover:text-white' : 'text-gray-500 hover:text-gray-800'
                       }`}
                     >
                       Cancel
@@ -1981,7 +1981,7 @@ export default function ResearchHubView({
                       onChange={(e) => setNoteTitle(e.target.value)}
                       placeholder="e.g. Backpropagation Formulas"
                       className={`w-full rounded-xl border text-xs font-semibold placeholder-neutral-500 outline-none p-3.5 transition-all focus:border-indigo-500 ${
-                        theme === 'dark' ? 'border-neutral-900 bg-neutral-955 text-white' : 'border-gray-200 bg-gray-50 text-gray-800'
+                        theme === 'dark' ? 'border-neutral-900 bg-neutral-950 text-white' : 'border-gray-200 bg-gray-50 text-gray-800'
                       }`}
                     />
                   </div>
@@ -1996,7 +1996,7 @@ export default function ResearchHubView({
                       value={noteContent}
                       onChange={(e) => setNoteContent(e.target.value)}
                       placeholder="Write your research notes, insights, or lecture concepts here..."
-                      className={`w-full rounded-xl border text-xs font-medium placeholder-neutral-550 outline-none p-3.5 transition-all focus:border-indigo-500 resize-none font-serif leading-relaxed ${
+                      className={`w-full rounded-xl border text-xs font-medium placeholder-neutral-500 outline-none p-3.5 transition-all focus:border-indigo-500 resize-none font-serif leading-relaxed ${
                         theme === 'dark' ? 'border-neutral-900 bg-neutral-950 text-neutral-300' : 'border-gray-200 bg-gray-50 text-gray-700'
                       }`}
                     />
@@ -2004,7 +2004,7 @@ export default function ResearchHubView({
 
                   <button
                     type="submit"
-                    className="w-full py-3 rounded-xl font-sans text-xs font-black tracking-wide text-center bg-indigo-600 hover:bg-indigo-550 text-white transition-all focus:outline-none cursor-pointer"
+                    className="w-full py-3 rounded-xl font-sans text-xs font-black tracking-wide text-center bg-indigo-600 hover:bg-indigo-700 text-white transition-all focus:outline-none cursor-pointer"
                   >
                     {isCreatingNote ? 'SAVE NOTE TO FIRESTORE' : 'UPDATE NOTE IN FIRESTORE'}
                   </button>
@@ -2037,7 +2037,7 @@ export default function ResearchHubView({
                     </div>
                   ) : filteredNotes.length === 0 ? (
                     <div className="flex-1 flex flex-col items-center justify-center text-center text-neutral-500 p-6">
-                      <FileText className="h-9 w-9 mb-2 opacity-30 text-indigo-450" />
+                      <FileText className="h-9 w-9 mb-2 opacity-30 text-indigo-400" />
                       <p className="text-xs font-black font-sans">No Notes Found</p>
                       <p className="text-[10px] text-neutral-500 leading-normal font-medium mt-1.5 max-w-[200px]">
                         {noteSearchQuery ? 'Try matching alternative terms.' : 'Create notes to store core concepts from this lecture.'}
@@ -2096,7 +2096,7 @@ export default function ResearchHubView({
                           </div>
 
                           <div className={`text-[9px] font-mono font-medium flex items-center justify-between border-t pt-2 ${
-                            theme === 'dark' ? 'text-neutral-500 border-neutral-900/50' : 'text-gray-450 border-gray-200'
+                            theme === 'dark' ? 'text-neutral-500 border-neutral-900/50' : 'text-gray-400 border-gray-200'
                           }`}>
                             <span>Firestore Synced</span>
                             <span>

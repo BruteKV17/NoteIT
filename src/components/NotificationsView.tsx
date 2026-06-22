@@ -93,7 +93,7 @@ export default function NotificationsView({
             </button>
             <button
               onClick={onClearNotifications}
-              className="flex items-center gap-1 hover:bg-red-50 hover:text-red-600 hover:border-red-150 border border-gray-200 rounded-lg px-3 py-1.5 text-xs text-gray-700 font-semibold focus:outline-none"
+              className="flex items-center gap-1 hover:bg-red-50 hover:text-red-600 hover:border-red-200 border border-gray-200 rounded-lg px-3 py-1.5 text-xs text-gray-700 font-semibold focus:outline-none"
             >
               <Trash2 className="h-4.5 w-4.5" />
               <span>Clear Activity</span>
@@ -121,7 +121,7 @@ export default function NotificationsView({
                 <Calendar className="h-3.5 w-3.5" />
                 <span>Today</span>
               </div>
-              <div className="bg-white rounded-2xl border border-gray-250 divide-y divide-gray-150 overflow-hidden shadow-xs">
+              <div className="bg-white rounded-2xl border border-gray-200 divide-y divide-gray-200 overflow-hidden shadow-xs">
                 {today.map((item) => (
                   <div 
                     key={item.id}

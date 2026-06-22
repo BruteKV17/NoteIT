@@ -370,7 +370,7 @@ export default function QuizView({
               
               {/* Difficulty Selection Tab Bar */}
               <div className={`flex gap-1 p-1 rounded-xl border ${
-                theme === 'dark' ? 'bg-neutral-950 border-neutral-850' : 'bg-gray-100 border-gray-200'
+                theme === 'dark' ? 'bg-neutral-950 border-neutral-800' : 'bg-gray-100 border-gray-200'
               }`}>
                 {(['easy', 'medium', 'hard'] as const).map(diff => (
                   <button
@@ -379,7 +379,7 @@ export default function QuizView({
                     className={`px-4.5 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
                       activeDifficulty === diff 
                         ? theme === 'dark' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-black shadow-sm'
-                        : 'text-neutral-450 hover:text-white'
+                        : 'text-neutral-400 hover:text-white'
                     }`}
                   >
                     {diff}
@@ -395,7 +395,7 @@ export default function QuizView({
               theme === 'dark' ? 'bg-[#121318] border-neutral-900' : 'bg-white border-gray-200'
             }`}>
               <div className={`h-9 w-9 rounded-lg flex items-center justify-center ${
-                theme === 'dark' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-550/10 text-indigo-650'
+                theme === 'dark' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-500/10 text-indigo-600'
               }`}>
                 <Award className="h-5 w-5" />
               </div>
@@ -409,7 +409,7 @@ export default function QuizView({
               theme === 'dark' ? 'bg-[#121318] border-neutral-900' : 'bg-white border-gray-200'
             }`}>
               <div className={`h-9 w-9 rounded-lg flex items-center justify-center ${
-                theme === 'dark' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-green-55/10 text-green-600'
+                theme === 'dark' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-green-50/10 text-green-600'
               }`}>
                 <Check className="h-5 w-5" />
               </div>
@@ -477,7 +477,7 @@ export default function QuizView({
                     </div>
 
                     <div className={`mt-5 pt-3.5 border-t flex items-center justify-between ${
-                      theme === 'dark' ? 'border-neutral-850' : 'border-gray-100'
+                      theme === 'dark' ? 'border-neutral-800' : 'border-gray-100'
                     }`}>
                       <span className="text-[11px] text-gray-500 flex items-center gap-1 font-medium font-mono">
                         <Clock className="h-3 w-3 text-gray-400" />
@@ -592,7 +592,7 @@ export default function QuizView({
 
           {/* Stats Breakdown */}
           <div className={`p-4 rounded-xl border text-xs leading-relaxed space-y-3 ${
-            theme === 'dark' ? 'bg-neutral-950/50 border-neutral-900/60 text-neutral-350' : 'bg-gray-50 border-gray-100 text-gray-650'
+            theme === 'dark' ? 'bg-neutral-950/50 border-neutral-900/60 text-neutral-300' : 'bg-gray-50 border-gray-100 text-gray-600'
           }`}>
             <div className="flex justify-between items-center">
               <span className="font-semibold">Total Questions Attempted:</span>
@@ -627,7 +627,7 @@ export default function QuizView({
               className={`w-full sm:w-auto rounded-lg border px-4 py-2.5 text-xs font-bold cursor-pointer transition-colors ${
                 showReview 
                   ? 'bg-indigo-600 border-indigo-600 text-white' 
-                  : (theme === 'dark' ? 'border-neutral-850 bg-neutral-900 text-white hover:bg-neutral-850' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50')
+                  : (theme === 'dark' ? 'border-neutral-800 bg-neutral-900 text-white hover:bg-neutral-800' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50')
               }`}
             >
               Review Answers
@@ -636,7 +636,7 @@ export default function QuizView({
               onClick={handleGenerateMore}
               disabled={isGenerating}
               className={`w-full sm:w-auto rounded-lg border px-4 py-2.5 text-xs font-bold cursor-pointer transition-colors flex items-center justify-center gap-1.5 ${
-                theme === 'dark' ? 'border-neutral-850 bg-neutral-900 text-indigo-400 hover:bg-neutral-850' : 'border-gray-200 bg-white text-indigo-600 hover:bg-gray-50'
+                theme === 'dark' ? 'border-neutral-800 bg-neutral-900 text-indigo-400 hover:bg-neutral-800' : 'border-gray-200 bg-white text-indigo-600 hover:bg-gray-50'
               }`}
             >
               <Sparkles className="h-3.5 w-3.5" />
@@ -836,7 +836,7 @@ export default function QuizView({
                   <div className="font-mono text-[9px] font-black uppercase text-indigo-400">Column A</div>
                   {currentQuestion.matchLeft.map((item, idx) => (
                     <div key={idx} className={`p-2.5 rounded-lg border font-bold ${
-                      theme === 'dark' ? 'bg-neutral-900 border-neutral-850 text-neutral-300' : 'bg-white border-gray-200 text-gray-700'
+                      theme === 'dark' ? 'bg-neutral-900 border-neutral-800 text-neutral-300' : 'bg-white border-gray-200 text-gray-700'
                     }`}>{item}</div>
                   ))}
                 </div>
@@ -844,7 +844,7 @@ export default function QuizView({
                   <div className="font-mono text-[9px] font-black uppercase text-purple-400">Column B</div>
                   {currentQuestion.matchRight.map((item, idx) => (
                     <div key={idx} className={`p-2.5 rounded-lg border font-bold ${
-                      theme === 'dark' ? 'bg-neutral-900 border-neutral-850 text-neutral-300' : 'bg-white border-gray-200 text-gray-700'
+                      theme === 'dark' ? 'bg-neutral-900 border-neutral-800 text-neutral-300' : 'bg-white border-gray-200 text-gray-700'
                     }`}>{item}</div>
                   ))}
                 </div>
@@ -898,7 +898,7 @@ export default function QuizView({
                       checkIcon = <Check className="h-4 w-4 text-emerald-600 flex-shrink-0" />;
                     } else if (isSelected) {
                       cardClass = "border-red-500 bg-red-50";
-                      badgeClass = "bg-red-650 text-white border-red-650";
+                      badgeClass = "bg-red-600 text-white border-red-600";
                       textClass = "text-red-950 font-bold";
                       checkIcon = <X className="h-4 w-4 text-red-600 flex-shrink-0" />;
                     } else {
@@ -954,13 +954,13 @@ export default function QuizView({
                 </div>
 
                 <div>
-                  <strong className={theme === 'dark' ? 'text-neutral-200' : 'text-gray-850'}>Correct Choice: </strong>
+                  <strong className={theme === 'dark' ? 'text-neutral-200' : 'text-gray-800'}>Correct Choice: </strong>
                   <span className="font-semibold">{currentQuestion.options[currentQuestion.correctAnswerIndex]}</span>
                 </div>
 
                 {currentQuestion.explanation && (
                   <div>
-                    <strong className={theme === 'dark' ? 'text-neutral-200' : 'text-gray-855'}>Why this is correct: </strong>
+                    <strong className={theme === 'dark' ? 'text-neutral-200' : 'text-gray-800'}>Why this is correct: </strong>
                     <span className={theme === 'dark' ? 'text-neutral-300' : 'text-gray-700'}>{currentQuestion.explanation}</span>
                   </div>
                 )}
@@ -985,7 +985,7 @@ export default function QuizView({
                   disabled={selectedAnswerIndex === null}
                   className={`rounded-lg px-5 py-2.5 text-xs font-bold transition-all focus:outline-none cursor-pointer ${
                     theme === 'dark'
-                      ? 'bg-white text-black hover:bg-neutral-100 disabled:opacity-30 disabled:bg-neutral-750 disabled:text-neutral-500'
+                      ? 'bg-white text-black hover:bg-neutral-100 disabled:opacity-30 disabled:bg-neutral-700 disabled:text-neutral-500'
                       : 'bg-black text-white hover:bg-gray-800 disabled:opacity-40'
                   }`}
                 >

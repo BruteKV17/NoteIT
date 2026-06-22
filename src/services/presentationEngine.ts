@@ -1,6 +1,7 @@
 import pptxgen from 'pptxgenjs';
 import { SlideBlueprint } from '../types';
 import { auth } from '../firebaseConfig';
+import { executeGeminiCall } from './gemini';
 
 export interface QualityReport {
   score: number;
@@ -122,35 +123,7 @@ const executeLlmCall = async (
   apiKey: string,
   responseSchema?: any
 ): Promise<any> => {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-  const requestBody: any = {
-    contents: [{ parts: [{ text: prompt }] }]
-  };
-  if (responseSchema) {
-    requestBody.generationConfig = {
-      responseMimeType: 'application/json',
-      responseSchema
-    };
-  }
-
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(requestBody)
-  });
-
-  if (!res.ok) {
-    const errorText = await res.text();
-    throw new Error(`LLM call failed (${res.status}): ${errorText}`);
-  }
-
-  const data = await res.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  if (responseSchema) {
-    const cleaned = extractJsonObject(text);
-    return JSON.parse(cleaned);
-  }
-  return text;
+  return executeGeminiCall(prompt, apiKey, undefined, responseSchema, undefined, model);
 };
 
 // Stage 1 & 2 & 11 presentation blueprint planner with AI Critic pass

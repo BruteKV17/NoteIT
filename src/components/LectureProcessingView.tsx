@@ -368,7 +368,7 @@ export default function LectureProcessingView({
       
       {/* Premium Glassmorphic Header */}
       <div className={`rounded-2xl border p-6.5 relative overflow-hidden shadow-md ${
-        theme === 'dark' ? 'bg-[#121318] border-neutral-850' : 'bg-white border-gray-200'
+        theme === 'dark' ? 'bg-[#121318] border-neutral-800' : 'bg-white border-gray-200'
       }`}>
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.01)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.01)_1px,transparent_1px)] bg-[size:16px_16px] opacity-15" />
         
@@ -443,7 +443,7 @@ export default function LectureProcessingView({
                   </>
                 ) : (
                   <>
-                    <Brain className="h-4 w-4 animate-bounce text-indigo-505" />
+                    <Brain className="h-4 w-4 animate-bounce text-indigo-500" />
                     AI ANALYZING
                   </>
                 )}
@@ -472,7 +472,7 @@ export default function LectureProcessingView({
 
         {/* Global Progress Bar */}
         <div className="mt-6.5 relative">
-          <div className="h-2 w-full rounded-full bg-gray-150 dark:bg-neutral-800 overflow-hidden">
+          <div className="h-2 w-full rounded-full bg-gray-200 dark:bg-neutral-800 overflow-hidden">
             <div 
               style={{ 
                 width: uploadStatus === 'completed' 
@@ -495,9 +495,9 @@ export default function LectureProcessingView({
  
       {/* Main Process Checklist Card */}
       <div className={`rounded-2xl border p-6.5 space-y-6 ${
-        theme === 'dark' ? 'bg-[#121318] border-neutral-850' : 'bg-white border-gray-200'
+        theme === 'dark' ? 'bg-[#121318] border-neutral-800' : 'bg-white border-gray-200'
       }`}>
-        <div className="flex items-center justify-between border-b border-gray-100 dark:border-neutral-850/50 pb-4">
+        <div className="flex items-center justify-between border-b border-gray-100 dark:border-neutral-800/50 pb-4">
           <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 font-mono">
             Pipeline Compilation Sequence
           </span>
@@ -507,7 +507,7 @@ export default function LectureProcessingView({
         </div>
 
         {uploadStatus !== 'completed' && uploadStatus !== 'failed' && (
-          <div className="py-4 flex justify-center border-b border-gray-100 dark:border-neutral-850/50">
+          <div className="py-4 flex justify-center border-b border-gray-100 dark:border-neutral-800/50">
             <BruteLoader size="md" message={`Current Phase: ${steps[currentStepIndex]?.label || 'Processing'}`} />
           </div>
         )}
@@ -533,7 +533,7 @@ export default function LectureProcessingView({
               </button>
               <button
                 onClick={() => setActivePage('academic-library')}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-gray-250 dark:border-neutral-800 text-gray-700 dark:text-neutral-350 px-4 py-2.5 text-xs font-bold hover:bg-gray-50 dark:hover:bg-neutral-800 transition-all focus:outline-none cursor-pointer"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-neutral-800 text-gray-700 dark:text-neutral-300 px-4 py-2.5 text-xs font-bold hover:bg-gray-50 dark:hover:bg-neutral-800 transition-all focus:outline-none cursor-pointer"
               >
                 <span>Return to Library</span>
               </button>
@@ -556,7 +556,7 @@ export default function LectureProcessingView({
                         : 'border-indigo-100 bg-indigo-50/20 text-gray-900'
                       : isFinished
                         ? theme === 'dark'
-                          ? 'border-neutral-850/50 opacity-70 text-neutral-300'
+                          ? 'border-neutral-800/50 opacity-70 text-neutral-300'
                           : 'border-gray-100 opacity-70 text-gray-700'
                         : theme === 'dark'
                           ? 'border-transparent opacity-35 text-neutral-500'
@@ -575,7 +575,7 @@ export default function LectureProcessingView({
                       </div>
                     )}
                     {isPending && (
-                      <div className="h-5 w-5 rounded-full bg-gray-100 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-750 flex items-center justify-center text-gray-400 dark:text-neutral-500 font-mono text-[9px] font-bold">
+                      <div className="h-5 w-5 rounded-full bg-gray-100 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 flex items-center justify-center text-gray-400 dark:text-neutral-500 font-mono text-[9px] font-bold">
                         {idx + 1}
                       </div>
                     )}
@@ -613,7 +613,7 @@ export default function LectureProcessingView({
 
         {/* Sync completed CTA overlay panel */}
         {uploadStatus === 'completed' && (
-          <div className="pt-4 border-t border-gray-100 dark:border-neutral-850/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-in">
+          <div className="pt-4 border-t border-gray-100 dark:border-neutral-800/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-in">
             <span className="text-[10px] font-bold text-emerald-500 font-mono flex items-center gap-1">
               <CheckCircle className="h-4 w-4" />
               WORKSPACE GENERATED SUCCESSFULLY! REDIRECTING NOW...

@@ -78,8 +78,8 @@ export default function FeedbackWidget({ theme }: FeedbackWidgetProps) {
           }}
           className={`h-11 w-11 rounded-full flex items-center justify-center shadow-2xl border transition-all hover:scale-108 hover:rotate-6 active:scale-95 focus:outline-none cursor-pointer ${
             isDark
-              ? 'bg-indigo-600 hover:bg-indigo-505 border-indigo-500/35 text-white shadow-indigo-950/45'
-              : 'bg-black hover:bg-neutral-850 border-neutral-800 text-white shadow-gray-400/30'
+              ? 'bg-indigo-600 hover:bg-indigo-500 border-indigo-500/35 text-white shadow-indigo-950/45'
+              : 'bg-black hover:bg-neutral-800 border-neutral-800 text-white shadow-gray-400/30'
           }`}
           title="Send Feedback"
         >
@@ -93,7 +93,7 @@ export default function FeedbackWidget({ theme }: FeedbackWidgetProps) {
           isDark ? 'bg-[#121318]/95 border-neutral-800 text-white backdrop-blur-md' : 'bg-white border-gray-200 text-gray-900 shadow-xl'
         }`}>
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-neutral-900/10 dark:border-neutral-850/40 pb-3">
+          <div className="flex items-center justify-between border-b border-neutral-900/10 dark:border-neutral-800/40 pb-3">
             <div className="flex items-center gap-2">
               <span className="rounded bg-indigo-500/10 border border-indigo-500/10 px-2 py-0.5 text-[8.5px] font-bold text-indigo-400 font-mono">
                 TELEMETRY REPORT
@@ -113,13 +113,13 @@ export default function FeedbackWidget({ theme }: FeedbackWidgetProps) {
                 <CheckCircle className="h-6 w-6" />
               </div>
               <h4 className="text-xs font-black">Feedback Transmitted</h4>
-              <p className="text-[10px] text-neutral-450 leading-relaxed max-w-[220px] mx-auto">
+              <p className="text-[10px] text-neutral-400 leading-relaxed max-w-[220px] mx-auto">
                 Thank you! Our engineering team has received your telemetry data and will analyze it shortly.
               </p>
               <button
                 onClick={() => setIsOpen(false)}
                 className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all mt-2 cursor-pointer focus:outline-none ${
-                  isDark ? 'bg-neutral-800 hover:bg-neutral-750 text-neutral-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
+                  isDark ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
                 }`}
               >
                 Close Gateway
@@ -170,7 +170,7 @@ export default function FeedbackWidget({ theme }: FeedbackWidgetProps) {
               {/* Email (only shown if not logged in) */}
               {!auth.currentUser && (
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold uppercase tracking-wider text-neutral-450 block">
+                  <label className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 block">
                     Your Email
                   </label>
                   <input
@@ -190,7 +190,7 @@ export default function FeedbackWidget({ theme }: FeedbackWidgetProps) {
 
               {/* Subject */}
               <div className="space-y-1">
-                <label className="text-[9px] font-bold uppercase tracking-wider text-neutral-450 block">
+                <label className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 block">
                   Subject / Summary
                 </label>
                 <input
@@ -209,7 +209,7 @@ export default function FeedbackWidget({ theme }: FeedbackWidgetProps) {
 
               {/* Description */}
               <div className="space-y-1">
-                <label className="text-[9px] font-bold uppercase tracking-wider text-neutral-450 block">
+                <label className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 block">
                   Description Details
                 </label>
                 <textarea

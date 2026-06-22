@@ -265,7 +265,7 @@ export default function LandingView({
             </button>
             <button
               onClick={onGetStarted}
-              className="rounded-full bg-white hover:bg-neutral-250 text-xs font-bold text-black px-6 py-3 transition-all active:scale-95 shadow-sm focus:outline-none cursor-pointer"
+              className="rounded-full bg-white hover:bg-neutral-200 text-xs font-bold text-black px-6 py-3 transition-all active:scale-95 shadow-sm focus:outline-none cursor-pointer"
             >
               Get Started
             </button>
@@ -395,7 +395,7 @@ export default function LandingView({
 
             {/* Card 2 */}
             <div className="bg-white/3 backdrop-blur-md p-7 rounded-2xl border border-white/8 hover:border-[#5F6DF8]/30 transition-all text-left space-y-4 group">
-              <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 text-amber-550 group-hover:bg-[#5F6DF8] group-hover:text-white transition-colors">
+              <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 text-amber-500 group-hover:bg-[#5F6DF8] group-hover:text-white transition-colors">
                 <Sparkles className="h-5.5 w-5.5" />
               </div>
               <h4 className="font-sans font-extrabold text-sm text-white leading-none">Smart Notes</h4>
@@ -684,7 +684,7 @@ export default function LandingView({
               </div>
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-black text-emerald-250">Review: Neural Networks</span>
+                  <span className="text-xs font-black text-emerald-300">Review: Neural Networks</span>
                   <span className="rounded bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 text-[8px] font-bold">45% Score</span>
                 </div>
                 <p className="text-[10.5px] leading-relaxed text-emerald-200/80 font-medium">
@@ -809,7 +809,7 @@ export default function LandingView({
 
               <button
                 onClick={onGetStarted}
-                className="w-full rounded-2xl bg-[#5F6DF8] hover:bg-indigo-650 py-3.5 font-sans text-xs font-black text-white transition-all text-center focus:outline-none cursor-pointer"
+                className="w-full rounded-2xl bg-[#5F6DF8] hover:bg-indigo-600 py-3.5 font-sans text-xs font-black text-white transition-all text-center focus:outline-none cursor-pointer"
               >
                 Go Pro
               </button>

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   User, 
   Settings, 
@@ -13,9 +13,14 @@ import {
   CreditCard,
   Check,
   RefreshCw,
-  ExternalLink
+  ExternalLink,
+  Key,
+  Trash2,
+  Lock
 } from 'lucide-react';
 import { PageId, UserSettings } from '../types';
+import { auth } from '../firebaseConfig';
+import { API_BASE_URL } from '../config';
 
 const COUNTRY_CODES = [
   { code: '+1', name: 'United States / Canada (+1)' },
@@ -64,6 +69,24 @@ export default function SettingsView({
   const [proactive, setProactive] = useState(settings.aiLevels.proactiveConceptSuggestion);
   const [bibliography, setBibliography] = useState(settings.aiLevels.automatedBibliography);
   const [synthesis, setSynthesis] = useState(settings.aiLevels.highIntensitySynthesis);
+
+  // AI Provider & API Keys state
+  const [aiProvider, setAiProvider] = useState<'gemini' | 'openai'>('gemini');
+  
+  // Configuration Status state
+  const [configStatus, setConfigStatus] = useState<{
+    configured: boolean;
+    provider?: string;
+    maskedKey?: string;
+    lastValidated?: string | null;
+  } | null>(null);
+  const [isLoadingConfig, setIsLoadingConfig] = useState(true);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [revalidating, setRevalidating] = useState(false);
+  const [deletingKey, setDeletingKey] = useState(false);
+  const [savingKey, setSavingKey] = useState(false);
+  const [newKey, setNewKey] = useState('');
+  const [showReplaceForm, setShowReplaceForm] = useState(false);
 
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -127,6 +150,137 @@ export default function SettingsView({
     triggerSaveNotification();
   };
 
+  const fetchConfigStatus = async () => {
+    setIsLoadingConfig(true);
+    setValidationError(null);
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) return;
+      const idToken = await currentUser.getIdToken(true);
+      const res = await fetch(`${API_BASE_URL}/api/ai/config-status`, {
+        headers: {
+          'Authorization': `Bearer ${idToken}`
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setConfigStatus(data);
+        if (data.configured) {
+          setAiProvider(data.provider || 'gemini');
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching AI config status:', err);
+    } finally {
+      setIsLoadingConfig(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'ai') {
+      fetchConfigStatus();
+    }
+  }, [activeTab]);
+
+  const handleRevalidateKey = async () => {
+    setRevalidating(true);
+    setValidationError(null);
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) return;
+      const idToken = await currentUser.getIdToken(true);
+      const res = await fetch(`${API_BASE_URL}/api/ai/revalidate`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${idToken}`
+        }
+      });
+      if (res.ok) {
+        triggerSaveNotification();
+        await fetchConfigStatus();
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        setValidationError(errorData.error || 'Failed to revalidate API key.');
+      }
+    } catch (err: any) {
+      console.error('Error revalidating key:', err);
+      setValidationError('Failed to revalidate API key. Please check network connection.');
+    } finally {
+      setRevalidating(false);
+    }
+  };
+
+  const handleDeleteKey = async () => {
+    if (!window.confirm('Are you sure you want to delete your API key configuration? This will lock your workspace until a new key is validated.')) {
+      return;
+    }
+    setDeletingKey(true);
+    setValidationError(null);
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) return;
+      const idToken = await currentUser.getIdToken(true);
+      const res = await fetch(`${API_BASE_URL}/api/ai/config`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${idToken}`
+        }
+      });
+      if (res.ok) {
+        // Redirect to onboarding page by reloading
+        window.location.reload();
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        setValidationError(errorData.error || 'Failed to delete API key.');
+      }
+    } catch (err: any) {
+      console.error('Error deleting key:', err);
+      setValidationError('Failed to delete key. Please check network connection.');
+    } finally {
+      setDeletingKey(false);
+    }
+  };
+
+  const handleSaveNewKey = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newKey.trim()) {
+      setValidationError('Please enter a new API key.');
+      return;
+    }
+    setSavingKey(true);
+    setValidationError(null);
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) return;
+      const idToken = await currentUser.getIdToken(true);
+      const res = await fetch(`${API_BASE_URL}/api/ai/validate-key`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify({
+          key: newKey.trim(),
+          provider: aiProvider
+        })
+      });
+      if (res.ok) {
+        setNewKey('');
+        setShowReplaceForm(false);
+        triggerSaveNotification();
+        await fetchConfigStatus();
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        setValidationError(errorData.error || 'Failed to validate API key.');
+      }
+    } catch (err: any) {
+      console.error('Error saving new key:', err);
+      setValidationError('Failed to validate key. Check your key and connection.');
+    } finally {
+      setSavingKey(false);
+    }
+  };
+
   const handleSaveAISettings = () => {
     const updated: UserSettings = {
       ...settings,
@@ -187,7 +341,7 @@ export default function SettingsView({
               className={`flex items-center gap-3 rounded-xl px-4 py-3 font-sans text-xs font-semibold tracking-tight transition-all focus:outline-none flex-shrink-0 md:w-full cursor-pointer ${
                 isActive
                   ? theme === 'dark'
-                    ? 'bg-indigo-650 text-white shadow-xs'
+                    ? 'bg-indigo-600 text-white shadow-xs'
                     : 'bg-black text-white shadow-xs'
                   : theme === 'dark'
                     ? 'text-neutral-400 hover:bg-[#1a1b24]/40 hover:text-white'
@@ -219,7 +373,7 @@ export default function SettingsView({
         {activeTab === 'profile' && (
           <form onSubmit={handleSaveProfile} className="space-y-5">
             <div>
-              <h3 className={`font-sans font-bold text-base ${theme === 'dark' ? 'text-white' : 'text-gray-955'}`}>User Profile</h3>
+              <h3 className={`font-sans font-bold text-base ${theme === 'dark' ? 'text-white' : 'text-gray-950'}`}>User Profile</h3>
               <p className="text-xs text-gray-400 mt-1">Configure your primary academic researcher identification and institutional information.</p>
             </div>
 
@@ -231,7 +385,7 @@ export default function SettingsView({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-[11px] font-bold text-gray-450 uppercase">FIRST NAME</label>
+                <label className="block text-[11px] font-bold text-neutral-500 uppercase">FIRST NAME</label>
                 <input
                   type="text"
                   required
@@ -246,7 +400,7 @@ export default function SettingsView({
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-gray-450 uppercase">LAST NAME</label>
+                <label className="block text-[11px] font-bold text-neutral-500 uppercase">LAST NAME</label>
                 <input
                   type="text"
                   required
@@ -255,7 +409,7 @@ export default function SettingsView({
                   className={`w-full rounded-lg border p-2.5 text-xs font-medium mt-1 outline-none ${
                     theme === 'dark'
                       ? 'border-neutral-800 bg-neutral-900/40 text-white focus:border-indigo-500 focus:bg-neutral-900'
-                      : 'border-gray-200 bg-gray-50/50 text-gray-900 focus:border-black focus:bg-white'
+                      : 'border-gray-200 bg-gray-50/50 text-gray-950 focus:border-black focus:bg-white'
                   }`}
                 />
               </div>
@@ -263,7 +417,7 @@ export default function SettingsView({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-[11px] font-bold text-gray-450 uppercase">UNIVERSITY / SCHOOL NAME</label>
+                <label className="block text-[11px] font-bold text-neutral-500 uppercase">UNIVERSITY / SCHOOL NAME</label>
                 <input
                   type="text"
                   required
@@ -278,7 +432,7 @@ export default function SettingsView({
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-gray-450 uppercase">EMAIL ADDRESS</label>
+                <label className="block text-[11px] font-bold text-neutral-500 uppercase">EMAIL ADDRESS</label>
                 <input
                   type="email"
                   required
@@ -295,7 +449,7 @@ export default function SettingsView({
 
             <div className="grid grid-cols-3 gap-3">
               <div className="col-span-1">
-                <label className="block text-[11px] font-bold text-gray-455 uppercase">CODE</label>
+                <label className="block text-[11px] font-bold text-neutral-500 uppercase">CODE</label>
                 <select
                   required
                   value={countryCode}
@@ -314,7 +468,7 @@ export default function SettingsView({
               </div>
 
               <div className="col-span-2">
-                <label className="block text-[11px] font-bold text-gray-455 uppercase">PHONE NUMBER</label>
+                <label className="block text-[11px] font-bold text-neutral-500 uppercase">PHONE NUMBER</label>
                 <input
                   type="tel"
                   required
@@ -336,7 +490,7 @@ export default function SettingsView({
                 type="submit"
                 className={`rounded-xl px-4.5 py-2.5 text-xs font-bold transition-all active:scale-95 shadow-xs cursor-pointer ${
                   theme === 'dark'
-                    ? 'bg-indigo-650 text-white hover:bg-indigo-550'
+                    ? 'bg-indigo-600 text-white hover:bg-indigo-700'
                     : 'bg-black text-white hover:bg-gray-800'
                 }`}
               >
@@ -347,15 +501,200 @@ export default function SettingsView({
         )}
 
         {activeTab === 'ai' && (
-          <div className="space-y-5">
+          <div className="space-y-5 animate-fade-in text-left">
             <div>
-              <h3 className={`font-sans font-bold text-base ${theme === 'dark' ? 'text-white' : 'text-gray-955'}`}>AI Generator Parameters</h3>
+              <h3 className={`font-sans font-bold text-base ${theme === 'dark' ? 'text-white' : 'text-gray-950'}`}>AI Generator Parameters</h3>
               <p className="text-xs text-gray-400 mt-1">Calibrate model parameters according to your reading and cognitive retention speed.</p>
             </div>
 
+            {validationError && (
+              <div className="rounded-xl bg-red-500/10 border border-red-500/20 p-3.5 flex items-start gap-2.5">
+                <div className="text-xs text-red-500 font-semibold">{validationError}</div>
+              </div>
+            )}
+
+            {isLoadingConfig ? (
+              <div className={`p-8 rounded-xl border flex flex-col items-center justify-center gap-3 ${
+                theme === 'dark' ? 'bg-[#08090c]/40 border-neutral-900' : 'bg-gray-50 border-gray-200'
+              }`}>
+                <RefreshCw className="h-6 w-6 text-indigo-500 animate-spin" />
+                <span className="text-xs text-neutral-400">Fetching API Key telemetry...</span>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Usage Dashboard */}
+                <div className={`p-5 rounded-xl border space-y-4 ${
+                  theme === 'dark' ? 'bg-[#08090c]/40 border-neutral-900' : 'bg-gray-50 border-gray-200'
+                }`}>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-neutral-800/40">
+                    <div>
+                      <h4 className={`text-xs font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>AI API Connection Telemetry</h4>
+                      <p className="text-[10px] text-gray-400 mt-0.5">Real-time status of your secure Bring Your Own Key configuration.</p>
+                    </div>
+                    <span className={`self-start sm:self-center px-3 py-1 rounded-full text-[10px] font-black tracking-wide uppercase ${
+                      configStatus?.configured
+                        ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                        : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
+                    }`}>
+                      {configStatus?.configured ? 'Connected' : 'Not Configured'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                    <div>
+                      <div className="text-neutral-400 text-[10px] font-bold uppercase tracking-wider">AI Provider</div>
+                      <div className="mt-1 font-semibold text-neutral-200">
+                        {configStatus?.provider === 'openai' ? 'OpenAI GPT-4o-mini' : 'Gemini 2.5 Flash'}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-neutral-400 text-[10px] font-bold uppercase tracking-wider">Key Security</div>
+                      <div className="mt-1 font-semibold text-neutral-200 flex items-center gap-1">
+                        <Lock className="h-3 w-3 text-indigo-400" />
+                        <span>AES-256-GCM Secure</span>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-neutral-400 text-[10px] font-bold uppercase tracking-wider">Active Mask</div>
+                      <div className="mt-1 font-mono font-bold text-neutral-300">
+                        {configStatus?.maskedKey || 'No key loaded'}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-neutral-400 text-[10px] font-bold uppercase tracking-wider">Last Checked</div>
+                      <div className="mt-1 font-semibold text-neutral-200">
+                        {configStatus?.lastValidated
+                          ? new Date(configStatus.lastValidated).toLocaleDateString(undefined, {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })
+                          : 'Never'}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2.5 pt-3 border-t border-neutral-800/40">
+                    <button
+                      onClick={handleRevalidateKey}
+                      disabled={revalidating || !configStatus?.configured}
+                      className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${
+                        theme === 'dark'
+                          ? 'bg-neutral-800 hover:bg-neutral-700 text-white'
+                          : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
+                      }`}
+                    >
+                      <RefreshCw className={`h-3.5 w-3.5 ${revalidating ? 'animate-spin' : ''}`} />
+                      <span>Revalidate Connection</span>
+                    </button>
+
+                    <button
+                      onClick={() => setShowReplaceForm(!showReplaceForm)}
+                      className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        theme === 'dark'
+                          ? 'bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-600/20'
+                          : 'bg-indigo-50 border border-indigo-100 text-indigo-700 hover:bg-indigo-100'
+                      }`}
+                    >
+                      <Key className="h-3.5 w-3.5" />
+                      <span>{showReplaceForm ? 'Hide Replace Form' : 'Replace API Key'}</span>
+                    </button>
+
+                    <button
+                      onClick={handleDeleteKey}
+                      disabled={deletingKey || !configStatus?.configured}
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all bg-rose-600/10 border border-rose-500/20 text-rose-400 hover:bg-rose-600/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ml-auto"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      <span>{deletingKey ? 'Deleting...' : 'Delete Key'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Replace Key Form */}
+                {showReplaceForm && (
+                  <form onSubmit={handleSaveNewKey} className={`p-5 rounded-xl border space-y-4 animate-fade-in ${
+                    theme === 'dark' ? 'bg-[#0a0b0d]/80 border-neutral-800' : 'bg-gray-50/50 border-gray-200'
+                  }`}>
+                    <div>
+                      <h4 className="text-xs font-black">Configure New API Key</h4>
+                      <p className="text-[10px] text-neutral-400 mt-0.5">Your key will be securely validated and encrypted before saving.</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 block">AI Provider</label>
+                        <select
+                          value={aiProvider}
+                          onChange={(e) => setAiProvider(e.target.value as any)}
+                          className={`w-full rounded-lg border p-2.5 text-xs outline-none cursor-pointer ${
+                            theme === 'dark'
+                              ? 'border-neutral-800 bg-[#0c0d12] text-white focus:border-indigo-500'
+                              : 'border-gray-200 bg-white text-gray-900 focus:border-black'
+                          }`}
+                        >
+                          <option value="gemini">Gemini 2.5 Flash</option>
+                          <option value="openai">OpenAI GPT-4o-mini</option>
+                        </select>
+                      </div>
+
+                      <div className="sm:col-span-2 space-y-1.5">
+                        <label className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 block">New API Key *</label>
+                        <input
+                          type="password"
+                          required
+                          value={newKey}
+                          onChange={(e) => setNewKey(e.target.value)}
+                          placeholder={aiProvider === 'openai' ? 'sk-proj-...' : 'AIzaSy...'}
+                          className={`w-full rounded-lg border p-2.5 text-xs outline-none ${
+                            theme === 'dark'
+                              ? 'border-neutral-800 bg-[#0c0d12] text-white focus:border-indigo-500'
+                              : 'border-gray-200 bg-white text-gray-900 focus:border-black'
+                          }`}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowReplaceForm(false);
+                          setNewKey('');
+                          setValidationError(null);
+                        }}
+                        className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          theme === 'dark' ? 'bg-neutral-800 text-white' : 'bg-gray-100 text-gray-900'
+                        }`}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={savingKey}
+                        className={`flex items-center gap-1.5 px-4.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          theme === 'dark' ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-black hover:bg-gray-800 text-white'
+                        }`}
+                      >
+                        {savingKey ? (
+                          <>
+                            <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                            <span>Validating & Saving...</span>
+                          </>
+                        ) : (
+                          <span>Save & Connect</span>
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            )}
+
             <div className="space-y-4 pt-2">
               <div className={`flex items-start justify-between gap-4 p-3.5 border rounded-xl transition-all ${
-                theme === 'dark' ? 'border-neutral-900 hover:bg-neutral-950/40' : 'border-gray-150 hover:bg-gray-50/50'
+                theme === 'dark' ? 'border-neutral-900 hover:bg-neutral-950/40' : 'border-gray-200 hover:bg-gray-50/50'
               }`}>
                 <div className="flex-1">
                   <h4 className={`text-xs font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Proactive Concept Suggestion</h4>
@@ -374,7 +713,7 @@ export default function SettingsView({
               </div>
 
               <div className={`flex items-start justify-between gap-4 p-3.5 border rounded-xl transition-all ${
-                theme === 'dark' ? 'border-neutral-900 hover:bg-neutral-950/40' : 'border-gray-150 hover:bg-gray-50/50'
+                theme === 'dark' ? 'border-neutral-900 hover:bg-neutral-950/40' : 'border-gray-200 hover:bg-gray-50/50'
               }`}>
                 <div className="flex-1">
                   <h4 className={`text-xs font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Automated Bibliography Generation</h4>
@@ -393,7 +732,7 @@ export default function SettingsView({
               </div>
 
               <div className={`flex items-start justify-between gap-4 p-3.5 border rounded-xl transition-all ${
-                theme === 'dark' ? 'border-neutral-900 hover:bg-neutral-950/40' : 'border-gray-150 hover:bg-gray-50/50'
+                theme === 'dark' ? 'border-neutral-900 hover:bg-neutral-950/40' : 'border-gray-200 hover:bg-gray-50/50'
               }`}>
                 <div className="flex-1">
                   <h4 className={`text-xs font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>High-Intensity Synthesis Engine</h4>
@@ -420,7 +759,7 @@ export default function SettingsView({
                 onClick={handleSaveAISettings}
                 className={`rounded-xl px-4.5 py-2.5 text-xs font-bold transition-all shadow-xs cursor-pointer ${
                   theme === 'dark'
-                    ? 'bg-indigo-650 text-white hover:bg-indigo-550'
+                    ? 'bg-indigo-600 text-white hover:bg-indigo-700'
                     : 'bg-black text-white hover:bg-gray-800'
                 }`}
               >
@@ -433,13 +772,13 @@ export default function SettingsView({
         {activeTab === 'lms' && (
           <div className="space-y-5">
             <div>
-              <h3 className={`font-sans font-bold text-base ${theme === 'dark' ? 'text-white' : 'text-gray-955'}`}>Canvas LMS Sync Portal</h3>
+              <h3 className={`font-sans font-bold text-base ${theme === 'dark' ? 'text-white' : 'text-gray-950'}`}>Canvas LMS Sync Portal</h3>
               <p className="text-xs text-gray-400 mt-1">Interfacing Note-IT AI with Canvas allows automated downloading of semester presentations, homework documents, and syllabi.</p>
             </div>
 
             <div className="space-y-4 pt-3">
               <div>
-                <label className="block text-[11px] font-bold text-gray-450 uppercase">INSTITUTION CANVAS HOSTING DOMAIN</label>
+                <label className="block text-[11px] font-bold text-neutral-500 uppercase">INSTITUTION CANVAS HOSTING DOMAIN</label>
                 <div className="flex gap-2 mt-1">
                   <span className={`inline-flex items-center rounded-l-lg border border-r-0 px-3 text-xs text-gray-400 ${
                     theme === 'dark' ? 'bg-[#0a0a0c] border-neutral-800' : 'bg-gray-50 border-gray-200'
@@ -461,7 +800,7 @@ export default function SettingsView({
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-gray-455 uppercase">CANVAS API DEVELOPER ACCESS KEY</label>
+                <label className="block text-[11px] font-bold text-neutral-500 uppercase">CANVAS API DEVELOPER ACCESS KEY</label>
                 <input
                   type="password"
                   value={canvasToken}
@@ -478,10 +817,10 @@ export default function SettingsView({
               </div>
 
               <div className={`p-4 rounded-xl border flex items-center justify-between ${
-                theme === 'dark' ? 'bg-[#08090c]/40 border-neutral-850' : 'bg-gray-50 border-gray-150'
+                theme === 'dark' ? 'bg-[#08090c]/40 border-neutral-800' : 'bg-gray-50 border-gray-200'
               }`}>
                 <div>
-                  <div className={`text-xs font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-955'}`}>Integration Status</div>
+                  <div className={`text-xs font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-950'}`}>Integration Status</div>
                   <div className="text-[10px] text-gray-400 mt-0.5">
                     {settings.integrations.canvasConnected 
                       ? `Last synchronized: ${settings.integrations.lastSynced || 'Never'}` 
@@ -503,14 +842,14 @@ export default function SettingsView({
               theme === 'dark' ? 'border-neutral-900' : 'border-gray-100'
             }`}>
               <button
-                onClick={handleTriggerLmsSync}
-                disabled={isLmsSyncing || !canvasUrl}
-                className={`flex items-center gap-1.5 rounded-xl px-4.5 py-2.5 text-xs font-bold transition-all disabled:opacity-50 cursor-pointer ${
-                  theme === 'dark'
-                    ? 'bg-indigo-650 text-white hover:bg-indigo-550'
-                    : 'bg-black text-white hover:bg-gray-800'
-                }`}
-              >
+                  onClick={handleTriggerLmsSync}
+                  disabled={isLmsSyncing || !canvasUrl}
+                  className={`flex items-center gap-1.5 rounded-xl px-4.5 py-2.5 text-xs font-bold transition-all disabled:opacity-50 cursor-pointer ${
+                    theme === 'dark'
+                      ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                      : 'bg-black text-white hover:bg-gray-800'
+                  }`}
+                >
                 {isLmsSyncing && <RefreshCw className="h-4 w-4 animate-spin" />}
                 <span>{isLmsSyncing ? 'Authorizing Key...' : 'Validate & Sync Coursework'}</span>
               </button>
@@ -521,7 +860,7 @@ export default function SettingsView({
         {activeTab === 'billing' && (
           <div className="space-y-5">
             <div>
-              <h3 className={`font-sans font-bold text-base ${theme === 'dark' ? 'text-white' : 'text-gray-955'}`}>Plan & Subscription Overview</h3>
+              <h3 className={`font-sans font-bold text-base ${theme === 'dark' ? 'text-white' : 'text-gray-950'}`}>Plan & Subscription Overview</h3>
               <p className="text-xs text-gray-400 mt-1">Review active tiers, billing periods, and features limits.</p>
             </div>
 
@@ -552,7 +891,7 @@ export default function SettingsView({
                       }`}>
                         <Check className="h-2.5 w-2.5" />
                       </div>
-                      <span className={theme === 'dark' ? 'text-neutral-350' : 'text-gray-650'}>{feat}</span>
+                      <span className={theme === 'dark' ? 'text-neutral-300' : 'text-gray-600'}>{feat}</span>
                     </div>
                   ))}
                 </div>
@@ -567,7 +906,7 @@ export default function SettingsView({
                 onClick={() => setActivePage('pricing')}
                 className={`flex items-center justify-center gap-1 rounded-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer ${
                   theme === 'dark'
-                    ? 'bg-indigo-650 text-white hover:bg-indigo-550'
+                    ? 'bg-indigo-600 text-white hover:bg-indigo-700'
                     : 'bg-black text-white hover:bg-gray-800'
                 }`}
               >

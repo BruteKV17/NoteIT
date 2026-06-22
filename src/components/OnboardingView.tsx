@@ -9,7 +9,8 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
+import { db, auth } from '../firebaseConfig';
+import { API_BASE_URL } from '../config';
 
 interface OnboardingViewProps {
   userId: string;
@@ -17,6 +18,7 @@ interface OnboardingViewProps {
   fullName: string;
   theme: 'light' | 'dark';
   onComplete: (userData: any) => void;
+  initialStep?: number;
 }
 
 const COUNTRY_CODES = [
@@ -36,7 +38,8 @@ export default function OnboardingView({
   email: initialEmail,
   fullName: initialFullName,
   theme,
-  onComplete
+  onComplete,
+  initialStep
 }: OnboardingViewProps) {
   
   // Split initialFullName if possible for convenience
@@ -52,8 +55,13 @@ export default function OnboardingView({
   const [countryCode, setCountryCode] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
 
-  // Step state (1: Personal, 2: Academic, 3: Contact)
-  const [step, setStep] = useState(1);
+  // Gemini Key Configuration
+  const [geminiKey, setGeminiKey] = useState('');
+  const [isValidatingKey, setIsValidatingKey] = useState(false);
+  const [validationSuccess, setValidationSuccess] = useState(false);
+
+  // Step state (1: Personal, 2: Academic, 3: Contact, 4: AI Config)
+  const [step, setStep] = useState(initialStep || 1);
 
   // Status states
   const [loading, setLoading] = useState(false);
@@ -73,7 +81,38 @@ export default function OnboardingView({
     setParticles(items);
   }, []);
 
-  const handleNextStep = (e: React.MouseEvent) => {
+  // Sync step with initialStep prop if changed
+  useEffect(() => {
+    if (initialStep) {
+      setStep(initialStep);
+    }
+  }, [initialStep]);
+
+  // Load existing profile data on mount or when userId changes
+  useEffect(() => {
+    if (!userId) return;
+    const fetchUserData = async () => {
+      try {
+        const { getDoc, doc } = await import('firebase/firestore');
+        const userDocRef = doc(db, 'users', userId);
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+          const data = userDocSnap.data();
+          if (data.first_name) setFirstName(data.first_name);
+          if (data.last_name) setLastName(data.last_name);
+          if (data.school_or_university) setSchool(data.school_or_university);
+          if (data.email) setEmail(data.email);
+          if (data.country_code) setCountryCode(data.country_code);
+          if (data.phone_number) setPhoneNumber(data.phone_number);
+        }
+      } catch (err) {
+        console.error("Error loading user profile in OnboardingView:", err);
+      }
+    };
+    fetchUserData();
+  }, [userId]);
+
+  const handleNextStep = async (e: React.MouseEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -89,6 +128,126 @@ export default function OnboardingView({
         return;
       }
       setStep(3);
+    } else if (step === 3) {
+      if (!email.trim() || !countryCode || !phoneNumber.trim()) {
+        setError('All fields are required. Please verify all onboarding steps.');
+        return;
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        setError('Please enter a valid email address.');
+        return;
+      }
+
+      const cleanPhone = phoneNumber.replace(/[\s\-\(\)]/g, '');
+      const phoneRegex = /^\d{7,15}$/;
+      if (!phoneRegex.test(cleanPhone)) {
+        setError('Please enter a valid phone number (digits only, at least 7 digits).');
+        return;
+      }
+
+      setLoading(true);
+
+      const profileData = {
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        school_or_university: school.trim(),
+        email: email.trim(),
+        country_code: countryCode,
+        phone_number: cleanPhone,
+        profile_image_url: null,
+        onboarding_completed: true,
+        created_at: serverTimestamp(),
+        updated_at: serverTimestamp()
+      };
+
+      console.log("Onboarding Save Attempt:", {
+        currentUserUID: userId,
+        authenticatedState: !!userId,
+        firestoreDocumentPath: `users/${userId}`,
+        writeRequestPayload: profileData
+      });
+
+      try {
+        if (!userId) {
+          throw new Error("User authentication context is missing. Please log in again.");
+        }
+        
+        const userDocRef = doc(db, 'users', userId);
+        await setDoc(userDocRef, profileData, { merge: true });
+        
+        console.log("Onboarding Save Succeeded! Document created at path users/" + userId);
+        setStep(4);
+      } catch (err: any) {
+        console.error("Onboarding Save Failed:", {
+          currentUserUID: userId,
+          authenticatedState: !!userId,
+          firestoreDocumentPath: `users/${userId}`,
+          writeRequestPayload: profileData,
+          exactFirestoreError: err
+        });
+        setError(err.message || 'Failed to save onboarding settings. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleValidateAndComplete = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setValidationSuccess(false);
+
+    if (!geminiKey.trim()) {
+      setError('Please enter a Gemini API Key.');
+      return;
+    }
+
+    setIsValidatingKey(true);
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error('User is not authenticated. Please log in again.');
+      }
+      const idToken = await currentUser.getIdToken(true);
+      const response = await fetch(`${API_BASE_URL}/api/ai/validate-key`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify({
+          key: geminiKey.trim(),
+          provider: 'gemini'
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Validation failed with status ${response.status}`);
+      }
+
+      setValidationSuccess(true);
+      
+      // Complete setup and trigger callback
+      setTimeout(() => {
+        onComplete({
+          first_name: firstName,
+          last_name: lastName,
+          email: email,
+          school_or_university: school,
+          country_code: countryCode,
+          phone_number: phoneNumber,
+          onboarding_completed: true,
+          providerConfigured: true
+        });
+      }, 1000);
+    } catch (err: any) {
+      console.error("Validation error:", err);
+      setError(err.message || 'Failed to validate API key. Please check your key and quota.');
+    } finally {
+      setIsValidatingKey(false);
     }
   };
 
@@ -96,75 +255,6 @@ export default function OnboardingView({
     e.preventDefault();
     setError(null);
     setStep(prev => Math.max(1, prev - 1));
-  };
-
-  const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    // Final validations
-    if (!firstName.trim() || !lastName.trim() || !school.trim() || !email.trim() || !countryCode || !phoneNumber.trim()) {
-      setError('All fields are required. Please verify all onboarding steps.');
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
-      setError('Please enter a valid email address.');
-      return;
-    }
-
-    const cleanPhone = phoneNumber.replace(/[\s\-\(\)]/g, '');
-    const phoneRegex = /^\d{7,15}$/;
-    if (!phoneRegex.test(cleanPhone)) {
-      setError('Please enter a valid phone number (digits only, at least 7 digits).');
-      return;
-    }
-
-    setLoading(true);
-
-    const profileData = {
-      first_name: firstName.trim(),
-      last_name: lastName.trim(),
-      school_or_university: school.trim(),
-      email: email.trim(),
-      country_code: countryCode,
-      phone_number: cleanPhone,
-      profile_image_url: null,
-      onboarding_completed: true,
-      created_at: serverTimestamp(),
-      updated_at: serverTimestamp()
-    };
-
-    console.log("Onboarding Save Attempt:", {
-      currentUserUID: userId,
-      authenticatedState: !!userId,
-      firestoreDocumentPath: `users/${userId}`,
-      writeRequestPayload: profileData
-    });
-
-    try {
-      if (!userId) {
-        throw new Error("User authentication context is missing. Please log in again.");
-      }
-      
-      const userDocRef = doc(db, 'users', userId);
-      await setDoc(userDocRef, profileData, { merge: true });
-      
-      console.log("Onboarding Save Succeeded! Document created at path users/" + userId);
-      setLoading(false);
-      onComplete(profileData);
-    } catch (err: any) {
-      console.error("Onboarding Save Failed:", {
-        currentUserUID: userId,
-        authenticatedState: !!userId,
-        firestoreDocumentPath: `users/${userId}`,
-        writeRequestPayload: profileData,
-        exactFirestoreError: err
-      });
-      setError(err.message || 'Failed to save onboarding settings. Please try again.');
-      setLoading(false);
-    }
   };
 
   const isDark = theme === 'dark';
@@ -223,16 +313,16 @@ export default function OnboardingView({
         }`}>
           {/* Step Progress Indicator */}
           <div className="flex items-center justify-between mb-6">
-            {[1, 2, 3].map((s) => (
+            {[1, 2, 3, 4].map((s) => (
               <div key={s} className="flex items-center flex-1 last:flex-none">
                 <div className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-black transition-all ${
                   step >= s 
                     ? 'bg-indigo-600 text-white shadow-md' 
-                    : isDark ? 'bg-neutral-800 text-neutral-500 border border-neutral-700' : 'bg-gray-100 text-gray-450 border border-gray-200'
+                    : isDark ? 'bg-neutral-800 text-neutral-500 border border-neutral-700' : 'bg-gray-100 text-neutral-500 border border-gray-200'
                 }`}>
                   {s}
                 </div>
-                {s < 3 && (
+                {s < 4 && (
                   <div className={`h-0.5 flex-1 mx-2 rounded-full transition-all ${
                     step > s ? 'bg-indigo-500' : isDark ? 'bg-neutral-800' : 'bg-gray-200'
                   }`} />
@@ -249,17 +339,17 @@ export default function OnboardingView({
           )}
 
           {/* Form */}
-          <form onSubmit={handleFormSubmit} className="space-y-4">
+          <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
             
             {step === 1 && (
               <div className="space-y-4 animate-fade-in text-left">
-                <div className="border-b border-neutral-900/10 dark:border-neutral-850/40 pb-2 mb-2">
+                <div className="border-b border-neutral-900/10 dark:border-neutral-800/40 pb-2 mb-2">
                   <h3 className="text-sm font-black">Personal Identity</h3>
-                  <p className="text-[10px] text-gray-450">Let's register your scholarly name.</p>
+                  <p className="text-[10px] text-neutral-400">Let's register your scholarly name.</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-[9px] font-bold uppercase tracking-wider text-gray-450 block">
+                    <label className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 block">
                       First Name
                     </label>
                     <div className="relative">
@@ -280,7 +370,7 @@ export default function OnboardingView({
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-[9px] font-bold uppercase tracking-wider text-gray-455 block">
+                    <label className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 block">
                       Last Name
                     </label>
                     <div className="relative">
@@ -305,12 +395,12 @@ export default function OnboardingView({
 
             {step === 2 && (
               <div className="space-y-4 animate-fade-in text-left">
-                <div className="border-b border-neutral-900/10 dark:border-neutral-850/40 pb-2 mb-2">
+                <div className="border-b border-neutral-900/10 dark:border-neutral-800/40 pb-2 mb-2">
                   <h3 className="text-sm font-black">Academic Profile</h3>
-                  <p className="text-[10px] text-gray-455">Tell us where you pursue your research or learning.</p>
+                  <p className="text-[10px] text-neutral-400">Tell us where you pursue your research or learning.</p>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[9px] font-bold uppercase tracking-wider text-gray-450 block">
+                  <label className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 block">
                     University / Institution Name
                   </label>
                   <div className="relative">
@@ -334,12 +424,12 @@ export default function OnboardingView({
 
             {step === 3 && (
               <div className="space-y-4 animate-fade-in text-left">
-                <div className="border-b border-neutral-900/10 dark:border-neutral-850/40 pb-2 mb-2">
+                <div className="border-b border-neutral-900/10 dark:border-neutral-800/40 pb-2 mb-2">
                   <h3 className="text-sm font-black">Contact Channels</h3>
-                  <p className="text-[10px] text-gray-455">Verify your academic mail and sync communication nodes.</p>
+                  <p className="text-[10px] text-neutral-400">Verify your academic mail and sync communication nodes.</p>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[9px] font-bold uppercase tracking-wider text-gray-450 block">
+                  <label className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 block">
                     Email Address
                   </label>
                   <div className="relative">
@@ -361,7 +451,7 @@ export default function OnboardingView({
 
                 <div className="grid grid-cols-3 gap-3">
                   <div className="col-span-1 space-y-1.5">
-                    <label className="text-[9px] font-bold uppercase tracking-wider text-gray-450 block truncate">
+                    <label className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 block truncate">
                       Code
                     </label>
                     <select
@@ -382,7 +472,7 @@ export default function OnboardingView({
                   </div>
 
                   <div className="col-span-2 space-y-1.5">
-                    <label className="text-[9px] font-bold uppercase tracking-wider text-gray-450 block">
+                    <label className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 block">
                       Phone Number
                     </label>
                     <div className="relative">
@@ -405,8 +495,50 @@ export default function OnboardingView({
               </div>
             )}
 
+            {step === 4 && (
+              <div className="space-y-4 animate-fade-in text-left">
+                <div className="border-b border-neutral-900/10 dark:border-neutral-800/40 pb-2 mb-2">
+                  <h3 className="text-sm font-black">AI Configuration</h3>
+                  <p className="text-[10px] text-neutral-400">Bring Your Own Key (BYOK) - connect your Gemini API Key.</p>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 block">
+                    Gemini API Key *
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={geminiKey}
+                    onChange={(e) => setGeminiKey(e.target.value)}
+                    placeholder="AIzaSy..."
+                    className={`w-full rounded-xl border px-4 py-3 text-xs outline-none transition-all ${
+                      isDark
+                        ? 'bg-[#18191e] border-neutral-800 text-white placeholder-neutral-500 focus:border-indigo-500'
+                        : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 focus:border-black'
+                    }`}
+                  />
+                  <p className="text-[10px] text-neutral-400 mt-1 leading-normal">
+                    Don't have a key? Get one for free at{' '}
+                    <a
+                      href="https://aistudio.google.com/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-indigo-500 hover:underline font-bold"
+                    >
+                      Google AI Studio
+                    </a>.
+                  </p>
+                </div>
+                <div className="rounded-xl bg-indigo-500/5 border border-indigo-500/10 p-3.5 mt-2">
+                  <p className="text-[10px] leading-relaxed text-indigo-400/90">
+                    💡 **Security Note:** Your key is encrypted server-side using AES-256-GCM and never exposed to the frontend. NoteIT AI uses your key directly to call the Gemini API on your behalf.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Buttons Navigation bar */}
-            <div className="flex gap-3 pt-4 border-t border-neutral-900/10 dark:border-neutral-850/40">
+            <div className="flex gap-3 pt-4 border-t border-neutral-900/10 dark:border-neutral-800/40">
               {step > 1 && (
                 <button
                   type="button"
@@ -421,30 +553,47 @@ export default function OnboardingView({
                 </button>
               )}
 
-              {step < 3 ? (
+              {step < 4 ? (
                 <button
                   type="button"
                   onClick={handleNextStep}
-                  className={`flex-1 py-3 px-4 rounded-xl text-xs font-bold transition-all focus:outline-none cursor-pointer ${
+                  disabled={loading}
+                  className={`flex-1 py-3 px-4 rounded-xl text-xs font-bold transition-all focus:outline-none cursor-pointer flex items-center justify-center gap-1.5 ${
                     isDark ? 'bg-white text-black hover:bg-neutral-100' : 'bg-black text-white hover:bg-neutral-800'
                   }`}
                 >
-                  Continue
+                  {loading ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Continue</span>
+                    </>
+                  )}
                 </button>
               ) : (
                 <button
-                  type="submit"
-                  disabled={loading}
+                  type="button"
+                  onClick={handleValidateAndComplete}
+                  disabled={isValidatingKey || validationSuccess}
                   className={`flex-1 py-3 px-4 rounded-xl font-sans text-xs font-bold transition-all active:scale-98 relative flex items-center justify-center gap-1.5 focus:outline-none cursor-pointer ${
-                    isDark
-                      ? 'bg-white text-black hover:bg-neutral-100 disabled:bg-neutral-700 disabled:text-neutral-500'
-                      : 'bg-black text-white hover:bg-neutral-800 disabled:bg-gray-200 disabled:text-gray-500'
+                    validationSuccess
+                      ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                      : isDark
+                        ? 'bg-white text-black hover:bg-neutral-100 disabled:bg-neutral-700 disabled:text-neutral-500'
+                        : 'bg-black text-white hover:bg-neutral-800 disabled:bg-gray-200 disabled:text-gray-500'
                   }`}
                 >
-                  {loading ? (
+                  {isValidatingKey ? (
                     <span className="flex items-center gap-2">
                       <RefreshCw className="h-4 w-4 animate-spin" />
-                      <span>Saving profile...</span>
+                      <span>Validating key...</span>
+                    </span>
+                  ) : validationSuccess ? (
+                    <span className="flex items-center gap-2">
+                      <span>✓ Connected!</span>
                     </span>
                   ) : (
                     <>

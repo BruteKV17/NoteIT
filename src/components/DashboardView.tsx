@@ -86,7 +86,7 @@ export default function DashboardView({
       {/* 1. PREMIUM VENTURE-BACKED HERO SECTION */}
       <div className={`relative rounded-3xl overflow-hidden border p-8 md:p-12 transition-all duration-300 ${
         theme === 'dark' 
-          ? 'bg-[#0d0e12] border-neutral-850/80 shadow-2xl shadow-indigo-950/10' 
+          ? 'bg-[#0d0e12] border-neutral-800/80 shadow-2xl shadow-indigo-950/10' 
           : 'bg-[#FAF9F5] border-gray-200 shadow-md'
       }`}>
         
@@ -103,7 +103,7 @@ export default function DashboardView({
 
               {/* Glowing space nebulas */}
               <div className="absolute top-[-30%] right-[-10%] w-[400px] h-[400px] rounded-full bg-indigo-600/20 blur-[110px] animate-space-drift-slow" />
-              <div className="absolute bottom-[-20%] left-[10%] w-[300px] h-[300px] rounded-full bg-purple-650/15 blur-[90px] animate-space-drift-medium" />
+              <div className="absolute bottom-[-20%] left-[10%] w-[300px] h-[300px] rounded-full bg-purple-600/15 blur-[90px] animate-space-drift-medium" />
               <div className="absolute top-[20%] left-[35%] w-[320px] h-[320px] rounded-full bg-cyan-600/8 blur-[100px] animate-space-drift-fast" />
 
               {/* Twinkling Stars */}
@@ -136,13 +136,13 @@ export default function DashboardView({
                     animationDelay: `${star.delay}s`,
                     animationDuration: `${star.duration}s`,
                   }}
-                  className="rounded-full bg-indigo-350/40 animate-star-drift shadow-[0_0_6px_rgba(165,180,252,0.4)]"
+                  className="rounded-full bg-indigo-300/40 animate-star-drift shadow-[0_0_6px_rgba(165,180,252,0.4)]"
                 />
               ))}
 
               {/* Shooting Stars */}
               <div className="absolute top-[10%] right-[10%] w-[100px] h-[1.5px] bg-gradient-to-l from-white/75 via-white/30 to-transparent animate-shooting-star pointer-events-none" />
-              <div className="absolute top-[40%] right-[30%] w-[120px] h-[1.5px] bg-gradient-to-l from-indigo-300/75 via-indigo-350/30 to-transparent animate-shooting-star pointer-events-none" style={{ animationDelay: '3.5s' }} />
+              <div className="absolute top-[40%] right-[30%] w-[120px] h-[1.5px] bg-gradient-to-l from-indigo-300/75 via-indigo-300/30 to-transparent animate-shooting-star pointer-events-none" style={{ animationDelay: '3.5s' }} />
               <div className="absolute top-[20%] right-[50%] w-[90px] h-[1.5px] bg-gradient-to-l from-white/60 via-white/20 to-transparent animate-shooting-star pointer-events-none" style={{ animationDelay: '5.2s' }} />
             </>
           ) : (
@@ -201,7 +201,7 @@ export default function DashboardView({
 
           <h1 className="font-sans font-black text-3.5xl sm:text-5.5xl tracking-tight leading-tighter">
             AI That Thinks <br />
-            <span className="bg-gradient-to-r from-indigo-450 via-purple-400 to-indigo-305 bg-clip-text text-transparent p-0.5 inline-block">
+            <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-indigo-300 bg-clip-text text-transparent p-0.5 inline-block">
               While You Learn.
             </span>
           </h1>
@@ -215,8 +215,8 @@ export default function DashboardView({
               onClick={handleStartRecording}
               className={`w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl px-6 py-4 text-xs font-black shadow-lg transition-all active:scale-[0.98] cursor-pointer focus:outline-none ${
                 theme === 'dark' 
-                  ? 'bg-indigo-600 hover:bg-indigo-505 shadow-indigo-950/40 text-white' 
-                  : 'bg-black hover:bg-neutral-850 text-white'
+                  ? 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-950/40 text-white' 
+                  : 'bg-black hover:bg-neutral-800 text-white'
               }`}
             >
               <Mic className="h-4.5 w-4.5 text-indigo-300 animate-pulse" />
@@ -276,7 +276,7 @@ export default function DashboardView({
         
         {/* CARD A: Today's Lectures */}
         <div className={`rounded-2xl border p-5.5 space-y-4 flex flex-col h-[280px] justify-between ${
-          theme === 'dark' ? 'bg-[#121318]/40 border-neutral-850' : 'bg-white border-gray-200'
+          theme === 'dark' ? 'bg-[#121318]/40 border-neutral-800' : 'bg-white border-gray-200'
         }`}>
           <div className="space-y-1">
             <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 font-mono block">
@@ -310,7 +310,7 @@ export default function DashboardView({
 
         {/* CARD B: Recent Recordings */}
         <div className={`rounded-2xl border p-5.5 space-y-4 flex flex-col h-[280px] justify-between ${
-          theme === 'dark' ? 'bg-[#121318]/40 border-neutral-850' : 'bg-white border-gray-200'
+          theme === 'dark' ? 'bg-[#121318]/40 border-neutral-800' : 'bg-white border-gray-200'
         }`}>
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 font-mono block">
@@ -347,7 +347,7 @@ export default function DashboardView({
 
         {/* CARD C: Continue Session */}
         <div className={`rounded-2xl border p-5.5 space-y-4 flex flex-col h-[280px] justify-between ${
-          theme === 'dark' ? 'bg-[#121318]/40 border-neutral-850' : 'bg-white border-gray-200'
+          theme === 'dark' ? 'bg-[#121318]/40 border-neutral-800' : 'bg-white border-gray-200'
         }`}>
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 font-mono block">
@@ -365,7 +365,7 @@ export default function DashboardView({
           <button
             onClick={() => setActivePage('quiz-mode')}
             className={`w-full py-2.5 px-4 rounded-xl font-sans text-[11px] font-black tracking-wide text-center flex items-center justify-center gap-1.5 focus:outline-none cursor-pointer ${
-              theme === 'dark' ? 'bg-[#2563EB] text-white hover:bg-indigo-505 shadow-md shadow-indigo-950/20' : 'bg-black text-white hover:bg-neutral-850'
+              theme === 'dark' ? 'bg-[#2563EB] text-white hover:bg-indigo-500 shadow-md shadow-indigo-950/20' : 'bg-black text-white hover:bg-neutral-800'
             }`}
           >
             <GraduationCap className="h-4 w-4" />
@@ -375,7 +375,7 @@ export default function DashboardView({
 
         {/* CARD D: Pinned Notes */}
         <div className={`rounded-2xl border p-5.5 space-y-4 flex flex-col h-[280px] justify-between ${
-          theme === 'dark' ? 'bg-[#121318]/40 border-neutral-850' : 'bg-white border-gray-200'
+          theme === 'dark' ? 'bg-[#121318]/40 border-neutral-800' : 'bg-white border-gray-200'
         }`}>
           {notes.length > 0 ? (
             <>
@@ -416,7 +416,7 @@ export default function DashboardView({
                 <p className="text-[10px] text-gray-500">Workspace is empty</p>
               </div>
 
-              <div className="bg-gray-50 dark:bg-neutral-900/35 p-2.5 rounded-xl text-[10.5px] font-serif leading-relaxed text-gray-450 italic">
+              <div className="bg-gray-50 dark:bg-neutral-900/35 p-2.5 rounded-xl text-[10.5px] font-serif leading-relaxed text-gray-400 italic">
                 "Take notes on active lectures inside the Research Hub. Notes sync to Firestore automatically."
               </div>
             </>

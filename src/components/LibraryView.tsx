@@ -122,7 +122,7 @@ export default function LibraryView({
       {/* Search Header and Action Row */}
       <div className={`relative rounded-3xl overflow-hidden border p-8 transition-all duration-300 ${
         theme === 'dark' 
-          ? 'bg-[#0d0e12] border-neutral-850/80 shadow-2xl' 
+          ? 'bg-[#0d0e12] border-neutral-800/80 shadow-2xl' 
           : 'bg-white border-gray-200 shadow-xs'
       }`}>
         {/* Animated Premium Space Background */}
@@ -189,13 +189,13 @@ export default function LibraryView({
 
             {/* List/Grid View toggles */}
             <div className={`flex items-center gap-1 p-1 rounded-xl ${
-              theme === 'dark' ? 'bg-neutral-900/60 border border-neutral-850' : 'bg-gray-150'
+              theme === 'dark' ? 'bg-neutral-900/60 border border-neutral-800' : 'bg-gray-200'
             }`}>
               <button
                 onClick={() => setViewMode('grid')}
                 className={`h-7.5 w-7.5 flex items-center justify-center rounded-lg cursor-pointer transition-all ${
                   viewMode === 'grid' 
-                    ? theme === 'dark' ? 'bg-indigo-650 text-white shadow-md' : 'bg-white text-black shadow-xs'
+                    ? theme === 'dark' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-black shadow-xs'
                     : 'text-gray-400 hover:text-gray-900'
                 }`}
               >
@@ -205,7 +205,7 @@ export default function LibraryView({
                 onClick={() => setViewMode('list')}
                 className={`h-7.5 w-7.5 flex items-center justify-center rounded-lg cursor-pointer transition-all ${
                   viewMode === 'list' 
-                    ? theme === 'dark' ? 'bg-indigo-650 text-white shadow-md' : 'bg-white text-black shadow-xs'
+                    ? theme === 'dark' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-black shadow-xs'
                     : 'text-gray-400 hover:text-gray-900'
                 }`}
               >
@@ -236,7 +236,7 @@ export default function LibraryView({
               activeSubject === subject
                 ? theme === 'dark' ? 'bg-indigo-500/10 border border-indigo-500/25 text-indigo-400' : 'bg-black text-white'
                 : theme === 'dark' 
-                  ? 'bg-neutral-900 border border-neutral-850 text-neutral-450 hover:bg-neutral-850 hover:text-neutral-200' 
+                  ? 'bg-neutral-900 border border-neutral-800 text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200' 
                   : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50 hover:text-gray-900'
             }`}
           >
@@ -255,14 +255,14 @@ export default function LibraryView({
           </div>
           <div>
             <h4 className={`font-sans font-bold text-sm ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>No items found</h4>
-            <p className="text-xs text-gray-450 mt-1 max-w-xs mx-auto">
+            <p className="text-xs text-gray-400 mt-1 max-w-xs mx-auto">
               We couldn't find matches for "{searchQuery || activeSubject}". Try resetting filters or recording a new lecture.
             </p>
           </div>
           <button
             onClick={() => { setSearchQuery(''); setActiveSubject('All'); }}
             className={`rounded-xl border px-3.5 py-1.8 text-xs font-bold cursor-pointer transition-all ${
-              theme === 'dark' ? 'border-neutral-850 bg-neutral-900 text-white hover:bg-neutral-850' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+              theme === 'dark' ? 'border-neutral-800 bg-neutral-900 text-white hover:bg-neutral-800' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
             }`}
           >
             Clear Filters
@@ -334,7 +334,7 @@ export default function LibraryView({
                       <button
                         type="button"
                         onClick={() => setRenamingLectureId(null)}
-                        className="px-2 py-1 rounded bg-neutral-900/65 border border-neutral-850 text-neutral-400 font-sans text-[10px] font-bold cursor-pointer hover:bg-neutral-850 transition-all focus:outline-none"
+                        className="px-2 py-1 rounded bg-neutral-900/65 border border-neutral-800 text-neutral-400 font-sans text-[10px] font-bold cursor-pointer hover:bg-neutral-800 transition-all focus:outline-none"
                       >
                         Cancel
                       </button>
@@ -372,12 +372,12 @@ export default function LibraryView({
                       <span>UPLOADING DOCUMENT...</span>
                     </div>
                   ) : lec.status === 'extracting' ? (
-                    <div className="flex items-center gap-1.5 text-indigo-450 font-bold text-[11px] animate-pulse">
+                    <div className="flex items-center gap-1.5 text-indigo-400 font-bold text-[11px] animate-pulse">
                       <RotateCw className="h-3.5 w-3.5 animate-spin" />
                       <span>EXTRACTING TEXT...</span>
                     </div>
                   ) : lec.status === 'analyzing' ? (
-                    <div className="flex items-center gap-1.5 text-amber-550 font-bold text-[11px] animate-pulse">
+                    <div className="flex items-center gap-1.5 text-amber-500 font-bold text-[11px] animate-pulse">
                       <RotateCw className="h-3.5 w-3.5 animate-spin" />
                       <span>AI ANALYZING...</span>
                     </div>
@@ -416,7 +416,7 @@ export default function LibraryView({
                       setRenamingTitle(lec.title);
                     }}
                     className={`h-7 w-7 rounded-lg items-center justify-center hidden group-hover:flex focus:outline-none cursor-pointer ${
-                      theme === 'dark' ? 'hover:bg-indigo-500/10 text-neutral-500 hover:text-indigo-400' : 'hover:bg-indigo-50 text-gray-400 hover:text-indigo-650'
+                      theme === 'dark' ? 'hover:bg-indigo-500/10 text-neutral-500 hover:text-indigo-400' : 'hover:bg-indigo-50 text-gray-400 hover:text-indigo-600'
                     }`}
                     title="Rename Lecture"
                   >
@@ -503,7 +503,7 @@ export default function LibraryView({
                         <button
                           type="button"
                           onClick={() => setRenamingLectureId(null)}
-                          className="px-2 py-1 rounded bg-neutral-900/65 border border-neutral-850 text-neutral-400 font-sans text-[10px] font-bold cursor-pointer hover:bg-neutral-850 focus:outline-none"
+                          className="px-2 py-1 rounded bg-neutral-900/65 border border-neutral-800 text-neutral-400 font-sans text-[10px] font-bold cursor-pointer hover:bg-neutral-800 focus:outline-none"
                         >
                           Cancel
                         </button>
@@ -565,7 +565,7 @@ export default function LibraryView({
                           setRenamingTitle(lec.title);
                         }}
                         className={`rounded p-1 hover:bg-indigo-500/10 cursor-pointer ${
-                          theme === 'dark' ? 'text-neutral-450 hover:text-indigo-400' : 'text-gray-400 hover:text-indigo-650'
+                          theme === 'dark' ? 'text-neutral-400 hover:text-indigo-400' : 'text-gray-400 hover:text-indigo-600'
                         }`}
                       >
                         <Edit className="h-3.5 w-3.5" />
@@ -577,7 +577,7 @@ export default function LibraryView({
                           }
                         }}
                         className={`rounded p-1 hover:bg-red-500/10 cursor-pointer ${
-                          theme === 'dark' ? 'text-neutral-450 hover:text-red-400' : 'text-gray-400 hover:text-red-500'
+                          theme === 'dark' ? 'text-neutral-400 hover:text-red-400' : 'text-gray-400 hover:text-red-500'
                         }`}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -653,7 +653,7 @@ export default function LibraryView({
                             <button
                               type="button"
                               onClick={() => setRenamingLectureId(null)}
-                              className="px-2 py-1 rounded bg-neutral-900/65 border border-neutral-850 text-neutral-400 font-sans text-[10px] font-bold cursor-pointer hover:bg-neutral-850 transition-all focus:outline-none"
+                              className="px-2 py-1 rounded bg-neutral-900/65 border border-neutral-800 text-neutral-400 font-sans text-[10px] font-bold cursor-pointer hover:bg-neutral-800 transition-all focus:outline-none"
                             >
                               Cancel
                             </button>
@@ -690,12 +690,12 @@ export default function LibraryView({
                             <span>Uploading...</span>
                           </span>
                         ) : lec.status === 'extracting' ? (
-                          <span className="inline-flex items-center gap-1.5 text-indigo-450 font-bold text-xs animate-pulse">
+                          <span className="inline-flex items-center gap-1.5 text-indigo-400 font-bold text-xs animate-pulse">
                             <RotateCw className="h-3.5 w-3.5 animate-spin" />
                             <span>Extracting...</span>
                           </span>
                         ) : lec.status === 'analyzing' ? (
-                          <span className="inline-flex items-center gap-1.5 text-amber-550 font-bold text-xs animate-pulse">
+                          <span className="inline-flex items-center gap-1.5 text-amber-500 font-bold text-xs animate-pulse">
                             <RotateCw className="h-3.5 w-3.5 animate-spin" />
                             <span>Analyzing...</span>
                           </span>
@@ -731,7 +731,7 @@ export default function LibraryView({
                               setRenamingTitle(lec.title);
                             }}
                             className={`rounded p-1.5 hover:bg-indigo-500/10 cursor-pointer ${
-                              theme === 'dark' ? 'text-neutral-550 hover:text-indigo-400' : 'text-gray-400 hover:text-indigo-650'
+                              theme === 'dark' ? 'text-neutral-500 hover:text-indigo-400' : 'text-gray-400 hover:text-indigo-600'
                             }`}
                             title="Rename"
                           >
@@ -744,7 +744,7 @@ export default function LibraryView({
                               }
                             }}
                             className={`rounded p-1.5 hover:bg-red-500/10 cursor-pointer ${
-                              theme === 'dark' ? 'text-neutral-550 hover:text-red-400' : 'text-gray-400 hover:text-red-500'
+                              theme === 'dark' ? 'text-neutral-500 hover:text-red-400' : 'text-gray-400 hover:text-red-500'
                             }`}
                             title="Delete"
                           >
@@ -776,7 +776,7 @@ export default function LibraryView({
               </h3>
               <button 
                 onClick={() => setShowSyncModal(false)}
-                className="text-neutral-450 hover:text-white text-xs font-bold focus:outline-none cursor-pointer"
+                className="text-neutral-400 hover:text-white text-xs font-bold focus:outline-none cursor-pointer"
               >
                 Close
               </button>
@@ -859,7 +859,7 @@ export default function LibraryView({
                 {selectedFile ? (
                   <div className="space-y-1">
                     <CheckCircle className="h-6 w-6 text-emerald-500 mx-auto" />
-                    <div className="text-xs font-bold text-emerald-450 truncate max-w-xs mx-auto">{selectedFile.name}</div>
+                    <div className="text-xs font-bold text-emerald-400 truncate max-w-xs mx-auto">{selectedFile.name}</div>
                     <div className="text-[10px] text-neutral-400">
                       {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB • Click to change
                     </div>
@@ -880,7 +880,7 @@ export default function LibraryView({
                   type="button"
                   onClick={() => setShowSyncModal(false)}
                   className={`rounded-xl px-4 py-2.5 text-xs font-black cursor-pointer transition-all ${
-                    theme === 'dark' ? 'bg-neutral-900 border border-neutral-850 text-neutral-400 hover:bg-neutral-850' : 'border-gray-200 bg-white text-gray-650 hover:bg-gray-50'
+                    theme === 'dark' ? 'bg-neutral-900 border border-neutral-800 text-neutral-400 hover:bg-neutral-800' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
                   }`}
                 >
                   Cancel

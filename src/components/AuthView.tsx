@@ -241,13 +241,13 @@ export default function AuthView({
 
           {/* Premium Preview Dashboard Card */}
           <div className={`rounded-2xl border p-5.5 space-y-4 shadow-xl ${
-            theme === 'dark' ? 'bg-[#121318]/70 border-neutral-850' : 'bg-white border-gray-200'
+            theme === 'dark' ? 'bg-[#121318]/70 border-neutral-800' : 'bg-white border-gray-200'
           }`}>
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 font-mono">
                 Speaker 1 • Active Synthesis
               </span>
-              <span className="rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-450 px-2.5 py-0.5 text-[9px] font-bold">
+              <span className="rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2.5 py-0.5 text-[9px] font-bold">
                 COMPLETED
               </span>
             </div>

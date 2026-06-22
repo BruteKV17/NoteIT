@@ -104,7 +104,7 @@ export default function Sidebar({
         {/* Mobile close trigger or Collapse toggle */}
         <button 
           onClick={() => setIsOpenMobile(false)}
-          className="md:hidden flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-850 text-gray-400 focus:outline-none"
+          className="md:hidden flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-400 focus:outline-none"
         >
           <X className="h-5 w-5" />
         </button>
@@ -131,7 +131,7 @@ export default function Sidebar({
             className={`flex w-full items-center justify-center gap-2 rounded-xl py-3 px-4 font-sans text-xs font-bold text-white transition-all transform active:scale-[0.98] shadow-md focus:outline-none cursor-pointer ${
               theme === 'dark' 
                 ? 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-950/20' 
-                : 'bg-black hover:bg-neutral-850'
+                : 'bg-black hover:bg-neutral-800'
             }`}
           >
             <Mic className="h-4 w-4 animate-pulse text-indigo-300" />
@@ -280,10 +280,10 @@ export default function Sidebar({
               <img
                 src={settings.profile.avatarUrl}
                 alt={settings.profile.fullName}
-                className="h-10 w-10 rounded-full border border-gray-150 dark:border-neutral-850 object-cover"
+                className="h-10 w-10 rounded-full border border-gray-200 dark:border-neutral-800 object-cover"
               />
             ) : (
-              <div className="h-10 w-10 rounded-full border border-gray-150 dark:border-neutral-850 bg-gray-100 dark:bg-neutral-800 flex items-center justify-center text-gray-400 dark:text-neutral-500">
+              <div className="h-10 w-10 rounded-full border border-gray-200 dark:border-neutral-800 bg-gray-100 dark:bg-neutral-800 flex items-center justify-center text-gray-400 dark:text-neutral-500">
                 <User className="h-5 w-5" />
               </div>
             )}
@@ -304,7 +304,7 @@ export default function Sidebar({
             <button
               onClick={onLogOut}
               title="Secure Logout"
-              className="text-gray-400 hover:text-red-500 p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-neutral-850 transition-colors focus:outline-none cursor-pointer"
+              className="text-gray-400 hover:text-red-500 p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-neutral-800 transition-colors focus:outline-none cursor-pointer"
             >
               <LogOut className="h-4 w-4" />
             </button>

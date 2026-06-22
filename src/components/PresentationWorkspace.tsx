@@ -322,17 +322,17 @@ Return JSON only matching this schema:
         </div>
 
         {slides.length === 0 ? (
-          <div className="text-center py-20 border border-dashed border-neutral-850 rounded-2xl bg-neutral-950/20">
+          <div className="text-center py-20 border border-dashed border-neutral-800 rounded-2xl bg-neutral-950/20">
             <AlertCircle className="h-8 w-8 text-neutral-600 mx-auto animate-pulse" />
-            <p className="text-xs text-neutral-450 mt-3 font-mono">No presentation blueprint created. Press "Regenerate" to build.</p>
+            <p className="text-xs text-neutral-400 mt-3 font-mono">No presentation blueprint created. Press "Regenerate" to build.</p>
           </div>
         ) : (
           <div className="space-y-4">
             {slides.map((slide, idx) => {
               const themeBg = activeThemeColors.bg === "FFFFFF" ? "bg-white" : "bg-[#0b0f19]";
-              const cardBorder = activeThemeColors.bg === "FFFFFF" ? "border-gray-200" : "border-neutral-850";
+              const cardBorder = activeThemeColors.bg === "FFFFFF" ? "border-gray-200" : "border-neutral-800";
               const textPrimary = activeThemeColors.bg === "FFFFFF" ? "text-gray-900" : "text-white";
-              const textSecondary = activeThemeColors.bg === "FFFFFF" ? "text-gray-600" : "text-neutral-450";
+              const textSecondary = activeThemeColors.bg === "FFFFFF" ? "text-gray-600" : "text-neutral-400";
 
               return (
                 <div
@@ -368,7 +368,7 @@ Return JSON only matching this schema:
                           <span>Layout</span>
                           <ChevronDown className="h-2.5 w-2.5" />
                         </button>
-                        <div className="absolute right-0 mt-1 w-36 bg-neutral-950 border border-neutral-850 rounded-lg shadow-xl hidden group-hover:block z-20 p-1">
+                        <div className="absolute right-0 mt-1 w-36 bg-neutral-950 border border-neutral-800 rounded-lg shadow-xl hidden group-hover:block z-20 p-1">
                           {LAYOUTS.map(l => (
                             <button
                               key={l}
@@ -462,7 +462,7 @@ Return JSON only matching this schema:
                       ) : slide.slideType === 'metrics' ? (
                         <div className="w-full flex gap-1.5 justify-center">
                           {["98%", "10x", "5.2M"].map((num, n) => (
-                            <div key={n} className="flex-1 p-1 bg-neutral-900 border border-neutral-850 rounded text-center">
+                            <div key={n} className="flex-1 p-1 bg-neutral-900 border border-neutral-800 rounded text-center">
                               <span className="text-[10px] font-bold text-indigo-400 block">{num}</span>
                               <span className="text-[5px] text-neutral-500 uppercase block">Metric</span>
                             </div>
@@ -486,8 +486,8 @@ Return JSON only matching this schema:
                             <div className="absolute top-0 right-0 h-1.5 w-0.5 bg-indigo-500" />
                           </div>
                           <div className="flex gap-2">
-                            <div className="px-1 py-0.5 bg-neutral-900 border border-neutral-850 rounded text-[6px]">Node A</div>
-                            <div className="px-1 py-0.5 bg-neutral-900 border border-neutral-850 rounded text-[6px]">Node B</div>
+                            <div className="px-1 py-0.5 bg-neutral-900 border border-neutral-800 rounded text-[6px]">Node A</div>
+                            <div className="px-1 py-0.5 bg-neutral-900 border border-neutral-800 rounded text-[6px]">Node B</div>
                           </div>
                         </div>
                       ) : slide.slideType === 'diagram' ? (
@@ -571,7 +571,7 @@ Return JSON only matching this schema:
                 </div>
                 <div className="h-1 w-full bg-neutral-900 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-indigo-550 rounded-full transition-all duration-500"
+                    className="h-full bg-indigo-600 rounded-full transition-all duration-500"
                     style={{ width: `${item.val}%` }}
                   />
                 </div>
@@ -588,13 +588,13 @@ Return JSON only matching this schema:
               <select
                 value={selectedPurpose}
                 onChange={e => setSelectedPurpose(e.target.value)}
-                className="w-full bg-neutral-950 border border-neutral-850 text-[10.5px] font-bold px-3 py-2 rounded-xl text-white appearance-none cursor-pointer focus:outline-none focus:border-indigo-500"
+                className="w-full bg-neutral-950 border border-neutral-800 text-[10.5px] font-bold px-3 py-2 rounded-xl text-white appearance-none cursor-pointer focus:outline-none focus:border-indigo-500"
               >
                 {PURPOSES.map(p => (
                   <option key={p} value={p}>{p}</option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-3 top-2.5 h-3.5 w-3.5 text-neutral-450 pointer-events-none" />
+              <ChevronDown className="absolute right-3 top-2.5 h-3.5 w-3.5 text-neutral-400 pointer-events-none" />
             </div>
           </div>
 
@@ -610,8 +610,8 @@ Return JSON only matching this schema:
                   onClick={() => setSlideCount(l)}
                   className={`flex-1 py-1 px-1.5 rounded-lg border text-[9.5px] font-extrabold cursor-pointer transition-all ${
                     slideCount === l
-                      ? 'bg-indigo-650 text-white border-indigo-500 shadow-md'
-                      : 'bg-transparent border-neutral-900 text-neutral-450 hover:border-neutral-800'
+                      ? 'bg-indigo-600 text-white border-indigo-500 shadow-md'
+                      : 'bg-transparent border-neutral-900 text-neutral-400 hover:border-neutral-800'
                   }`}
                 >
                   {l} Slides
@@ -632,8 +632,8 @@ Return JSON only matching this schema:
                   onClick={() => setRegLevel(levelName)}
                   className={`py-1.5 text-[8.5px] rounded-lg border font-bold capitalize cursor-pointer transition-all ${
                     regLevel === levelName
-                      ? 'bg-indigo-650 text-white border-indigo-500 shadow-md'
-                      : 'bg-transparent border-neutral-900 text-neutral-450 hover:border-neutral-800'
+                      ? 'bg-indigo-600 text-white border-indigo-500 shadow-md'
+                      : 'bg-transparent border-neutral-900 text-neutral-400 hover:border-neutral-800'
                   }`}
                 >
                   {levelName === 'premium' ? 'Premium Pro' : levelName}
@@ -661,8 +661,8 @@ Return JSON only matching this schema:
                   onClick={() => setSelectedTheme(t)}
                   className={`h-8.5 rounded-lg border flex flex-col items-center justify-center gap-0.5 cursor-pointer capitalize transition-all ${
                     selectedTheme === t
-                      ? 'bg-indigo-650 border-indigo-500 text-white font-extrabold'
-                      : 'bg-transparent border-neutral-900 text-neutral-450 hover:border-neutral-800'
+                      ? 'bg-indigo-600 border-indigo-500 text-white font-extrabold'
+                      : 'bg-transparent border-neutral-900 text-neutral-400 hover:border-neutral-800'
                   }`}
                   title={`${t} mode palette`}
                 >
@@ -682,7 +682,7 @@ Return JSON only matching this schema:
           <button
             onClick={handleRegenerateDeck}
             disabled={isGenerating}
-            className="w-full py-2.5 bg-indigo-650 hover:bg-indigo-600 disabled:opacity-40 active:scale-98 transition-all text-white text-[10px] font-black rounded-xl cursor-pointer flex items-center justify-center gap-2 shadow-md uppercase tracking-wider"
+            className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 active:scale-98 transition-all text-white text-[10px] font-black rounded-xl cursor-pointer flex items-center justify-center gap-2 shadow-md uppercase tracking-wider"
           >
             <Sparkles className="h-3.5 w-3.5 animate-pulse text-indigo-200" />
             <span>Regenerate Deck Blueprint</span>

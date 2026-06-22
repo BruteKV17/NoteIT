@@ -1,4 +1,6 @@
 import express from 'express';
+import crypto from 'crypto';
+
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { initializeApp, cert } from 'firebase-admin';
@@ -69,8 +71,367 @@ if (!fs.existsSync(uploadsDir)) {
 }
 app.use('/uploads', express.static(uploadsDir));
 
+// AES-256-GCM Encryption / Decryption Setup
+const ENCRYPTION_SECRET = process.env.ENCRYPTION_SECRET || 'noteit-encryption-secret-default-key-32-chars-long-!!!';
+
+function encryptKey(text: string): string {
+  const iv = crypto.randomBytes(12); // GCM standard IV is 12 bytes
+  const key = crypto.scryptSync(ENCRYPTION_SECRET, 'noteit-salt', 32);
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  let encrypted = cipher.update(text, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  const authTag = cipher.getAuthTag().toString('hex');
+  return `${iv.toString('hex')}:${authTag}:${encrypted}`;
+}
+
+function decryptKey(encryptedText: string): string {
+  const parts = encryptedText.split(':');
+  if (parts.length !== 3) {
+    throw new Error('Invalid encrypted format');
+  }
+  const iv = Buffer.from(parts[0], 'hex');
+  const authTag = Buffer.from(parts[1], 'hex');
+  const encrypted = parts[2];
+  const key = crypto.scryptSync(ENCRYPTION_SECRET, 'noteit-salt', 32);
+  const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+  decipher.setAuthTag(authTag);
+  let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
+  return decrypted;
+}
+
+// AI Provider Abstraction Layer Adapters
+interface AIProviderAdapter {
+  generateContent(prompt: string, inlineData?: { mimeType: string, data: string }, responseSchema?: any): Promise<any>;
+  validateKey(): Promise<boolean>;
+}
+
+class GeminiAdapter implements AIProviderAdapter {
+  private apiKey: string;
+  private model: string;
+  constructor(apiKey: string, model: string = 'gemini-2.5-flash') {
+    this.apiKey = apiKey;
+    this.model = model;
+  }
+
+  async generateContent(prompt: string, inlineData?: { mimeType: string, data: string }, responseSchema?: any): Promise<any> {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`;
+    const parts: any[] = [];
+    if (inlineData) {
+      parts.push({ inlineData });
+    }
+    parts.push({ text: prompt });
+
+    const requestBody: any = {
+      contents: [{ parts }]
+    };
+    if (responseSchema) {
+      requestBody.generationConfig = {
+        responseMimeType: 'application/json',
+        responseSchema
+      };
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      const status = response.status;
+      const text = await response.text();
+      throw { status, message: text };
+    }
+    return await response.json();
+  }
+
+  async validateKey(): Promise<boolean> {
+    const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${this.apiKey}`;
+    const response = await fetch(testUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: 'Hello' }] }]
+      })
+    });
+    return response.ok;
+  }
+}
+
+class OpenAIAdapter implements AIProviderAdapter {
+  private apiKey: string;
+  constructor(apiKey: string) {
+    this.apiKey = apiKey;
+  }
+
+  async generateContent(prompt: string, inlineData?: any, responseSchema?: any): Promise<any> {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        response_format: responseSchema ? { type: 'json_object' } : undefined
+      })
+    });
+    if (!response.ok) {
+      const status = response.status;
+      const text = await response.text();
+      throw { status, message: text };
+    }
+    const data = await response.json();
+    return {
+      candidates: [{
+        content: {
+          parts: [{
+            text: data.choices?.[0]?.message?.content || ''
+          }]
+        }
+      }]
+    };
+  }
+
+  async validateKey(): Promise<boolean> {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: 'ping' }],
+        max_tokens: 5
+      })
+    });
+    return response.ok;
+  }
+}
+
+function getAIAdapter(provider: string, apiKey: string, model?: string): AIProviderAdapter {
+  if (provider === 'openai') {
+    return new OpenAIAdapter(apiKey);
+  }
+  return new GeminiAdapter(apiKey, model);
+}
+
+// BYOK Endpoints
+app.post('/api/ai/validate-key', authenticateFirebaseUser, async (req, res) => {
+  const { key, provider } = req.body;
+  const activeProvider = provider || 'gemini';
+
+  if (!key) {
+    res.status(400).json({ error: 'Missing required parameter: key' });
+    return;
+  }
+
+  try {
+    const adapter = getAIAdapter(activeProvider, key);
+    const isValid = await adapter.validateKey();
+
+    if (!isValid) {
+      res.status(400).json({ error: `Invalid ${activeProvider === 'openai' ? 'OpenAI' : 'Gemini'} API key` });
+      return;
+    }
+
+    const user = req.body.user;
+    const uid = user.uid;
+    const encrypted = encryptKey(key);
+
+    const adminDb = getFirestore();
+    const userDocRef = adminDb.collection('users').doc(uid);
+
+    const updateFields: any = {
+      aiProvider: activeProvider,
+      providerConfigured: true,
+      geminiLastValidated: new Date()
+    };
+
+    if (activeProvider === 'openai') {
+      updateFields.openaiApiKey = encrypted;
+    } else {
+      updateFields.geminiApiKey = encrypted;
+    }
+
+    await userDocRef.set(updateFields, { merge: true });
+
+    res.json({ success: true, message: `${activeProvider === 'openai' ? 'OpenAI' : 'Gemini'} API connected successfully` });
+  } catch (error: any) {
+    console.error('API key validation error:', error);
+    if (error.status === 429) {
+      res.status(429).json({ error: 'Quota exhausted. Please generate another key.' });
+      return;
+    }
+    res.status(500).json({ error: 'Internal server error validating key' });
+  }
+});
+
+app.post('/api/ai/gemini-proxy', authenticateFirebaseUser, async (req, res) => {
+  const { prompt, model, inlineData, responseSchema } = req.body;
+  const user = req.body.user;
+  const uid = user.uid;
+
+  try {
+    const adminDb = getFirestore();
+    const userDocRef = adminDb.collection('users').doc(uid);
+    const userDoc = await userDocRef.get();
+
+    if (!userDoc.exists || !userDoc.data()?.providerConfigured) {
+      res.status(400).json({ error: 'AI provider is not configured. Please enter an API key.' });
+      return;
+    }
+
+    const data = userDoc.data();
+    const provider = data?.aiProvider || 'gemini';
+    const encryptedKey = provider === 'openai' ? data?.openaiApiKey : data?.geminiApiKey;
+
+    if (!encryptedKey) {
+      res.status(400).json({ error: `API key for provider ${provider} is not configured.` });
+      return;
+    }
+
+    let decryptedKey: string;
+    try {
+      decryptedKey = decryptKey(encryptedKey);
+    } catch (decryptErr) {
+      console.error('Decryption failed for uid:', uid, decryptErr);
+      res.status(400).json({ error: 'Decryption of AI API key failed. Please update your key in Settings.' });
+      return;
+    }
+
+    const adapter = getAIAdapter(provider, decryptedKey, model);
+    const result = await adapter.generateContent(prompt, inlineData, responseSchema);
+    res.json(result);
+  } catch (error: any) {
+    console.error('AI Proxy request failed:', error);
+    const status = error.status || 500;
+    const message = error.message || 'Internal server error in AI proxy';
+
+    if (status === 429) {
+      res.status(429).json({ error: 'Your API key is invalid or quota has been exhausted. Please update your key in Settings.' });
+      return;
+    }
+    if (status === 401 || status === 403) {
+      res.status(403).json({ error: 'Your API key is invalid or quota has been exhausted. Please update your key in Settings.' });
+      return;
+    }
+    res.status(status).json({ error: message });
+  }
+});
+
+app.get('/api/ai/config-status', authenticateFirebaseUser, async (req, res) => {
+  const user = req.body.user;
+  const uid = user.uid;
+
+  try {
+    const adminDb = getFirestore();
+    const userDocRef = adminDb.collection('users').doc(uid);
+    const userDoc = await userDocRef.get();
+
+    if (!userDoc.exists || !userDoc.data()?.providerConfigured) {
+      res.json({ configured: false });
+      return;
+    }
+
+    const data = userDoc.data();
+    const provider = data?.aiProvider || 'gemini';
+    const encryptedKey = provider === 'openai' ? data?.openaiApiKey : data?.geminiApiKey;
+    let maskedKey = '';
+
+    if (encryptedKey) {
+      try {
+        const decrypted = decryptKey(encryptedKey);
+        if (decrypted.length > 7) {
+          maskedKey = `${decrypted.substring(0, 4)}************${decrypted.substring(decrypted.length - 3)}`;
+        } else {
+          maskedKey = 'Key too short';
+        }
+      } catch (decryptErr) {
+        maskedKey = 'Decryption error';
+      }
+    }
+
+    res.json({
+      configured: true,
+      provider,
+      maskedKey,
+      lastValidated: data?.geminiLastValidated || null
+    });
+  } catch (error: any) {
+    console.error('Error fetching config status:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/ai/revalidate', authenticateFirebaseUser, async (req, res) => {
+  const user = req.body.user;
+  const uid = user.uid;
+
+  try {
+    const adminDb = getFirestore();
+    const userDocRef = adminDb.collection('users').doc(uid);
+    const userDoc = await userDocRef.get();
+
+    if (!userDoc.exists || !userDoc.data()?.providerConfigured) {
+      res.status(400).json({ error: 'AI provider is not configured. Nothing to validate.' });
+      return;
+    }
+
+    const data = userDoc.data();
+    const provider = data?.aiProvider || 'gemini';
+    const encryptedKey = provider === 'openai' ? data?.openaiApiKey : data?.geminiApiKey;
+
+    if (!encryptedKey) {
+      res.status(400).json({ error: 'API key is not configured.' });
+      return;
+    }
+
+    const decryptedKey = decryptKey(encryptedKey);
+    const adapter = getAIAdapter(provider, decryptedKey);
+    const isValid = await adapter.validateKey();
+
+    if (!isValid) {
+      res.status(400).json({ error: `The configured API key is no longer valid.` });
+      return;
+    }
+
+    await userDocRef.set({ geminiLastValidated: new Date() }, { merge: true });
+
+    res.json({ success: true, message: 'API key revalidated successfully.' });
+  } catch (error: any) {
+    console.error('Error revalidating key:', error);
+    res.status(500).json({ error: error.message || 'Error revalidating key' });
+  }
+});
+
+app.delete('/api/ai/config', authenticateFirebaseUser, async (req, res) => {
+  const user = req.body.user;
+  const uid = user.uid;
+
+  try {
+    const adminDb = getFirestore();
+    const userDocRef = adminDb.collection('users').doc(uid);
+    await userDocRef.set({
+      geminiApiKey: '',
+      openaiApiKey: '',
+      providerConfigured: false,
+      geminiLastValidated: null
+    }, { merge: true });
+
+    res.json({ success: true, message: 'AI API key configuration removed successfully' });
+  } catch (error: any) {
+    console.error('Error deleting configuration:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Health check endpoint for Render monitoring
 app.get('/api/health', (req, res) => {
+
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
@@ -120,12 +481,11 @@ try {
   console.error('Error initializing Firebase Admin SDK:', error);
 }
 
-// Authentication middleware
-const authenticateFirebaseUser = async (
+async function authenticateFirebaseUser(
   req: express.Request,
   res: express.Response,
   next: express.NextFunction
-) => {
+) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     res.status(401).json({ error: 'Unauthorized: Missing or invalid authorization header.' });
@@ -149,7 +509,7 @@ const authenticateFirebaseUser = async (
     res.status(403).json({ error: 'Forbidden: Invalid authentication token.' });
     return;
   }
-};
+}
 
 // Azure storage configuration
 const accountName = process.env.AZURE_STORAGE_ACCOUNT_NAME || '';

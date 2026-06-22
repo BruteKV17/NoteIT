@@ -82,7 +82,7 @@ export default function SupportView() {
           <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-1 font-mono">Frequently Asked Questions</h3>
           
           {filteredFaqs.length === 0 ? (
-            <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-xs text-gray-450 font-medium">
+            <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-xs text-gray-400 font-medium">
               We couldn't find matching guides for "{supportSearch}".
             </div>
           ) : (
@@ -183,7 +183,7 @@ export default function SupportView() {
         </form>
 
         <div className="mt-6 pt-4 border-t border-gray-100 text-center">
-          <div className="text-[11px] font-semibold text-gray-450 leading-relaxed max-w-xs mx-auto">
+          <div className="text-[11px] font-semibold text-gray-400 leading-relaxed max-w-xs mx-auto">
             Review our official <a href="#" className="text-black border-b border-black font-bold">Privacy Sandbox Protocols</a> which details absolute isolation models.
           </div>
         </div>

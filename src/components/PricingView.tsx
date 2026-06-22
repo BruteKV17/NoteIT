@@ -173,7 +173,7 @@ export default function PricingView({
                           ? 'bg-neutral-800 text-neutral-400' 
                           : 'bg-white text-black hover:bg-neutral-100'
                         : isActive
-                          ? 'bg-gray-100 text-gray-400 border border-gray-150'
+                          ? 'bg-gray-100 text-gray-400 border border-gray-200'
                           : 'bg-black text-white hover:bg-gray-800'
                     }`}
                   >
@@ -195,7 +195,7 @@ export default function PricingView({
                       <div className="rounded-full bg-emerald-500/10 text-emerald-500 h-4 w-4 flex items-center justify-center p-0.5 flex-shrink-0 mt-0.5">
                         <Check className="h-2.5 w-2.5" />
                       </div>
-                      <span className={isProPopular ? 'text-neutral-350' : 'text-gray-650'}>
+                      <span className={isProPopular ? 'text-neutral-300' : 'text-gray-600'}>
                         {feature}
                       </span>
                     </div>

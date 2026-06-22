@@ -2361,9 +2361,9 @@ ${queryText}`;
     const element = document.getElementById(`transcript-time-${cleanTimeId}`);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      element.classList.add('bg-indigo-650', 'text-white', 'scale-110');
+      element.classList.add('bg-indigo-600', 'text-white', 'scale-110');
       setTimeout(() => {
-        element.classList.remove('bg-indigo-650', 'text-white', 'scale-110');
+        element.classList.remove('bg-indigo-600', 'text-white', 'scale-110');
       }, 1500);
     }
   };
@@ -2381,7 +2381,7 @@ ${queryText}`;
             key={index}
             id={`transcript-time-${cleanTimeId}`}
             onClick={() => handleTimestampClick(timeVal)}
-            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 cursor-pointer hover:bg-indigo-650 hover:text-white transition-all mr-1"
+            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 cursor-pointer hover:bg-indigo-600 hover:text-white transition-all mr-1"
           >
             {part}
           </span>
@@ -2453,7 +2453,7 @@ ${queryText}`;
                       : 'bg-black text-white shadow-md'
                     : theme === 'dark'
                       ? 'text-neutral-400 hover:text-white hover:bg-neutral-900/50'
-                      : 'text-gray-500 hover:text-black hover:bg-gray-150'
+                      : 'text-gray-500 hover:text-black hover:bg-gray-200'
                 }`}
               >
                 {label}
@@ -2483,7 +2483,7 @@ ${queryText}`;
               <button 
                 type="button"
                 onClick={() => setImportError(null)} 
-                className="text-red-450 hover:text-red-600 text-sm font-bold focus:outline-none cursor-pointer"
+                className="text-red-400 hover:text-red-600 text-sm font-bold focus:outline-none cursor-pointer"
               >
                 &times;
               </button>
@@ -2496,11 +2496,11 @@ ${queryText}`;
               onClick={() => fileInputRef.current?.click()}
               className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border text-[11px] font-extrabold transition-all hover:scale-98 cursor-pointer ${
                 theme === 'dark' 
-                  ? 'bg-neutral-950/60 border-neutral-850 hover:bg-neutral-900 hover:border-neutral-700 text-white' 
+                  ? 'bg-neutral-950/60 border-neutral-800 hover:bg-neutral-900 hover:border-neutral-700 text-white' 
                   : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-700'
               }`}
             >
-              <Upload className="h-3.5 w-3.5 text-indigo-450" />
+              <Upload className="h-3.5 w-3.5 text-indigo-400" />
               <span>Upload File</span>
             </button>
             <input
@@ -2515,7 +2515,7 @@ ${queryText}`;
               onClick={() => { setUrlType('website'); setShowUrlModal(true); }}
               className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border text-[11px] font-extrabold transition-all hover:scale-98 cursor-pointer ${
                 theme === 'dark' 
-                  ? 'bg-neutral-950/60 border-neutral-850 hover:bg-neutral-900 hover:border-neutral-700 text-white' 
+                  ? 'bg-neutral-950/60 border-neutral-800 hover:bg-neutral-900 hover:border-neutral-700 text-white' 
                   : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-700'
               }`}
             >
@@ -2527,11 +2527,11 @@ ${queryText}`;
               onClick={() => setShowDriveModal(true)}
               className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border text-[11px] font-extrabold transition-all hover:scale-98 cursor-pointer ${
                 theme === 'dark' 
-                  ? 'bg-neutral-950/60 border-neutral-850 hover:bg-neutral-900 hover:border-neutral-700 text-white' 
+                  ? 'bg-neutral-950/60 border-neutral-800 hover:bg-neutral-900 hover:border-neutral-700 text-white' 
                   : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-700'
               }`}
             >
-              <HardDrive className="h-3.5 w-3.5 text-blue-450" />
+              <HardDrive className="h-3.5 w-3.5 text-blue-400" />
               <span>Google Drive</span>
             </button>
 
@@ -2539,7 +2539,7 @@ ${queryText}`;
               onClick={() => { setUrlType('youtube'); setShowUrlModal(true); }}
               className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border text-[11px] font-extrabold transition-all hover:scale-98 cursor-pointer ${
                 theme === 'dark' 
-                  ? 'bg-neutral-950/60 border-neutral-850 hover:bg-neutral-900 hover:border-neutral-700 text-white' 
+                  ? 'bg-neutral-950/60 border-neutral-800 hover:bg-neutral-900 hover:border-neutral-700 text-white' 
                   : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-700'
               }`}
             >
@@ -2606,7 +2606,7 @@ ${queryText}`;
                                     </span>
                                     <span>{uploadPct}%</span>
                                   </div>
-                                  <div className="h-1.5 w-full rounded-full bg-neutral-900 overflow-hidden border border-neutral-850">
+                                  <div className="h-1.5 w-full rounded-full bg-neutral-900 overflow-hidden border border-neutral-800">
                                     <div 
                                       style={{ width: `${uploadPct}%` }} 
                                       className="h-full bg-gradient-to-r from-amber-500 to-amber-300 rounded-full transition-all duration-300"
@@ -2691,7 +2691,7 @@ ${queryText}`;
                       </div>
                       <button
                         onClick={() => handleDeleteSource(src.id)}
-                        className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/10 text-neutral-450 hover:text-red-500 transition-all cursor-pointer"
+                        className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/10 text-neutral-400 hover:text-red-500 transition-all cursor-pointer"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -2728,7 +2728,7 @@ ${queryText}`;
                 onClick={() => handleQuickPrompt(prompt)}
                 className={`px-3 py-1.5 rounded-lg border text-[10px] font-extrabold transition-all hover:scale-98 cursor-pointer ${
                   theme === 'dark'
-                    ? 'bg-neutral-900 border-neutral-800 text-neutral-350 hover:bg-neutral-850 hover:border-neutral-700'
+                    ? 'bg-neutral-900 border-neutral-800 text-neutral-300 hover:bg-neutral-800 hover:border-neutral-700'
                     : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
                 }`}
               >
@@ -2755,10 +2755,10 @@ ${queryText}`;
                   <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-xs leading-relaxed select-text ${
                     msg.sender === 'user'
                       ? theme === 'dark' 
-                        ? 'bg-indigo-650 text-white' 
+                        ? 'bg-indigo-600 text-white' 
                         : 'bg-black text-white'
                       : theme === 'dark'
-                        ? 'bg-[#121318] border border-neutral-850 text-neutral-205'
+                        ? 'bg-[#121318] border border-neutral-800 text-neutral-200'
                         : 'bg-gray-100 text-gray-800'
                   }`}>
                     <span className="font-mono text-[9px] font-black uppercase tracking-wider block opacity-60 mb-1">
@@ -2795,7 +2795,7 @@ ${queryText}`;
             )}
             {isChatLoading && (
               <div className="flex justify-start">
-                <div className={`rounded-2xl px-4 py-3 border flex items-center gap-3 ${theme === 'dark' ? 'bg-[#121318] border-neutral-850 text-neutral-400' : 'bg-gray-100 border-gray-250 text-gray-500'}`}>
+                <div className={`rounded-2xl px-4 py-3 border flex items-center gap-3 ${theme === 'dark' ? 'bg-[#121318] border-neutral-800 text-neutral-400' : 'bg-gray-100 border-gray-200 text-gray-500'}`}>
                   <BruteLoader size="xs" message="" />
                   <span className="text-xs font-mono font-bold tracking-wider animate-pulse">Synthesizing logical layers...</span>
                 </div>
@@ -2813,7 +2813,7 @@ ${queryText}`;
               placeholder="Ask anything about your selected sources..."
               className={`flex-grow rounded-xl text-xs font-semibold outline-none p-3.5 transition-all ${
                 theme === 'dark' 
-                  ? 'bg-neutral-950 border border-neutral-855 text-white placeholder-neutral-600 focus:border-indigo-500' 
+                  ? 'bg-neutral-950 border border-neutral-800 text-white placeholder-neutral-600 focus:border-indigo-500' 
                   : 'bg-white border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-black'
               }`}
             />
@@ -2838,7 +2838,7 @@ ${queryText}`;
             }`}
             title="Drag to resize Output Studio"
           >
-            <div className="h-8 w-0.5 rounded bg-neutral-650/80" />
+            <div className="h-8 w-0.5 rounded bg-neutral-600/80" />
           </div>
         )}
 
@@ -2863,12 +2863,12 @@ ${queryText}`;
             <div className={`flex items-center justify-between p-2.5 rounded-xl border ${
               theme === 'dark' ? 'bg-neutral-950/70 border-neutral-900/60' : 'bg-gray-50 border-gray-200'
             }`}>
-              <span className="text-[10px] font-black uppercase text-neutral-450 tracking-wider">Output Language</span>
+              <span className="text-[10px] font-black uppercase text-neutral-400 tracking-wider">Output Language</span>
               <select
                 value={outputLanguage}
                 onChange={(e) => handleLanguageChange(e.target.value)}
                 className={`rounded px-2.5 py-1 text-xs font-bold border outline-none cursor-pointer ${
-                  theme === 'dark' ? 'bg-neutral-900 border-neutral-850 text-white' : 'bg-white border-gray-300 text-black'
+                  theme === 'dark' ? 'bg-neutral-900 border-neutral-800 text-white' : 'bg-white border-gray-300 text-black'
                 }`}
               >
                 {['English', 'Hindi', 'Hinglish', 'Marathi', 'Tamil', 'Gujarati', 'Bengali'].map(lang => (
@@ -2878,7 +2878,7 @@ ${queryText}`;
             </div>
           )}
 
-          <div className={`grid grid-cols-4 gap-1 p-1 rounded-xl ${theme === 'dark' ? 'bg-neutral-950' : 'bg-gray-150'}`}>
+          <div className={`grid grid-cols-4 gap-1 p-1 rounded-xl ${theme === 'dark' ? 'bg-neutral-950' : 'bg-gray-200'}`}>
             {(['notes', 'summary', 'flashcards', 'quiz'] as const).map(tab => (
               <button
                 key={tab}
@@ -2888,7 +2888,7 @@ ${queryText}`;
                 }}
                 className={`py-1.5 rounded-lg text-[10px] font-black capitalize transition-all cursor-pointer ${
                   activeOutputTab === tab 
-                    ? theme === 'dark' ? 'bg-indigo-650 text-white' : 'bg-white text-black shadow-xs' 
+                    ? theme === 'dark' ? 'bg-indigo-600 text-white' : 'bg-white text-black shadow-xs' 
                     : theme === 'dark' ? 'text-neutral-400 hover:text-white' : 'text-neutral-500 hover:text-neutral-900'
                 }`}
               >
@@ -2897,7 +2897,7 @@ ${queryText}`;
             ))}
           </div>
 
-          <div className={`grid grid-cols-4 gap-1 p-1 rounded-xl ${theme === 'dark' ? 'bg-neutral-950' : 'bg-gray-150'}`}>
+          <div className={`grid grid-cols-4 gap-1 p-1 rounded-xl ${theme === 'dark' ? 'bg-neutral-950' : 'bg-gray-200'}`}>
             {(['mindmap', 'slides', 'podcast', 'infographics'] as const).map(tab => (
               <button
                 key={tab}
@@ -2907,7 +2907,7 @@ ${queryText}`;
                 }}
                 className={`py-1.5 rounded-lg text-[10px] font-black capitalize transition-all cursor-pointer ${
                   activeOutputTab === tab 
-                    ? theme === 'dark' ? 'bg-indigo-650 text-white' : 'bg-white text-black shadow-xs' 
+                    ? theme === 'dark' ? 'bg-indigo-600 text-white' : 'bg-white text-black shadow-xs' 
                     : theme === 'dark' ? 'text-neutral-400 hover:text-white' : 'text-neutral-500 hover:text-neutral-900'
                 }`}
               >
@@ -2939,7 +2939,7 @@ ${queryText}`;
                             key={f}
                             onClick={() => setNotesFormat(f)}
                             className={`px-2.5 py-1 rounded-lg text-[9px] font-extrabold uppercase ${
-                              notesFormat === f ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-455'
+                              notesFormat === f ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-400'
                             }`}
                           >
                             {f === 'bhailang' ? 'BhaiLang' : f}
@@ -2961,12 +2961,12 @@ ${queryText}`;
 
                     <div className="space-y-3">
                       {isGeneratingNotes ? (
-                        <div className="py-16 flex flex-col items-center justify-center border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5">
+                        <div className="py-16 flex flex-col items-center justify-center border border-dashed border-gray-200 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5">
                           <BruteLoader size="md" message={`Generating ${notesFormat} notes...`} />
                         </div>
                       ) : getActiveNotes().length > 0 ? (
                         getActiveNotes().map((n: any, i: number) => (
-                          <div key={i} className={`p-4 rounded-xl border font-sans ${theme === 'dark' ? 'bg-[#121318] border-neutral-905' : 'bg-white border-gray-200'}`}>
+                          <div key={i} className={`p-4 rounded-xl border font-sans ${theme === 'dark' ? 'bg-[#121318] border-neutral-900' : 'bg-white border-gray-200'}`}>
                             <h4 className="text-xs font-black text-indigo-400">{n.title}</h4>
                             <p className={`text-[11.5px] mt-2 leading-relaxed whitespace-pre-wrap ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-700'}`}>
                               {renderTextWithCitations(cleanMarkdownText(n.content))}
@@ -2974,12 +2974,12 @@ ${queryText}`;
                           </div>
                         ))
                       ) : (
-                        <div className="text-center py-16 border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4">
+                        <div className="text-center py-16 border border-dashed border-gray-200 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4">
                           <FileText className="h-10 w-10 text-neutral-600 mx-auto animate-pulse" />
                           <h4 className="text-xs font-bold text-neutral-400">Notes have not been generated yet.</h4>
                           <button
                             onClick={() => triggerGenerateNotes(notesFormat)}
-                            className="px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
+                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
                           >
                             Generate {notesFormat} Notes
                           </button>
@@ -2999,7 +2999,7 @@ ${queryText}`;
                             key={f}
                             onClick={() => setSummaryFormat(f)}
                             className={`px-2.5 py-1 rounded-lg text-[9px] font-extrabold uppercase whitespace-nowrap ${
-                              summaryFormat === f ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-455'
+                              summaryFormat === f ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-400'
                             }`}
                           >
                             {f === 'bhailang' ? 'BhaiLang' : f}
@@ -3021,7 +3021,7 @@ ${queryText}`;
 
                     <div className="space-y-4">
                       {isGeneratingSummary ? (
-                        <div className="py-16 flex flex-col items-center justify-center border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5">
+                        <div className="py-16 flex flex-col items-center justify-center border border-dashed border-gray-200 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5">
                           <BruteLoader size="md" message={`Generating ${summaryFormat} summary...`} />
                         </div>
                       ) : getActiveSummary().trim().length > 0 ? (
@@ -3045,19 +3045,19 @@ ${queryText}`;
                               theme === 'dark' ? 'bg-[#121318] border-neutral-900' : 'bg-white border-gray-200'
                             }`}>
                               <h4 className="text-xs font-black text-indigo-400 uppercase tracking-widest font-mono">{sec.label}</h4>
-                              <p className={`text-[11.5px] mt-2 leading-relaxed whitespace-pre-wrap ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-705'}`}>
+                              <p className={`text-[11.5px] mt-2 leading-relaxed whitespace-pre-wrap ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-700'}`}>
                                 {renderTextWithCitations(sec.content)}
                               </p>
                             </div>
                           ));
                         })()
                       ) : (
-                        <div className="text-center py-16 border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4">
+                        <div className="text-center py-16 border border-dashed border-gray-200 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4">
                           <FileText className="h-10 w-10 text-neutral-600 mx-auto animate-pulse" />
                           <h4 className="text-xs font-bold text-neutral-400">Summary has not been generated yet.</h4>
                           <button
                             onClick={() => triggerGenerateSummary(summaryFormat)}
-                            className="px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
+                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
                           >
                             Generate Summary
                           </button>
@@ -3076,7 +3076,7 @@ ${queryText}`;
                             key={f}
                             onClick={() => setFlashcardsFormat(f)}
                             className={`px-2.5 py-1 rounded-lg text-[9px] font-extrabold uppercase ${
-                              flashcardsFormat === f ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-455'
+                              flashcardsFormat === f ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-400'
                             }`}
                           >
                             {f}
@@ -3098,7 +3098,7 @@ ${queryText}`;
 
                     <div className="space-y-3">
                       {isGeneratingFlashcards ? (
-                        <div className="py-16 flex flex-col items-center justify-center border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5">
+                        <div className="py-16 flex flex-col items-center justify-center border border-dashed border-gray-200 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5">
                           <BruteLoader size="md" message="Generating Flashcards..." />
                         </div>
                       ) : activeSource.flashcards && activeSource.flashcards.length > 0 ? (
@@ -3108,18 +3108,18 @@ ${queryText}`;
                           }`}>
                             <div className="text-[10px] font-bold text-indigo-400 font-mono">Q. CARD {i + 1}</div>
                             <div className="text-xs font-black">{renderTextWithCitations(cleanMarkdownText(f.q))}</div>
-                            <div className={`text-[11.5px] pt-2 border-t border-neutral-900/20 ${theme === 'dark' ? 'text-neutral-350' : 'text-neutral-600'}`}>
+                            <div className={`text-[11.5px] pt-2 border-t border-neutral-900/20 ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-600'}`}>
                               {renderTextWithCitations(cleanMarkdownText(f.a))}
                             </div>
                           </div>
                         ))
                       ) : (
-                        <div className="text-center py-16 border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4">
+                        <div className="text-center py-16 border border-dashed border-gray-200 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4">
                           <Award className="h-10 w-10 text-neutral-600 mx-auto animate-pulse" />
                           <h4 className="text-xs font-bold text-neutral-400">Flashcards have not been generated yet.</h4>
                           <button
                             onClick={triggerGenerateFlashcards}
-                            className="px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
+                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
                           >
                             Generate Flashcards
                           </button>
@@ -3139,7 +3139,7 @@ ${queryText}`;
                             key={f}
                             onClick={() => setQuizFormat(f)}
                             className={`px-2.5 py-1 rounded-lg text-[9px] font-extrabold uppercase ${
-                              quizFormat === f ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-455'
+                              quizFormat === f ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-400'
                             }`}
                           >
                             {f}
@@ -3160,7 +3160,7 @@ ${queryText}`;
                     </div>
 
                     {isGeneratingQuiz ? (
-                      <div className="py-16 flex flex-col items-center justify-center border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5">
+                      <div className="py-16 flex flex-col items-center justify-center border border-dashed border-gray-200 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5">
                         <BruteLoader size="md" message="Generating Quiz questions..." />
                       </div>
                     ) : activeSource.quiz && activeSource.quiz.length > 0 ? (
@@ -3180,11 +3180,11 @@ ${queryText}`;
                               if (isQuizRevealed) {
                                   if (isCorrect) {
                                     btnClass = theme === 'dark' 
-                                      ? "border-emerald-500 bg-emerald-500/10 text-emerald-450" 
+                                      ? "border-emerald-500 bg-emerald-500/10 text-emerald-400" 
                                       : "border-green-500 bg-green-50 text-green-700";
                                   } else if (isSelected) {
                                     btnClass = theme === 'dark' 
-                                      ? "border-red-500 bg-red-500/10 text-red-450" 
+                                      ? "border-red-500 bg-red-500/10 text-red-400" 
                                       : "border-red-400 bg-red-50 text-red-700";
                                   } else {
                                     btnClass = theme === 'dark' 
@@ -3195,10 +3195,10 @@ ${queryText}`;
                                   if (isSelected) {
                                     btnClass = theme === 'dark' 
                                       ? "border-indigo-500 bg-indigo-500/10 text-white" 
-                                      : "border-indigo-650 bg-indigo-50 text-indigo-700";
+                                      : "border-indigo-600 bg-indigo-50 text-indigo-700";
                                   } else {
                                     btnClass = theme === 'dark' 
-                                      ? "border-neutral-850 bg-neutral-950/40 text-neutral-350 hover:bg-neutral-900 hover:text-white" 
+                                      ? "border-neutral-800 bg-neutral-950/40 text-neutral-300 hover:bg-neutral-900 hover:text-white" 
                                       : "border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 hover:text-gray-900";
                                   }
                               }
@@ -3216,11 +3216,11 @@ ${queryText}`;
                           </div>
 
                           {isQuizRevealed && (
-                            <div className="mt-4 pt-3 border-t border-dashed border-neutral-900 text-[11px] text-neutral-455">
+                            <div className="mt-4 pt-3 border-t border-dashed border-neutral-900 text-[11px] text-neutral-400">
                               <span className="font-mono text-[9px] font-bold text-indigo-400 block mb-1">COGNITIVE ANALYSIS:</span>
                               {renderTextWithCitations(cleanMarkdownText(activeSource.quiz[activeQuizQuestionIdx].explanation))}
                               {activeSource.quiz[activeQuizQuestionIdx].sourceCitation && (
-                                <div className="mt-2 text-[10px] font-bold text-indigo-350 font-mono">
+                                <div className="mt-2 text-[10px] font-bold text-indigo-300 font-mono">
                                   Citation: {activeSource.quiz[activeQuizQuestionIdx].sourceCitation}
                                 </div>
                               )}
@@ -3232,7 +3232,7 @@ ${queryText}`;
                               <button
                                 disabled={selectedQuizAnswerIdx === null}
                                 onClick={() => setIsQuizRevealed(true)}
-                                className="px-4 py-2 bg-indigo-650 hover:bg-indigo-600 text-white rounded-lg text-[11px] font-bold disabled:opacity-30 cursor-pointer"
+                                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[11px] font-bold disabled:opacity-30 cursor-pointer"
                               >
                                 Verify Choice
                               </button>
@@ -3255,19 +3255,19 @@ ${queryText}`;
                         <div className="flex justify-center pt-2">
                           <button
                             onClick={triggerGenerateMoreQuiz}
-                            className="px-5 py-2.5 rounded-lg border border-indigo-500/25 bg-indigo-500/5 hover:bg-indigo-500/10 text-indigo-455 text-xs font-bold transition-all focus:outline-none cursor-pointer"
+                            className="px-5 py-2.5 rounded-lg border border-indigo-500/25 bg-indigo-500/5 hover:bg-indigo-500/10 text-indigo-400 text-xs font-bold transition-all focus:outline-none cursor-pointer"
                           >
                             Generate 10 More Questions
                           </button>
                         </div>
                       </div>
                     ) : (
-                      <div className="text-center py-16 border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4">
+                      <div className="text-center py-16 border border-dashed border-gray-200 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4">
                         <HelpCircle className="h-10 w-10 text-neutral-600 mx-auto animate-pulse" />
                         <h4 className="text-xs font-bold text-neutral-400">Quiz has not been generated yet.</h4>
                       <button
                           onClick={triggerGenerateQuiz}
-                          className="px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
+                          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
                         >
                           Generate Quiz
                         </button>
@@ -3344,7 +3344,7 @@ ${queryText}`;
                               </g>
                             ))}
                           </svg>
-                          <div className="absolute bottom-2 left-2 text-[8px] font-mono text-neutral-505 bg-neutral-955/45 p-1 rounded">
+                          <div className="absolute bottom-2 left-2 text-[8px] font-mono text-neutral-500 bg-neutral-950/45 p-1 rounded">
                             Click on nodes to show conceptual details drawer.
                           </div>
                         </>
@@ -3357,7 +3357,7 @@ ${queryText}`;
                           <p className="text-[10px] text-neutral-500 font-mono">Concept Net has not been generated yet.</p>
                           <button
                             onClick={triggerGenerateMindmap}
-                            className="px-4 py-2 bg-indigo-650 hover:bg-indigo-755 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
+                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
                           >
                             Generate Concept Net
                           </button>
@@ -3370,36 +3370,36 @@ ${queryText}`;
                       <div className={`p-4 rounded-xl border text-left space-y-3.5 animate-fade-in ${
                         theme === 'dark' ? 'bg-[#121318] border-neutral-900' : 'bg-white border-gray-200'
                       }`}>
-                        <div className="flex items-center justify-between border-b border-neutral-855 pb-2">
+                        <div className="flex items-center justify-between border-b border-neutral-800 pb-2">
                           <h4 className="text-xs font-black text-indigo-400 uppercase tracking-widest font-mono">
                             {selectedMindmapNode.label}
                           </h4>
                           <button 
                             onClick={() => setSelectedMindmapNode(null)}
                             className={`text-xs font-bold cursor-pointer ${
-                              theme === 'dark' ? 'text-neutral-550 hover:text-white' : 'text-neutral-400 hover:text-neutral-900'
+                              theme === 'dark' ? 'text-neutral-500 hover:text-white' : 'text-neutral-400 hover:text-neutral-900'
                             }`}
                           >
                             &times;
                           </button>
                         </div>
                         
-                        <div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-350' : 'text-neutral-600'}`}>
+                        <div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-600'}`}>
                           <strong className="text-indigo-400 block text-[9.5px] uppercase font-mono tracking-wider">Definition & Explanation</strong>
                           {renderTextWithCitations(cleanMarkdownText(selectedMindmapNode.desc || selectedMindmapNode.explanation || 'Provides logical synthesis for this section.'))}
                         </div>
                         
                         {selectedMindmapNode.examples && (
-                          <div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-350' : 'text-neutral-600'}`}>
+                          <div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-600'}`}>
                             <strong className="text-indigo-400 block text-[9.5px] uppercase font-mono tracking-wider">Examples & Analogies</strong>
                             {renderTextWithCitations(cleanMarkdownText(selectedMindmapNode.examples))}
                           </div>
                         )}
 
                         {selectedMindmapNode.formula && (
-                          <div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-350' : 'text-neutral-600'}`}>
+                          <div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-600'}`}>
                             <strong className="text-indigo-400 block text-[9.5px] uppercase font-mono tracking-wider">Equations or Theories</strong>
-                            <code className={`block p-2 rounded text-[10px] font-mono mt-1 text-orange-450 border ${
+                            <code className={`block p-2 rounded text-[10px] font-mono mt-1 text-orange-400 border ${
                               theme === 'dark' ? 'bg-neutral-950/50 border-neutral-900' : 'bg-gray-50 border-gray-200'
                             }`}>
                               {selectedMindmapNode.formula}
@@ -3408,7 +3408,7 @@ ${queryText}`;
                         )}
 
                         {selectedMindmapNode.applications && (
-                          <div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-350' : 'text-neutral-600'}`}>
+                          <div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-600'}`}>
                             <strong className="text-indigo-400 block text-[9.5px] uppercase font-mono tracking-wider">Applications & Use Cases</strong>
                             {renderTextWithCitations(cleanMarkdownText(selectedMindmapNode.applications))}
                           </div>
@@ -3455,20 +3455,20 @@ ${queryText}`;
                       <div className="flex items-center justify-between pb-3.5 border-b border-neutral-900/20">
                         <div>
                           <h4 className="text-[11.5px] font-black">Synthesize Study Podcast</h4>
-                          <p className="text-[9.5px] text-neutral-450 mt-0.5">Professor & Student dynamic audio conversation</p>
+                          <p className="text-[9.5px] text-neutral-400 mt-0.5">Professor & Student dynamic audio conversation</p>
                         </div>
                         
                         {!isPodcastPlaying ? (
                           <button
                             onClick={startPodcastAudio}
-                            className="h-8.5 w-8.5 flex items-center justify-center bg-indigo-650 hover:bg-indigo-600 text-white rounded-full transition-transform active:scale-95 cursor-pointer"
+                            className="h-8.5 w-8.5 flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white rounded-full transition-transform active:scale-95 cursor-pointer"
                           >
                             <Play className="h-4 w-4 fill-current ml-0.5" />
                           </button>
                         ) : (
                           <button
                             onClick={stopPodcastAudio}
-                            className="h-8.5 w-8.5 flex items-center justify-center bg-red-650 hover:bg-red-600 text-white rounded-full transition-transform active:scale-95 cursor-pointer"
+                            className="h-8.5 w-8.5 flex items-center justify-center bg-red-600 hover:bg-red-600 text-white rounded-full transition-transform active:scale-95 cursor-pointer"
                           >
                             <Pause className="h-4 w-4" />
                           </button>
@@ -3487,7 +3487,7 @@ ${queryText}`;
                               <strong className="text-indigo-400 uppercase tracking-widest text-[9px] block">
                                 {logLine.split(':')[0]}
                               </strong>
-                              <span className="text-neutral-250">{logLine.split(':').slice(1).join(':')}</span>
+                              <span className="text-neutral-200">{logLine.split(':').slice(1).join(':')}</span>
                             </div>
                           ))
                         )}
@@ -3543,7 +3543,7 @@ ${queryText}`;
       {showUrlModal && (
         <div className="fixed inset-0 bg-neutral-950/65 backdrop-blur-xs flex items-center justify-center z-50 p-4 select-none animate-fade-in">
           <div className={`rounded-2xl max-w-md w-full border p-6 space-y-4 shadow-2xl relative ${
-            theme === 'dark' ? 'bg-[#0d0e12] border-neutral-850 text-white' : 'bg-white border-gray-200 text-gray-900'
+            theme === 'dark' ? 'bg-[#0d0e12] border-neutral-800 text-white' : 'bg-white border-gray-200 text-gray-900'
           }`}>
             <div className="flex items-center justify-between pb-3 border-b border-neutral-900/40">
               <h3 className="font-sans font-black text-sm flex items-center gap-1.5">
@@ -3566,7 +3566,7 @@ ${queryText}`;
                     type="button"
                     onClick={() => setUrlType('website')}
                     className={`flex-1 py-2 px-3 text-xs font-bold border rounded-lg cursor-pointer ${
-                      urlType === 'website' ? 'bg-indigo-650 border-indigo-500 text-white' : 'border-neutral-800 text-neutral-400'
+                      urlType === 'website' ? 'bg-indigo-600 border-indigo-500 text-white' : 'border-neutral-800 text-neutral-400'
                     }`}
                   >
                     Website URL
@@ -3575,7 +3575,7 @@ ${queryText}`;
                     type="button"
                     onClick={() => setUrlType('youtube')}
                     className={`flex-1 py-2 px-3 text-xs font-bold border rounded-lg cursor-pointer ${
-                      urlType === 'youtube' ? 'bg-indigo-650 border-indigo-500 text-white' : 'border-neutral-800 text-neutral-400'
+                      urlType === 'youtube' ? 'bg-indigo-600 border-indigo-500 text-white' : 'border-neutral-800 text-neutral-400'
                     }`}
                   >
                     YouTube Link
@@ -3592,7 +3592,7 @@ ${queryText}`;
                   onChange={(e) => setUrlInput(e.target.value)}
                   placeholder="https://example.com/article"
                   className={`w-full rounded-xl text-xs font-semibold outline-none p-3 mt-1.5 ${
-                    theme === 'dark' ? 'bg-neutral-950 border border-neutral-850 text-white' : 'bg-gray-100 border border-gray-300 text-black'
+                    theme === 'dark' ? 'bg-neutral-950 border border-neutral-800 text-white' : 'bg-gray-100 border border-gray-300 text-black'
                   }`}
                 />
               </div>
@@ -3621,11 +3621,11 @@ ${queryText}`;
       {showDriveModal && (
         <div className="fixed inset-0 bg-neutral-950/65 backdrop-blur-xs flex items-center justify-center z-50 p-4 select-none animate-fade-in">
           <div className={`rounded-2xl max-w-lg w-full border p-6 space-y-4 shadow-2xl relative ${
-            theme === 'dark' ? 'bg-[#0d0e12] border-neutral-850 text-white' : 'bg-white border-gray-200 text-gray-900'
+            theme === 'dark' ? 'bg-[#0d0e12] border-neutral-800 text-white' : 'bg-white border-gray-200 text-gray-900'
           }`}>
             <div className="flex items-center justify-between pb-3 border-b border-neutral-900/40">
               <h3 className="font-sans font-black text-sm flex items-center gap-1.5">
-                <HardDrive className="h-4 w-4 text-blue-450" />
+                <HardDrive className="h-4 w-4 text-blue-400" />
                 <span>Import Google Drive Materials</span>
               </h3>
               <button 
@@ -3643,7 +3643,7 @@ ${queryText}`;
                 </div>
                 <div className="space-y-1">
                   <h4 className="text-xs font-black">Authorize Google Account Connection</h4>
-                  <p className="text-[10px] text-neutral-455 max-w-xs mx-auto leading-relaxed">
+                  <p className="text-[10px] text-neutral-400 max-w-xs mx-auto leading-relaxed">
                     Connect your Academic Drive folders to sync docs, notes, and spreadsheet assets.
                   </p>
                 </div>
@@ -3670,7 +3670,7 @@ ${queryText}`;
                   <span className="text-[10.5px] text-green-400 font-bold">✓ Connected: scholar.session@google.edu</span>
                   <button 
                     onClick={() => setIsDriveConnected(false)} 
-                    className="text-[9.5px] text-neutral-450 hover:text-white hover:underline cursor-pointer"
+                    className="text-[9.5px] text-neutral-400 hover:text-white hover:underline cursor-pointer"
                   >
                     Disconnect
                   </button>
@@ -3708,7 +3708,7 @@ ${queryText}`;
       {showPdfModal && pdfExportData && (
         <div className="fixed inset-0 bg-neutral-950/65 backdrop-blur-xs flex items-center justify-center z-50 p-4 select-none animate-fade-in">
           <div className={`rounded-2xl max-w-md w-full border p-6 space-y-4 shadow-2xl relative ${
-            theme === 'dark' ? 'bg-[#0d0e12] border-neutral-850 text-white' : 'bg-white border-gray-200 text-gray-900'
+            theme === 'dark' ? 'bg-[#0d0e12] border-neutral-800 text-white' : 'bg-white border-gray-200 text-gray-900'
           }`}>
             <div className="flex items-center justify-between pb-3 border-b border-neutral-900/40">
               <h3 className="font-sans font-black text-sm flex items-center gap-1.5">
@@ -3734,8 +3734,8 @@ ${queryText}`;
                       onClick={() => setSelectedPdfTheme(t)}
                       className={`py-2 px-3 text-xs font-bold border rounded-lg cursor-pointer capitalize transition-all ${
                         selectedPdfTheme === t 
-                          ? 'bg-indigo-650 border-indigo-500 text-white' 
-                          : theme === 'dark' ? 'border-neutral-800 text-neutral-450 hover:border-neutral-700' : 'border-gray-200 text-gray-700 hover:border-gray-300'
+                          ? 'bg-indigo-600 border-indigo-500 text-white' 
+                          : theme === 'dark' ? 'border-neutral-800 text-neutral-400 hover:border-neutral-700' : 'border-gray-200 text-gray-700 hover:border-gray-300'
                       }`}
                     >
                       {t} Style
@@ -3748,7 +3748,7 @@ ${queryText}`;
                 <button
                   type="button"
                   onClick={() => { setShowPdfModal(false); setPdfExportData(null); }}
-                  className="rounded-lg px-4 py-2 text-xs font-bold border border-neutral-800 text-neutral-450 cursor-pointer"
+                  className="rounded-lg px-4 py-2 text-xs font-bold border border-neutral-800 text-neutral-400 cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -3773,7 +3773,7 @@ ${queryText}`;
       {showPptModal && (
         <div className="fixed inset-0 bg-neutral-950/65 backdrop-blur-xs flex items-center justify-center z-50 p-4 select-none animate-fade-in">
           <div className={`rounded-2xl max-w-md w-full border p-6 space-y-4 shadow-2xl relative ${
-            theme === 'dark' ? 'bg-[#0d0e12] border-neutral-855 text-white' : 'bg-white border-gray-200 text-gray-900'
+            theme === 'dark' ? 'bg-[#0d0e12] border-neutral-800 text-white' : 'bg-white border-gray-200 text-gray-900'
           }`}>
             <div className="flex items-center justify-between pb-3 border-b border-neutral-900/40">
               <h3 className="font-sans font-black text-sm flex items-center gap-1.5">
@@ -3799,8 +3799,8 @@ ${queryText}`;
                       onClick={() => setPptTheme(t)}
                       className={`py-2 px-1 text-[10px] font-bold border rounded-lg cursor-pointer capitalize transition-all ${
                         pptTheme === t 
-                          ? 'bg-indigo-650 border-indigo-500 text-white' 
-                          : theme === 'dark' ? 'border-neutral-800 text-neutral-450 hover:border-neutral-700' : 'border-gray-200 text-gray-700 hover:border-gray-300'
+                          ? 'bg-indigo-600 border-indigo-500 text-white' 
+                          : theme === 'dark' ? 'border-neutral-800 text-neutral-400 hover:border-neutral-700' : 'border-gray-200 text-gray-700 hover:border-gray-300'
                       }`}
                     >
                       {t === 'startup' ? 'Startup' : t === 'cyber' ? 'Cyber Neon' : t === 'glass' ? 'Dark Glass' : t}
@@ -3819,8 +3819,8 @@ ${queryText}`;
                       onClick={() => setPptLength(l)}
                       className={`flex-1 py-2 text-xs font-bold border rounded-lg cursor-pointer transition-all ${
                         pptLength === l 
-                          ? 'bg-indigo-650 border-indigo-500 text-white' 
-                          : theme === 'dark' ? 'border-neutral-800 text-neutral-450' : 'border-gray-200 text-gray-700'
+                          ? 'bg-indigo-600 border-indigo-500 text-white' 
+                          : theme === 'dark' ? 'border-neutral-800 text-neutral-400' : 'border-gray-200 text-gray-700'
                       }`}
                     >
                       {l} Slides
@@ -3829,10 +3829,10 @@ ${queryText}`;
                 </div>
               </div>
 
-              <div className="flex items-center justify-between p-2.5 rounded-xl border border-neutral-850 bg-neutral-950/20">
+              <div className="flex items-center justify-between p-2.5 rounded-xl border border-neutral-800 bg-neutral-950/20">
                 <div>
                   <span className="text-xs font-bold block">Detailed Mode</span>
-                  <span className="text-[9.5px] text-neutral-450">Overrides the standard 40-word limit per slide for longer text descriptions.</span>
+                  <span className="text-[9.5px] text-neutral-400">Overrides the standard 40-word limit per slide for longer text descriptions.</span>
                 </div>
                 <input
                   type="checkbox"

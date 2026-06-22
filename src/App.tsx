@@ -88,6 +88,7 @@ export default function App() {
   // Onboarding checks
   const [checkingOnboarding, setCheckingOnboarding] = useState(true);
   const [isOnboarding, setIsOnboarding] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(1);
 
   // Setup Firebase Auth State Listener
   useEffect(() => {
@@ -107,27 +108,36 @@ export default function App() {
           if (userDocSnap.exists() && userDocSnap.data().onboarding_completed) {
             const data = userDocSnap.data();
             console.log("User onboarding already completed. Loaded user data:", data);
-            setSettings(prev => ({
-              ...prev,
-              profile: {
-                ...prev.profile,
-                fullName: `${data.first_name || ''} ${data.last_name || ''}`.trim() || loggedUser.fullName,
-                firstName: data.first_name || '',
-                lastName: data.last_name || '',
-                emailAddress: data.email || loggedUser.emailAddress,
-                institution: data.school_or_university || '',
-                countryCode: data.country_code || '',
-                phoneNumber: data.phone_number || '',
-                avatarUrl: data.profile_image_url || '',
-                onboardingCompleted: true
-              }
-            }));
-            setSessionUser(loggedUser);
-            setIsOnboarding(false);
-            setActivePage(prev => (prev === 'landing' || prev === 'auth' ? 'dashboard' : prev));
+            
+            if (data.providerConfigured) {
+              setSettings(prev => ({
+                ...prev,
+                profile: {
+                  ...prev.profile,
+                  fullName: `${data.first_name || ''} ${data.last_name || ''}`.trim() || loggedUser.fullName,
+                  firstName: data.first_name || '',
+                  lastName: data.last_name || '',
+                  emailAddress: data.email || loggedUser.emailAddress,
+                  institution: data.school_or_university || '',
+                  countryCode: data.country_code || '',
+                  phoneNumber: data.phone_number || '',
+                  avatarUrl: data.profile_image_url || '',
+                  onboardingCompleted: true
+                }
+              }));
+              setSessionUser(loggedUser);
+              setIsOnboarding(false);
+              setActivePage(prev => (prev === 'landing' || prev === 'auth' ? 'dashboard' : prev));
+            } else {
+              console.log("Onboarding completed but AI Provider not configured. Routing to step 4.");
+              setSessionUser(loggedUser);
+              setOnboardingStep(4);
+              setIsOnboarding(true);
+            }
           } else {
             console.log("Onboarding incomplete or document missing for user UID:", user.uid);
             setSessionUser(loggedUser);
+            setOnboardingStep(1);
             setIsOnboarding(true);
           }
         } catch (err: any) {
@@ -778,6 +788,7 @@ export default function App() {
           email={sessionUser.emailAddress}
           fullName={sessionUser.fullName}
           theme={theme}
+          initialStep={onboardingStep}
           onComplete={(userData) => {
             setSettings(prev => ({
               ...prev,

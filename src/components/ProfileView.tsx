@@ -166,8 +166,8 @@ export default function ProfileView({
           onClick={handleSaveChanges}
           className={`flex items-center gap-2 rounded-xl py-3 px-5 text-xs font-bold shadow-md cursor-pointer transition-all active:scale-98 focus:outline-none ${
             theme === 'dark' 
-              ? 'bg-[#2563EB] text-white hover:bg-indigo-505' 
-              : 'bg-black text-white hover:bg-neutral-850'
+              ? 'bg-[#2563EB] text-white hover:bg-indigo-500' 
+              : 'bg-black text-white hover:bg-neutral-800'
           }`}
         >
           <Save className="h-4 w-4" />
@@ -180,7 +180,7 @@ export default function ProfileView({
         {/* Left Column: Avatar & Details */}
         <div className="space-y-6">
           <div className={`rounded-xl border p-6 flex flex-col items-center text-center space-y-4 shadow-xs ${
-            theme === 'dark' ? 'bg-[#121318]/40 border-neutral-855' : 'bg-white border-gray-200'
+            theme === 'dark' ? 'bg-[#121318]/40 border-neutral-800' : 'bg-white border-gray-200'
           }`}>
             <div className="relative">
               {avatarUrl ? (
@@ -190,7 +190,7 @@ export default function ProfileView({
                   className="h-28 w-28 rounded-full border-2 border-indigo-500 object-cover"
                 />
               ) : (
-                <div className="h-28 w-28 rounded-full border-2 border-dashed border-indigo-500/50 bg-gray-100 dark:bg-neutral-800 flex items-center justify-center text-gray-450 dark:text-neutral-500">
+                <div className="h-28 w-28 rounded-full border-2 border-dashed border-indigo-500/50 bg-gray-100 dark:bg-neutral-800 flex items-center justify-center text-gray-400 dark:text-neutral-500">
                   <User className="h-12 w-12" />
                 </div>
               )}
@@ -205,7 +205,7 @@ export default function ProfileView({
               <h3 className="font-sans font-bold text-base">
                 {firstName && lastName ? `${firstName} ${lastName}` : 'Anonymous Scholar'}
               </h3>
-              <p className="text-[11px] font-medium text-gray-405 leading-normal truncate max-w-[180px]">
+              <p className="text-[11px] font-medium text-gray-400 leading-normal truncate max-w-[180px]">
                 {school || 'Institutional workspace'}
               </p>
             </div>
@@ -215,7 +215,7 @@ export default function ProfileView({
                 <div className="flex flex-col sm:flex-row gap-2 justify-center w-full">
                   <label className={`flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-[11px] font-bold border transition-all focus:outline-none cursor-pointer ${
                     theme === 'dark'
-                      ? 'border-neutral-800 hover:bg-neutral-850 text-neutral-300'
+                      ? 'border-neutral-800 hover:bg-neutral-800 text-neutral-300'
                       : 'border-gray-200 hover:bg-gray-50 text-gray-700'
                   }`}>
                     <Camera className="h-3.5 w-3.5" />
@@ -233,7 +233,7 @@ export default function ProfileView({
                     className={`flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-[11px] font-bold border transition-all focus:outline-none ${
                       theme === 'dark'
                         ? 'border-neutral-800 hover:bg-red-500/15 hover:text-red-400 text-neutral-400'
-                        : 'border-gray-200 hover:bg-red-50 text-red-650 text-gray-650'
+                        : 'border-gray-200 hover:bg-red-50 text-red-600 text-gray-600'
                     }`}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -243,8 +243,8 @@ export default function ProfileView({
               ) : (
                 <label className={`flex items-center justify-center gap-1.5 py-1.5 px-4.5 rounded-lg text-[11px] font-bold border transition-all focus:outline-none cursor-pointer ${
                   theme === 'dark'
-                    ? 'bg-neutral-800 hover:bg-neutral-700 text-white border-neutral-850'
-                    : 'bg-black hover:bg-neutral-850 text-white border-black'
+                    ? 'bg-neutral-800 hover:bg-neutral-700 text-white border-neutral-800'
+                    : 'bg-black hover:bg-neutral-800 text-white border-black'
                 }`}>
                   <Camera className="h-3.5 w-3.5" />
                   <span>Upload Profile Photo</span>
@@ -263,9 +263,9 @@ export default function ProfileView({
         {/* Right Columns: Form Fields */}
         <div className="md:col-span-2 space-y-6">
           <div className={`rounded-xl border p-6 space-y-5 ${
-            theme === 'dark' ? 'bg-[#121318]/40 border-neutral-850' : 'bg-white border-gray-200'
+            theme === 'dark' ? 'bg-[#121318]/40 border-neutral-800' : 'bg-white border-gray-200'
           }`}>
-            <h3 className="font-sans font-extrabold text-base border-b pb-3 border-gray-150/60 dark:border-neutral-800">
+            <h3 className="font-sans font-extrabold text-base border-b pb-3 border-gray-200/60 dark:border-neutral-800">
               Personal Credentials
             </h3>
             

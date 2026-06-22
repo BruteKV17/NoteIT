@@ -36,78 +36,175 @@ const extractJsonObject = (rawText: string): string => {
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+const getAIConfig = () => {
+  const isBrowser = typeof window !== 'undefined';
+  const provider = isBrowser ? (localStorage.getItem('noteit_ai_provider') || 'gemini') : 'gemini';
+  const customGeminiKey = isBrowser ? (localStorage.getItem('noteit_gemini_api_key') || '') : '';
+  const customOpenAiKey = isBrowser ? (localStorage.getItem('noteit_openai_api_key') || '') : '';
+  
+  const envGeminiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+  const envOpenAiKey = import.meta.env.VITE_OPENAI_API_KEY || '';
+  
+  return {
+    provider,
+    geminiKey: customGeminiKey || envGeminiKey,
+    openaiKey: customOpenAiKey || envOpenAiKey
+  };
+};
+
+export const executeOpenAICall = async (
+  prompt: string,
+  apiKey: string,
+  responseSchema?: any,
+  onBusy?: (isBusy: boolean) => void
+): Promise<any> => {
+  const url = 'https://api.openai.com/v1/chat/completions';
+  
+  if (onBusy) onBusy(true);
+  try {
+    const headers: any = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    };
+
+    const requestBody: any = {
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'user', content: prompt }
+      ]
+    };
+
+    if (responseSchema) {
+      requestBody.response_format = { type: 'json_object' };
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(requestBody)
+    });
+
+    if (onBusy) onBusy(false);
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`OpenAI API error: ${response.status} - ${errText}`);
+    }
+
+    const data = await response.json();
+    const text = data.choices?.[0]?.message?.content || '';
+
+    if (responseSchema) {
+      try {
+        const cleanedText = extractJsonObject(text);
+        return JSON.parse(cleanedText);
+      } catch (err) {
+        console.error('Failed to parse OpenAI response text as JSON:', text, err);
+        throw new Error('Invalid JSON format returned from OpenAI API.');
+      }
+    }
+    return text;
+  } catch (error) {
+    if (onBusy) onBusy(false);
+    throw error;
+  }
+};
+
+import { auth } from '../firebaseConfig';
+import { API_BASE_URL } from '../config';
+
 export const executeGeminiCall = async (
   prompt: string,
   apiKey: string,
   inlineData?: { mimeType: string, data: string },
   responseSchema?: any,
-  onBusy?: (isBusy: boolean) => void
+  onBusy?: (isBusy: boolean) => void,
+  model: string = 'gemini-2.5-flash'
 ): Promise<any> => {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-  let currentDelay = 2000;
-  const maxRetries = 5;
-  const retryStatusCodes = [429, 500, 502, 503, 504];
+  const config = getAIConfig();
+  const activeProvider = inlineData ? 'gemini' : config.provider;
+  const activeOpenaiKey = config.openaiKey;
 
-  for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
+  if (activeProvider === 'openai' && activeOpenaiKey) {
+    console.log('[AI] Routing call directly to OpenAI GPT-4o-mini');
     try {
-      const parts: any[] = [];
-      if (inlineData) {
-        parts.push({ inlineData });
-      }
-      parts.push({ text: prompt });
-
-      const requestBody: any = {
-        contents: [{ parts }]
-      };
-
-      if (responseSchema) {
-        requestBody.generationConfig = {
-          responseMimeType: 'application/json',
-          responseSchema
-        };
-      }
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
-      });
-
-      if (!response.ok) {
-        if (retryStatusCodes.includes(response.status) && attempt <= maxRetries) {
-          console.warn(`Gemini API returned status ${response.status}. Retrying in ${currentDelay}ms (attempt ${attempt}/${maxRetries})...`);
-          if (onBusy) onBusy(true);
-          await delay(currentDelay);
-          currentDelay *= 2;
-          continue;
-        }
-        const errorText = await response.text();
-        throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
-      }
-
-      if (onBusy) onBusy(false);
-
-      const data = await response.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      
-      if (responseSchema) {
-        try {
-          const cleanedText = extractJsonObject(text);
-          return JSON.parse(cleanedText);
-        } catch (err) {
-          console.error('Failed to parse Gemini response text as JSON:', text, err);
-          throw new Error('Invalid JSON format returned from Gemini API.');
-        }
-      }
-      return text;
-    } catch (error: any) {
-      if (onBusy) onBusy(false);
-      if (attempt > maxRetries) throw error;
-      await delay(currentDelay);
-      currentDelay *= 2;
+      return await executeOpenAICall(prompt, activeOpenaiKey, responseSchema, onBusy);
+    } catch (openAiErr) {
+      console.warn('[AI] OpenAI call failed.', openAiErr);
+      throw openAiErr;
     }
   }
+
+  // Routing Gemini through backend proxy
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    throw new Error('User not authenticated with Firebase Auth.');
+  }
+
+  if (onBusy) onBusy(true);
+
+  try {
+    const idToken = await currentUser.getIdToken(true);
+    const proxyUrl = `${API_BASE_URL}/api/ai/gemini-proxy`;
+
+    const response = await fetch(proxyUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${idToken}`
+      },
+      body: JSON.stringify({
+        prompt,
+        model,
+        inlineData,
+        responseSchema
+      })
+    });
+
+    if (onBusy) onBusy(false);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMsg = errorData.error || `Gemini proxy call failed with status ${response.status}`;
+      throw new Error(errorMsg);
+    }
+
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    if (responseSchema) {
+      try {
+        const cleanedText = extractJsonObject(text);
+        return JSON.parse(cleanedText);
+      } catch (err) {
+        console.error('Failed to parse Gemini response text as JSON:', text, err);
+        throw new Error('Invalid JSON format returned from Gemini API.');
+      }
+    }
+    return text;
+  } catch (error: any) {
+    if (onBusy) onBusy(false);
+
+    const isQuotaError = error.message && (
+      error.message.includes('429') || 
+      error.message.includes('RESOURCE_EXHAUSTED') || 
+      error.message.includes('Quota exceeded') ||
+      error.message.includes('quota has been exhausted')
+    );
+
+    if (isQuotaError && activeOpenaiKey) {
+      console.warn('[AI] Gemini proxy call failed (quota). Falling back to local OpenAI...', error);
+      try {
+        return await executeOpenAICall(prompt, activeOpenaiKey, responseSchema, onBusy);
+      } catch (openAiErr) {
+        console.error('[AI] Fallback to OpenAI failed as well:', openAiErr);
+      }
+    }
+
+    throw error;
+  }
 };
+
 
 export const transcribeAudio = async (
   base64Audio: string,
@@ -616,6 +713,8 @@ export const generateInitialLectureAssets = async (
        - 'statistics': array of statistics or metrics
        - 'references': array of documents, books, papers, or video sources cited
 
+    CRITICAL FORMATTING RULE: For any mathematical equations, numbers, variables, or exponents, NEVER use caret notation (like '3^2', 'x^y', 'x^2', '2^n'). Instead, write them with actual superscript Unicode characters representing the power/exponent directly above the base (e.g., '3²', 'xʸ', 'x²', '2ⁿ'). Apply this rule strictly to all mathematical powers and exponents throughout the output.
+
     Raw Source Text:
     ${rawText.length > 20000 ? rawText.substring(0, 20000) + "\n[Text truncated for rapid processing...]" : rawText}
     
@@ -778,68 +877,41 @@ export const generateAdditionalQuizQuestions = async (
   `;
 
   try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              {
-                text: prompt,
-              },
-            ],
-          },
-        ],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          responseSchema: {
+    const schema = {
+      type: 'OBJECT',
+      properties: {
+        questions: {
+          type: 'ARRAY',
+          items: {
             type: 'OBJECT',
             properties: {
-              questions: {
+              type: { type: 'STRING' },
+              question: { type: 'STRING' },
+              options: {
                 type: 'ARRAY',
-                items: {
-                  type: 'OBJECT',
-                  properties: {
-                    type: { type: 'STRING' },
-                    question: { type: 'STRING' },
-                    options: {
-                      type: 'ARRAY',
-                      items: { type: 'STRING' }
-                    },
-                    correctAnswerIndex: { type: 'INTEGER' },
-                    explanation: { type: 'STRING' },
-                    sourceCitation: { type: 'STRING' },
-                    scenario: { type: 'STRING' },
-                    matchLeft: {
-                      type: 'ARRAY',
-                      items: { type: 'STRING' }
-                    },
-                    matchRight: {
-                      type: 'ARRAY',
-                      items: { type: 'STRING' }
-                    }
-                  },
-                  required: ['type', 'question', 'options', 'correctAnswerIndex', 'explanation', 'sourceCitation']
-                }
+                items: { type: 'STRING' }
+              },
+              correctAnswerIndex: { type: 'INTEGER' },
+              explanation: { type: 'STRING' },
+              sourceCitation: { type: 'STRING' },
+              scenario: { type: 'STRING' },
+              matchLeft: {
+                type: 'ARRAY',
+                items: { type: 'STRING' }
+              },
+              matchRight: {
+                type: 'ARRAY',
+                items: { type: 'STRING' }
               }
             },
-            required: ['questions']
+            required: ['type', 'question', 'options', 'correctAnswerIndex', 'explanation', 'sourceCitation']
           }
         }
-      })
-    });
+      },
+      required: ['questions']
+    };
 
-    if (!response.ok) {
-      throw new Error(`Failed to generate additional questions: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const cleanedText = extractJsonObject(text);
-    const parsed = JSON.parse(cleanedText);
+    const parsed = await executeGeminiCall(prompt, apiKey, undefined, schema);
     return parsed.questions || [];
   } catch (error) {
     console.error("Gemini additional questions generation failed, generating high-quality fallbacks...", error);
@@ -991,6 +1063,7 @@ export const askLectureAI = async (
     1. Base your answer strictly on the provided context chunks.
     2. Cite the source chunks you used at the end of relevant sentences or paragraphs using inline citation brackets, specifying the exact page or timestamp (e.g. '[Source: Timestamp 01:15]' or '[Source: Page 4]').
     3. If the answer cannot be determined from the chunks, politely say so.
+    4. CRITICAL FORMATTING RULE: For any mathematical equations, numbers, variables, or exponents, NEVER use caret notation (like '3^2', 'x^y', 'x^2', '2^n'). Instead, write them with actual superscript Unicode characters representing the power/exponent directly above the base (e.g., '3²', 'xʸ', 'x²', '2ⁿ'). Apply this rule strictly to all mathematical powers and exponents throughout the output.
     
     Return the response as a JSON object containing:
     - "answer": the text response with inline citations
@@ -1411,6 +1484,8 @@ export const generateMindmap = async (
     - 'applications': Real-world applications or case studies
     - 'examImportance': Importance rating (High/Medium/Low) and typical exam question style
     
+    CRITICAL FORMATTING RULE: For any mathematical equations, numbers, variables, or exponents, NEVER use caret notation (like '3^2', 'x^y', 'x^2', '2^n'). Instead, write them with actual superscript Unicode characters representing the power/exponent directly above the base (e.g., '3²', 'xʸ', 'x²', '2ⁿ'). Apply this rule strictly to all mathematical powers and exponents throughout the output.
+
     Return the result STRICTLY as a JSON object with a 'keyConcepts' array matching the requested schema.
     
     Transcript:

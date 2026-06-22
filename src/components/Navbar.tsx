@@ -143,7 +143,7 @@ export default function Navbar({
             placeholder="Search notes, summaries, transcripts..."
             className={`w-full rounded-xl pl-10 pr-4 py-2.5 text-xs font-semibold outline-none transition-all ${
               theme === 'dark'
-                ? 'bg-[#121318] text-white border border-neutral-850 placeholder-neutral-500 focus:border-indigo-500'
+                ? 'bg-[#121318] text-white border border-neutral-800 placeholder-neutral-500 focus:border-indigo-500'
                 : 'bg-gray-50 text-gray-900 border border-gray-200 placeholder-gray-400 focus:border-black'
             }`}
           />
@@ -175,7 +175,7 @@ export default function Navbar({
             onClick={() => setActivePage('lecture-capture')}
             className={`hidden sm:flex items-center gap-1.5 rounded-xl border px-3.5 py-2.5 text-xs font-bold transition-colors focus:outline-none cursor-pointer ${
               theme === 'dark' 
-                ? 'border-neutral-800 bg-[#121318] hover:bg-neutral-850' 
+                ? 'border-neutral-800 bg-[#121318] hover:bg-neutral-800' 
                 : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-700'
             }`}
           >
@@ -219,7 +219,7 @@ export default function Navbar({
               <img
                 src={settings.profile.avatarUrl}
                 alt={settings.profile.fullName}
-                className="h-9 w-9 rounded-full border border-indigo-505 object-cover"
+                className="h-9 w-9 rounded-full border border-indigo-500 object-cover"
               />
             ) : (
               <div className="h-9 w-9 rounded-full border border-indigo-500 bg-gray-100 dark:bg-neutral-800 flex items-center justify-center text-gray-400 dark:text-neutral-500">
@@ -232,7 +232,7 @@ export default function Navbar({
           {dropdownOpen && (
             <div className={`absolute right-0 mt-3.5 w-64 rounded-2xl border p-4 shadow-2xl space-y-4 animate-fade-in ${
               theme === 'dark' 
-                ? 'bg-[#0f1015]/95 border-neutral-850 text-white shadow-[#000]/60' 
+                ? 'bg-[#0f1015]/95 border-neutral-800 text-white shadow-[#000]/60' 
                 : 'bg-white border-gray-200 text-gray-900'
             }`}>
               {/* Dropdown Header Info */}
@@ -241,10 +241,10 @@ export default function Navbar({
                   <img
                     src={settings.profile.avatarUrl}
                     alt={settings.profile.fullName}
-                    className="h-10 w-10 rounded-full border border-gray-150 object-cover"
+                    className="h-10 w-10 rounded-full border border-gray-200 object-cover"
                   />
                 ) : (
-                  <div className="h-10 w-10 rounded-full border border-gray-150 bg-gray-100 dark:bg-neutral-800 flex items-center justify-center text-gray-400 dark:text-neutral-500">
+                  <div className="h-10 w-10 rounded-full border border-gray-200 bg-gray-100 dark:bg-neutral-800 flex items-center justify-center text-gray-400 dark:text-neutral-500">
                     <User className="h-5 w-5" />
                   </div>
                 )}
@@ -262,7 +262,7 @@ export default function Navbar({
                 {/* Profile Option */}
                 <button
                   onClick={() => handleDropdownOption('profile')}
-                  className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-xs font-semibold text-left transition-colors focus:outline-none hover:bg-gray-100 dark:hover:bg-neutral-850 cursor-pointer"
+                  className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-xs font-semibold text-left transition-colors focus:outline-none hover:bg-gray-100 dark:hover:bg-neutral-800 cursor-pointer"
                 >
                   <User className="h-4.5 w-4.5 text-neutral-400" />
                   <span>My Academic Profile</span>
@@ -271,7 +271,7 @@ export default function Navbar({
                 {/* Account settings Option */}
                 <button
                   onClick={() => handleDropdownOption('settings')}
-                  className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-xs font-semibold text-left transition-colors focus:outline-none hover:bg-gray-100 dark:hover:bg-neutral-850 cursor-pointer"
+                  className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-xs font-semibold text-left transition-colors focus:outline-none hover:bg-gray-100 dark:hover:bg-neutral-800 cursor-pointer"
                 >
                   <Settings className="h-4.5 w-4.5 text-neutral-400" />
                   <span>Account Settings</span>
@@ -280,7 +280,7 @@ export default function Navbar({
                 {/* Billing options Option */}
                 <button
                   onClick={() => handleDropdownOption('pricing')}
-                  className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-xs font-semibold text-left transition-colors focus:outline-none hover:bg-gray-100 dark:hover:bg-neutral-850 cursor-pointer"
+                  className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-xs font-semibold text-left transition-colors focus:outline-none hover:bg-gray-100 dark:hover:bg-neutral-800 cursor-pointer"
                 >
                   <CreditCard className="h-4.5 w-4.5 text-neutral-400" />
                   <span>Billing & Subscription</span>
@@ -289,7 +289,7 @@ export default function Navbar({
                 {/* Help support Option */}
                 <button
                   onClick={() => handleDropdownOption('help-support')}
-                  className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-xs font-semibold text-left transition-colors focus:outline-none hover:bg-gray-100 dark:hover:bg-neutral-850 cursor-pointer"
+                  className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-xs font-semibold text-left transition-colors focus:outline-none hover:bg-gray-100 dark:hover:bg-neutral-800 cursor-pointer"
                 >
                   <HelpCircle className="h-4.5 w-4.5 text-neutral-400" />
                   <span>Help & Documentation</span>
@@ -297,7 +297,7 @@ export default function Navbar({
               </div>
 
               {/* Theme toggle segment inside popover */}
-              <div className="flex items-center justify-between p-2.5.5 rounded-xl bg-gray-50 dark:bg-neutral-900 border border-neutral-800/5 dark:border-neutral-850">
+              <div className="flex items-center justify-between p-2.5.5 rounded-xl bg-gray-50 dark:bg-neutral-900 border border-neutral-800/5 dark:border-neutral-800">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Appearance Theme</span>
                 <div className="flex gap-1">
                   <button 
@@ -322,7 +322,7 @@ export default function Navbar({
               </div>
 
               {/* Secure Log out */}
-              <div className="pt-2 border-t border-neutral-800/15 dark:border-neutral-850">
+              <div className="pt-2 border-t border-neutral-800/15 dark:border-neutral-800">
                 <button
                   onClick={() => {
                     setDropdownOpen(false);
