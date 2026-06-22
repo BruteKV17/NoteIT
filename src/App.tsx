@@ -563,7 +563,7 @@ export default function App() {
   };
 
   const handleLoginSuccess = (user: { fullName: string; emailAddress: string }) => {
-    setCheckingOnboarding(true);
+    console.log("Login success callback triggered for:", user);
   };
 
   // Layout router switch
