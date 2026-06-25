@@ -1,0 +1,4292 @@
+[
+  {
+    "file": "c:\\Users\\Ramesh Sahu\\antigravity\\Note-IT-AI\\src\\components\\AuthView.tsx",
+    "changes": [
+      {
+        "lineNum": 244,
+        "originalLine": "theme === 'dark' ? 'bg-[#121318]/70 border-neutral-850' : 'bg-white border-gray-200'",
+        "replacedLine": "theme === 'dark' ? 'bg-[#121318]/70 border-neutral-800' : 'bg-white border-gray-200'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 250,
+        "originalLine": "<span className=\"rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-450 px-2.5 py-0.5 text-[9px] font-bold\">",
+        "replacedLine": "<span className=\"rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2.5 py-0.5 text-[9px] font-bold\">",
+        "replacements": [
+          {
+            "original": "dark:text-emerald-450",
+            "replacement": "dark:text-emerald-400"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "c:\\Users\\Ramesh Sahu\\antigravity\\Note-IT-AI\\src\\components\\DashboardView.tsx",
+    "changes": [
+      {
+        "lineNum": 89,
+        "originalLine": "? 'bg-[#0d0e12] border-neutral-850/80 shadow-2xl shadow-indigo-950/10'",
+        "replacedLine": "? 'bg-[#0d0e12] border-neutral-800/80 shadow-2xl shadow-indigo-950/10'",
+        "replacements": [
+          {
+            "original": "border-neutral-850/80",
+            "replacement": "border-neutral-800/80"
+          }
+        ]
+      },
+      {
+        "lineNum": 106,
+        "originalLine": "<div className=\"absolute bottom-[-20%] left-[10%] w-[300px] h-[300px] rounded-full bg-purple-650/15 blur-[90px] animate-space-drift-medium\" />",
+        "replacedLine": "<div className=\"absolute bottom-[-20%] left-[10%] w-[300px] h-[300px] rounded-full bg-purple-600/15 blur-[90px] animate-space-drift-medium\" />",
+        "replacements": [
+          {
+            "original": "bg-purple-650/15",
+            "replacement": "bg-purple-600/15"
+          }
+        ]
+      },
+      {
+        "lineNum": 139,
+        "originalLine": "className=\"rounded-full bg-indigo-350/40 animate-star-drift shadow-[0_0_6px_rgba(165,180,252,0.4)]\"",
+        "replacedLine": "className=\"rounded-full bg-indigo-300/40 animate-star-drift shadow-[0_0_6px_rgba(165,180,252,0.4)]\"",
+        "replacements": [
+          {
+            "original": "bg-indigo-350/40",
+            "replacement": "bg-indigo-300/40"
+          }
+        ]
+      },
+      {
+        "lineNum": 145,
+        "originalLine": "<div className=\"absolute top-[40%] right-[30%] w-[120px] h-[1.5px] bg-gradient-to-l from-indigo-300/75 via-indigo-350/30 to-transparent animate-shooting-star pointer-events-none\" style={{ animationDelay: '3.5s' }} />",
+        "replacedLine": "<div className=\"absolute top-[40%] right-[30%] w-[120px] h-[1.5px] bg-gradient-to-l from-indigo-300/75 via-indigo-300/30 to-transparent animate-shooting-star pointer-events-none\" style={{ animationDelay: '3.5s' }} />",
+        "replacements": [
+          {
+            "original": "via-indigo-350/30",
+            "replacement": "via-indigo-300/30"
+          }
+        ]
+      },
+      {
+        "lineNum": 204,
+        "originalLine": "<span className=\"bg-gradient-to-r from-indigo-450 via-purple-400 to-indigo-305 bg-clip-text text-transparent p-0.5 inline-block\">",
+        "replacedLine": "<span className=\"bg-gradient-to-r from-indigo-400 via-purple-400 to-indigo-300 bg-clip-text text-transparent p-0.5 inline-block\">",
+        "replacements": [
+          {
+            "original": "from-indigo-450",
+            "replacement": "from-indigo-400"
+          },
+          {
+            "original": "to-indigo-305",
+            "replacement": "to-indigo-300"
+          }
+        ]
+      },
+      {
+        "lineNum": 218,
+        "originalLine": "? 'bg-indigo-600 hover:bg-indigo-505 shadow-indigo-950/40 text-white'",
+        "replacedLine": "? 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-950/40 text-white'",
+        "replacements": [
+          {
+            "original": "hover:bg-indigo-505",
+            "replacement": "hover:bg-indigo-500"
+          }
+        ]
+      },
+      {
+        "lineNum": 219,
+        "originalLine": ": 'bg-black hover:bg-neutral-850 text-white'",
+        "replacedLine": ": 'bg-black hover:bg-neutral-800 text-white'",
+        "replacements": [
+          {
+            "original": "hover:bg-neutral-850",
+            "replacement": "hover:bg-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 279,
+        "originalLine": "theme === 'dark' ? 'bg-[#121318]/40 border-neutral-850' : 'bg-white border-gray-200'",
+        "replacedLine": "theme === 'dark' ? 'bg-[#121318]/40 border-neutral-800' : 'bg-white border-gray-200'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 313,
+        "originalLine": "theme === 'dark' ? 'bg-[#121318]/40 border-neutral-850' : 'bg-white border-gray-200'",
+        "replacedLine": "theme === 'dark' ? 'bg-[#121318]/40 border-neutral-800' : 'bg-white border-gray-200'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 350,
+        "originalLine": "theme === 'dark' ? 'bg-[#121318]/40 border-neutral-850' : 'bg-white border-gray-200'",
+        "replacedLine": "theme === 'dark' ? 'bg-[#121318]/40 border-neutral-800' : 'bg-white border-gray-200'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 368,
+        "originalLine": "theme === 'dark' ? 'bg-[#2563EB] text-white hover:bg-indigo-505 shadow-md shadow-indigo-950/20' : 'bg-black text-white hover:bg-neutral-850'",
+        "replacedLine": "theme === 'dark' ? 'bg-[#2563EB] text-white hover:bg-indigo-500 shadow-md shadow-indigo-950/20' : 'bg-black text-white hover:bg-neutral-800'",
+        "replacements": [
+          {
+            "original": "hover:bg-indigo-505",
+            "replacement": "hover:bg-indigo-500"
+          },
+          {
+            "original": "hover:bg-neutral-850",
+            "replacement": "hover:bg-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 378,
+        "originalLine": "theme === 'dark' ? 'bg-[#121318]/40 border-neutral-850' : 'bg-white border-gray-200'",
+        "replacedLine": "theme === 'dark' ? 'bg-[#121318]/40 border-neutral-800' : 'bg-white border-gray-200'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 419,
+        "originalLine": "<div className=\"bg-gray-50 dark:bg-neutral-900/35 p-2.5 rounded-xl text-[10.5px] font-serif leading-relaxed text-gray-450 italic\">",
+        "replacedLine": "<div className=\"bg-gray-50 dark:bg-neutral-900/35 p-2.5 rounded-xl text-[10.5px] font-serif leading-relaxed text-gray-400 italic\">",
+        "replacements": [
+          {
+            "original": "text-gray-450",
+            "replacement": "text-gray-400"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "c:\\Users\\Ramesh Sahu\\antigravity\\Note-IT-AI\\src\\components\\FeedbackWidget.tsx",
+    "changes": [
+      {
+        "lineNum": 81,
+        "originalLine": "? 'bg-indigo-600 hover:bg-indigo-505 border-indigo-500/35 text-white shadow-indigo-950/45'",
+        "replacedLine": "? 'bg-indigo-600 hover:bg-indigo-500 border-indigo-500/35 text-white shadow-indigo-950/45'",
+        "replacements": [
+          {
+            "original": "hover:bg-indigo-505",
+            "replacement": "hover:bg-indigo-500"
+          }
+        ]
+      },
+      {
+        "lineNum": 82,
+        "originalLine": ": 'bg-black hover:bg-neutral-850 border-neutral-800 text-white shadow-gray-400/30'",
+        "replacedLine": ": 'bg-black hover:bg-neutral-800 border-neutral-800 text-white shadow-gray-400/30'",
+        "replacements": [
+          {
+            "original": "hover:bg-neutral-850",
+            "replacement": "hover:bg-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 96,
+        "originalLine": "<div className=\"flex items-center justify-between border-b border-neutral-900/10 dark:border-neutral-850/40 pb-3\">",
+        "replacedLine": "<div className=\"flex items-center justify-between border-b border-neutral-900/10 dark:border-neutral-800/40 pb-3\">",
+        "replacements": [
+          {
+            "original": "dark:border-neutral-850/40",
+            "replacement": "dark:border-neutral-800/40"
+          }
+        ]
+      },
+      {
+        "lineNum": 116,
+        "originalLine": "<p className=\"text-[10px] text-neutral-450 leading-relaxed max-w-[220px] mx-auto\">",
+        "replacedLine": "<p className=\"text-[10px] text-neutral-400 leading-relaxed max-w-[220px] mx-auto\">",
+        "replacements": [
+          {
+            "original": "text-neutral-450",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 122,
+        "originalLine": "isDark ? 'bg-neutral-800 hover:bg-neutral-750 text-neutral-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-800'",
+        "replacedLine": "isDark ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-800'",
+        "replacements": [
+          {
+            "original": "hover:bg-neutral-750",
+            "replacement": "hover:bg-neutral-700"
+          }
+        ]
+      },
+      {
+        "lineNum": 173,
+        "originalLine": "<label className=\"text-[9px] font-bold uppercase tracking-wider text-neutral-450 block\">",
+        "replacedLine": "<label className=\"text-[9px] font-bold uppercase tracking-wider text-neutral-400 block\">",
+        "replacements": [
+          {
+            "original": "text-neutral-450",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 193,
+        "originalLine": "<label className=\"text-[9px] font-bold uppercase tracking-wider text-neutral-450 block\">",
+        "replacedLine": "<label className=\"text-[9px] font-bold uppercase tracking-wider text-neutral-400 block\">",
+        "replacements": [
+          {
+            "original": "text-neutral-450",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 212,
+        "originalLine": "<label className=\"text-[9px] font-bold uppercase tracking-wider text-neutral-450 block\">",
+        "replacedLine": "<label className=\"text-[9px] font-bold uppercase tracking-wider text-neutral-400 block\">",
+        "replacements": [
+          {
+            "original": "text-neutral-450",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "c:\\Users\\Ramesh Sahu\\antigravity\\Note-IT-AI\\src\\components\\KnowledgeStudioView.tsx",
+    "changes": [
+      {
+        "lineNum": 2364,
+        "originalLine": "element.classList.add('bg-indigo-650', 'text-white', 'scale-110');",
+        "replacedLine": "element.classList.add('bg-indigo-600', 'text-white', 'scale-110');",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 2366,
+        "originalLine": "element.classList.remove('bg-indigo-650', 'text-white', 'scale-110');",
+        "replacedLine": "element.classList.remove('bg-indigo-600', 'text-white', 'scale-110');",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 2384,
+        "originalLine": "className=\"inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 cursor-pointer hover:bg-indigo-650 hover:text-white transition-all mr-1\"",
+        "replacedLine": "className=\"inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 cursor-pointer hover:bg-indigo-600 hover:text-white transition-all mr-1\"",
+        "replacements": [
+          {
+            "original": "hover:bg-indigo-650",
+            "replacement": "hover:bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 2456,
+        "originalLine": ": 'text-gray-500 hover:text-black hover:bg-gray-150'",
+        "replacedLine": ": 'text-gray-500 hover:text-black hover:bg-gray-200'",
+        "replacements": [
+          {
+            "original": "hover:bg-gray-150",
+            "replacement": "hover:bg-gray-200"
+          }
+        ]
+      },
+      {
+        "lineNum": 2486,
+        "originalLine": "className=\"text-red-450 hover:text-red-600 text-sm font-bold focus:outline-none cursor-pointer\"",
+        "replacedLine": "className=\"text-red-400 hover:text-red-600 text-sm font-bold focus:outline-none cursor-pointer\"",
+        "replacements": [
+          {
+            "original": "text-red-450",
+            "replacement": "text-red-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 2499,
+        "originalLine": "? 'bg-neutral-950/60 border-neutral-850 hover:bg-neutral-900 hover:border-neutral-700 text-white'",
+        "replacedLine": "? 'bg-neutral-950/60 border-neutral-800 hover:bg-neutral-900 hover:border-neutral-700 text-white'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 2503,
+        "originalLine": "<Upload className=\"h-3.5 w-3.5 text-indigo-450\" />",
+        "replacedLine": "<Upload className=\"h-3.5 w-3.5 text-indigo-400\" />",
+        "replacements": [
+          {
+            "original": "text-indigo-450",
+            "replacement": "text-indigo-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 2518,
+        "originalLine": "? 'bg-neutral-950/60 border-neutral-850 hover:bg-neutral-900 hover:border-neutral-700 text-white'",
+        "replacedLine": "? 'bg-neutral-950/60 border-neutral-800 hover:bg-neutral-900 hover:border-neutral-700 text-white'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 2530,
+        "originalLine": "? 'bg-neutral-950/60 border-neutral-850 hover:bg-neutral-900 hover:border-neutral-700 text-white'",
+        "replacedLine": "? 'bg-neutral-950/60 border-neutral-800 hover:bg-neutral-900 hover:border-neutral-700 text-white'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 2534,
+        "originalLine": "<HardDrive className=\"h-3.5 w-3.5 text-blue-450\" />",
+        "replacedLine": "<HardDrive className=\"h-3.5 w-3.5 text-blue-400\" />",
+        "replacements": [
+          {
+            "original": "text-blue-450",
+            "replacement": "text-blue-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 2542,
+        "originalLine": "? 'bg-neutral-950/60 border-neutral-850 hover:bg-neutral-900 hover:border-neutral-700 text-white'",
+        "replacedLine": "? 'bg-neutral-950/60 border-neutral-800 hover:bg-neutral-900 hover:border-neutral-700 text-white'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 2609,
+        "originalLine": "<div className=\"h-1.5 w-full rounded-full bg-neutral-900 overflow-hidden border border-neutral-850\">",
+        "replacedLine": "<div className=\"h-1.5 w-full rounded-full bg-neutral-900 overflow-hidden border border-neutral-800\">",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 2694,
+        "originalLine": "className=\"opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/10 text-neutral-450 hover:text-red-500 transition-all cursor-pointer\"",
+        "replacedLine": "className=\"opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/10 text-neutral-400 hover:text-red-500 transition-all cursor-pointer\"",
+        "replacements": [
+          {
+            "original": "text-neutral-450",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 2731,
+        "originalLine": "? 'bg-neutral-900 border-neutral-800 text-neutral-350 hover:bg-neutral-850 hover:border-neutral-700'",
+        "replacedLine": "? 'bg-neutral-900 border-neutral-800 text-neutral-300 hover:bg-neutral-800 hover:border-neutral-700'",
+        "replacements": [
+          {
+            "original": "text-neutral-350",
+            "replacement": "text-neutral-300"
+          },
+          {
+            "original": "hover:bg-neutral-850",
+            "replacement": "hover:bg-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 2758,
+        "originalLine": "? 'bg-indigo-650 text-white'",
+        "replacedLine": "? 'bg-indigo-600 text-white'",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 2761,
+        "originalLine": "? 'bg-[#121318] border border-neutral-850 text-neutral-205'",
+        "replacedLine": "? 'bg-[#121318] border border-neutral-800 text-neutral-205'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          },
+          {
+            "original": "text-neutral-205",
+            "replacement": "text-neutral-205"
+          }
+        ]
+      },
+      {
+        "lineNum": 2798,
+        "originalLine": "<div className={`rounded-2xl px-4 py-3 border flex items-center gap-3 ${theme === 'dark' ? 'bg-[#121318] border-neutral-850 text-neutral-400' : 'bg-gray-100 border-gray-250 text-gray-500'}`}>",
+        "replacedLine": "<div className={`rounded-2xl px-4 py-3 border flex items-center gap-3 ${theme === 'dark' ? 'bg-[#121318] border-neutral-800 text-neutral-400' : 'bg-gray-100 border-gray-250 text-gray-500'}`}>",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          },
+          {
+            "original": "border-gray-250",
+            "replacement": "border-gray-250"
+          }
+        ]
+      },
+      {
+        "lineNum": 2816,
+        "originalLine": "? 'bg-neutral-950 border border-neutral-855 text-white placeholder-neutral-600 focus:border-indigo-500'",
+        "replacedLine": "? 'bg-neutral-950 border border-neutral-855 text-white placeholder-neutral-600 focus:border-indigo-500'",
+        "replacements": [
+          {
+            "original": "border-neutral-855",
+            "replacement": "border-neutral-855"
+          }
+        ]
+      },
+      {
+        "lineNum": 2841,
+        "originalLine": "<div className=\"h-8 w-0.5 rounded bg-neutral-650/80\" />",
+        "replacedLine": "<div className=\"h-8 w-0.5 rounded bg-neutral-600/80\" />",
+        "replacements": [
+          {
+            "original": "bg-neutral-650/80",
+            "replacement": "bg-neutral-600/80"
+          }
+        ]
+      },
+      {
+        "lineNum": 2866,
+        "originalLine": "<span className=\"text-[10px] font-black uppercase text-neutral-450 tracking-wider\">Output Language</span>",
+        "replacedLine": "<span className=\"text-[10px] font-black uppercase text-neutral-400 tracking-wider\">Output Language</span>",
+        "replacements": [
+          {
+            "original": "text-neutral-450",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 2871,
+        "originalLine": "theme === 'dark' ? 'bg-neutral-900 border-neutral-850 text-white' : 'bg-white border-gray-300 text-black'",
+        "replacedLine": "theme === 'dark' ? 'bg-neutral-900 border-neutral-800 text-white' : 'bg-white border-gray-300 text-black'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 2881,
+        "originalLine": "<div className={`grid grid-cols-4 gap-1 p-1 rounded-xl ${theme === 'dark' ? 'bg-neutral-950' : 'bg-gray-150'}`}>",
+        "replacedLine": "<div className={`grid grid-cols-4 gap-1 p-1 rounded-xl ${theme === 'dark' ? 'bg-neutral-950' : 'bg-gray-200'}`}>",
+        "replacements": [
+          {
+            "original": "bg-gray-150",
+            "replacement": "bg-gray-200"
+          }
+        ]
+      },
+      {
+        "lineNum": 2891,
+        "originalLine": "? theme === 'dark' ? 'bg-indigo-650 text-white' : 'bg-white text-black shadow-xs'",
+        "replacedLine": "? theme === 'dark' ? 'bg-indigo-600 text-white' : 'bg-white text-black shadow-xs'",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 2900,
+        "originalLine": "<div className={`grid grid-cols-4 gap-1 p-1 rounded-xl ${theme === 'dark' ? 'bg-neutral-950' : 'bg-gray-150'}`}>",
+        "replacedLine": "<div className={`grid grid-cols-4 gap-1 p-1 rounded-xl ${theme === 'dark' ? 'bg-neutral-950' : 'bg-gray-200'}`}>",
+        "replacements": [
+          {
+            "original": "bg-gray-150",
+            "replacement": "bg-gray-200"
+          }
+        ]
+      },
+      {
+        "lineNum": 2910,
+        "originalLine": "? theme === 'dark' ? 'bg-indigo-650 text-white' : 'bg-white text-black shadow-xs'",
+        "replacedLine": "? theme === 'dark' ? 'bg-indigo-600 text-white' : 'bg-white text-black shadow-xs'",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 2942,
+        "originalLine": "notesFormat === f ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-455'",
+        "replacedLine": "notesFormat === f ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-400'",
+        "replacements": [
+          {
+            "original": "text-neutral-455",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 2964,
+        "originalLine": "<div className=\"py-16 flex flex-col items-center justify-center border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5\">",
+        "replacedLine": "<div className=\"py-16 flex flex-col items-center justify-center border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5\">",
+        "replacements": [
+          {
+            "original": "border-gray-250",
+            "replacement": "border-gray-250"
+          }
+        ]
+      },
+      {
+        "lineNum": 2969,
+        "originalLine": "<div key={i} className={`p-4 rounded-xl border font-sans ${theme === 'dark' ? 'bg-[#121318] border-neutral-905' : 'bg-white border-gray-200'}`}>",
+        "replacedLine": "<div key={i} className={`p-4 rounded-xl border font-sans ${theme === 'dark' ? 'bg-[#121318] border-neutral-905' : 'bg-white border-gray-200'}`}>",
+        "replacements": [
+          {
+            "original": "border-neutral-905",
+            "replacement": "border-neutral-905"
+          }
+        ]
+      },
+      {
+        "lineNum": 2977,
+        "originalLine": "<div className=\"text-center py-16 border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4\">",
+        "replacedLine": "<div className=\"text-center py-16 border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4\">",
+        "replacements": [
+          {
+            "original": "border-gray-250",
+            "replacement": "border-gray-250"
+          }
+        ]
+      },
+      {
+        "lineNum": 2982,
+        "originalLine": "className=\"px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer\"",
+        "replacedLine": "className=\"px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer\"",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 3002,
+        "originalLine": "summaryFormat === f ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-455'",
+        "replacedLine": "summaryFormat === f ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-400'",
+        "replacements": [
+          {
+            "original": "text-neutral-455",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 3024,
+        "originalLine": "<div className=\"py-16 flex flex-col items-center justify-center border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5\">",
+        "replacedLine": "<div className=\"py-16 flex flex-col items-center justify-center border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5\">",
+        "replacements": [
+          {
+            "original": "border-gray-250",
+            "replacement": "border-gray-250"
+          }
+        ]
+      },
+      {
+        "lineNum": 3048,
+        "originalLine": "<p className={`text-[11.5px] mt-2 leading-relaxed whitespace-pre-wrap ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-705'}`}>",
+        "replacedLine": "<p className={`text-[11.5px] mt-2 leading-relaxed whitespace-pre-wrap ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-705'}`}>",
+        "replacements": [
+          {
+            "original": "text-neutral-705",
+            "replacement": "text-neutral-705"
+          }
+        ]
+      },
+      {
+        "lineNum": 3055,
+        "originalLine": "<div className=\"text-center py-16 border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4\">",
+        "replacedLine": "<div className=\"text-center py-16 border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4\">",
+        "replacements": [
+          {
+            "original": "border-gray-250",
+            "replacement": "border-gray-250"
+          }
+        ]
+      },
+      {
+        "lineNum": 3060,
+        "originalLine": "className=\"px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer\"",
+        "replacedLine": "className=\"px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer\"",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 3079,
+        "originalLine": "flashcardsFormat === f ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-455'",
+        "replacedLine": "flashcardsFormat === f ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-400'",
+        "replacements": [
+          {
+            "original": "text-neutral-455",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 3101,
+        "originalLine": "<div className=\"py-16 flex flex-col items-center justify-center border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5\">",
+        "replacedLine": "<div className=\"py-16 flex flex-col items-center justify-center border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5\">",
+        "replacements": [
+          {
+            "original": "border-gray-250",
+            "replacement": "border-gray-250"
+          }
+        ]
+      },
+      {
+        "lineNum": 3111,
+        "originalLine": "<div className={`text-[11.5px] pt-2 border-t border-neutral-900/20 ${theme === 'dark' ? 'text-neutral-350' : 'text-neutral-600'}`}>",
+        "replacedLine": "<div className={`text-[11.5px] pt-2 border-t border-neutral-900/20 ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-600'}`}>",
+        "replacements": [
+          {
+            "original": "text-neutral-350",
+            "replacement": "text-neutral-300"
+          }
+        ]
+      },
+      {
+        "lineNum": 3117,
+        "originalLine": "<div className=\"text-center py-16 border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4\">",
+        "replacedLine": "<div className=\"text-center py-16 border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4\">",
+        "replacements": [
+          {
+            "original": "border-gray-250",
+            "replacement": "border-gray-250"
+          }
+        ]
+      },
+      {
+        "lineNum": 3122,
+        "originalLine": "className=\"px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer\"",
+        "replacedLine": "className=\"px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer\"",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 3142,
+        "originalLine": "quizFormat === f ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-455'",
+        "replacedLine": "quizFormat === f ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-400'",
+        "replacements": [
+          {
+            "original": "text-neutral-455",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 3163,
+        "originalLine": "<div className=\"py-16 flex flex-col items-center justify-center border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5\">",
+        "replacedLine": "<div className=\"py-16 flex flex-col items-center justify-center border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5\">",
+        "replacements": [
+          {
+            "original": "border-gray-250",
+            "replacement": "border-gray-250"
+          }
+        ]
+      },
+      {
+        "lineNum": 3183,
+        "originalLine": "? \"border-emerald-500 bg-emerald-500/10 text-emerald-450\"",
+        "replacedLine": "? \"border-emerald-500 bg-emerald-500/10 text-emerald-400\"",
+        "replacements": [
+          {
+            "original": "text-emerald-450",
+            "replacement": "text-emerald-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 3187,
+        "originalLine": "? \"border-red-500 bg-red-500/10 text-red-450\"",
+        "replacedLine": "? \"border-red-500 bg-red-500/10 text-red-400\"",
+        "replacements": [
+          {
+            "original": "text-red-450",
+            "replacement": "text-red-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 3198,
+        "originalLine": ": \"border-indigo-650 bg-indigo-50 text-indigo-700\";",
+        "replacedLine": ": \"border-indigo-600 bg-indigo-50 text-indigo-700\";",
+        "replacements": [
+          {
+            "original": "border-indigo-650",
+            "replacement": "border-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 3201,
+        "originalLine": "? \"border-neutral-850 bg-neutral-950/40 text-neutral-350 hover:bg-neutral-900 hover:text-white\"",
+        "replacedLine": "? \"border-neutral-800 bg-neutral-950/40 text-neutral-300 hover:bg-neutral-900 hover:text-white\"",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          },
+          {
+            "original": "text-neutral-350",
+            "replacement": "text-neutral-300"
+          }
+        ]
+      },
+      {
+        "lineNum": 3219,
+        "originalLine": "<div className=\"mt-4 pt-3 border-t border-dashed border-neutral-900 text-[11px] text-neutral-455\">",
+        "replacedLine": "<div className=\"mt-4 pt-3 border-t border-dashed border-neutral-900 text-[11px] text-neutral-400\">",
+        "replacements": [
+          {
+            "original": "text-neutral-455",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 3223,
+        "originalLine": "<div className=\"mt-2 text-[10px] font-bold text-indigo-350 font-mono\">",
+        "replacedLine": "<div className=\"mt-2 text-[10px] font-bold text-indigo-300 font-mono\">",
+        "replacements": [
+          {
+            "original": "text-indigo-350",
+            "replacement": "text-indigo-300"
+          }
+        ]
+      },
+      {
+        "lineNum": 3235,
+        "originalLine": "className=\"px-4 py-2 bg-indigo-650 hover:bg-indigo-600 text-white rounded-lg text-[11px] font-bold disabled:opacity-30 cursor-pointer\"",
+        "replacedLine": "className=\"px-4 py-2 bg-indigo-600 hover:bg-indigo-600 text-white rounded-lg text-[11px] font-bold disabled:opacity-30 cursor-pointer\"",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 3258,
+        "originalLine": "className=\"px-5 py-2.5 rounded-lg border border-indigo-500/25 bg-indigo-500/5 hover:bg-indigo-500/10 text-indigo-455 text-xs font-bold transition-all focus:outline-none cursor-pointer\"",
+        "replacedLine": "className=\"px-5 py-2.5 rounded-lg border border-indigo-500/25 bg-indigo-500/5 hover:bg-indigo-500/10 text-indigo-400 text-xs font-bold transition-all focus:outline-none cursor-pointer\"",
+        "replacements": [
+          {
+            "original": "text-indigo-455",
+            "replacement": "text-indigo-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 3265,
+        "originalLine": "<div className=\"text-center py-16 border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4\">",
+        "replacedLine": "<div className=\"text-center py-16 border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4\">",
+        "replacements": [
+          {
+            "original": "border-gray-250",
+            "replacement": "border-gray-250"
+          }
+        ]
+      },
+      {
+        "lineNum": 3270,
+        "originalLine": "className=\"px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer\"",
+        "replacedLine": "className=\"px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer\"",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 3347,
+        "originalLine": "<div className=\"absolute bottom-2 left-2 text-[8px] font-mono text-neutral-505 bg-neutral-955/45 p-1 rounded\">",
+        "replacedLine": "<div className=\"absolute bottom-2 left-2 text-[8px] font-mono text-neutral-500 bg-neutral-950/45 p-1 rounded\">",
+        "replacements": [
+          {
+            "original": "text-neutral-505",
+            "replacement": "text-neutral-500"
+          },
+          {
+            "original": "bg-neutral-955/45",
+            "replacement": "bg-neutral-950/45"
+          }
+        ]
+      },
+      {
+        "lineNum": 3360,
+        "originalLine": "className=\"px-4 py-2 bg-indigo-650 hover:bg-indigo-755 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer\"",
+        "replacedLine": "className=\"px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer\"",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          },
+          {
+            "original": "hover:bg-indigo-755",
+            "replacement": "hover:bg-indigo-700"
+          }
+        ]
+      },
+      {
+        "lineNum": 3373,
+        "originalLine": "<div className=\"flex items-center justify-between border-b border-neutral-855 pb-2\">",
+        "replacedLine": "<div className=\"flex items-center justify-between border-b border-neutral-855 pb-2\">",
+        "replacements": [
+          {
+            "original": "border-neutral-855",
+            "replacement": "border-neutral-855"
+          }
+        ]
+      },
+      {
+        "lineNum": 3380,
+        "originalLine": "theme === 'dark' ? 'text-neutral-550 hover:text-white' : 'text-neutral-400 hover:text-neutral-900'",
+        "replacedLine": "theme === 'dark' ? 'text-neutral-500 hover:text-white' : 'text-neutral-400 hover:text-neutral-900'",
+        "replacements": [
+          {
+            "original": "text-neutral-550",
+            "replacement": "text-neutral-500"
+          }
+        ]
+      },
+      {
+        "lineNum": 3387,
+        "originalLine": "<div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-350' : 'text-neutral-600'}`}>",
+        "replacedLine": "<div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-600'}`}>",
+        "replacements": [
+          {
+            "original": "text-neutral-350",
+            "replacement": "text-neutral-300"
+          }
+        ]
+      },
+      {
+        "lineNum": 3393,
+        "originalLine": "<div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-350' : 'text-neutral-600'}`}>",
+        "replacedLine": "<div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-600'}`}>",
+        "replacements": [
+          {
+            "original": "text-neutral-350",
+            "replacement": "text-neutral-300"
+          }
+        ]
+      },
+      {
+        "lineNum": 3400,
+        "originalLine": "<div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-350' : 'text-neutral-600'}`}>",
+        "replacedLine": "<div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-600'}`}>",
+        "replacements": [
+          {
+            "original": "text-neutral-350",
+            "replacement": "text-neutral-300"
+          }
+        ]
+      },
+      {
+        "lineNum": 3402,
+        "originalLine": "<code className={`block p-2 rounded text-[10px] font-mono mt-1 text-orange-450 border ${",
+        "replacedLine": "<code className={`block p-2 rounded text-[10px] font-mono mt-1 text-orange-400 border ${",
+        "replacements": [
+          {
+            "original": "text-orange-450",
+            "replacement": "text-orange-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 3411,
+        "originalLine": "<div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-350' : 'text-neutral-600'}`}>",
+        "replacedLine": "<div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-600'}`}>",
+        "replacements": [
+          {
+            "original": "text-neutral-350",
+            "replacement": "text-neutral-300"
+          }
+        ]
+      },
+      {
+        "lineNum": 3458,
+        "originalLine": "<p className=\"text-[9.5px] text-neutral-450 mt-0.5\">Professor & Student dynamic audio conversation</p>",
+        "replacedLine": "<p className=\"text-[9.5px] text-neutral-400 mt-0.5\">Professor & Student dynamic audio conversation</p>",
+        "replacements": [
+          {
+            "original": "text-neutral-450",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 3464,
+        "originalLine": "className=\"h-8.5 w-8.5 flex items-center justify-center bg-indigo-650 hover:bg-indigo-600 text-white rounded-full transition-transform active:scale-95 cursor-pointer\"",
+        "replacedLine": "className=\"h-8.5 w-8.5 flex items-center justify-center bg-indigo-600 hover:bg-indigo-600 text-white rounded-full transition-transform active:scale-95 cursor-pointer\"",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 3471,
+        "originalLine": "className=\"h-8.5 w-8.5 flex items-center justify-center bg-red-650 hover:bg-red-600 text-white rounded-full transition-transform active:scale-95 cursor-pointer\"",
+        "replacedLine": "className=\"h-8.5 w-8.5 flex items-center justify-center bg-red-600 hover:bg-red-600 text-white rounded-full transition-transform active:scale-95 cursor-pointer\"",
+        "replacements": [
+          {
+            "original": "bg-red-650",
+            "replacement": "bg-red-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 3490,
+        "originalLine": "<span className=\"text-neutral-250\">{logLine.split(':').slice(1).join(':')}</span>",
+        "replacedLine": "<span className=\"text-neutral-250\">{logLine.split(':').slice(1).join(':')}</span>",
+        "replacements": [
+          {
+            "original": "text-neutral-250",
+            "replacement": "text-neutral-250"
+          }
+        ]
+      },
+      {
+        "lineNum": 3546,
+        "originalLine": "theme === 'dark' ? 'bg-[#0d0e12] border-neutral-850 text-white' : 'bg-white border-gray-200 text-gray-900'",
+        "replacedLine": "theme === 'dark' ? 'bg-[#0d0e12] border-neutral-800 text-white' : 'bg-white border-gray-200 text-gray-900'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 3569,
+        "originalLine": "urlType === 'website' ? 'bg-indigo-650 border-indigo-500 text-white' : 'border-neutral-800 text-neutral-400'",
+        "replacedLine": "urlType === 'website' ? 'bg-indigo-600 border-indigo-500 text-white' : 'border-neutral-800 text-neutral-400'",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 3578,
+        "originalLine": "urlType === 'youtube' ? 'bg-indigo-650 border-indigo-500 text-white' : 'border-neutral-800 text-neutral-400'",
+        "replacedLine": "urlType === 'youtube' ? 'bg-indigo-600 border-indigo-500 text-white' : 'border-neutral-800 text-neutral-400'",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 3595,
+        "originalLine": "theme === 'dark' ? 'bg-neutral-950 border border-neutral-850 text-white' : 'bg-gray-100 border border-gray-300 text-black'",
+        "replacedLine": "theme === 'dark' ? 'bg-neutral-950 border border-neutral-800 text-white' : 'bg-gray-100 border border-gray-300 text-black'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 3624,
+        "originalLine": "theme === 'dark' ? 'bg-[#0d0e12] border-neutral-850 text-white' : 'bg-white border-gray-200 text-gray-900'",
+        "replacedLine": "theme === 'dark' ? 'bg-[#0d0e12] border-neutral-800 text-white' : 'bg-white border-gray-200 text-gray-900'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 3628,
+        "originalLine": "<HardDrive className=\"h-4 w-4 text-blue-450\" />",
+        "replacedLine": "<HardDrive className=\"h-4 w-4 text-blue-400\" />",
+        "replacements": [
+          {
+            "original": "text-blue-450",
+            "replacement": "text-blue-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 3646,
+        "originalLine": "<p className=\"text-[10px] text-neutral-455 max-w-xs mx-auto leading-relaxed\">",
+        "replacedLine": "<p className=\"text-[10px] text-neutral-400 max-w-xs mx-auto leading-relaxed\">",
+        "replacements": [
+          {
+            "original": "text-neutral-455",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 3673,
+        "originalLine": "className=\"text-[9.5px] text-neutral-450 hover:text-white hover:underline cursor-pointer\"",
+        "replacedLine": "className=\"text-[9.5px] text-neutral-400 hover:text-white hover:underline cursor-pointer\"",
+        "replacements": [
+          {
+            "original": "text-neutral-450",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 3711,
+        "originalLine": "theme === 'dark' ? 'bg-[#0d0e12] border-neutral-850 text-white' : 'bg-white border-gray-200 text-gray-900'",
+        "replacedLine": "theme === 'dark' ? 'bg-[#0d0e12] border-neutral-800 text-white' : 'bg-white border-gray-200 text-gray-900'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 3737,
+        "originalLine": "? 'bg-indigo-650 border-indigo-500 text-white'",
+        "replacedLine": "? 'bg-indigo-600 border-indigo-500 text-white'",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 3738,
+        "originalLine": ": theme === 'dark' ? 'border-neutral-800 text-neutral-450 hover:border-neutral-700' : 'border-gray-200 text-gray-700 hover:border-gray-300'",
+        "replacedLine": ": theme === 'dark' ? 'border-neutral-800 text-neutral-400 hover:border-neutral-700' : 'border-gray-200 text-gray-700 hover:border-gray-300'",
+        "replacements": [
+          {
+            "original": "text-neutral-450",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 3751,
+        "originalLine": "className=\"rounded-lg px-4 py-2 text-xs font-bold border border-neutral-800 text-neutral-450 cursor-pointer\"",
+        "replacedLine": "className=\"rounded-lg px-4 py-2 text-xs font-bold border border-neutral-800 text-neutral-400 cursor-pointer\"",
+        "replacements": [
+          {
+            "original": "text-neutral-450",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 3776,
+        "originalLine": "theme === 'dark' ? 'bg-[#0d0e12] border-neutral-855 text-white' : 'bg-white border-gray-200 text-gray-900'",
+        "replacedLine": "theme === 'dark' ? 'bg-[#0d0e12] border-neutral-855 text-white' : 'bg-white border-gray-200 text-gray-900'",
+        "replacements": [
+          {
+            "original": "border-neutral-855",
+            "replacement": "border-neutral-855"
+          }
+        ]
+      },
+      {
+        "lineNum": 3802,
+        "originalLine": "? 'bg-indigo-650 border-indigo-500 text-white'",
+        "replacedLine": "? 'bg-indigo-600 border-indigo-500 text-white'",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 3803,
+        "originalLine": ": theme === 'dark' ? 'border-neutral-800 text-neutral-450 hover:border-neutral-700' : 'border-gray-200 text-gray-700 hover:border-gray-300'",
+        "replacedLine": ": theme === 'dark' ? 'border-neutral-800 text-neutral-400 hover:border-neutral-700' : 'border-gray-200 text-gray-700 hover:border-gray-300'",
+        "replacements": [
+          {
+            "original": "text-neutral-450",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 3822,
+        "originalLine": "? 'bg-indigo-650 border-indigo-500 text-white'",
+        "replacedLine": "? 'bg-indigo-600 border-indigo-500 text-white'",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 3823,
+        "originalLine": ": theme === 'dark' ? 'border-neutral-800 text-neutral-450' : 'border-gray-200 text-gray-700'",
+        "replacedLine": ": theme === 'dark' ? 'border-neutral-800 text-neutral-400' : 'border-gray-200 text-gray-700'",
+        "replacements": [
+          {
+            "original": "text-neutral-450",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 3832,
+        "originalLine": "<div className=\"flex items-center justify-between p-2.5 rounded-xl border border-neutral-850 bg-neutral-950/20\">",
+        "replacedLine": "<div className=\"flex items-center justify-between p-2.5 rounded-xl border border-neutral-800 bg-neutral-950/20\">",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 3835,
+        "originalLine": "<span className=\"text-[9.5px] text-neutral-450\">Overrides the standard 40-word limit per slide for longer text descriptions.</span>",
+        "replacedLine": "<span className=\"text-[9.5px] text-neutral-400\">Overrides the standard 40-word limit per slide for longer text descriptions.</span>",
+        "replacements": [
+          {
+            "original": "text-neutral-450",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "c:\\Users\\Ramesh Sahu\\antigravity\\Note-IT-AI\\src\\components\\LandingView.tsx",
+    "changes": [
+      {
+        "lineNum": 268,
+        "originalLine": "className=\"rounded-full bg-white hover:bg-neutral-250 text-xs font-bold text-black px-6 py-3 transition-all active:scale-95 shadow-sm focus:outline-none cursor-pointer\"",
+        "replacedLine": "className=\"rounded-full bg-white hover:bg-neutral-250 text-xs font-bold text-black px-6 py-3 transition-all active:scale-95 shadow-sm focus:outline-none cursor-pointer\"",
+        "replacements": [
+          {
+            "original": "hover:bg-neutral-250",
+            "replacement": "hover:bg-neutral-250"
+          }
+        ]
+      },
+      {
+        "lineNum": 398,
+        "originalLine": "<div className=\"h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 text-amber-550 group-hover:bg-[#5F6DF8] group-hover:text-white transition-colors\">",
+        "replacedLine": "<div className=\"h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 text-amber-500 group-hover:bg-[#5F6DF8] group-hover:text-white transition-colors\">",
+        "replacements": [
+          {
+            "original": "text-amber-550",
+            "replacement": "text-amber-500"
+          }
+        ]
+      },
+      {
+        "lineNum": 687,
+        "originalLine": "<span className=\"text-xs font-black text-emerald-250\">Review: Neural Networks</span>",
+        "replacedLine": "<span className=\"text-xs font-black text-emerald-250\">Review: Neural Networks</span>",
+        "replacements": [
+          {
+            "original": "text-emerald-250",
+            "replacement": "text-emerald-250"
+          }
+        ]
+      },
+      {
+        "lineNum": 812,
+        "originalLine": "className=\"w-full rounded-2xl bg-[#5F6DF8] hover:bg-indigo-650 py-3.5 font-sans text-xs font-black text-white transition-all text-center focus:outline-none cursor-pointer\"",
+        "replacedLine": "className=\"w-full rounded-2xl bg-[#5F6DF8] hover:bg-indigo-600 py-3.5 font-sans text-xs font-black text-white transition-all text-center focus:outline-none cursor-pointer\"",
+        "replacements": [
+          {
+            "original": "hover:bg-indigo-650",
+            "replacement": "hover:bg-indigo-600"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "c:\\Users\\Ramesh Sahu\\antigravity\\Note-IT-AI\\src\\components\\LectureCaptureView.tsx",
+    "changes": [
+      {
+        "lineNum": 468,
+        "originalLine": "className=\"inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/15 text-indigo-400 border border-indigo-500/25 cursor-pointer hover:bg-indigo-650 hover:text-white transition-all ml-1 select-none\"",
+        "replacedLine": "className=\"inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/15 text-indigo-400 border border-indigo-500/25 cursor-pointer hover:bg-indigo-600 hover:text-white transition-all ml-1 select-none\"",
+        "replacements": [
+          {
+            "original": "hover:bg-indigo-650",
+            "replacement": "hover:bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 560,
+        "originalLine": "element.classList.add('bg-indigo-650', 'text-white', 'scale-110');",
+        "replacedLine": "element.classList.add('bg-indigo-600', 'text-white', 'scale-110');",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 562,
+        "originalLine": "element.classList.remove('bg-indigo-650', 'text-white', 'scale-110');",
+        "replacedLine": "element.classList.remove('bg-indigo-600', 'text-white', 'scale-110');",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 580,
+        "originalLine": "className=\"inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 cursor-pointer hover:bg-indigo-650 hover:text-white transition-all mr-1\"",
+        "replacedLine": "className=\"inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 cursor-pointer hover:bg-indigo-600 hover:text-white transition-all mr-1\"",
+        "replacements": [
+          {
+            "original": "hover:bg-indigo-650",
+            "replacement": "hover:bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 1042,
+        "originalLine": "className=\"px-4 py-2 bg-indigo-650 rounded-lg text-xs font-bold text-white cursor-pointer\"",
+        "replacedLine": "className=\"px-4 py-2 bg-indigo-600 rounded-lg text-xs font-bold text-white cursor-pointer\"",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 1065,
+        "originalLine": "theme === 'dark' ? 'border-neutral-805 bg-neutral-950/70 hover:bg-neutral-900 text-neutral-400 hover:text-white' : 'border-gray-205 bg-gray-50 hover:bg-gray-100 text-gray-700'",
+        "replacedLine": "theme === 'dark' ? 'border-neutral-805 bg-neutral-950/70 hover:bg-neutral-900 text-neutral-400 hover:text-white' : 'border-gray-205 bg-gray-50 hover:bg-gray-100 text-gray-700'",
+        "replacements": [
+          {
+            "original": "border-neutral-805",
+            "replacement": "border-neutral-805"
+          },
+          {
+            "original": "border-gray-205",
+            "replacement": "border-gray-205"
+          }
+        ]
+      },
+      {
+        "lineNum": 1098,
+        "originalLine": "theme === 'dark' ? 'bg-[#0d0e12] border-neutral-900 text-neutral-450' : 'bg-white border-gray-200 text-gray-550'",
+        "replacedLine": "theme === 'dark' ? 'bg-[#0d0e12] border-neutral-900 text-neutral-400' : 'bg-white border-gray-200 text-gray-500'",
+        "replacements": [
+          {
+            "original": "text-neutral-450",
+            "replacement": "text-neutral-400"
+          },
+          {
+            "original": "text-gray-550",
+            "replacement": "text-gray-500"
+          }
+        ]
+      },
+      {
+        "lineNum": 1152,
+        "originalLine": "? 'bg-indigo-650'",
+        "replacedLine": "? 'bg-indigo-600'",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 1180,
+        "originalLine": "? theme === 'dark' ? 'bg-indigo-650 text-white' : 'bg-white text-black shadow-xs'",
+        "replacedLine": "? theme === 'dark' ? 'bg-indigo-600 text-white' : 'bg-white text-black shadow-xs'",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 1181,
+        "originalLine": ": theme === 'dark' ? 'text-neutral-450 hover:text-white' : 'text-neutral-500 hover:text-neutral-900'",
+        "replacedLine": ": theme === 'dark' ? 'text-neutral-400 hover:text-white' : 'text-neutral-500 hover:text-neutral-900'",
+        "replacements": [
+          {
+            "original": "text-neutral-450",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 1208,
+        "originalLine": "selectedNotesMode === nOpt.mode ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-455'",
+        "replacedLine": "selectedNotesMode === nOpt.mode ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-400'",
+        "replacements": [
+          {
+            "original": "text-neutral-455",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 1234,
+        "originalLine": "theme === 'dark' ? 'bg-[#121318] border-neutral-905 text-neutral-305' : 'bg-white border-gray-200 text-gray-755'",
+        "replacedLine": "theme === 'dark' ? 'bg-[#121318] border-neutral-905 text-neutral-300' : 'bg-white border-gray-200 text-gray-700'",
+        "replacements": [
+          {
+            "original": "border-neutral-905",
+            "replacement": "border-neutral-905"
+          },
+          {
+            "original": "text-neutral-305",
+            "replacement": "text-neutral-300"
+          },
+          {
+            "original": "text-gray-755",
+            "replacement": "text-gray-700"
+          }
+        ]
+      },
+      {
+        "lineNum": 1239,
+        "originalLine": "<div className=\"py-16 flex flex-col items-center justify-center border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5\">",
+        "replacedLine": "<div className=\"py-16 flex flex-col items-center justify-center border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5\">",
+        "replacements": [
+          {
+            "original": "border-gray-250",
+            "replacement": "border-gray-250"
+          }
+        ]
+      },
+      {
+        "lineNum": 1243,
+        "originalLine": "<div className=\"text-center py-16 border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4\">",
+        "replacedLine": "<div className=\"text-center py-16 border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4\">",
+        "replacements": [
+          {
+            "original": "border-gray-250",
+            "replacement": "border-gray-250"
+          }
+        ]
+      },
+      {
+        "lineNum": 1248,
+        "originalLine": "className=\"px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer\"",
+        "replacedLine": "className=\"px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer\"",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 1275,
+        "originalLine": "selectedSummaryMode === sf.mode ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-455'",
+        "replacedLine": "selectedSummaryMode === sf.mode ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-400'",
+        "replacements": [
+          {
+            "original": "text-neutral-455",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 1347,
+        "originalLine": "<div className=\"py-16 flex flex-col items-center justify-center border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5\">",
+        "replacedLine": "<div className=\"py-16 flex flex-col items-center justify-center border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5\">",
+        "replacements": [
+          {
+            "original": "border-gray-250",
+            "replacement": "border-gray-250"
+          }
+        ]
+      },
+      {
+        "lineNum": 1351,
+        "originalLine": "<div className=\"text-center py-16 border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4\">",
+        "replacedLine": "<div className=\"text-center py-16 border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4\">",
+        "replacements": [
+          {
+            "original": "border-gray-250",
+            "replacement": "border-gray-250"
+          }
+        ]
+      },
+      {
+        "lineNum": 1356,
+        "originalLine": "className=\"px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer\"",
+        "replacedLine": "className=\"px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer\"",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 1376,
+        "originalLine": "selectedFlashcardCategory === cat ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-455'",
+        "replacedLine": "selectedFlashcardCategory === cat ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-400'",
+        "replacements": [
+          {
+            "original": "text-neutral-455",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 1406,
+        "originalLine": "<div className=\"text-center py-12 text-neutral-500 font-mono text-[11px] border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl p-6 bg-gray-50/10 dark:bg-neutral-900/5\">",
+        "replacedLine": "<div className=\"text-center py-12 text-neutral-500 font-mono text-[11px] border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl p-6 bg-gray-50/10 dark:bg-neutral-900/5\">",
+        "replacements": [
+          {
+            "original": "border-gray-250",
+            "replacement": "border-gray-250"
+          }
+        ]
+      },
+      {
+        "lineNum": 1421,
+        "originalLine": "<div className={`text-[11.5px] pt-2 border-t border-neutral-900/20 ${theme === 'dark' ? 'text-neutral-350' : 'text-neutral-600'}`}>",
+        "replacedLine": "<div className={`text-[11.5px] pt-2 border-t border-neutral-900/20 ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-600'}`}>",
+        "replacements": [
+          {
+            "original": "text-neutral-350",
+            "replacement": "text-neutral-300"
+          }
+        ]
+      },
+      {
+        "lineNum": 1443,
+        "originalLine": "<div className=\"py-16 flex flex-col items-center justify-center border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5\">",
+        "replacedLine": "<div className=\"py-16 flex flex-col items-center justify-center border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5\">",
+        "replacements": [
+          {
+            "original": "border-gray-250",
+            "replacement": "border-gray-250"
+          }
+        ]
+      },
+      {
+        "lineNum": 1447,
+        "originalLine": "<div className=\"text-center py-16 border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4\">",
+        "replacedLine": "<div className=\"text-center py-16 border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4\">",
+        "replacements": [
+          {
+            "original": "border-gray-250",
+            "replacement": "border-gray-250"
+          }
+        ]
+      },
+      {
+        "lineNum": 1452,
+        "originalLine": "className=\"px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer\"",
+        "replacedLine": "className=\"px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer\"",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 1484,
+        "originalLine": "selectedQuizDifficulty === dOpt.difficulty ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-455'",
+        "replacedLine": "selectedQuizDifficulty === dOpt.difficulty ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-400'",
+        "replacements": [
+          {
+            "original": "text-neutral-455",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 1511,
+        "originalLine": "<div className=\"text-center py-16 border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4\">",
+        "replacedLine": "<div className=\"text-center py-16 border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4\">",
+        "replacements": [
+          {
+            "original": "border-gray-250",
+            "replacement": "border-gray-250"
+          }
+        ]
+      },
+      {
+        "lineNum": 1516,
+        "originalLine": "className=\"px-4 py-2 bg-indigo-650 hover:bg-indigo-750 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer\"",
+        "replacedLine": "className=\"px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer\"",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          },
+          {
+            "original": "hover:bg-indigo-750",
+            "replacement": "hover:bg-indigo-700"
+          }
+        ]
+      },
+      {
+        "lineNum": 1528,
+        "originalLine": "<div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#121318] border-neutral-905' : 'bg-white border-gray-200'}`}>",
+        "replacedLine": "<div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#121318] border-neutral-905' : 'bg-white border-gray-200'}`}>",
+        "replacements": [
+          {
+            "original": "border-neutral-905",
+            "replacement": "border-neutral-905"
+          }
+        ]
+      },
+      {
+        "lineNum": 1545,
+        "originalLine": "? \"border-emerald-500 bg-emerald-500/10 text-emerald-450\"",
+        "replacedLine": "? \"border-emerald-500 bg-emerald-500/10 text-emerald-400\"",
+        "replacements": [
+          {
+            "original": "text-emerald-450",
+            "replacement": "text-emerald-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 1549,
+        "originalLine": "? \"border-red-500 bg-red-500/10 text-red-450\"",
+        "replacedLine": "? \"border-red-500 bg-red-500/10 text-red-400\"",
+        "replacements": [
+          {
+            "original": "text-red-450",
+            "replacement": "text-red-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 1560,
+        "originalLine": ": \"border-indigo-650 bg-indigo-50 text-indigo-700\";",
+        "replacedLine": ": \"border-indigo-600 bg-indigo-50 text-indigo-700\";",
+        "replacements": [
+          {
+            "original": "border-indigo-650",
+            "replacement": "border-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 1563,
+        "originalLine": "? \"border-neutral-850 bg-neutral-950/40 text-neutral-350 hover:bg-neutral-900 hover:text-white\"",
+        "replacedLine": "? \"border-neutral-800 bg-neutral-950/40 text-neutral-300 hover:bg-neutral-900 hover:text-white\"",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          },
+          {
+            "original": "text-neutral-350",
+            "replacement": "text-neutral-300"
+          }
+        ]
+      },
+      {
+        "lineNum": 1581,
+        "originalLine": "<div className=\"mt-4 pt-3 border-t border-dashed border-neutral-900 text-[11px] text-neutral-455\">",
+        "replacedLine": "<div className=\"mt-4 pt-3 border-t border-dashed border-neutral-900 text-[11px] text-neutral-400\">",
+        "replacements": [
+          {
+            "original": "text-neutral-455",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 1585,
+        "originalLine": "<div className=\"mt-2 text-[10px] font-bold text-indigo-350 font-mono\">",
+        "replacedLine": "<div className=\"mt-2 text-[10px] font-bold text-indigo-300 font-mono\">",
+        "replacements": [
+          {
+            "original": "text-indigo-350",
+            "replacement": "text-indigo-300"
+          }
+        ]
+      },
+      {
+        "lineNum": 1597,
+        "originalLine": "className=\"px-4 py-2 bg-indigo-650 hover:bg-indigo-600 text-white rounded-lg text-[11px] font-bold disabled:opacity-30 cursor-pointer\"",
+        "replacedLine": "className=\"px-4 py-2 bg-indigo-600 hover:bg-indigo-600 text-white rounded-lg text-[11px] font-bold disabled:opacity-30 cursor-pointer\"",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 1634,
+        "originalLine": "<div className=\"py-16 flex flex-col items-center justify-center border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5\">",
+        "replacedLine": "<div className=\"py-16 flex flex-col items-center justify-center border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5\">",
+        "replacements": [
+          {
+            "original": "border-gray-250",
+            "replacement": "border-gray-250"
+          }
+        ]
+      },
+      {
+        "lineNum": 1638,
+        "originalLine": "<div className=\"text-center py-16 border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4\">",
+        "replacedLine": "<div className=\"text-center py-16 border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4\">",
+        "replacements": [
+          {
+            "original": "border-gray-250",
+            "replacement": "border-gray-250"
+          }
+        ]
+      },
+      {
+        "lineNum": 1643,
+        "originalLine": "className=\"px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer\"",
+        "replacedLine": "className=\"px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer\"",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 1757,
+        "originalLine": "<div className=\"h-full min-h-[160px] flex flex-col items-center justify-center border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5\">",
+        "replacedLine": "<div className=\"h-full min-h-[160px] flex flex-col items-center justify-center border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5\">",
+        "replacements": [
+          {
+            "original": "border-gray-250",
+            "replacement": "border-gray-250"
+          }
+        ]
+      },
+      {
+        "lineNum": 1761,
+        "originalLine": "<div className=\"h-full min-h-[160px] flex items-center justify-center text-[11px] text-neutral-505 font-mono border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl p-6 bg-gray-50/10 dark:bg-neutral-900/5\">",
+        "replacedLine": "<div className=\"h-full min-h-[160px] flex items-center justify-center text-[11px] text-neutral-500 font-mono border border-dashed border-gray-250 dark:border-neutral-800 rounded-2xl p-6 bg-gray-50/10 dark:bg-neutral-900/5\">",
+        "replacements": [
+          {
+            "original": "text-neutral-505",
+            "replacement": "text-neutral-500"
+          },
+          {
+            "original": "border-gray-250",
+            "replacement": "border-gray-250"
+          }
+        ]
+      },
+      {
+        "lineNum": 1771,
+        "originalLine": "<div className=\"flex items-center justify-between border-b border-neutral-855 pb-2\">",
+        "replacedLine": "<div className=\"flex items-center justify-between border-b border-neutral-855 pb-2\">",
+        "replacements": [
+          {
+            "original": "border-neutral-855",
+            "replacement": "border-neutral-855"
+          }
+        ]
+      },
+      {
+        "lineNum": 1778,
+        "originalLine": "theme === 'dark' ? 'text-neutral-550 hover:text-white' : 'text-neutral-400 hover:text-neutral-900'",
+        "replacedLine": "theme === 'dark' ? 'text-neutral-500 hover:text-white' : 'text-neutral-400 hover:text-neutral-900'",
+        "replacements": [
+          {
+            "original": "text-neutral-550",
+            "replacement": "text-neutral-500"
+          }
+        ]
+      },
+      {
+        "lineNum": 1785,
+        "originalLine": "<div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-350' : 'text-neutral-600'}`}>",
+        "replacedLine": "<div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-600'}`}>",
+        "replacements": [
+          {
+            "original": "text-neutral-350",
+            "replacement": "text-neutral-300"
+          }
+        ]
+      },
+      {
+        "lineNum": 1791,
+        "originalLine": "<div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-350' : 'text-neutral-600'}`}>",
+        "replacedLine": "<div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-600'}`}>",
+        "replacements": [
+          {
+            "original": "text-neutral-350",
+            "replacement": "text-neutral-300"
+          }
+        ]
+      },
+      {
+        "lineNum": 1798,
+        "originalLine": "<div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-350' : 'text-neutral-600'}`}>",
+        "replacedLine": "<div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-600'}`}>",
+        "replacements": [
+          {
+            "original": "text-neutral-350",
+            "replacement": "text-neutral-300"
+          }
+        ]
+      },
+      {
+        "lineNum": 1800,
+        "originalLine": "<code className={`block p-2 rounded text-[10px] font-mono mt-1 text-orange-450 border ${",
+        "replacedLine": "<code className={`block p-2 rounded text-[10px] font-mono mt-1 text-orange-400 border ${",
+        "replacements": [
+          {
+            "original": "text-orange-450",
+            "replacement": "text-orange-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 1809,
+        "originalLine": "<div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-350' : 'text-neutral-600'}`}>",
+        "replacedLine": "<div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-600'}`}>",
+        "replacements": [
+          {
+            "original": "text-neutral-350",
+            "replacement": "text-neutral-300"
+          }
+        ]
+      },
+      {
+        "lineNum": 1816,
+        "originalLine": "<div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-350' : 'text-neutral-600'}`}>",
+        "replacedLine": "<div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-600'}`}>",
+        "replacements": [
+          {
+            "original": "text-neutral-350",
+            "replacement": "text-neutral-300"
+          }
+        ]
+      },
+      {
+        "lineNum": 1823,
+        "originalLine": ": 'bg-emerald-500/15 text-emerald-450 border border-emerald-500/25'",
+        "replacedLine": ": 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25'",
+        "replacements": [
+          {
+            "original": "text-emerald-450",
+            "replacement": "text-emerald-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 1864,
+        "originalLine": "className={`absolute -left-2.5 top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-indigo-650 border-2 text-[8.5px] font-mono font-bold text-indigo-300 cursor-pointer hover:bg-indigo-500 hover:text-white transition-all shadow-md ${",
+        "replacedLine": "className={`absolute -left-2.5 top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 border-2 text-[8.5px] font-mono font-bold text-indigo-300 cursor-pointer hover:bg-indigo-500 hover:text-white transition-all shadow-md ${",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 1873,
+        "originalLine": "theme === 'dark' ? 'text-neutral-350' : 'text-neutral-600'",
+        "replacedLine": "theme === 'dark' ? 'text-neutral-300' : 'text-neutral-600'",
+        "replacements": [
+          {
+            "original": "text-neutral-350",
+            "replacement": "text-neutral-300"
+          }
+        ]
+      },
+      {
+        "lineNum": 1921,
+        "originalLine": "? 'bg-indigo-650 text-white rounded-br-none'",
+        "replacedLine": "? 'bg-indigo-600 text-white rounded-br-none'",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 1923,
+        "originalLine": "? 'bg-neutral-950 border border-neutral-850 text-neutral-200 rounded-bl-none'",
+        "replacedLine": "? 'bg-neutral-950 border border-neutral-800 text-neutral-200 rounded-bl-none'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 1939,
+        "originalLine": "theme === 'dark' ? 'bg-neutral-950 border border-neutral-850' : 'bg-white border border-gray-200'",
+        "replacedLine": "theme === 'dark' ? 'bg-neutral-950 border border-neutral-800' : 'bg-white border border-gray-200'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 1942,
+        "originalLine": "<span className=\"text-neutral-550 font-mono text-[9px] animate-pulse\">Thinking...</span>",
+        "replacedLine": "<span className=\"text-neutral-500 font-mono text-[9px] animate-pulse\">Thinking...</span>",
+        "replacements": [
+          {
+            "original": "text-neutral-550",
+            "replacement": "text-neutral-500"
+          }
+        ]
+      },
+      {
+        "lineNum": 1965,
+        "originalLine": "? 'border-neutral-850 bg-neutral-900 text-neutral-300 hover:bg-neutral-800 hover:text-white'",
+        "replacedLine": "? 'border-neutral-800 bg-neutral-900 text-neutral-300 hover:bg-neutral-800 hover:text-white'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 1981,
+        "originalLine": "className=\"flex-1 rounded-lg border border-neutral-805 bg-neutral-950 px-3 py-2 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-indigo-500\"",
+        "replacedLine": "className=\"flex-1 rounded-lg border border-neutral-805 bg-neutral-950 px-3 py-2 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-indigo-500\"",
+        "replacements": [
+          {
+            "original": "border-neutral-805",
+            "replacement": "border-neutral-805"
+          }
+        ]
+      },
+      {
+        "lineNum": 1987,
+        "originalLine": "className=\"px-4 py-2 bg-indigo-650 hover:bg-indigo-600 disabled:opacity-40 text-white text-xs font-bold rounded-lg cursor-pointer transition-all\"",
+        "replacedLine": "className=\"px-4 py-2 bg-indigo-600 hover:bg-indigo-600 disabled:opacity-40 text-white text-xs font-bold rounded-lg cursor-pointer transition-all\"",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 2004,
+        "originalLine": "theme === 'dark' ? 'bg-[#0d0e12] border-neutral-850 text-white' : 'bg-white border-gray-200 text-gray-900'",
+        "replacedLine": "theme === 'dark' ? 'bg-[#0d0e12] border-neutral-800 text-white' : 'bg-white border-gray-200 text-gray-900'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 2030,
+        "originalLine": "? 'bg-indigo-650 border-indigo-500 text-white'",
+        "replacedLine": "? 'bg-indigo-600 border-indigo-500 text-white'",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 2031,
+        "originalLine": ": theme === 'dark' ? 'border-neutral-800 text-neutral-450 hover:border-neutral-700' : 'border-gray-200 text-gray-700 hover:border-gray-300'",
+        "replacedLine": ": theme === 'dark' ? 'border-neutral-800 text-neutral-400 hover:border-neutral-700' : 'border-gray-200 text-gray-700 hover:border-gray-300'",
+        "replacements": [
+          {
+            "original": "text-neutral-450",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 2044,
+        "originalLine": "className=\"rounded-lg px-4 py-2 text-xs font-bold border border-neutral-800 text-neutral-450 cursor-pointer\"",
+        "replacedLine": "className=\"rounded-lg px-4 py-2 text-xs font-bold border border-neutral-800 text-neutral-400 cursor-pointer\"",
+        "replacements": [
+          {
+            "original": "text-neutral-450",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 2129,
+        "originalLine": "theme === 'dark' ? 'bg-[#121318] border-neutral-850' : 'bg-white border-gray-200'",
+        "replacedLine": "theme === 'dark' ? 'bg-[#121318] border-neutral-800' : 'bg-white border-gray-200'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 2203,
+        "originalLine": "? 'border-neutral-800 text-neutral-450 hover:bg-neutral-900/40'",
+        "replacedLine": "? 'border-neutral-800 text-neutral-400 hover:bg-neutral-900/40'",
+        "replacements": [
+          {
+            "original": "text-neutral-450",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 2227,
+        "originalLine": "? 'bg-neutral-900/40 border-neutral-800 text-neutral-150 focus:border-indigo-500'",
+        "replacedLine": "? 'bg-neutral-900/40 border-neutral-800 text-neutral-200 focus:border-indigo-500'",
+        "replacements": [
+          {
+            "original": "text-neutral-150",
+            "replacement": "text-neutral-200"
+          }
+        ]
+      },
+      {
+        "lineNum": 2242,
+        "originalLine": "? 'bg-neutral-900/40 border-neutral-800 text-neutral-150 focus:border-indigo-500'",
+        "replacedLine": "? 'bg-neutral-900/40 border-neutral-800 text-neutral-200 focus:border-indigo-500'",
+        "replacements": [
+          {
+            "original": "text-neutral-150",
+            "replacement": "text-neutral-200"
+          }
+        ]
+      },
+      {
+        "lineNum": 2270,
+        "originalLine": "? 'bg-red-500 text-white hover:bg-red-650'",
+        "replacedLine": "? 'bg-red-500 text-white hover:bg-red-600'",
+        "replacements": [
+          {
+            "original": "hover:bg-red-650",
+            "replacement": "hover:bg-red-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 2310,
+        "originalLine": "className=\"flex-1 py-3 px-4 rounded-lg bg-red-500 font-sans text-xs font-bold text-white hover:bg-red-650 transition-all flex items-center justify-center gap-1.5 focus:outline-none cursor-pointer\"",
+        "replacedLine": "className=\"flex-1 py-3 px-4 rounded-lg bg-red-500 font-sans text-xs font-bold text-white hover:bg-red-600 transition-all flex items-center justify-center gap-1.5 focus:outline-none cursor-pointer\"",
+        "replacements": [
+          {
+            "original": "hover:bg-red-650",
+            "replacement": "hover:bg-red-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 2324,
+        "originalLine": "theme === 'dark' ? 'bg-[#121318]/40 border-neutral-850' : 'bg-white border-gray-200'",
+        "replacedLine": "theme === 'dark' ? 'bg-[#121318]/40 border-neutral-800' : 'bg-white border-gray-200'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 2340,
+        "originalLine": "theme === 'dark' ? 'border-neutral-800 text-neutral-305' : 'border-gray-200 text-gray-700'",
+        "replacedLine": "theme === 'dark' ? 'border-neutral-800 text-neutral-300' : 'border-gray-200 text-gray-700'",
+        "replacements": [
+          {
+            "original": "text-neutral-305",
+            "replacement": "text-neutral-300"
+          }
+        ]
+      },
+      {
+        "lineNum": 2367,
+        "originalLine": "theme === 'dark' ? 'bg-[#121318] border-neutral-850' : 'bg-white border-gray-200'",
+        "replacedLine": "theme === 'dark' ? 'bg-[#121318] border-neutral-800' : 'bg-white border-gray-200'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 2392,
+        "originalLine": "className=\"h-10 flex items-center justify-center gap-1.5 px-3 border-y border-gray-100 dark:border-neutral-850/50 my-1\"",
+        "replacedLine": "className=\"h-10 flex items-center justify-center gap-1.5 px-3 border-y border-gray-100 dark:border-neutral-800/50 my-1\"",
+        "replacements": [
+          {
+            "original": "dark:border-neutral-850/50",
+            "replacement": "dark:border-neutral-800/50"
+          }
+        ]
+      },
+      {
+        "lineNum": 2413,
+        "originalLine": "<MicOff className=\"h-8 w-8 mb-2 opacity-50 text-gray-450 dark:text-neutral-500\" />",
+        "replacedLine": "<MicOff className=\"h-8 w-8 mb-2 opacity-50 text-gray-400 dark:text-neutral-500\" />",
+        "replacements": [
+          {
+            "original": "text-gray-450",
+            "replacement": "text-gray-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 2414,
+        "originalLine": "<p className=\"text-[11px] font-bold text-gray-750 dark:text-neutral-300\">Microphone Standby</p>",
+        "replacedLine": "<p className=\"text-[11px] font-bold text-gray-700 dark:text-neutral-300\">Microphone Standby</p>",
+        "replacements": [
+          {
+            "original": "text-gray-750",
+            "replacement": "text-gray-700"
+          }
+        ]
+      },
+      {
+        "lineNum": 2415,
+        "originalLine": "<p className=\"text-[10px] text-gray-450 dark:text-neutral-550 max-w-[180px] leading-normal font-semibold mt-1\">",
+        "replacedLine": "<p className=\"text-[10px] text-gray-400 dark:text-neutral-500 max-w-[180px] leading-normal font-semibold mt-1\">",
+        "replacements": [
+          {
+            "original": "text-gray-450",
+            "replacement": "text-gray-400"
+          },
+          {
+            "original": "dark:text-neutral-550",
+            "replacement": "dark:text-neutral-500"
+          }
+        ]
+      },
+      {
+        "lineNum": 2424,
+        "originalLine": "<p className=\"text-[10px] text-gray-455 dark:text-neutral-550 max-w-[180px] leading-normal font-semibold mt-1\">",
+        "replacedLine": "<p className=\"text-[10px] text-gray-400 dark:text-neutral-500 max-w-[180px] leading-normal font-semibold mt-1\">",
+        "replacements": [
+          {
+            "original": "text-gray-455",
+            "replacement": "text-gray-400"
+          },
+          {
+            "original": "dark:text-neutral-550",
+            "replacement": "dark:text-neutral-500"
+          }
+        ]
+      },
+      {
+        "lineNum": 2434,
+        "originalLine": "<p className=\"text-[10px] text-gray-455 dark:text-neutral-550 max-w-[180px] leading-normal font-semibold mt-1\">",
+        "replacedLine": "<p className=\"text-[10px] text-gray-400 dark:text-neutral-500 max-w-[180px] leading-normal font-semibold mt-1\">",
+        "replacements": [
+          {
+            "original": "text-gray-455",
+            "replacement": "text-gray-400"
+          },
+          {
+            "original": "dark:text-neutral-550",
+            "replacement": "dark:text-neutral-500"
+          }
+        ]
+      },
+      {
+        "lineNum": 2442,
+        "originalLine": "<div className=\"absolute -inset-3 rounded-full bg-indigo-505/10 animate-ping\" />",
+        "replacedLine": "<div className=\"absolute -inset-3 rounded-full bg-indigo-500/10 animate-ping\" />",
+        "replacements": [
+          {
+            "original": "bg-indigo-505/10",
+            "replacement": "bg-indigo-500/10"
+          }
+        ]
+      },
+      {
+        "lineNum": 2449,
+        "originalLine": "<p className=\"text-[10px] text-gray-455 dark:text-neutral-450 leading-normal font-semibold max-w-[200px]\">",
+        "replacedLine": "<p className=\"text-[10px] text-gray-400 dark:text-neutral-400 leading-normal font-semibold max-w-[200px]\">",
+        "replacements": [
+          {
+            "original": "text-gray-455",
+            "replacement": "text-gray-400"
+          },
+          {
+            "original": "dark:text-neutral-450",
+            "replacement": "dark:text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 2478,
+        "originalLine": "theme === 'dark' ? 'bg-[#121318] border-neutral-850' : 'bg-white border-gray-200'",
+        "replacedLine": "theme === 'dark' ? 'bg-[#121318] border-neutral-800' : 'bg-white border-gray-200'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "c:\\Users\\Ramesh Sahu\\antigravity\\Note-IT-AI\\src\\components\\LectureProcessingView.tsx",
+    "changes": [
+      {
+        "lineNum": 371,
+        "originalLine": "theme === 'dark' ? 'bg-[#121318] border-neutral-850' : 'bg-white border-gray-200'",
+        "replacedLine": "theme === 'dark' ? 'bg-[#121318] border-neutral-800' : 'bg-white border-gray-200'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 446,
+        "originalLine": "<Brain className=\"h-4 w-4 animate-bounce text-indigo-505\" />",
+        "replacedLine": "<Brain className=\"h-4 w-4 animate-bounce text-indigo-500\" />",
+        "replacements": [
+          {
+            "original": "text-indigo-505",
+            "replacement": "text-indigo-500"
+          }
+        ]
+      },
+      {
+        "lineNum": 475,
+        "originalLine": "<div className=\"h-2 w-full rounded-full bg-gray-150 dark:bg-neutral-800 overflow-hidden\">",
+        "replacedLine": "<div className=\"h-2 w-full rounded-full bg-gray-200 dark:bg-neutral-800 overflow-hidden\">",
+        "replacements": [
+          {
+            "original": "bg-gray-150",
+            "replacement": "bg-gray-200"
+          }
+        ]
+      },
+      {
+        "lineNum": 498,
+        "originalLine": "theme === 'dark' ? 'bg-[#121318] border-neutral-850' : 'bg-white border-gray-200'",
+        "replacedLine": "theme === 'dark' ? 'bg-[#121318] border-neutral-800' : 'bg-white border-gray-200'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 500,
+        "originalLine": "<div className=\"flex items-center justify-between border-b border-gray-100 dark:border-neutral-850/50 pb-4\">",
+        "replacedLine": "<div className=\"flex items-center justify-between border-b border-gray-100 dark:border-neutral-800/50 pb-4\">",
+        "replacements": [
+          {
+            "original": "dark:border-neutral-850/50",
+            "replacement": "dark:border-neutral-800/50"
+          }
+        ]
+      },
+      {
+        "lineNum": 510,
+        "originalLine": "<div className=\"py-4 flex justify-center border-b border-gray-100 dark:border-neutral-850/50\">",
+        "replacedLine": "<div className=\"py-4 flex justify-center border-b border-gray-100 dark:border-neutral-800/50\">",
+        "replacements": [
+          {
+            "original": "dark:border-neutral-850/50",
+            "replacement": "dark:border-neutral-800/50"
+          }
+        ]
+      },
+      {
+        "lineNum": 536,
+        "originalLine": "className=\"inline-flex items-center gap-1.5 rounded-lg border border-gray-250 dark:border-neutral-800 text-gray-700 dark:text-neutral-350 px-4 py-2.5 text-xs font-bold hover:bg-gray-50 dark:hover:bg-neutral-800 transition-all focus:outline-none cursor-pointer\"",
+        "replacedLine": "className=\"inline-flex items-center gap-1.5 rounded-lg border border-gray-250 dark:border-neutral-800 text-gray-700 dark:text-neutral-300 px-4 py-2.5 text-xs font-bold hover:bg-gray-50 dark:hover:bg-neutral-800 transition-all focus:outline-none cursor-pointer\"",
+        "replacements": [
+          {
+            "original": "border-gray-250",
+            "replacement": "border-gray-250"
+          },
+          {
+            "original": "dark:text-neutral-350",
+            "replacement": "dark:text-neutral-300"
+          }
+        ]
+      },
+      {
+        "lineNum": 559,
+        "originalLine": "? 'border-neutral-850/50 opacity-70 text-neutral-300'",
+        "replacedLine": "? 'border-neutral-800/50 opacity-70 text-neutral-300'",
+        "replacements": [
+          {
+            "original": "border-neutral-850/50",
+            "replacement": "border-neutral-800/50"
+          }
+        ]
+      },
+      {
+        "lineNum": 578,
+        "originalLine": "<div className=\"h-5 w-5 rounded-full bg-gray-100 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-750 flex items-center justify-center text-gray-400 dark:text-neutral-500 font-mono text-[9px] font-bold\">",
+        "replacedLine": "<div className=\"h-5 w-5 rounded-full bg-gray-100 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 flex items-center justify-center text-gray-400 dark:text-neutral-500 font-mono text-[9px] font-bold\">",
+        "replacements": [
+          {
+            "original": "dark:border-neutral-750",
+            "replacement": "dark:border-neutral-700"
+          }
+        ]
+      },
+      {
+        "lineNum": 616,
+        "originalLine": "<div className=\"pt-4 border-t border-gray-100 dark:border-neutral-850/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-in\">",
+        "replacedLine": "<div className=\"pt-4 border-t border-gray-100 dark:border-neutral-800/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-in\">",
+        "replacements": [
+          {
+            "original": "dark:border-neutral-850/50",
+            "replacement": "dark:border-neutral-800/50"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "c:\\Users\\Ramesh Sahu\\antigravity\\Note-IT-AI\\src\\components\\LibraryView.tsx",
+    "changes": [
+      {
+        "lineNum": 125,
+        "originalLine": "? 'bg-[#0d0e12] border-neutral-850/80 shadow-2xl'",
+        "replacedLine": "? 'bg-[#0d0e12] border-neutral-800/80 shadow-2xl'",
+        "replacements": [
+          {
+            "original": "border-neutral-850/80",
+            "replacement": "border-neutral-800/80"
+          }
+        ]
+      },
+      {
+        "lineNum": 192,
+        "originalLine": "theme === 'dark' ? 'bg-neutral-900/60 border border-neutral-850' : 'bg-gray-150'",
+        "replacedLine": "theme === 'dark' ? 'bg-neutral-900/60 border border-neutral-800' : 'bg-gray-200'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          },
+          {
+            "original": "bg-gray-150",
+            "replacement": "bg-gray-200"
+          }
+        ]
+      },
+      {
+        "lineNum": 198,
+        "originalLine": "? theme === 'dark' ? 'bg-indigo-650 text-white shadow-md' : 'bg-white text-black shadow-xs'",
+        "replacedLine": "? theme === 'dark' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-black shadow-xs'",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 208,
+        "originalLine": "? theme === 'dark' ? 'bg-indigo-650 text-white shadow-md' : 'bg-white text-black shadow-xs'",
+        "replacedLine": "? theme === 'dark' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-black shadow-xs'",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 239,
+        "originalLine": "? 'bg-neutral-900 border border-neutral-850 text-neutral-450 hover:bg-neutral-850 hover:text-neutral-200'",
+        "replacedLine": "? 'bg-neutral-900 border border-neutral-800 text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          },
+          {
+            "original": "text-neutral-450",
+            "replacement": "text-neutral-400"
+          },
+          {
+            "original": "hover:bg-neutral-850",
+            "replacement": "hover:bg-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 258,
+        "originalLine": "<p className=\"text-xs text-gray-450 mt-1 max-w-xs mx-auto\">",
+        "replacedLine": "<p className=\"text-xs text-gray-400 mt-1 max-w-xs mx-auto\">",
+        "replacements": [
+          {
+            "original": "text-gray-450",
+            "replacement": "text-gray-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 265,
+        "originalLine": "theme === 'dark' ? 'border-neutral-850 bg-neutral-900 text-white hover:bg-neutral-850' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'",
+        "replacedLine": "theme === 'dark' ? 'border-neutral-800 bg-neutral-900 text-white hover:bg-neutral-800' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          },
+          {
+            "original": "hover:bg-neutral-850",
+            "replacement": "hover:bg-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 337,
+        "originalLine": "className=\"px-2 py-1 rounded bg-neutral-900/65 border border-neutral-850 text-neutral-400 font-sans text-[10px] font-bold cursor-pointer hover:bg-neutral-850 transition-all focus:outline-none\"",
+        "replacedLine": "className=\"px-2 py-1 rounded bg-neutral-900/65 border border-neutral-800 text-neutral-400 font-sans text-[10px] font-bold cursor-pointer hover:bg-neutral-800 transition-all focus:outline-none\"",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          },
+          {
+            "original": "hover:bg-neutral-850",
+            "replacement": "hover:bg-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 375,
+        "originalLine": "<div className=\"flex items-center gap-1.5 text-indigo-450 font-bold text-[11px] animate-pulse\">",
+        "replacedLine": "<div className=\"flex items-center gap-1.5 text-indigo-400 font-bold text-[11px] animate-pulse\">",
+        "replacements": [
+          {
+            "original": "text-indigo-450",
+            "replacement": "text-indigo-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 380,
+        "originalLine": "<div className=\"flex items-center gap-1.5 text-amber-550 font-bold text-[11px] animate-pulse\">",
+        "replacedLine": "<div className=\"flex items-center gap-1.5 text-amber-500 font-bold text-[11px] animate-pulse\">",
+        "replacements": [
+          {
+            "original": "text-amber-550",
+            "replacement": "text-amber-500"
+          }
+        ]
+      },
+      {
+        "lineNum": 419,
+        "originalLine": "theme === 'dark' ? 'hover:bg-indigo-500/10 text-neutral-500 hover:text-indigo-400' : 'hover:bg-indigo-50 text-gray-400 hover:text-indigo-650'",
+        "replacedLine": "theme === 'dark' ? 'hover:bg-indigo-500/10 text-neutral-500 hover:text-indigo-400' : 'hover:bg-indigo-50 text-gray-400 hover:text-indigo-600'",
+        "replacements": [
+          {
+            "original": "hover:text-indigo-650",
+            "replacement": "hover:text-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 506,
+        "originalLine": "className=\"px-2 py-1 rounded bg-neutral-900/65 border border-neutral-850 text-neutral-400 font-sans text-[10px] font-bold cursor-pointer hover:bg-neutral-850 focus:outline-none\"",
+        "replacedLine": "className=\"px-2 py-1 rounded bg-neutral-900/65 border border-neutral-800 text-neutral-400 font-sans text-[10px] font-bold cursor-pointer hover:bg-neutral-800 focus:outline-none\"",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          },
+          {
+            "original": "hover:bg-neutral-850",
+            "replacement": "hover:bg-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 568,
+        "originalLine": "theme === 'dark' ? 'text-neutral-450 hover:text-indigo-400' : 'text-gray-400 hover:text-indigo-650'",
+        "replacedLine": "theme === 'dark' ? 'text-neutral-400 hover:text-indigo-400' : 'text-gray-400 hover:text-indigo-600'",
+        "replacements": [
+          {
+            "original": "text-neutral-450",
+            "replacement": "text-neutral-400"
+          },
+          {
+            "original": "hover:text-indigo-650",
+            "replacement": "hover:text-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 580,
+        "originalLine": "theme === 'dark' ? 'text-neutral-450 hover:text-red-400' : 'text-gray-400 hover:text-red-500'",
+        "replacedLine": "theme === 'dark' ? 'text-neutral-400 hover:text-red-400' : 'text-gray-400 hover:text-red-500'",
+        "replacements": [
+          {
+            "original": "text-neutral-450",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 656,
+        "originalLine": "className=\"px-2 py-1 rounded bg-neutral-900/65 border border-neutral-850 text-neutral-400 font-sans text-[10px] font-bold cursor-pointer hover:bg-neutral-850 transition-all focus:outline-none\"",
+        "replacedLine": "className=\"px-2 py-1 rounded bg-neutral-900/65 border border-neutral-800 text-neutral-400 font-sans text-[10px] font-bold cursor-pointer hover:bg-neutral-800 transition-all focus:outline-none\"",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          },
+          {
+            "original": "hover:bg-neutral-850",
+            "replacement": "hover:bg-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 693,
+        "originalLine": "<span className=\"inline-flex items-center gap-1.5 text-indigo-450 font-bold text-xs animate-pulse\">",
+        "replacedLine": "<span className=\"inline-flex items-center gap-1.5 text-indigo-400 font-bold text-xs animate-pulse\">",
+        "replacements": [
+          {
+            "original": "text-indigo-450",
+            "replacement": "text-indigo-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 698,
+        "originalLine": "<span className=\"inline-flex items-center gap-1.5 text-amber-550 font-bold text-xs animate-pulse\">",
+        "replacedLine": "<span className=\"inline-flex items-center gap-1.5 text-amber-500 font-bold text-xs animate-pulse\">",
+        "replacements": [
+          {
+            "original": "text-amber-550",
+            "replacement": "text-amber-500"
+          }
+        ]
+      },
+      {
+        "lineNum": 734,
+        "originalLine": "theme === 'dark' ? 'text-neutral-550 hover:text-indigo-400' : 'text-gray-400 hover:text-indigo-650'",
+        "replacedLine": "theme === 'dark' ? 'text-neutral-500 hover:text-indigo-400' : 'text-gray-400 hover:text-indigo-600'",
+        "replacements": [
+          {
+            "original": "text-neutral-550",
+            "replacement": "text-neutral-500"
+          },
+          {
+            "original": "hover:text-indigo-650",
+            "replacement": "hover:text-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 747,
+        "originalLine": "theme === 'dark' ? 'text-neutral-550 hover:text-red-400' : 'text-gray-400 hover:text-red-500'",
+        "replacedLine": "theme === 'dark' ? 'text-neutral-500 hover:text-red-400' : 'text-gray-400 hover:text-red-500'",
+        "replacements": [
+          {
+            "original": "text-neutral-550",
+            "replacement": "text-neutral-500"
+          }
+        ]
+      },
+      {
+        "lineNum": 779,
+        "originalLine": "className=\"text-neutral-450 hover:text-white text-xs font-bold focus:outline-none cursor-pointer\"",
+        "replacedLine": "className=\"text-neutral-400 hover:text-white text-xs font-bold focus:outline-none cursor-pointer\"",
+        "replacements": [
+          {
+            "original": "text-neutral-450",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 862,
+        "originalLine": "<div className=\"text-xs font-bold text-emerald-450 truncate max-w-xs mx-auto\">{selectedFile.name}</div>",
+        "replacedLine": "<div className=\"text-xs font-bold text-emerald-400 truncate max-w-xs mx-auto\">{selectedFile.name}</div>",
+        "replacements": [
+          {
+            "original": "text-emerald-450",
+            "replacement": "text-emerald-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 883,
+        "originalLine": "theme === 'dark' ? 'bg-neutral-900 border border-neutral-850 text-neutral-400 hover:bg-neutral-850' : 'border-gray-200 bg-white text-gray-650 hover:bg-gray-50'",
+        "replacedLine": "theme === 'dark' ? 'bg-neutral-900 border border-neutral-800 text-neutral-400 hover:bg-neutral-800' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          },
+          {
+            "original": "hover:bg-neutral-850",
+            "replacement": "hover:bg-neutral-800"
+          },
+          {
+            "original": "text-gray-650",
+            "replacement": "text-gray-600"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "c:\\Users\\Ramesh Sahu\\antigravity\\Note-IT-AI\\src\\components\\Navbar.tsx",
+    "changes": [
+      {
+        "lineNum": 146,
+        "originalLine": "? 'bg-[#121318] text-white border border-neutral-850 placeholder-neutral-500 focus:border-indigo-500'",
+        "replacedLine": "? 'bg-[#121318] text-white border border-neutral-800 placeholder-neutral-500 focus:border-indigo-500'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 178,
+        "originalLine": "? 'border-neutral-800 bg-[#121318] hover:bg-neutral-850'",
+        "replacedLine": "? 'border-neutral-800 bg-[#121318] hover:bg-neutral-800'",
+        "replacements": [
+          {
+            "original": "hover:bg-neutral-850",
+            "replacement": "hover:bg-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 222,
+        "originalLine": "className=\"h-9 w-9 rounded-full border border-indigo-505 object-cover\"",
+        "replacedLine": "className=\"h-9 w-9 rounded-full border border-indigo-500 object-cover\"",
+        "replacements": [
+          {
+            "original": "border-indigo-505",
+            "replacement": "border-indigo-500"
+          }
+        ]
+      },
+      {
+        "lineNum": 235,
+        "originalLine": "? 'bg-[#0f1015]/95 border-neutral-850 text-white shadow-[#000]/60'",
+        "replacedLine": "? 'bg-[#0f1015]/95 border-neutral-800 text-white shadow-[#000]/60'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 244,
+        "originalLine": "className=\"h-10 w-10 rounded-full border border-gray-150 object-cover\"",
+        "replacedLine": "className=\"h-10 w-10 rounded-full border border-gray-200 object-cover\"",
+        "replacements": [
+          {
+            "original": "border-gray-150",
+            "replacement": "border-gray-200"
+          }
+        ]
+      },
+      {
+        "lineNum": 247,
+        "originalLine": "<div className=\"h-10 w-10 rounded-full border border-gray-150 bg-gray-100 dark:bg-neutral-800 flex items-center justify-center text-gray-400 dark:text-neutral-500\">",
+        "replacedLine": "<div className=\"h-10 w-10 rounded-full border border-gray-200 bg-gray-100 dark:bg-neutral-800 flex items-center justify-center text-gray-400 dark:text-neutral-500\">",
+        "replacements": [
+          {
+            "original": "border-gray-150",
+            "replacement": "border-gray-200"
+          }
+        ]
+      },
+      {
+        "lineNum": 265,
+        "originalLine": "className=\"flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-xs font-semibold text-left transition-colors focus:outline-none hover:bg-gray-100 dark:hover:bg-neutral-850 cursor-pointer\"",
+        "replacedLine": "className=\"flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-xs font-semibold text-left transition-colors focus:outline-none hover:bg-gray-100 dark:hover:bg-neutral-800 cursor-pointer\"",
+        "replacements": [
+          {
+            "original": "dark:hover:bg-neutral-850",
+            "replacement": "dark:hover:bg-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 274,
+        "originalLine": "className=\"flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-xs font-semibold text-left transition-colors focus:outline-none hover:bg-gray-100 dark:hover:bg-neutral-850 cursor-pointer\"",
+        "replacedLine": "className=\"flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-xs font-semibold text-left transition-colors focus:outline-none hover:bg-gray-100 dark:hover:bg-neutral-800 cursor-pointer\"",
+        "replacements": [
+          {
+            "original": "dark:hover:bg-neutral-850",
+            "replacement": "dark:hover:bg-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 283,
+        "originalLine": "className=\"flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-xs font-semibold text-left transition-colors focus:outline-none hover:bg-gray-100 dark:hover:bg-neutral-850 cursor-pointer\"",
+        "replacedLine": "className=\"flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-xs font-semibold text-left transition-colors focus:outline-none hover:bg-gray-100 dark:hover:bg-neutral-800 cursor-pointer\"",
+        "replacements": [
+          {
+            "original": "dark:hover:bg-neutral-850",
+            "replacement": "dark:hover:bg-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 292,
+        "originalLine": "className=\"flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-xs font-semibold text-left transition-colors focus:outline-none hover:bg-gray-100 dark:hover:bg-neutral-850 cursor-pointer\"",
+        "replacedLine": "className=\"flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-xs font-semibold text-left transition-colors focus:outline-none hover:bg-gray-100 dark:hover:bg-neutral-800 cursor-pointer\"",
+        "replacements": [
+          {
+            "original": "dark:hover:bg-neutral-850",
+            "replacement": "dark:hover:bg-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 300,
+        "originalLine": "<div className=\"flex items-center justify-between p-2.5.5 rounded-xl bg-gray-50 dark:bg-neutral-900 border border-neutral-800/5 dark:border-neutral-850\">",
+        "replacedLine": "<div className=\"flex items-center justify-between p-2.5.5 rounded-xl bg-gray-50 dark:bg-neutral-900 border border-neutral-800/5 dark:border-neutral-800\">",
+        "replacements": [
+          {
+            "original": "dark:border-neutral-850",
+            "replacement": "dark:border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 325,
+        "originalLine": "<div className=\"pt-2 border-t border-neutral-800/15 dark:border-neutral-850\">",
+        "replacedLine": "<div className=\"pt-2 border-t border-neutral-800/15 dark:border-neutral-800\">",
+        "replacements": [
+          {
+            "original": "dark:border-neutral-850",
+            "replacement": "dark:border-neutral-800"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "c:\\Users\\Ramesh Sahu\\antigravity\\Note-IT-AI\\src\\components\\NotificationsView.tsx",
+    "changes": [
+      {
+        "lineNum": 96,
+        "originalLine": "className=\"flex items-center gap-1 hover:bg-red-50 hover:text-red-600 hover:border-red-150 border border-gray-200 rounded-lg px-3 py-1.5 text-xs text-gray-700 font-semibold focus:outline-none\"",
+        "replacedLine": "className=\"flex items-center gap-1 hover:bg-red-50 hover:text-red-600 hover:border-red-200 border border-gray-200 rounded-lg px-3 py-1.5 text-xs text-gray-700 font-semibold focus:outline-none\"",
+        "replacements": [
+          {
+            "original": "hover:border-red-150",
+            "replacement": "hover:border-red-200"
+          }
+        ]
+      },
+      {
+        "lineNum": 124,
+        "originalLine": "<div className=\"bg-white rounded-2xl border border-gray-250 divide-y divide-gray-150 overflow-hidden shadow-xs\">",
+        "replacedLine": "<div className=\"bg-white rounded-2xl border border-gray-250 divide-y divide-gray-200 overflow-hidden shadow-xs\">",
+        "replacements": [
+          {
+            "original": "border-gray-250",
+            "replacement": "border-gray-250"
+          },
+          {
+            "original": "divide-gray-150",
+            "replacement": "divide-gray-200"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "c:\\Users\\Ramesh Sahu\\antigravity\\Note-IT-AI\\src\\components\\OnboardingView.tsx",
+    "changes": [
+      {
+        "lineNum": 256,
+        "originalLine": "<div className=\"border-b border-neutral-900/10 dark:border-neutral-850/40 pb-2 mb-2\">",
+        "replacedLine": "<div className=\"border-b border-neutral-900/10 dark:border-neutral-800/40 pb-2 mb-2\">",
+        "replacements": [
+          {
+            "original": "dark:border-neutral-850/40",
+            "replacement": "dark:border-neutral-800/40"
+          }
+        ]
+      },
+      {
+        "lineNum": 308,
+        "originalLine": "<div className=\"border-b border-neutral-900/10 dark:border-neutral-850/40 pb-2 mb-2\">",
+        "replacedLine": "<div className=\"border-b border-neutral-900/10 dark:border-neutral-800/40 pb-2 mb-2\">",
+        "replacements": [
+          {
+            "original": "dark:border-neutral-850/40",
+            "replacement": "dark:border-neutral-800/40"
+          }
+        ]
+      },
+      {
+        "lineNum": 337,
+        "originalLine": "<div className=\"border-b border-neutral-900/10 dark:border-neutral-850/40 pb-2 mb-2\">",
+        "replacedLine": "<div className=\"border-b border-neutral-900/10 dark:border-neutral-800/40 pb-2 mb-2\">",
+        "replacements": [
+          {
+            "original": "dark:border-neutral-850/40",
+            "replacement": "dark:border-neutral-800/40"
+          }
+        ]
+      },
+      {
+        "lineNum": 409,
+        "originalLine": "<div className=\"flex gap-3 pt-4 border-t border-neutral-900/10 dark:border-neutral-850/40\">",
+        "replacedLine": "<div className=\"flex gap-3 pt-4 border-t border-neutral-900/10 dark:border-neutral-800/40\">",
+        "replacements": [
+          {
+            "original": "dark:border-neutral-850/40",
+            "replacement": "dark:border-neutral-800/40"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "c:\\Users\\Ramesh Sahu\\antigravity\\Note-IT-AI\\src\\components\\PresentationWorkspace.tsx",
+    "changes": [
+      {
+        "lineNum": 325,
+        "originalLine": "<div className=\"text-center py-20 border border-dashed border-neutral-850 rounded-2xl bg-neutral-950/20\">",
+        "replacedLine": "<div className=\"text-center py-20 border border-dashed border-neutral-800 rounded-2xl bg-neutral-950/20\">",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 327,
+        "originalLine": "<p className=\"text-xs text-neutral-450 mt-3 font-mono\">No presentation blueprint created. Press \"Regenerate\" to build.</p>",
+        "replacedLine": "<p className=\"text-xs text-neutral-400 mt-3 font-mono\">No presentation blueprint created. Press \"Regenerate\" to build.</p>",
+        "replacements": [
+          {
+            "original": "text-neutral-450",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 333,
+        "originalLine": "const cardBorder = activeThemeColors.bg === \"FFFFFF\" ? \"border-gray-200\" : \"border-neutral-850\";",
+        "replacedLine": "const cardBorder = activeThemeColors.bg === \"FFFFFF\" ? \"border-gray-200\" : \"border-neutral-800\";",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 335,
+        "originalLine": "const textSecondary = activeThemeColors.bg === \"FFFFFF\" ? \"text-gray-600\" : \"text-neutral-450\";",
+        "replacedLine": "const textSecondary = activeThemeColors.bg === \"FFFFFF\" ? \"text-gray-600\" : \"text-neutral-400\";",
+        "replacements": [
+          {
+            "original": "text-neutral-450",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 371,
+        "originalLine": "<div className=\"absolute right-0 mt-1 w-36 bg-neutral-950 border border-neutral-850 rounded-lg shadow-xl hidden group-hover:block z-20 p-1\">",
+        "replacedLine": "<div className=\"absolute right-0 mt-1 w-36 bg-neutral-950 border border-neutral-800 rounded-lg shadow-xl hidden group-hover:block z-20 p-1\">",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 465,
+        "originalLine": "<div key={n} className=\"flex-1 p-1 bg-neutral-900 border border-neutral-850 rounded text-center\">",
+        "replacedLine": "<div key={n} className=\"flex-1 p-1 bg-neutral-900 border border-neutral-800 rounded text-center\">",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 489,
+        "originalLine": "<div className=\"px-1 py-0.5 bg-neutral-900 border border-neutral-850 rounded text-[6px]\">Node A</div>",
+        "replacedLine": "<div className=\"px-1 py-0.5 bg-neutral-900 border border-neutral-800 rounded text-[6px]\">Node A</div>",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 490,
+        "originalLine": "<div className=\"px-1 py-0.5 bg-neutral-900 border border-neutral-850 rounded text-[6px]\">Node B</div>",
+        "replacedLine": "<div className=\"px-1 py-0.5 bg-neutral-900 border border-neutral-800 rounded text-[6px]\">Node B</div>",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 574,
+        "originalLine": "className=\"h-full bg-indigo-550 rounded-full transition-all duration-500\"",
+        "replacedLine": "className=\"h-full bg-indigo-600 rounded-full transition-all duration-500\"",
+        "replacements": [
+          {
+            "original": "bg-indigo-550",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 591,
+        "originalLine": "className=\"w-full bg-neutral-950 border border-neutral-850 text-[10.5px] font-bold px-3 py-2 rounded-xl text-white appearance-none cursor-pointer focus:outline-none focus:border-indigo-500\"",
+        "replacedLine": "className=\"w-full bg-neutral-950 border border-neutral-800 text-[10.5px] font-bold px-3 py-2 rounded-xl text-white appearance-none cursor-pointer focus:outline-none focus:border-indigo-500\"",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 597,
+        "originalLine": "<ChevronDown className=\"absolute right-3 top-2.5 h-3.5 w-3.5 text-neutral-450 pointer-events-none\" />",
+        "replacedLine": "<ChevronDown className=\"absolute right-3 top-2.5 h-3.5 w-3.5 text-neutral-400 pointer-events-none\" />",
+        "replacements": [
+          {
+            "original": "text-neutral-450",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 613,
+        "originalLine": "? 'bg-indigo-650 text-white border-indigo-500 shadow-md'",
+        "replacedLine": "? 'bg-indigo-600 text-white border-indigo-500 shadow-md'",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 614,
+        "originalLine": ": 'bg-transparent border-neutral-900 text-neutral-450 hover:border-neutral-800'",
+        "replacedLine": ": 'bg-transparent border-neutral-900 text-neutral-400 hover:border-neutral-800'",
+        "replacements": [
+          {
+            "original": "text-neutral-450",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 635,
+        "originalLine": "? 'bg-indigo-650 text-white border-indigo-500 shadow-md'",
+        "replacedLine": "? 'bg-indigo-600 text-white border-indigo-500 shadow-md'",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 636,
+        "originalLine": ": 'bg-transparent border-neutral-900 text-neutral-450 hover:border-neutral-800'",
+        "replacedLine": ": 'bg-transparent border-neutral-900 text-neutral-400 hover:border-neutral-800'",
+        "replacements": [
+          {
+            "original": "text-neutral-450",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 664,
+        "originalLine": "? 'bg-indigo-650 border-indigo-500 text-white font-extrabold'",
+        "replacedLine": "? 'bg-indigo-600 border-indigo-500 text-white font-extrabold'",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 665,
+        "originalLine": ": 'bg-transparent border-neutral-900 text-neutral-450 hover:border-neutral-800'",
+        "replacedLine": ": 'bg-transparent border-neutral-900 text-neutral-400 hover:border-neutral-800'",
+        "replacements": [
+          {
+            "original": "text-neutral-450",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 685,
+        "originalLine": "className=\"w-full py-2.5 bg-indigo-650 hover:bg-indigo-600 disabled:opacity-40 active:scale-98 transition-all text-white text-[10px] font-black rounded-xl cursor-pointer flex items-center justify-center gap-2 shadow-md uppercase tracking-wider\"",
+        "replacedLine": "className=\"w-full py-2.5 bg-indigo-600 hover:bg-indigo-600 disabled:opacity-40 active:scale-98 transition-all text-white text-[10px] font-black rounded-xl cursor-pointer flex items-center justify-center gap-2 shadow-md uppercase tracking-wider\"",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "c:\\Users\\Ramesh Sahu\\antigravity\\Note-IT-AI\\src\\components\\PricingView.tsx",
+    "changes": [
+      {
+        "lineNum": 176,
+        "originalLine": "? 'bg-gray-100 text-gray-400 border border-gray-150'",
+        "replacedLine": "? 'bg-gray-100 text-gray-400 border border-gray-200'",
+        "replacements": [
+          {
+            "original": "border-gray-150",
+            "replacement": "border-gray-200"
+          }
+        ]
+      },
+      {
+        "lineNum": 198,
+        "originalLine": "<span className={isProPopular ? 'text-neutral-350' : 'text-gray-650'}>",
+        "replacedLine": "<span className={isProPopular ? 'text-neutral-300' : 'text-gray-600'}>",
+        "replacements": [
+          {
+            "original": "text-neutral-350",
+            "replacement": "text-neutral-300"
+          },
+          {
+            "original": "text-gray-650",
+            "replacement": "text-gray-600"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "c:\\Users\\Ramesh Sahu\\antigravity\\Note-IT-AI\\src\\components\\ProfileView.tsx",
+    "changes": [
+      {
+        "lineNum": 169,
+        "originalLine": "? 'bg-[#2563EB] text-white hover:bg-indigo-505'",
+        "replacedLine": "? 'bg-[#2563EB] text-white hover:bg-indigo-500'",
+        "replacements": [
+          {
+            "original": "hover:bg-indigo-505",
+            "replacement": "hover:bg-indigo-500"
+          }
+        ]
+      },
+      {
+        "lineNum": 170,
+        "originalLine": ": 'bg-black text-white hover:bg-neutral-850'",
+        "replacedLine": ": 'bg-black text-white hover:bg-neutral-800'",
+        "replacements": [
+          {
+            "original": "hover:bg-neutral-850",
+            "replacement": "hover:bg-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 183,
+        "originalLine": "theme === 'dark' ? 'bg-[#121318]/40 border-neutral-855' : 'bg-white border-gray-200'",
+        "replacedLine": "theme === 'dark' ? 'bg-[#121318]/40 border-neutral-855' : 'bg-white border-gray-200'",
+        "replacements": [
+          {
+            "original": "border-neutral-855",
+            "replacement": "border-neutral-855"
+          }
+        ]
+      },
+      {
+        "lineNum": 193,
+        "originalLine": "<div className=\"h-28 w-28 rounded-full border-2 border-dashed border-indigo-500/50 bg-gray-100 dark:bg-neutral-800 flex items-center justify-center text-gray-450 dark:text-neutral-500\">",
+        "replacedLine": "<div className=\"h-28 w-28 rounded-full border-2 border-dashed border-indigo-500/50 bg-gray-100 dark:bg-neutral-800 flex items-center justify-center text-gray-400 dark:text-neutral-500\">",
+        "replacements": [
+          {
+            "original": "text-gray-450",
+            "replacement": "text-gray-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 208,
+        "originalLine": "<p className=\"text-[11px] font-medium text-gray-405 leading-normal truncate max-w-[180px]\">",
+        "replacedLine": "<p className=\"text-[11px] font-medium text-gray-405 leading-normal truncate max-w-[180px]\">",
+        "replacements": [
+          {
+            "original": "text-gray-405",
+            "replacement": "text-gray-405"
+          }
+        ]
+      },
+      {
+        "lineNum": 218,
+        "originalLine": "? 'border-neutral-800 hover:bg-neutral-850 text-neutral-300'",
+        "replacedLine": "? 'border-neutral-800 hover:bg-neutral-800 text-neutral-300'",
+        "replacements": [
+          {
+            "original": "hover:bg-neutral-850",
+            "replacement": "hover:bg-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 236,
+        "originalLine": ": 'border-gray-200 hover:bg-red-50 text-red-650 text-gray-650'",
+        "replacedLine": ": 'border-gray-200 hover:bg-red-50 text-red-600 text-gray-600'",
+        "replacements": [
+          {
+            "original": "text-red-650",
+            "replacement": "text-red-600"
+          },
+          {
+            "original": "text-gray-650",
+            "replacement": "text-gray-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 246,
+        "originalLine": "? 'bg-neutral-800 hover:bg-neutral-700 text-white border-neutral-850'",
+        "replacedLine": "? 'bg-neutral-800 hover:bg-neutral-700 text-white border-neutral-800'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 247,
+        "originalLine": ": 'bg-black hover:bg-neutral-850 text-white border-black'",
+        "replacedLine": ": 'bg-black hover:bg-neutral-800 text-white border-black'",
+        "replacements": [
+          {
+            "original": "hover:bg-neutral-850",
+            "replacement": "hover:bg-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 266,
+        "originalLine": "theme === 'dark' ? 'bg-[#121318]/40 border-neutral-850' : 'bg-white border-gray-200'",
+        "replacedLine": "theme === 'dark' ? 'bg-[#121318]/40 border-neutral-800' : 'bg-white border-gray-200'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 268,
+        "originalLine": "<h3 className=\"font-sans font-extrabold text-base border-b pb-3 border-gray-150/60 dark:border-neutral-800\">",
+        "replacedLine": "<h3 className=\"font-sans font-extrabold text-base border-b pb-3 border-gray-200/60 dark:border-neutral-800\">",
+        "replacements": [
+          {
+            "original": "border-gray-150/60",
+            "replacement": "border-gray-200/60"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "c:\\Users\\Ramesh Sahu\\antigravity\\Note-IT-AI\\src\\components\\QuizView.tsx",
+    "changes": [
+      {
+        "lineNum": 373,
+        "originalLine": "theme === 'dark' ? 'bg-neutral-950 border-neutral-850' : 'bg-gray-100 border-gray-200'",
+        "replacedLine": "theme === 'dark' ? 'bg-neutral-950 border-neutral-800' : 'bg-gray-100 border-gray-200'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 382,
+        "originalLine": ": 'text-neutral-450 hover:text-white'",
+        "replacedLine": ": 'text-neutral-400 hover:text-white'",
+        "replacements": [
+          {
+            "original": "text-neutral-450",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 398,
+        "originalLine": "theme === 'dark' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-550/10 text-indigo-650'",
+        "replacedLine": "theme === 'dark' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-500/10 text-indigo-600'",
+        "replacements": [
+          {
+            "original": "bg-indigo-550/10",
+            "replacement": "bg-indigo-500/10"
+          },
+          {
+            "original": "text-indigo-650",
+            "replacement": "text-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 412,
+        "originalLine": "theme === 'dark' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-green-55/10 text-green-600'",
+        "replacedLine": "theme === 'dark' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-green-55/10 text-green-600'",
+        "replacements": [
+          {
+            "original": "bg-green-55/10",
+            "replacement": "bg-green-55/10"
+          }
+        ]
+      },
+      {
+        "lineNum": 480,
+        "originalLine": "theme === 'dark' ? 'border-neutral-850' : 'border-gray-100'",
+        "replacedLine": "theme === 'dark' ? 'border-neutral-800' : 'border-gray-100'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 595,
+        "originalLine": "theme === 'dark' ? 'bg-neutral-950/50 border-neutral-900/60 text-neutral-350' : 'bg-gray-50 border-gray-100 text-gray-650'",
+        "replacedLine": "theme === 'dark' ? 'bg-neutral-950/50 border-neutral-900/60 text-neutral-300' : 'bg-gray-50 border-gray-100 text-gray-600'",
+        "replacements": [
+          {
+            "original": "text-neutral-350",
+            "replacement": "text-neutral-300"
+          },
+          {
+            "original": "text-gray-650",
+            "replacement": "text-gray-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 630,
+        "originalLine": ": (theme === 'dark' ? 'border-neutral-850 bg-neutral-900 text-white hover:bg-neutral-850' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50')",
+        "replacedLine": ": (theme === 'dark' ? 'border-neutral-800 bg-neutral-900 text-white hover:bg-neutral-800' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50')",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          },
+          {
+            "original": "hover:bg-neutral-850",
+            "replacement": "hover:bg-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 639,
+        "originalLine": "theme === 'dark' ? 'border-neutral-850 bg-neutral-900 text-indigo-400 hover:bg-neutral-850' : 'border-gray-200 bg-white text-indigo-600 hover:bg-gray-50'",
+        "replacedLine": "theme === 'dark' ? 'border-neutral-800 bg-neutral-900 text-indigo-400 hover:bg-neutral-800' : 'border-gray-200 bg-white text-indigo-600 hover:bg-gray-50'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          },
+          {
+            "original": "hover:bg-neutral-850",
+            "replacement": "hover:bg-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 839,
+        "originalLine": "theme === 'dark' ? 'bg-neutral-900 border-neutral-850 text-neutral-300' : 'bg-white border-gray-200 text-gray-700'",
+        "replacedLine": "theme === 'dark' ? 'bg-neutral-900 border-neutral-800 text-neutral-300' : 'bg-white border-gray-200 text-gray-700'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 847,
+        "originalLine": "theme === 'dark' ? 'bg-neutral-900 border-neutral-850 text-neutral-300' : 'bg-white border-gray-200 text-gray-700'",
+        "replacedLine": "theme === 'dark' ? 'bg-neutral-900 border-neutral-800 text-neutral-300' : 'bg-white border-gray-200 text-gray-700'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 901,
+        "originalLine": "badgeClass = \"bg-red-650 text-white border-red-650\";",
+        "replacedLine": "badgeClass = \"bg-red-600 text-white border-red-600\";",
+        "replacements": [
+          {
+            "original": "bg-red-650",
+            "replacement": "bg-red-600"
+          },
+          {
+            "original": "border-red-650",
+            "replacement": "border-red-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 957,
+        "originalLine": "<strong className={theme === 'dark' ? 'text-neutral-200' : 'text-gray-850'}>Correct Choice: </strong>",
+        "replacedLine": "<strong className={theme === 'dark' ? 'text-neutral-200' : 'text-gray-800'}>Correct Choice: </strong>",
+        "replacements": [
+          {
+            "original": "text-gray-850",
+            "replacement": "text-gray-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 963,
+        "originalLine": "<strong className={theme === 'dark' ? 'text-neutral-200' : 'text-gray-855'}>Why this is correct: </strong>",
+        "replacedLine": "<strong className={theme === 'dark' ? 'text-neutral-200' : 'text-gray-855'}>Why this is correct: </strong>",
+        "replacements": [
+          {
+            "original": "text-gray-855",
+            "replacement": "text-gray-855"
+          }
+        ]
+      },
+      {
+        "lineNum": 988,
+        "originalLine": "? 'bg-white text-black hover:bg-neutral-100 disabled:opacity-30 disabled:bg-neutral-750 disabled:text-neutral-500'",
+        "replacedLine": "? 'bg-white text-black hover:bg-neutral-100 disabled:opacity-30 disabled:bg-neutral-700 disabled:text-neutral-500'",
+        "replacements": [
+          {
+            "original": "disabled:bg-neutral-750",
+            "replacement": "disabled:bg-neutral-700"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "c:\\Users\\Ramesh Sahu\\antigravity\\Note-IT-AI\\src\\components\\ResearchHubView.tsx",
+    "changes": [
+      {
+        "lineNum": 415,
+        "originalLine": "<p className=\"text-xs md:text-sm text-neutral-350 leading-relaxed font-sans select-text\">",
+        "replacedLine": "<p className=\"text-xs md:text-sm text-neutral-300 leading-relaxed font-sans select-text\">",
+        "replacements": [
+          {
+            "original": "text-neutral-350",
+            "replacement": "text-neutral-300"
+          }
+        ]
+      },
+      {
+        "lineNum": 422,
+        "originalLine": "<p key={idx} className=\"text-xs md:text-sm text-neutral-350 leading-relaxed font-sans py-1.5 select-text\">",
+        "replacedLine": "<p key={idx} className=\"text-xs md:text-sm text-neutral-300 leading-relaxed font-sans py-1.5 select-text\">",
+        "replacements": [
+          {
+            "original": "text-neutral-350",
+            "replacement": "text-neutral-300"
+          }
+        ]
+      },
+      {
+        "lineNum": 451,
+        "originalLine": "className=\"rounded-xl bg-neutral-900 border border-neutral-850 hover:bg-neutral-850 px-4 py-2.5 text-xs font-black text-white transition-all cursor-pointer focus:outline-none\"",
+        "replacedLine": "className=\"rounded-xl bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 px-4 py-2.5 text-xs font-black text-white transition-all cursor-pointer focus:outline-none\"",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          },
+          {
+            "original": "hover:bg-neutral-850",
+            "replacement": "hover:bg-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 491,
+        "originalLine": "<Sparkles className=\"h-10 w-10 text-indigo-450 animate-pulse\" />",
+        "replacedLine": "<Sparkles className=\"h-10 w-10 text-indigo-400 animate-pulse\" />",
+        "replacements": [
+          {
+            "original": "text-indigo-450",
+            "replacement": "text-indigo-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 492,
+        "originalLine": "<div className=\"absolute -bottom-1 text-[9px] font-black tracking-widest text-indigo-450 font-mono\">",
+        "replacedLine": "<div className=\"absolute -bottom-1 text-[9px] font-black tracking-widest text-indigo-400 font-mono\">",
+        "replacements": [
+          {
+            "original": "text-indigo-450",
+            "replacement": "text-indigo-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 537,
+        "originalLine": "className=\"group flex items-center gap-2 bg-neutral-900 hover:bg-neutral-850 px-4 py-2.5 rounded-xl text-xs font-bold transition-all border border-neutral-850/60 focus:outline-none\"",
+        "replacedLine": "className=\"group flex items-center gap-2 bg-neutral-900 hover:bg-neutral-800 px-4 py-2.5 rounded-xl text-xs font-bold transition-all border border-neutral-800/60 focus:outline-none\"",
+        "replacements": [
+          {
+            "original": "hover:bg-neutral-850",
+            "replacement": "hover:bg-neutral-800"
+          },
+          {
+            "original": "border-neutral-850/60",
+            "replacement": "border-neutral-800/60"
+          }
+        ]
+      },
+      {
+        "lineNum": 551,
+        "originalLine": "className=\"flex items-center gap-1.5 py-2 px-3 bg-indigo-500/15 border border-indigo-500/10 rounded-lg text-[11px] font-bold text-indigo-400 hover:bg-indigo-550/20 active:scale-95 transition-all focus:outline-none\"",
+        "replacedLine": "className=\"flex items-center gap-1.5 py-2 px-3 bg-indigo-500/15 border border-indigo-500/10 rounded-lg text-[11px] font-bold text-indigo-400 hover:bg-indigo-500/20 active:scale-95 transition-all focus:outline-none\"",
+        "replacements": [
+          {
+            "original": "hover:bg-indigo-550/20",
+            "replacement": "hover:bg-indigo-500/20"
+          }
+        ]
+      },
+      {
+        "lineNum": 582,
+        "originalLine": "? 'bg-indigo-500/10 border-indigo-500/35 text-indigo-400 shadow-lg shadow-indigo-550/5'",
+        "replacedLine": "? 'bg-indigo-500/10 border-indigo-500/35 text-indigo-400 shadow-lg shadow-indigo-500/5'",
+        "replacements": [
+          {
+            "original": "shadow-indigo-550/5",
+            "replacement": "shadow-indigo-500/5"
+          }
+        ]
+      },
+      {
+        "lineNum": 583,
+        "originalLine": ": 'bg-[#0c0d12]/60 border-neutral-900/60 text-neutral-450 hover:text-neutral-200 hover:bg-[#121318]'",
+        "replacedLine": ": 'bg-[#0c0d12]/60 border-neutral-900/60 text-neutral-400 hover:text-neutral-200 hover:bg-[#121318]'",
+        "replacements": [
+          {
+            "original": "text-neutral-450",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 609,
+        "originalLine": "className=\"self-start flex items-center gap-1.5 bg-neutral-900 hover:bg-neutral-850 py-2.5 px-4 rounded-xl border border-neutral-850 text-xs font-semibold focus:outline-none\"",
+        "replacedLine": "className=\"self-start flex items-center gap-1.5 bg-neutral-900 hover:bg-neutral-800 py-2.5 px-4 rounded-xl border border-neutral-800 text-xs font-semibold focus:outline-none\"",
+        "replacements": [
+          {
+            "original": "hover:bg-neutral-850",
+            "replacement": "hover:bg-neutral-800"
+          },
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 618,
+        "originalLine": "<div className=\"text-xs md:text-sm text-neutral-350 leading-relaxed font-serif whitespace-pre-wrap p-5 bg-neutral-950/45 rounded-2xl border border-neutral-900/60 max-h-[500px] overflow-y-auto\">",
+        "replacedLine": "<div className=\"text-xs md:text-sm text-neutral-300 leading-relaxed font-serif whitespace-pre-wrap p-5 bg-neutral-950/45 rounded-2xl border border-neutral-900/60 max-h-[500px] overflow-y-auto\">",
+        "replacements": [
+          {
+            "original": "text-neutral-350",
+            "replacement": "text-neutral-300"
+          }
+        ]
+      },
+      {
+        "lineNum": 623,
+        "originalLine": "<FileText className=\"h-10 w-10 mx-auto opacity-35 mb-3 text-indigo-405\" />",
+        "replacedLine": "<FileText className=\"h-10 w-10 mx-auto opacity-35 mb-3 text-indigo-405\" />",
+        "replacements": [
+          {
+            "original": "text-indigo-405",
+            "replacement": "text-indigo-405"
+          }
+        ]
+      },
+      {
+        "lineNum": 624,
+        "originalLine": "<p className=\"font-bold text-xs text-neutral-350\">No Summary Available</p>",
+        "replacedLine": "<p className=\"font-bold text-xs text-neutral-300\">No Summary Available</p>",
+        "replacements": [
+          {
+            "original": "text-neutral-350",
+            "replacement": "text-neutral-300"
+          }
+        ]
+      },
+      {
+        "lineNum": 647,
+        "originalLine": "className=\"self-start flex items-center gap-1.5 bg-neutral-900 hover:bg-neutral-850 py-2.5 px-4 rounded-xl border border-neutral-850 text-xs font-semibold focus:outline-none\"",
+        "replacedLine": "className=\"self-start flex items-center gap-1.5 bg-neutral-900 hover:bg-neutral-800 py-2.5 px-4 rounded-xl border border-neutral-800 text-xs font-semibold focus:outline-none\"",
+        "replacements": [
+          {
+            "original": "hover:bg-neutral-850",
+            "replacement": "hover:bg-neutral-800"
+          },
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 726,
+        "originalLine": "className=\"px-2 py-1 rounded bg-neutral-900 border border-neutral-850 hover:border-pink-500/30 text-[10px] font-mono font-bold text-neutral-400 hover:text-white transition-all focus:outline-none cursor-pointer\"",
+        "replacedLine": "className=\"px-2 py-1 rounded bg-neutral-900 border border-neutral-800 hover:border-pink-500/30 text-[10px] font-mono font-bold text-neutral-400 hover:text-white transition-all focus:outline-none cursor-pointer\"",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 735,
+        "originalLine": "<div className=\"space-y-4 font-serif text-xs md:text-sm text-neutral-350 leading-relaxed whitespace-pre-wrap p-4 bg-neutral-950/45 rounded-2xl border border-neutral-900/60 max-h-[500px] overflow-y-auto\">",
+        "replacedLine": "<div className=\"space-y-4 font-serif text-xs md:text-sm text-neutral-300 leading-relaxed whitespace-pre-wrap p-4 bg-neutral-950/45 rounded-2xl border border-neutral-900/60 max-h-[500px] overflow-y-auto\">",
+        "replacements": [
+          {
+            "original": "text-neutral-350",
+            "replacement": "text-neutral-300"
+          }
+        ]
+      },
+      {
+        "lineNum": 739,
+        "originalLine": "<div className=\"text-center py-12 text-neutral-550 font-sans\">",
+        "replacedLine": "<div className=\"text-center py-12 text-neutral-500 font-sans\">",
+        "replacements": [
+          {
+            "original": "text-neutral-550",
+            "replacement": "text-neutral-500"
+          }
+        ]
+      },
+      {
+        "lineNum": 740,
+        "originalLine": "<Volume2 className=\"h-10 w-10 mx-auto opacity-35 mb-3 text-indigo-450\" />",
+        "replacedLine": "<Volume2 className=\"h-10 w-10 mx-auto opacity-35 mb-3 text-indigo-400\" />",
+        "replacements": [
+          {
+            "original": "text-indigo-450",
+            "replacement": "text-indigo-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 805,
+        "originalLine": "<div className=\"overflow-y-auto max-h-[140px] text-xs md:text-sm text-neutral-350 leading-relaxed font-sans px-2 text-center select-text\">",
+        "replacedLine": "<div className=\"overflow-y-auto max-h-[140px] text-xs md:text-sm text-neutral-300 leading-relaxed font-sans px-2 text-center select-text\">",
+        "replacements": [
+          {
+            "original": "text-neutral-350",
+            "replacement": "text-neutral-300"
+          }
+        ]
+      },
+      {
+        "lineNum": 827,
+        "originalLine": ": 'bg-neutral-900 text-neutral-300 hover:bg-neutral-850 border border-neutral-850'",
+        "replacedLine": ": 'bg-neutral-900 text-neutral-300 hover:bg-neutral-800 border border-neutral-800'",
+        "replacements": [
+          {
+            "original": "hover:bg-neutral-850",
+            "replacement": "hover:bg-neutral-800"
+          },
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 837,
+        "originalLine": ": 'bg-neutral-900 text-neutral-300 hover:bg-neutral-850 border border-neutral-850'",
+        "replacedLine": ": 'bg-neutral-900 text-neutral-300 hover:bg-neutral-800 border border-neutral-800'",
+        "replacements": [
+          {
+            "original": "hover:bg-neutral-850",
+            "replacement": "hover:bg-neutral-800"
+          },
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 851,
+        "originalLine": "className=\"p-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-850 border border-neutral-850 text-white disabled:opacity-30 disabled:pointer-events-none focus:outline-none\"",
+        "replacedLine": "className=\"p-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-white disabled:opacity-30 disabled:pointer-events-none focus:outline-none\"",
+        "replacements": [
+          {
+            "original": "hover:bg-neutral-850",
+            "replacement": "hover:bg-neutral-800"
+          },
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 864,
+        "originalLine": "className=\"p-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-850 border border-neutral-850 text-white disabled:opacity-30 disabled:pointer-events-none focus:outline-none\"",
+        "replacedLine": "className=\"p-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-white disabled:opacity-30 disabled:pointer-events-none focus:outline-none\"",
+        "replacements": [
+          {
+            "original": "hover:bg-neutral-850",
+            "replacement": "hover:bg-neutral-800"
+          },
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 955,
+        "originalLine": "<div className=\"rounded-xl bg-neutral-950 p-4 border border-dashed border-neutral-900 text-xs text-neutral-450 leading-relaxed font-sans mt-3\">",
+        "replacedLine": "<div className=\"rounded-xl bg-neutral-950 p-4 border border-dashed border-neutral-900 text-xs text-neutral-400 leading-relaxed font-sans mt-3\">",
+        "replacements": [
+          {
+            "original": "text-neutral-450",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 971,
+        "originalLine": "className=\"w-full sm:w-auto bg-emerald-500 hover:bg-emerald-550 text-white font-bold rounded-xl py-3 px-6 text-xs shadow-md transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer focus:outline-none\"",
+        "replacedLine": "className=\"w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl py-3 px-6 text-xs shadow-md transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer focus:outline-none\"",
+        "replacements": [
+          {
+            "original": "hover:bg-emerald-550",
+            "replacement": "hover:bg-emerald-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 986,
+        "originalLine": "className=\"w-full sm:w-auto flex items-center justify-center gap-2 bg-neutral-900 hover:bg-neutral-850 px-5 py-3 rounded-xl border border-neutral-850 text-xs font-bold text-white cursor-pointer focus:outline-none\"",
+        "replacedLine": "className=\"w-full sm:w-auto flex items-center justify-center gap-2 bg-neutral-900 hover:bg-neutral-800 px-5 py-3 rounded-xl border border-neutral-800 text-xs font-bold text-white cursor-pointer focus:outline-none\"",
+        "replacements": [
+          {
+            "original": "hover:bg-neutral-850",
+            "replacement": "hover:bg-neutral-800"
+          },
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 1048,
+        "originalLine": ": 'bg-[#0d0e12] border-neutral-850 text-neutral-300 hover:border-cyan-500/35 hover:scale-102'",
+        "replacedLine": ": 'bg-[#0d0e12] border-neutral-800 text-neutral-300 hover:border-cyan-500/35 hover:scale-102'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 1138,
+        "originalLine": "<div className=\"absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-rose-500 via-rose-450 to-indigo-550 opacity-80\" />",
+        "replacedLine": "<div className=\"absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-rose-500 via-rose-400 to-indigo-500 opacity-80\" />",
+        "replacements": [
+          {
+            "original": "via-rose-450",
+            "replacement": "via-rose-400"
+          },
+          {
+            "original": "to-indigo-550",
+            "replacement": "to-indigo-500"
+          }
+        ]
+      },
+      {
+        "lineNum": 1142,
+        "originalLine": "theme === 'dark' ? 'text-rose-450' : 'text-rose-600'",
+        "replacedLine": "theme === 'dark' ? 'text-rose-400' : 'text-rose-600'",
+        "replacements": [
+          {
+            "original": "text-rose-450",
+            "replacement": "text-rose-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 1147,
+        "originalLine": "theme === 'dark' ? 'bg-rose-500/10 text-rose-400' : 'bg-rose-50 text-rose-605 border border-rose-100'",
+        "replacedLine": "theme === 'dark' ? 'bg-rose-500/10 text-rose-400' : 'bg-rose-50 text-rose-605 border border-rose-100'",
+        "replacements": [
+          {
+            "original": "text-rose-605",
+            "replacement": "text-rose-605"
+          }
+        ]
+      },
+      {
+        "lineNum": 1167,
+        "originalLine": "theme === 'dark' ? 'text-rose-400' : 'text-rose-650'",
+        "replacedLine": "theme === 'dark' ? 'text-rose-400' : 'text-rose-600'",
+        "replacements": [
+          {
+            "original": "text-rose-650",
+            "replacement": "text-rose-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 1182,
+        "originalLine": "theme === 'dark' ? 'text-neutral-400' : 'text-gray-650'",
+        "replacedLine": "theme === 'dark' ? 'text-neutral-400' : 'text-gray-600'",
+        "replacements": [
+          {
+            "original": "text-gray-650",
+            "replacement": "text-gray-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 1188,
+        "originalLine": "theme === 'dark' ? 'text-neutral-550' : 'text-gray-500'",
+        "replacedLine": "theme === 'dark' ? 'text-neutral-500' : 'text-gray-500'",
+        "replacements": [
+          {
+            "original": "text-neutral-550",
+            "replacement": "text-neutral-500"
+          }
+        ]
+      },
+      {
+        "lineNum": 1202,
+        "originalLine": "? 'bg-neutral-900 hover:bg-neutral-850 border-neutral-850 text-white'",
+        "replacedLine": "? 'bg-neutral-900 hover:bg-neutral-800 border-neutral-800 text-white'",
+        "replacements": [
+          {
+            "original": "hover:bg-neutral-850",
+            "replacement": "hover:bg-neutral-800"
+          },
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 1232,
+        "originalLine": "? 'bg-neutral-900 hover:bg-neutral-850 border-neutral-850 text-white'",
+        "replacedLine": "? 'bg-neutral-900 hover:bg-neutral-800 border-neutral-800 text-white'",
+        "replacements": [
+          {
+            "original": "hover:bg-neutral-850",
+            "replacement": "hover:bg-neutral-800"
+          },
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 1323,
+        "originalLine": "<div className=\"flex justify-between text-[10px] font-mono text-neutral-550\">",
+        "replacedLine": "<div className=\"flex justify-between text-[10px] font-mono text-neutral-500\">",
+        "replacements": [
+          {
+            "original": "text-neutral-550",
+            "replacement": "text-neutral-500"
+          }
+        ]
+      },
+      {
+        "lineNum": 1416,
+        "originalLine": "completedMilestones[milestone.id] ? 'line-through text-neutral-550' : 'text-neutral-400'",
+        "replacedLine": "completedMilestones[milestone.id] ? 'line-through text-neutral-500' : 'text-neutral-400'",
+        "replacements": [
+          {
+            "original": "text-neutral-550",
+            "replacement": "text-neutral-500"
+          }
+        ]
+      },
+      {
+        "lineNum": 1431,
+        "originalLine": "<span className=\"text-[9px] font-mono font-bold uppercase text-neutral-450\">Syllabus Handbook</span>",
+        "replacedLine": "<span className=\"text-[9px] font-mono font-bold uppercase text-neutral-400\">Syllabus Handbook</span>",
+        "replacements": [
+          {
+            "original": "text-neutral-450",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 1449,
+        "originalLine": "<p className=\"font-serif italic text-neutral-350\">",
+        "replacedLine": "<p className=\"font-serif italic text-neutral-300\">",
+        "replacements": [
+          {
+            "original": "text-neutral-350",
+            "replacement": "text-neutral-300"
+          }
+        ]
+      },
+      {
+        "lineNum": 1514,
+        "originalLine": "className=\"px-2.5 py-1.5 rounded-lg bg-neutral-900 border border-neutral-850 text-neutral-400 font-sans text-[10px] font-bold focus:outline-none cursor-pointer hover:bg-neutral-850 transition-all\"",
+        "replacedLine": "className=\"px-2.5 py-1.5 rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-400 font-sans text-[10px] font-bold focus:outline-none cursor-pointer hover:bg-neutral-800 transition-all\"",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          },
+          {
+            "original": "hover:bg-neutral-850",
+            "replacement": "hover:bg-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 1596,
+        "originalLine": "? 'bg-indigo-500/10 border-indigo-500/35 text-indigo-400 shadow-lg shadow-indigo-550/5'",
+        "replacedLine": "? 'bg-indigo-500/10 border-indigo-500/35 text-indigo-400 shadow-lg shadow-indigo-500/5'",
+        "replacements": [
+          {
+            "original": "shadow-indigo-550/5",
+            "replacement": "shadow-indigo-500/5"
+          }
+        ]
+      },
+      {
+        "lineNum": 1598,
+        "originalLine": "? 'bg-[#0c0d12]/60 border-neutral-900/60 text-neutral-450 hover:text-neutral-200 hover:bg-[#121318]'",
+        "replacedLine": "? 'bg-[#0c0d12]/60 border-neutral-900/60 text-neutral-400 hover:text-neutral-200 hover:bg-[#121318]'",
+        "replacements": [
+          {
+            "original": "text-neutral-450",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 1626,
+        "originalLine": "theme === 'dark' ? 'text-neutral-450' : 'text-gray-600'",
+        "replacedLine": "theme === 'dark' ? 'text-neutral-400' : 'text-gray-600'",
+        "replacements": [
+          {
+            "original": "text-neutral-450",
+            "replacement": "text-neutral-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 1728,
+        "originalLine": "theme === 'dark' ? 'text-orange-400' : 'text-orange-655'",
+        "replacedLine": "theme === 'dark' ? 'text-orange-400' : 'text-orange-600'",
+        "replacements": [
+          {
+            "original": "text-orange-655",
+            "replacement": "text-orange-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 1762,
+        "originalLine": "theme === 'dark' ? 'text-emerald-400' : 'text-emerald-655'",
+        "replacedLine": "theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'",
+        "replacements": [
+          {
+            "original": "text-emerald-655",
+            "replacement": "text-emerald-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 1944,
+        "originalLine": "className=\"flex items-center gap-1 rounded-xl bg-indigo-600 hover:bg-indigo-550 text-[11px] font-black px-3.5 py-2 text-white transition-all active:scale-95 shadow-lg focus:outline-none cursor-pointer\"",
+        "replacedLine": "className=\"flex items-center gap-1 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-[11px] font-black px-3.5 py-2 text-white transition-all active:scale-95 shadow-lg focus:outline-none cursor-pointer\"",
+        "replacements": [
+          {
+            "original": "hover:bg-indigo-550",
+            "replacement": "hover:bg-indigo-700"
+          }
+        ]
+      },
+      {
+        "lineNum": 1966,
+        "originalLine": "theme === 'dark' ? 'text-neutral-400 hover:text-white' : 'text-gray-550 hover:text-gray-800'",
+        "replacedLine": "theme === 'dark' ? 'text-neutral-400 hover:text-white' : 'text-gray-500 hover:text-gray-800'",
+        "replacements": [
+          {
+            "original": "text-gray-550",
+            "replacement": "text-gray-500"
+          }
+        ]
+      },
+      {
+        "lineNum": 1984,
+        "originalLine": "theme === 'dark' ? 'border-neutral-900 bg-neutral-955 text-white' : 'border-gray-200 bg-gray-50 text-gray-800'",
+        "replacedLine": "theme === 'dark' ? 'border-neutral-900 bg-neutral-950 text-white' : 'border-gray-200 bg-gray-50 text-gray-800'",
+        "replacements": [
+          {
+            "original": "bg-neutral-955",
+            "replacement": "bg-neutral-950"
+          }
+        ]
+      },
+      {
+        "lineNum": 1999,
+        "originalLine": "className={`w-full rounded-xl border text-xs font-medium placeholder-neutral-550 outline-none p-3.5 transition-all focus:border-indigo-500 resize-none font-serif leading-relaxed ${",
+        "replacedLine": "className={`w-full rounded-xl border text-xs font-medium placeholder-neutral-500 outline-none p-3.5 transition-all focus:border-indigo-500 resize-none font-serif leading-relaxed ${",
+        "replacements": [
+          {
+            "original": "placeholder-neutral-550",
+            "replacement": "placeholder-neutral-500"
+          }
+        ]
+      },
+      {
+        "lineNum": 2007,
+        "originalLine": "className=\"w-full py-3 rounded-xl font-sans text-xs font-black tracking-wide text-center bg-indigo-600 hover:bg-indigo-550 text-white transition-all focus:outline-none cursor-pointer\"",
+        "replacedLine": "className=\"w-full py-3 rounded-xl font-sans text-xs font-black tracking-wide text-center bg-indigo-600 hover:bg-indigo-700 text-white transition-all focus:outline-none cursor-pointer\"",
+        "replacements": [
+          {
+            "original": "hover:bg-indigo-550",
+            "replacement": "hover:bg-indigo-700"
+          }
+        ]
+      },
+      {
+        "lineNum": 2040,
+        "originalLine": "<FileText className=\"h-9 w-9 mb-2 opacity-30 text-indigo-450\" />",
+        "replacedLine": "<FileText className=\"h-9 w-9 mb-2 opacity-30 text-indigo-400\" />",
+        "replacements": [
+          {
+            "original": "text-indigo-450",
+            "replacement": "text-indigo-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 2099,
+        "originalLine": "theme === 'dark' ? 'text-neutral-500 border-neutral-900/50' : 'text-gray-450 border-gray-200'",
+        "replacedLine": "theme === 'dark' ? 'text-neutral-500 border-neutral-900/50' : 'text-gray-400 border-gray-200'",
+        "replacements": [
+          {
+            "original": "text-gray-450",
+            "replacement": "text-gray-400"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "c:\\Users\\Ramesh Sahu\\antigravity\\Note-IT-AI\\src\\components\\SettingsView.tsx",
+    "changes": [
+      {
+        "lineNum": 190,
+        "originalLine": "? 'bg-indigo-650 text-white shadow-xs'",
+        "replacedLine": "? 'bg-indigo-600 text-white shadow-xs'",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 222,
+        "originalLine": "<h3 className={`font-sans font-bold text-base ${theme === 'dark' ? 'text-white' : 'text-gray-955'}`}>User Profile</h3>",
+        "replacedLine": "<h3 className={`font-sans font-bold text-base ${theme === 'dark' ? 'text-white' : 'text-gray-950'}`}>User Profile</h3>",
+        "replacements": [
+          {
+            "original": "text-gray-955",
+            "replacement": "text-gray-950"
+          }
+        ]
+      },
+      {
+        "lineNum": 339,
+        "originalLine": "? 'bg-indigo-650 text-white hover:bg-indigo-600'",
+        "replacedLine": "? 'bg-indigo-600 text-white hover:bg-indigo-600'",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 352,
+        "originalLine": "<h3 className={`font-sans font-bold text-base ${theme === 'dark' ? 'text-white' : 'text-gray-955'}`}>AI Generator Parameters</h3>",
+        "replacedLine": "<h3 className={`font-sans font-bold text-base ${theme === 'dark' ? 'text-white' : 'text-gray-950'}`}>AI Generator Parameters</h3>",
+        "replacements": [
+          {
+            "original": "text-gray-955",
+            "replacement": "text-gray-950"
+          }
+        ]
+      },
+      {
+        "lineNum": 358,
+        "originalLine": "theme === 'dark' ? 'border-neutral-900 hover:bg-neutral-950/40' : 'border-gray-150 hover:bg-gray-50/50'",
+        "replacedLine": "theme === 'dark' ? 'border-neutral-900 hover:bg-neutral-950/40' : 'border-gray-200 hover:bg-gray-50/50'",
+        "replacements": [
+          {
+            "original": "border-gray-150",
+            "replacement": "border-gray-200"
+          }
+        ]
+      },
+      {
+        "lineNum": 377,
+        "originalLine": "theme === 'dark' ? 'border-neutral-900 hover:bg-neutral-950/40' : 'border-gray-150 hover:bg-gray-50/50'",
+        "replacedLine": "theme === 'dark' ? 'border-neutral-900 hover:bg-neutral-950/40' : 'border-gray-200 hover:bg-gray-50/50'",
+        "replacements": [
+          {
+            "original": "border-gray-150",
+            "replacement": "border-gray-200"
+          }
+        ]
+      },
+      {
+        "lineNum": 396,
+        "originalLine": "theme === 'dark' ? 'border-neutral-900 hover:bg-neutral-950/40' : 'border-gray-150 hover:bg-gray-50/50'",
+        "replacedLine": "theme === 'dark' ? 'border-neutral-900 hover:bg-neutral-950/40' : 'border-gray-200 hover:bg-gray-50/50'",
+        "replacements": [
+          {
+            "original": "border-gray-150",
+            "replacement": "border-gray-200"
+          }
+        ]
+      },
+      {
+        "lineNum": 423,
+        "originalLine": "? 'bg-indigo-650 text-white hover:bg-indigo-600'",
+        "replacedLine": "? 'bg-indigo-600 text-white hover:bg-indigo-600'",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 436,
+        "originalLine": "<h3 className={`font-sans font-bold text-base ${theme === 'dark' ? 'text-white' : 'text-gray-955'}`}>Canvas LMS Sync Portal</h3>",
+        "replacedLine": "<h3 className={`font-sans font-bold text-base ${theme === 'dark' ? 'text-white' : 'text-gray-950'}`}>Canvas LMS Sync Portal</h3>",
+        "replacements": [
+          {
+            "original": "text-gray-955",
+            "replacement": "text-gray-950"
+          }
+        ]
+      },
+      {
+        "lineNum": 481,
+        "originalLine": "theme === 'dark' ? 'bg-[#08090c]/40 border-neutral-850' : 'bg-gray-50 border-gray-150'",
+        "replacedLine": "theme === 'dark' ? 'bg-[#08090c]/40 border-neutral-800' : 'bg-gray-50 border-gray-200'",
+        "replacements": [
+          {
+            "original": "border-neutral-850",
+            "replacement": "border-neutral-800"
+          },
+          {
+            "original": "border-gray-150",
+            "replacement": "border-gray-200"
+          }
+        ]
+      },
+      {
+        "lineNum": 484,
+        "originalLine": "<div className={`text-xs font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-955'}`}>Integration Status</div>",
+        "replacedLine": "<div className={`text-xs font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-950'}`}>Integration Status</div>",
+        "replacements": [
+          {
+            "original": "text-gray-955",
+            "replacement": "text-gray-950"
+          }
+        ]
+      },
+      {
+        "lineNum": 510,
+        "originalLine": "? 'bg-indigo-650 text-white hover:bg-indigo-600'",
+        "replacedLine": "? 'bg-indigo-600 text-white hover:bg-indigo-600'",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 524,
+        "originalLine": "<h3 className={`font-sans font-bold text-base ${theme === 'dark' ? 'text-white' : 'text-gray-955'}`}>Plan & Subscription Overview</h3>",
+        "replacedLine": "<h3 className={`font-sans font-bold text-base ${theme === 'dark' ? 'text-white' : 'text-gray-950'}`}>Plan & Subscription Overview</h3>",
+        "replacements": [
+          {
+            "original": "text-gray-955",
+            "replacement": "text-gray-950"
+          }
+        ]
+      },
+      {
+        "lineNum": 555,
+        "originalLine": "<span className={theme === 'dark' ? 'text-neutral-350' : 'text-gray-650'}>{feat}</span>",
+        "replacedLine": "<span className={theme === 'dark' ? 'text-neutral-300' : 'text-gray-600'}>{feat}</span>",
+        "replacements": [
+          {
+            "original": "text-neutral-350",
+            "replacement": "text-neutral-300"
+          },
+          {
+            "original": "text-gray-650",
+            "replacement": "text-gray-600"
+          }
+        ]
+      },
+      {
+        "lineNum": 570,
+        "originalLine": "? 'bg-indigo-650 text-white hover:bg-indigo-600'",
+        "replacedLine": "? 'bg-indigo-600 text-white hover:bg-indigo-600'",
+        "replacements": [
+          {
+            "original": "bg-indigo-650",
+            "replacement": "bg-indigo-600"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "c:\\Users\\Ramesh Sahu\\antigravity\\Note-IT-AI\\src\\components\\Sidebar.tsx",
+    "changes": [
+      {
+        "lineNum": 107,
+        "originalLine": "className=\"md:hidden flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-850 text-gray-400 focus:outline-none\"",
+        "replacedLine": "className=\"md:hidden flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-400 focus:outline-none\"",
+        "replacements": [
+          {
+            "original": "dark:hover:bg-neutral-850",
+            "replacement": "dark:hover:bg-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 134,
+        "originalLine": ": 'bg-black hover:bg-neutral-850'",
+        "replacedLine": ": 'bg-black hover:bg-neutral-800'",
+        "replacements": [
+          {
+            "original": "hover:bg-neutral-850",
+            "replacement": "hover:bg-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 283,
+        "originalLine": "className=\"h-10 w-10 rounded-full border border-gray-150 dark:border-neutral-850 object-cover\"",
+        "replacedLine": "className=\"h-10 w-10 rounded-full border border-gray-200 dark:border-neutral-800 object-cover\"",
+        "replacements": [
+          {
+            "original": "border-gray-150",
+            "replacement": "border-gray-200"
+          },
+          {
+            "original": "dark:border-neutral-850",
+            "replacement": "dark:border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 286,
+        "originalLine": "<div className=\"h-10 w-10 rounded-full border border-gray-150 dark:border-neutral-850 bg-gray-100 dark:bg-neutral-800 flex items-center justify-center text-gray-400 dark:text-neutral-500\">",
+        "replacedLine": "<div className=\"h-10 w-10 rounded-full border border-gray-200 dark:border-neutral-800 bg-gray-100 dark:bg-neutral-800 flex items-center justify-center text-gray-400 dark:text-neutral-500\">",
+        "replacements": [
+          {
+            "original": "border-gray-150",
+            "replacement": "border-gray-200"
+          },
+          {
+            "original": "dark:border-neutral-850",
+            "replacement": "dark:border-neutral-800"
+          }
+        ]
+      },
+      {
+        "lineNum": 307,
+        "originalLine": "className=\"text-gray-400 hover:text-red-500 p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-neutral-850 transition-colors focus:outline-none cursor-pointer\"",
+        "replacedLine": "className=\"text-gray-400 hover:text-red-500 p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-neutral-800 transition-colors focus:outline-none cursor-pointer\"",
+        "replacements": [
+          {
+            "original": "dark:hover:bg-neutral-850",
+            "replacement": "dark:hover:bg-neutral-800"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "c:\\Users\\Ramesh Sahu\\antigravity\\Note-IT-AI\\src\\components\\SupportView.tsx",
+    "changes": [
+      {
+        "lineNum": 85,
+        "originalLine": "<div className=\"bg-white rounded-xl border border-gray-200 p-8 text-center text-xs text-gray-450 font-medium\">",
+        "replacedLine": "<div className=\"bg-white rounded-xl border border-gray-200 p-8 text-center text-xs text-gray-400 font-medium\">",
+        "replacements": [
+          {
+            "original": "text-gray-450",
+            "replacement": "text-gray-400"
+          }
+        ]
+      },
+      {
+        "lineNum": 186,
+        "originalLine": "<div className=\"text-[11px] font-semibold text-gray-450 leading-relaxed max-w-xs mx-auto\">",
+        "replacedLine": "<div className=\"text-[11px] font-semibold text-gray-400 leading-relaxed max-w-xs mx-auto\">",
+        "replacements": [
+          {
+            "original": "text-gray-450",
+            "replacement": "text-gray-400"
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,704 @@
+[
+  {
+    "file": "c:\\Users\\Ramesh Sahu\\antigravity\\Note-IT-AI\\src\\components\\AuthView.tsx",
+    "replacements": [
+      {
+        "line": 250,
+        "original": "dark:text-emerald-450",
+        "replacement": "dark:text-emerald-400",
+        "context": "<span className=\"rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-450 px-2.5 py-0.5 text-[9px] font-bold\">"
+      }
+    ]
+  },
+  {
+    "file": "c:\\Users\\Ramesh Sahu\\antigravity\\Note-IT-AI\\src\\components\\DashboardView.tsx",
+    "replacements": [
+      {
+        "line": 204,
+        "original": "from-indigo-450",
+        "replacement": "from-indigo-400",
+        "context": "<span className=\"bg-gradient-to-r from-indigo-450 via-purple-400 to-indigo-305 bg-clip-text text-transparent p-0.5 inline-block\">"
+      },
+      {
+        "line": 419,
+        "original": "text-gray-450",
+        "replacement": "text-gray-400",
+        "context": "<div className=\"bg-gray-50 dark:bg-neutral-900/35 p-2.5 rounded-xl text-[10.5px] font-serif leading-relaxed text-gray-450 italic\">"
+      }
+    ]
+  },
+  {
+    "file": "c:\\Users\\Ramesh Sahu\\antigravity\\Note-IT-AI\\src\\components\\FeedbackWidget.tsx",
+    "replacements": [
+      {
+        "line": 116,
+        "original": "text-neutral-450",
+        "replacement": "text-neutral-400",
+        "context": "<p className=\"text-[10px] text-neutral-450 leading-relaxed max-w-[220px] mx-auto\">"
+      },
+      {
+        "line": 173,
+        "original": "text-neutral-450",
+        "replacement": "text-neutral-400",
+        "context": "<label className=\"text-[9px] font-bold uppercase tracking-wider text-neutral-450 block\">"
+      },
+      {
+        "line": 193,
+        "original": "text-neutral-450",
+        "replacement": "text-neutral-400",
+        "context": "<label className=\"text-[9px] font-bold uppercase tracking-wider text-neutral-450 block\">"
+      },
+      {
+        "line": 212,
+        "original": "text-neutral-450",
+        "replacement": "text-neutral-400",
+        "context": "<label className=\"text-[9px] font-bold uppercase tracking-wider text-neutral-450 block\">"
+      }
+    ]
+  },
+  {
+    "file": "c:\\Users\\Ramesh Sahu\\antigravity\\Note-IT-AI\\src\\components\\KnowledgeStudioView.tsx",
+    "replacements": [
+      {
+        "line": 2486,
+        "original": "text-red-450",
+        "replacement": "text-red-400",
+        "context": "className=\"text-red-450 hover:text-red-600 text-sm font-bold focus:outline-none cursor-pointer\""
+      },
+      {
+        "line": 2503,
+        "original": "text-indigo-450",
+        "replacement": "text-indigo-400",
+        "context": "<Upload className=\"h-3.5 w-3.5 text-indigo-450\" />"
+      },
+      {
+        "line": 2534,
+        "original": "text-blue-450",
+        "replacement": "text-blue-400",
+        "context": "<HardDrive className=\"h-3.5 w-3.5 text-blue-450\" />"
+      },
+      {
+        "line": 2694,
+        "original": "text-neutral-450",
+        "replacement": "text-neutral-400",
+        "context": "className=\"opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/10 text-neutral-450 hover:text-red-500 transition-all cursor-pointer\""
+      },
+      {
+        "line": 2866,
+        "original": "text-neutral-450",
+        "replacement": "text-neutral-400",
+        "context": "<span className=\"text-[10px] font-black uppercase text-neutral-450 tracking-wider\">Output Language</span>"
+      },
+      {
+        "line": 2942,
+        "original": "text-neutral-455",
+        "replacement": "text-neutral-400",
+        "context": "notesFormat === f ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-455'"
+      },
+      {
+        "line": 3002,
+        "original": "text-neutral-455",
+        "replacement": "text-neutral-400",
+        "context": "summaryFormat === f ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-455'"
+      },
+      {
+        "line": 3079,
+        "original": "text-neutral-455",
+        "replacement": "text-neutral-400",
+        "context": "flashcardsFormat === f ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-455'"
+      },
+      {
+        "line": 3142,
+        "original": "text-neutral-455",
+        "replacement": "text-neutral-400",
+        "context": "quizFormat === f ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-455'"
+      },
+      {
+        "line": 3183,
+        "original": "text-emerald-450",
+        "replacement": "text-emerald-400",
+        "context": "? \"border-emerald-500 bg-emerald-500/10 text-emerald-450\""
+      },
+      {
+        "line": 3187,
+        "original": "text-red-450",
+        "replacement": "text-red-400",
+        "context": "? \"border-red-500 bg-red-500/10 text-red-450\""
+      },
+      {
+        "line": 3219,
+        "original": "text-neutral-455",
+        "replacement": "text-neutral-400",
+        "context": "<div className=\"mt-4 pt-3 border-t border-dashed border-neutral-900 text-[11px] text-neutral-455\">"
+      },
+      {
+        "line": 3258,
+        "original": "text-indigo-455",
+        "replacement": "text-indigo-400",
+        "context": "className=\"px-5 py-2.5 rounded-lg border border-indigo-500/25 bg-indigo-500/5 hover:bg-indigo-500/10 text-indigo-455 text-xs font-bold transition-all focus:outline-none cursor-pointer\""
+      },
+      {
+        "line": 3380,
+        "original": "text-neutral-550",
+        "replacement": "text-neutral-500",
+        "context": "theme === 'dark' ? 'text-neutral-550 hover:text-white' : 'text-neutral-400 hover:text-neutral-900'"
+      },
+      {
+        "line": 3402,
+        "original": "text-orange-450",
+        "replacement": "text-orange-400",
+        "context": "<code className={`block p-2 rounded text-[10px] font-mono mt-1 text-orange-450 border ${"
+      },
+      {
+        "line": 3458,
+        "original": "text-neutral-450",
+        "replacement": "text-neutral-400",
+        "context": "<p className=\"text-[9.5px] text-neutral-450 mt-0.5\">Professor & Student dynamic audio conversation</p>"
+      },
+      {
+        "line": 3628,
+        "original": "text-blue-450",
+        "replacement": "text-blue-400",
+        "context": "<HardDrive className=\"h-4 w-4 text-blue-450\" />"
+      },
+      {
+        "line": 3646,
+        "original": "text-neutral-455",
+        "replacement": "text-neutral-400",
+        "context": "<p className=\"text-[10px] text-neutral-455 max-w-xs mx-auto leading-relaxed\">"
+      },
+      {
+        "line": 3673,
+        "original": "text-neutral-450",
+        "replacement": "text-neutral-400",
+        "context": "className=\"text-[9.5px] text-neutral-450 hover:text-white hover:underline cursor-pointer\""
+      },
+      {
+        "line": 3738,
+        "original": "text-neutral-450",
+        "replacement": "text-neutral-400",
+        "context": ": theme === 'dark' ? 'border-neutral-800 text-neutral-450 hover:border-neutral-700' : 'border-gray-200 text-gray-700 hover:border-gray-300'"
+      },
+      {
+        "line": 3751,
+        "original": "text-neutral-450",
+        "replacement": "text-neutral-400",
+        "context": "className=\"rounded-lg px-4 py-2 text-xs font-bold border border-neutral-800 text-neutral-450 cursor-pointer\""
+      },
+      {
+        "line": 3803,
+        "original": "text-neutral-450",
+        "replacement": "text-neutral-400",
+        "context": ": theme === 'dark' ? 'border-neutral-800 text-neutral-450 hover:border-neutral-700' : 'border-gray-200 text-gray-700 hover:border-gray-300'"
+      },
+      {
+        "line": 3823,
+        "original": "text-neutral-450",
+        "replacement": "text-neutral-400",
+        "context": ": theme === 'dark' ? 'border-neutral-800 text-neutral-450' : 'border-gray-200 text-gray-700'"
+      },
+      {
+        "line": 3835,
+        "original": "text-neutral-450",
+        "replacement": "text-neutral-400",
+        "context": "<span className=\"text-[9.5px] text-neutral-450\">Overrides the standard 40-word limit per slide for longer text descriptions.</span>"
+      }
+    ]
+  },
+  {
+    "file": "c:\\Users\\Ramesh Sahu\\antigravity\\Note-IT-AI\\src\\components\\LandingView.tsx",
+    "replacements": [
+      {
+        "line": 398,
+        "original": "text-amber-550",
+        "replacement": "text-amber-500",
+        "context": "<div className=\"h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 text-amber-550 group-hover:bg-[#5F6DF8] group-hover:text-white transition-colors\">"
+      }
+    ]
+  },
+  {
+    "file": "c:\\Users\\Ramesh Sahu\\antigravity\\Note-IT-AI\\src\\components\\LectureCaptureView.tsx",
+    "replacements": [
+      {
+        "line": 1098,
+        "original": "text-neutral-450",
+        "replacement": "text-neutral-400",
+        "context": "theme === 'dark' ? 'bg-[#0d0e12] border-neutral-900 text-neutral-450' : 'bg-white border-gray-200 text-gray-550'"
+      },
+      {
+        "line": 1098,
+        "original": "text-gray-550",
+        "replacement": "text-gray-500",
+        "context": "theme === 'dark' ? 'bg-[#0d0e12] border-neutral-900 text-neutral-450' : 'bg-white border-gray-200 text-gray-550'"
+      },
+      {
+        "line": 1181,
+        "original": "text-neutral-450",
+        "replacement": "text-neutral-400",
+        "context": ": theme === 'dark' ? 'text-neutral-450 hover:text-white' : 'text-neutral-500 hover:text-neutral-900'"
+      },
+      {
+        "line": 1208,
+        "original": "text-neutral-455",
+        "replacement": "text-neutral-400",
+        "context": "selectedNotesMode === nOpt.mode ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-455'"
+      },
+      {
+        "line": 1275,
+        "original": "text-neutral-455",
+        "replacement": "text-neutral-400",
+        "context": "selectedSummaryMode === sf.mode ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-455'"
+      },
+      {
+        "line": 1376,
+        "original": "text-neutral-455",
+        "replacement": "text-neutral-400",
+        "context": "selectedFlashcardCategory === cat ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-455'"
+      },
+      {
+        "line": 1484,
+        "original": "text-neutral-455",
+        "replacement": "text-neutral-400",
+        "context": "selectedQuizDifficulty === dOpt.difficulty ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-455'"
+      },
+      {
+        "line": 1545,
+        "original": "text-emerald-450",
+        "replacement": "text-emerald-400",
+        "context": "? \"border-emerald-500 bg-emerald-500/10 text-emerald-450\""
+      },
+      {
+        "line": 1549,
+        "original": "text-red-450",
+        "replacement": "text-red-400",
+        "context": "? \"border-red-500 bg-red-500/10 text-red-450\""
+      },
+      {
+        "line": 1581,
+        "original": "text-neutral-455",
+        "replacement": "text-neutral-400",
+        "context": "<div className=\"mt-4 pt-3 border-t border-dashed border-neutral-900 text-[11px] text-neutral-455\">"
+      },
+      {
+        "line": 1778,
+        "original": "text-neutral-550",
+        "replacement": "text-neutral-500",
+        "context": "theme === 'dark' ? 'text-neutral-550 hover:text-white' : 'text-neutral-400 hover:text-neutral-900'"
+      },
+      {
+        "line": 1800,
+        "original": "text-orange-450",
+        "replacement": "text-orange-400",
+        "context": "<code className={`block p-2 rounded text-[10px] font-mono mt-1 text-orange-450 border ${"
+      },
+      {
+        "line": 1823,
+        "original": "text-emerald-450",
+        "replacement": "text-emerald-400",
+        "context": ": 'bg-emerald-500/15 text-emerald-450 border border-emerald-500/25'"
+      },
+      {
+        "line": 1942,
+        "original": "text-neutral-550",
+        "replacement": "text-neutral-500",
+        "context": "<span className=\"text-neutral-550 font-mono text-[9px] animate-pulse\">Thinking...</span>"
+      },
+      {
+        "line": 2031,
+        "original": "text-neutral-450",
+        "replacement": "text-neutral-400",
+        "context": ": theme === 'dark' ? 'border-neutral-800 text-neutral-450 hover:border-neutral-700' : 'border-gray-200 text-gray-700 hover:border-gray-300'"
+      },
+      {
+        "line": 2044,
+        "original": "text-neutral-450",
+        "replacement": "text-neutral-400",
+        "context": "className=\"rounded-lg px-4 py-2 text-xs font-bold border border-neutral-800 text-neutral-450 cursor-pointer\""
+      },
+      {
+        "line": 2203,
+        "original": "text-neutral-450",
+        "replacement": "text-neutral-400",
+        "context": "? 'border-neutral-800 text-neutral-450 hover:bg-neutral-900/40'"
+      },
+      {
+        "line": 2413,
+        "original": "text-gray-450",
+        "replacement": "text-gray-400",
+        "context": "<MicOff className=\"h-8 w-8 mb-2 opacity-50 text-gray-450 dark:text-neutral-500\" />"
+      },
+      {
+        "line": 2415,
+        "original": "text-gray-450",
+        "replacement": "text-gray-400",
+        "context": "<p className=\"text-[10px] text-gray-450 dark:text-neutral-550 max-w-[180px] leading-normal font-semibold mt-1\">"
+      },
+      {
+        "line": 2415,
+        "original": "dark:text-neutral-550",
+        "replacement": "dark:text-neutral-500",
+        "context": "<p className=\"text-[10px] text-gray-450 dark:text-neutral-550 max-w-[180px] leading-normal font-semibold mt-1\">"
+      },
+      {
+        "line": 2424,
+        "original": "text-gray-455",
+        "replacement": "text-gray-400",
+        "context": "<p className=\"text-[10px] text-gray-455 dark:text-neutral-550 max-w-[180px] leading-normal font-semibold mt-1\">"
+      },
+      {
+        "line": 2424,
+        "original": "dark:text-neutral-550",
+        "replacement": "dark:text-neutral-500",
+        "context": "<p className=\"text-[10px] text-gray-455 dark:text-neutral-550 max-w-[180px] leading-normal font-semibold mt-1\">"
+      },
+      {
+        "line": 2434,
+        "original": "text-gray-455",
+        "replacement": "text-gray-400",
+        "context": "<p className=\"text-[10px] text-gray-455 dark:text-neutral-550 max-w-[180px] leading-normal font-semibold mt-1\">"
+      },
+      {
+        "line": 2434,
+        "original": "dark:text-neutral-550",
+        "replacement": "dark:text-neutral-500",
+        "context": "<p className=\"text-[10px] text-gray-455 dark:text-neutral-550 max-w-[180px] leading-normal font-semibold mt-1\">"
+      },
+      {
+        "line": 2449,
+        "original": "text-gray-455",
+        "replacement": "text-gray-400",
+        "context": "<p className=\"text-[10px] text-gray-455 dark:text-neutral-450 leading-normal font-semibold max-w-[200px]\">"
+      },
+      {
+        "line": 2449,
+        "original": "dark:text-neutral-450",
+        "replacement": "dark:text-neutral-400",
+        "context": "<p className=\"text-[10px] text-gray-455 dark:text-neutral-450 leading-normal font-semibold max-w-[200px]\">"
+      }
+    ]
+  },
+  {
+    "file": "c:\\Users\\Ramesh Sahu\\antigravity\\Note-IT-AI\\src\\components\\LibraryView.tsx",
+    "replacements": [
+      {
+        "line": 239,
+        "original": "text-neutral-450",
+        "replacement": "text-neutral-400",
+        "context": "? 'bg-neutral-900 border border-neutral-850 text-neutral-450 hover:bg-neutral-850 hover:text-neutral-200'"
+      },
+      {
+        "line": 258,
+        "original": "text-gray-450",
+        "replacement": "text-gray-400",
+        "context": "<p className=\"text-xs text-gray-450 mt-1 max-w-xs mx-auto\">"
+      },
+      {
+        "line": 375,
+        "original": "text-indigo-450",
+        "replacement": "text-indigo-400",
+        "context": "<div className=\"flex items-center gap-1.5 text-indigo-450 font-bold text-[11px] animate-pulse\">"
+      },
+      {
+        "line": 380,
+        "original": "text-amber-550",
+        "replacement": "text-amber-500",
+        "context": "<div className=\"flex items-center gap-1.5 text-amber-550 font-bold text-[11px] animate-pulse\">"
+      },
+      {
+        "line": 568,
+        "original": "text-neutral-450",
+        "replacement": "text-neutral-400",
+        "context": "theme === 'dark' ? 'text-neutral-450 hover:text-indigo-400' : 'text-gray-400 hover:text-indigo-650'"
+      },
+      {
+        "line": 580,
+        "original": "text-neutral-450",
+        "replacement": "text-neutral-400",
+        "context": "theme === 'dark' ? 'text-neutral-450 hover:text-red-400' : 'text-gray-400 hover:text-red-500'"
+      },
+      {
+        "line": 693,
+        "original": "text-indigo-450",
+        "replacement": "text-indigo-400",
+        "context": "<span className=\"inline-flex items-center gap-1.5 text-indigo-450 font-bold text-xs animate-pulse\">"
+      },
+      {
+        "line": 698,
+        "original": "text-amber-550",
+        "replacement": "text-amber-500",
+        "context": "<span className=\"inline-flex items-center gap-1.5 text-amber-550 font-bold text-xs animate-pulse\">"
+      },
+      {
+        "line": 734,
+        "original": "text-neutral-550",
+        "replacement": "text-neutral-500",
+        "context": "theme === 'dark' ? 'text-neutral-550 hover:text-indigo-400' : 'text-gray-400 hover:text-indigo-650'"
+      },
+      {
+        "line": 747,
+        "original": "text-neutral-550",
+        "replacement": "text-neutral-500",
+        "context": "theme === 'dark' ? 'text-neutral-550 hover:text-red-400' : 'text-gray-400 hover:text-red-500'"
+      },
+      {
+        "line": 779,
+        "original": "text-neutral-450",
+        "replacement": "text-neutral-400",
+        "context": "className=\"text-neutral-450 hover:text-white text-xs font-bold focus:outline-none cursor-pointer\""
+      },
+      {
+        "line": 862,
+        "original": "text-emerald-450",
+        "replacement": "text-emerald-400",
+        "context": "<div className=\"text-xs font-bold text-emerald-450 truncate max-w-xs mx-auto\">{selectedFile.name}</div>"
+      }
+    ]
+  },
+  {
+    "file": "c:\\Users\\Ramesh Sahu\\antigravity\\Note-IT-AI\\src\\components\\PresentationWorkspace.tsx",
+    "replacements": [
+      {
+        "line": 327,
+        "original": "text-neutral-450",
+        "replacement": "text-neutral-400",
+        "context": "<p className=\"text-xs text-neutral-450 mt-3 font-mono\">No presentation blueprint created. Press \"Regenerate\" to build.</p>"
+      },
+      {
+        "line": 335,
+        "original": "text-neutral-450",
+        "replacement": "text-neutral-400",
+        "context": "const textSecondary = activeThemeColors.bg === \"FFFFFF\" ? \"text-gray-600\" : \"text-neutral-450\";"
+      },
+      {
+        "line": 574,
+        "original": "bg-indigo-550",
+        "replacement": "bg-indigo-500",
+        "context": "className=\"h-full bg-indigo-550 rounded-full transition-all duration-500\""
+      },
+      {
+        "line": 597,
+        "original": "text-neutral-450",
+        "replacement": "text-neutral-400",
+        "context": "<ChevronDown className=\"absolute right-3 top-2.5 h-3.5 w-3.5 text-neutral-450 pointer-events-none\" />"
+      },
+      {
+        "line": 614,
+        "original": "text-neutral-450",
+        "replacement": "text-neutral-400",
+        "context": ": 'bg-transparent border-neutral-900 text-neutral-450 hover:border-neutral-800'"
+      },
+      {
+        "line": 636,
+        "original": "text-neutral-450",
+        "replacement": "text-neutral-400",
+        "context": ": 'bg-transparent border-neutral-900 text-neutral-450 hover:border-neutral-800'"
+      },
+      {
+        "line": 665,
+        "original": "text-neutral-450",
+        "replacement": "text-neutral-400",
+        "context": ": 'bg-transparent border-neutral-900 text-neutral-450 hover:border-neutral-800'"
+      }
+    ]
+  },
+  {
+    "file": "c:\\Users\\Ramesh Sahu\\antigravity\\Note-IT-AI\\src\\components\\ProfileView.tsx",
+    "replacements": [
+      {
+        "line": 193,
+        "original": "text-gray-450",
+        "replacement": "text-gray-400",
+        "context": "<div className=\"h-28 w-28 rounded-full border-2 border-dashed border-indigo-500/50 bg-gray-100 dark:bg-neutral-800 flex items-center justify-center text-gray-450 dark:text-neutral-500\">"
+      }
+    ]
+  },
+  {
+    "file": "c:\\Users\\Ramesh Sahu\\antigravity\\Note-IT-AI\\src\\components\\QuizView.tsx",
+    "replacements": [
+      {
+        "line": 382,
+        "original": "text-neutral-450",
+        "replacement": "text-neutral-400",
+        "context": ": 'text-neutral-450 hover:text-white'"
+      },
+      {
+        "line": 398,
+        "original": "bg-indigo-550/10",
+        "replacement": "bg-indigo-500/10",
+        "context": "theme === 'dark' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-550/10 text-indigo-650'"
+      }
+    ]
+  },
+  {
+    "file": "c:\\Users\\Ramesh Sahu\\antigravity\\Note-IT-AI\\src\\components\\ResearchHubView.tsx",
+    "replacements": [
+      {
+        "line": 491,
+        "original": "text-indigo-450",
+        "replacement": "text-indigo-400",
+        "context": "<Sparkles className=\"h-10 w-10 text-indigo-450 animate-pulse\" />"
+      },
+      {
+        "line": 492,
+        "original": "text-indigo-450",
+        "replacement": "text-indigo-400",
+        "context": "<div className=\"absolute -bottom-1 text-[9px] font-black tracking-widest text-indigo-450 font-mono\">"
+      },
+      {
+        "line": 551,
+        "original": "hover:bg-indigo-550/20",
+        "replacement": "hover:bg-indigo-500/20",
+        "context": "className=\"flex items-center gap-1.5 py-2 px-3 bg-indigo-500/15 border border-indigo-500/10 rounded-lg text-[11px] font-bold text-indigo-400 hover:bg-indigo-550/20 active:scale-95 transition-all focus:outline-none\""
+      },
+      {
+        "line": 582,
+        "original": "shadow-indigo-550/5",
+        "replacement": "shadow-indigo-500/5",
+        "context": "? 'bg-indigo-500/10 border-indigo-500/35 text-indigo-400 shadow-lg shadow-indigo-550/5'"
+      },
+      {
+        "line": 583,
+        "original": "text-neutral-450",
+        "replacement": "text-neutral-400",
+        "context": ": 'bg-[#0c0d12]/60 border-neutral-900/60 text-neutral-450 hover:text-neutral-200 hover:bg-[#121318]'"
+      },
+      {
+        "line": 739,
+        "original": "text-neutral-550",
+        "replacement": "text-neutral-500",
+        "context": "<div className=\"text-center py-12 text-neutral-550 font-sans\">"
+      },
+      {
+        "line": 740,
+        "original": "text-indigo-450",
+        "replacement": "text-indigo-400",
+        "context": "<Volume2 className=\"h-10 w-10 mx-auto opacity-35 mb-3 text-indigo-450\" />"
+      },
+      {
+        "line": 955,
+        "original": "text-neutral-450",
+        "replacement": "text-neutral-400",
+        "context": "<div className=\"rounded-xl bg-neutral-950 p-4 border border-dashed border-neutral-900 text-xs text-neutral-450 leading-relaxed font-sans mt-3\">"
+      },
+      {
+        "line": 971,
+        "original": "hover:bg-emerald-550",
+        "replacement": "hover:bg-emerald-600",
+        "context": "className=\"w-full sm:w-auto bg-emerald-500 hover:bg-emerald-550 text-white font-bold rounded-xl py-3 px-6 text-xs shadow-md transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer focus:outline-none\""
+      },
+      {
+        "line": 1138,
+        "original": "via-rose-450",
+        "replacement": "via-rose-400",
+        "context": "<div className=\"absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-rose-500 via-rose-450 to-indigo-550 opacity-80\" />"
+      },
+      {
+        "line": 1138,
+        "original": "to-indigo-550",
+        "replacement": "to-indigo-500",
+        "context": "<div className=\"absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-rose-500 via-rose-450 to-indigo-550 opacity-80\" />"
+      },
+      {
+        "line": 1142,
+        "original": "text-rose-450",
+        "replacement": "text-rose-400",
+        "context": "theme === 'dark' ? 'text-rose-450' : 'text-rose-600'"
+      },
+      {
+        "line": 1188,
+        "original": "text-neutral-550",
+        "replacement": "text-neutral-500",
+        "context": "theme === 'dark' ? 'text-neutral-550' : 'text-gray-500'"
+      },
+      {
+        "line": 1323,
+        "original": "text-neutral-550",
+        "replacement": "text-neutral-500",
+        "context": "<div className=\"flex justify-between text-[10px] font-mono text-neutral-550\">"
+      },
+      {
+        "line": 1416,
+        "original": "text-neutral-550",
+        "replacement": "text-neutral-500",
+        "context": "completedMilestones[milestone.id] ? 'line-through text-neutral-550' : 'text-neutral-400'"
+      },
+      {
+        "line": 1431,
+        "original": "text-neutral-450",
+        "replacement": "text-neutral-400",
+        "context": "<span className=\"text-[9px] font-mono font-bold uppercase text-neutral-450\">Syllabus Handbook</span>"
+      },
+      {
+        "line": 1596,
+        "original": "shadow-indigo-550/5",
+        "replacement": "shadow-indigo-500/5",
+        "context": "? 'bg-indigo-500/10 border-indigo-500/35 text-indigo-400 shadow-lg shadow-indigo-550/5'"
+      },
+      {
+        "line": 1598,
+        "original": "text-neutral-450",
+        "replacement": "text-neutral-400",
+        "context": "? 'bg-[#0c0d12]/60 border-neutral-900/60 text-neutral-450 hover:text-neutral-200 hover:bg-[#121318]'"
+      },
+      {
+        "line": 1626,
+        "original": "text-neutral-450",
+        "replacement": "text-neutral-400",
+        "context": "theme === 'dark' ? 'text-neutral-450' : 'text-gray-600'"
+      },
+      {
+        "line": 1944,
+        "original": "hover:bg-indigo-550",
+        "replacement": "hover:bg-indigo-600",
+        "context": "className=\"flex items-center gap-1 rounded-xl bg-indigo-600 hover:bg-indigo-550 text-[11px] font-black px-3.5 py-2 text-white transition-all active:scale-95 shadow-lg focus:outline-none cursor-pointer\""
+      },
+      {
+        "line": 1966,
+        "original": "text-gray-550",
+        "replacement": "text-gray-500",
+        "context": "theme === 'dark' ? 'text-neutral-400 hover:text-white' : 'text-gray-550 hover:text-gray-800'"
+      },
+      {
+        "line": 1999,
+        "original": "placeholder-neutral-550",
+        "replacement": "placeholder-neutral-500",
+        "context": "className={`w-full rounded-xl border text-xs font-medium placeholder-neutral-550 outline-none p-3.5 transition-all focus:border-indigo-500 resize-none font-serif leading-relaxed ${"
+      },
+      {
+        "line": 2007,
+        "original": "hover:bg-indigo-550",
+        "replacement": "hover:bg-indigo-600",
+        "context": "className=\"w-full py-3 rounded-xl font-sans text-xs font-black tracking-wide text-center bg-indigo-600 hover:bg-indigo-550 text-white transition-all focus:outline-none cursor-pointer\""
+      },
+      {
+        "line": 2040,
+        "original": "text-indigo-450",
+        "replacement": "text-indigo-400",
+        "context": "<FileText className=\"h-9 w-9 mb-2 opacity-30 text-indigo-450\" />"
+      },
+      {
+        "line": 2099,
+        "original": "text-gray-450",
+        "replacement": "text-gray-400",
+        "context": "theme === 'dark' ? 'text-neutral-500 border-neutral-900/50' : 'text-gray-450 border-gray-200'"
+      }
+    ]
+  },
+  {
+    "file": "c:\\Users\\Ramesh Sahu\\antigravity\\Note-IT-AI\\src\\components\\SupportView.tsx",
+    "replacements": [
+      {
+        "line": 85,
+        "original": "text-gray-450",
+        "replacement": "text-gray-400",
+        "context": "<div className=\"bg-white rounded-xl border border-gray-200 p-8 text-center text-xs text-gray-450 font-medium\">"
+      },
+      {
+        "line": 186,
+        "original": "text-gray-450",
+        "replacement": "text-gray-400",
+        "context": "<div className=\"text-[11px] font-semibold text-gray-450 leading-relaxed max-w-xs mx-auto\">"
+      }
+    ]
+  }
+]
