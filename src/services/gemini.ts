@@ -119,23 +119,9 @@ export const executeGeminiCall = async (
   inlineData?: { mimeType: string, data: string },
   responseSchema?: any,
   onBusy?: (isBusy: boolean) => void,
-  model: string = 'gemini-2.5-flash'
+  model?: string,
+  action?: string
 ): Promise<any> => {
-  const config = getAIConfig();
-  const activeProvider = inlineData ? 'gemini' : config.provider;
-  const activeOpenaiKey = config.openaiKey;
-
-  if (activeProvider === 'openai' && activeOpenaiKey) {
-    console.log('[AI] Routing call directly to OpenAI GPT-4o-mini');
-    try {
-      return await executeOpenAICall(prompt, activeOpenaiKey, responseSchema, onBusy);
-    } catch (openAiErr) {
-      console.warn('[AI] OpenAI call failed.', openAiErr);
-      throw openAiErr;
-    }
-  }
-
-  // Routing Gemini through backend proxy
   const currentUser = auth.currentUser;
   if (!currentUser) {
     throw new Error('User not authenticated with Firebase Auth.');
@@ -145,7 +131,7 @@ export const executeGeminiCall = async (
 
   try {
     const idToken = await currentUser.getIdToken(true);
-    const proxyUrl = `${API_BASE_URL}/api/ai/gemini-proxy`;
+    const proxyUrl = `${API_BASE_URL}/api/ai/provider-proxy`;
 
     const response = await fetch(proxyUrl, {
       method: 'POST',
@@ -157,7 +143,8 @@ export const executeGeminiCall = async (
         prompt,
         model,
         inlineData,
-        responseSchema
+        responseSchema,
+        action
       })
     });
 
@@ -165,42 +152,27 @@ export const executeGeminiCall = async (
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      const errorMsg = errorData.error || `Gemini proxy call failed with status ${response.status}`;
+      const errorMsg = errorData.error || `AI proxy call failed with status ${response.status}`;
       throw new Error(errorMsg);
     }
 
     const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
     if (responseSchema) {
-      try {
-        const cleanedText = extractJsonObject(text);
-        return JSON.parse(cleanedText);
-      } catch (err) {
-        console.error('Failed to parse Gemini response text as JSON:', text, err);
-        throw new Error('Invalid JSON format returned from Gemini API.');
+      if (typeof data === 'string') {
+        try {
+          const cleanedText = extractJsonObject(data);
+          return JSON.parse(cleanedText);
+        } catch (err) {
+          console.error('Failed to parse response text as JSON:', data, err);
+          throw new Error('Invalid JSON format returned from AI API.');
+        }
       }
+      return data;
     }
-    return text;
+    return data;
   } catch (error: any) {
     if (onBusy) onBusy(false);
-
-    const isQuotaError = error.message && (
-      error.message.includes('429') || 
-      error.message.includes('RESOURCE_EXHAUSTED') || 
-      error.message.includes('Quota exceeded') ||
-      error.message.includes('quota has been exhausted')
-    );
-
-    if (isQuotaError && activeOpenaiKey) {
-      console.warn('[AI] Gemini proxy call failed (quota). Falling back to local OpenAI...', error);
-      try {
-        return await executeOpenAICall(prompt, activeOpenaiKey, responseSchema, onBusy);
-      } catch (openAiErr) {
-        console.error('[AI] Fallback to OpenAI failed as well:', openAiErr);
-      }
-    }
-
     throw error;
   }
 };

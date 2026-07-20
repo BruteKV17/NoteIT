@@ -1,5 +1,6 @@
 import express from 'express';
 import crypto from 'crypto';
+import { ProviderFactory } from './src/providers/ProviderFactory';
 
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -101,128 +102,9 @@ function decryptKey(encryptedText: string): string {
   return decrypted;
 }
 
-// AI Provider Abstraction Layer Adapters
-interface AIProviderAdapter {
-  generateContent(prompt: string, inlineData?: { mimeType: string, data: string }, responseSchema?: any): Promise<any>;
-  validateKey(): Promise<boolean>;
-}
-
-class GeminiAdapter implements AIProviderAdapter {
-  private apiKey: string;
-  private model: string;
-  constructor(apiKey: string, model: string = 'gemini-2.5-flash') {
-    this.apiKey = apiKey;
-    this.model = model;
-  }
-
-  async generateContent(prompt: string, inlineData?: { mimeType: string, data: string }, responseSchema?: any): Promise<any> {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`;
-    const parts: any[] = [];
-    if (inlineData) {
-      parts.push({ inlineData });
-    }
-    parts.push({ text: prompt });
-
-    const requestBody: any = {
-      contents: [{ parts }]
-    };
-    if (responseSchema) {
-      requestBody.generationConfig = {
-        responseMimeType: 'application/json',
-        responseSchema
-      };
-    }
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody)
-    });
-
-    if (!response.ok) {
-      const status = response.status;
-      const text = await response.text();
-      throw { status, message: text };
-    }
-    return await response.json();
-  }
-
-  async validateKey(): Promise<boolean> {
-    const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${this.apiKey}`;
-    const response = await fetch(testUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: 'Hello' }] }]
-      })
-    });
-    return response.ok;
-  }
-}
-
-class OpenAIAdapter implements AIProviderAdapter {
-  private apiKey: string;
-  constructor(apiKey: string) {
-    this.apiKey = apiKey;
-  }
-
-  async generateContent(prompt: string, inlineData?: any, responseSchema?: any): Promise<any> {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: prompt }],
-        response_format: responseSchema ? { type: 'json_object' } : undefined
-      })
-    });
-    if (!response.ok) {
-      const status = response.status;
-      const text = await response.text();
-      throw { status, message: text };
-    }
-    const data = await response.json();
-    return {
-      candidates: [{
-        content: {
-          parts: [{
-            text: data.choices?.[0]?.message?.content || ''
-          }]
-        }
-      }]
-    };
-  }
-
-  async validateKey(): Promise<boolean> {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: 'ping' }],
-        max_tokens: 5
-      })
-    });
-    return response.ok;
-  }
-}
-
-function getAIAdapter(provider: string, apiKey: string, model?: string): AIProviderAdapter {
-  if (provider === 'openai') {
-    return new OpenAIAdapter(apiKey);
-  }
-  return new GeminiAdapter(apiKey, model);
-}
-
-// BYOK Endpoints
+// AI Provider Abstraction endpoints
 app.post('/api/ai/validate-key', authenticateFirebaseUser, async (req, res) => {
-  const { key, provider } = req.body;
+  const { key, provider, model } = req.body;
   const activeProvider = provider || 'gemini';
 
   if (!key) {
@@ -231,11 +113,11 @@ app.post('/api/ai/validate-key', authenticateFirebaseUser, async (req, res) => {
   }
 
   try {
-    const adapter = getAIAdapter(activeProvider, key);
-    const isValid = await adapter.validateKey();
+    const providerInstance = ProviderFactory.getProvider(activeProvider, key);
+    const isValid = await providerInstance.validateKey();
 
     if (!isValid) {
-      res.status(400).json({ error: `Invalid ${activeProvider === 'openai' ? 'OpenAI' : 'Gemini'} API key` });
+      res.status(400).json({ error: `Invalid ${activeProvider} API key` });
       return;
     }
 
@@ -243,55 +125,78 @@ app.post('/api/ai/validate-key', authenticateFirebaseUser, async (req, res) => {
     const uid = user.uid;
     const encrypted = encryptKey(key);
 
+    const defaultModel = model || providerInstance.getAvailableModels()[0];
+
     const adminDb = getFirestore();
     const userDocRef = adminDb.collection('users').doc(uid);
 
     const updateFields: any = {
       aiProvider: activeProvider,
       providerConfigured: true,
-      geminiLastValidated: new Date()
+      providerLastValidated: new Date(),
+      encryptedApiKey: encrypted,
+      selectedModel: defaultModel,
+      usageStats: { todayRequests: 0, estimatedTokens: 0, avgResponseTime: 0, failedRequests: 0, errors429: 0, errors503: 0 },
+      estimatedMonthlyTokens: 0,
+      lastHealthCheck: { status: 'Healthy', latency: 0, checkedAt: new Date() }
     };
-
-    if (activeProvider === 'openai') {
-      updateFields.openaiApiKey = encrypted;
-    } else {
-      updateFields.geminiApiKey = encrypted;
-    }
 
     await userDocRef.set(updateFields, { merge: true });
 
-    res.json({ success: true, message: `${activeProvider === 'openai' ? 'OpenAI' : 'Gemini'} API connected successfully` });
+    res.json({ success: true, message: `${activeProvider} API connected successfully` });
   } catch (error: any) {
     console.error('API key validation error:', error);
-    if (error.status === 429) {
-      res.status(429).json({ error: 'Quota exhausted. Please generate another key.' });
-      return;
-    }
-    res.status(500).json({ error: 'Internal server error validating key' });
+    res.status(500).json({ error: error.message || 'Internal server error validating key' });
   }
 });
 
-app.post('/api/ai/gemini-proxy', authenticateFirebaseUser, async (req, res) => {
-  const { prompt, model, inlineData, responseSchema } = req.body;
+app.post('/api/ai/provider-proxy', authenticateFirebaseUser, async (req, res) => {
+  const { prompt, model, inlineData, responseSchema, action } = req.body;
   const user = req.body.user;
   const uid = user.uid;
+  
+  const startTime = Date.now();
 
   try {
     const adminDb = getFirestore();
     const userDocRef = adminDb.collection('users').doc(uid);
     const userDoc = await userDocRef.get();
 
-    if (!userDoc.exists || !userDoc.data()?.providerConfigured) {
+    let data = userDoc.exists ? userDoc.data() : null;
+
+    // Automatic legacy migration
+    if (data && !data.providerConfigured && (data.geminiApiKey || data.openaiApiKey)) {
+      const isOp = !!data.openaiApiKey;
+      const keyToMigrate = isOp ? data.openaiApiKey : data.geminiApiKey;
+      const provToMigrate = isOp ? 'openai' : 'gemini';
+      const modelToMigrate = isOp ? 'gpt-4o-mini' : 'gemini-2.5-flash';
+      
+      const migrationFields = {
+        aiProvider: provToMigrate,
+        providerConfigured: true,
+        encryptedApiKey: keyToMigrate,
+        selectedModel: modelToMigrate,
+        providerLastValidated: data.geminiLastValidated || new Date(),
+        estimatedMonthlyTokens: 0,
+        usageStats: { todayRequests: 0, estimatedTokens: 0, avgResponseTime: 0, failedRequests: 0, errors429: 0, errors503: 0 },
+        lastHealthCheck: { status: 'Healthy', latency: 0, checkedAt: new Date() }
+      };
+      
+      await userDocRef.set(migrationFields, { merge: true });
+      data = { ...data, ...migrationFields };
+    }
+
+    if (!data || !data.providerConfigured) {
       res.status(400).json({ error: 'AI provider is not configured. Please enter an API key.' });
       return;
     }
 
-    const data = userDoc.data();
-    const provider = data?.aiProvider || 'gemini';
-    const encryptedKey = provider === 'openai' ? data?.openaiApiKey : data?.geminiApiKey;
+    const providerName = data.aiProvider || 'gemini';
+    const encryptedKey = data.encryptedApiKey;
+    const selectedModel = model || data.selectedModel || ProviderFactory.getAvailableModels(providerName)[0];
 
     if (!encryptedKey) {
-      res.status(400).json({ error: `API key for provider ${provider} is not configured.` });
+      res.status(400).json({ error: `API key for provider ${providerName} is not configured.` });
       return;
     }
 
@@ -304,22 +209,107 @@ app.post('/api/ai/gemini-proxy', authenticateFirebaseUser, async (req, res) => {
       return;
     }
 
-    // Log last 6 chars of key for verification
-    if (decryptedKey && decryptedKey.length > 6) {
-      const prefix = decryptedKey.substring(0, 4);
-      const suffix = decryptedKey.substring(decryptedKey.length - 6);
-      console.log(`[BYOK AUDIT] Decrypted API Key: ${prefix}********${suffix}`);
-    } else {
-      console.log(`[BYOK AUDIT] Decrypted API Key: ${decryptedKey}`);
+    const providerInstance = ProviderFactory.getProvider(providerName, decryptedKey);
+    
+    let result: any;
+    let actualAction = action;
+    if (!actualAction) {
+      if (inlineData) {
+        actualAction = 'transcribeAudio';
+      } else if (responseSchema) {
+        actualAction = 'generateStructuredOutput';
+      } else {
+        actualAction = 'generateText';
+      }
     }
 
-    const adapter = getAIAdapter(provider, decryptedKey, model);
-    const result = await adapter.generateContent(prompt, inlineData, responseSchema);
+    if (actualAction === 'transcribeAudio') {
+      const base64 = inlineData?.data || req.body.base64Audio;
+      const mType = inlineData?.mimeType || req.body.mimeType || 'audio/webm';
+      result = await providerInstance.transcribeAudio(base64, mType, selectedModel);
+    } else if (actualAction === 'generateStructuredOutput') {
+      result = await providerInstance.generateStructuredOutput(prompt, responseSchema, selectedModel);
+    } else if (actualAction === 'generateQuiz') {
+      result = await providerInstance.generateQuiz(prompt, selectedModel);
+    } else if (actualAction === 'generateMindMap') {
+      result = await providerInstance.generateMindMap(prompt, selectedModel);
+    } else if (actualAction === 'generateFlashcards') {
+      result = await providerInstance.generateFlashcards(prompt, selectedModel);
+    } else if (actualAction === 'generatePresentation') {
+      result = await providerInstance.generatePresentation(prompt, selectedModel);
+    } else if (actualAction === 'generateNotes') {
+      result = await providerInstance.generateNotes(prompt, selectedModel);
+    } else {
+      result = await providerInstance.generateText(prompt, selectedModel);
+    }
+
+    const latency = Date.now() - startTime;
+    const responseString = typeof result === 'string' ? result : JSON.stringify(result);
+    const tokenUsage = providerInstance.estimateTokenUsage(prompt || '', responseString);
+
+    const currentStats = data.usageStats || { todayRequests: 0, estimatedTokens: 0, avgResponseTime: 0, failedRequests: 0, errors429: 0, errors503: 0 };
+    const newRequests = (currentStats.todayRequests || 0) + 1;
+    const newTotalTokens = (currentStats.estimatedTokens || 0) + tokenUsage.totalTokens;
+    const newAvgTime = (((currentStats.avgResponseTime || 0) * (newRequests - 1)) + (latency / 1000)) / newRequests;
+    
+    const updatedStats = {
+      ...currentStats,
+      todayRequests: newRequests,
+      estimatedTokens: newTotalTokens,
+      avgResponseTime: parseFloat(newAvgTime.toFixed(2))
+    };
+
+    const monthlyTokens = (data.estimatedMonthlyTokens || 0) + tokenUsage.totalTokens;
+
+    await userDocRef.set({
+      usageStats: updatedStats,
+      estimatedMonthlyTokens: monthlyTokens,
+      lastHealthCheck: {
+        status: 'Healthy',
+        latency,
+        checkedAt: new Date()
+      }
+    }, { merge: true });
+
     res.json(result);
   } catch (error: any) {
+    const latency = Date.now() - startTime;
     console.error('AI Proxy request failed:', error);
     const status = error.status || 500;
     const message = error.message || 'Internal server error in AI proxy';
+
+    let errorType = 'other';
+    if (status === 429) errorType = '429';
+    else if (status === 503) errorType = '503';
+
+    try {
+      const adminDb = getFirestore();
+      const userDocRef = adminDb.collection('users').doc(uid);
+      const userDoc = await userDocRef.get();
+      if (userDoc.exists) {
+        const d = userDoc.data();
+        const currentStats = d?.usageStats || { todayRequests: 0, estimatedTokens: 0, avgResponseTime: 0, failedRequests: 0, errors429: 0, errors503: 0 };
+        const updatedStats = {
+          ...currentStats,
+          failedRequests: (currentStats.failedRequests || 0) + 1,
+          errors429: errorType === '429' ? (currentStats.errors429 || 0) + 1 : (currentStats.errors429 || 0),
+          errors503: errorType === '503' ? (currentStats.errors503 || 0) + 1 : (currentStats.errors503 || 0)
+        };
+
+        const healthStatus = errorType === '429' ? 'Rate Limited' : (errorType === '503' ? 'Service Unavailable' : 'Invalid Key');
+        
+        await userDocRef.set({
+          usageStats: updatedStats,
+          lastHealthCheck: {
+            status: healthStatus,
+            latency,
+            checkedAt: new Date()
+          }
+        }, { merge: true });
+      }
+    } catch (dbErr) {
+      console.error('Failed to write failure stats:', dbErr);
+    }
 
     if (status === 429) {
       res.status(429).json({ error: 'Your API key is invalid or quota has been exhausted. Please update your key in Settings.' });
@@ -342,14 +332,42 @@ app.get('/api/ai/config-status', authenticateFirebaseUser, async (req, res) => {
     const userDocRef = adminDb.collection('users').doc(uid);
     const userDoc = await userDocRef.get();
 
-    if (!userDoc.exists || !userDoc.data()?.providerConfigured) {
+    if (!userDoc.exists) {
       res.json({ configured: false });
       return;
     }
 
-    const data = userDoc.data();
-    const provider = data?.aiProvider || 'gemini';
-    const encryptedKey = provider === 'openai' ? data?.openaiApiKey : data?.geminiApiKey;
+    let data = userDoc.data();
+
+    // Migration logic
+    if (data && !data.providerConfigured && (data.geminiApiKey || data.openaiApiKey)) {
+      const isOp = !!data.openaiApiKey;
+      const keyToMigrate = isOp ? data.openaiApiKey : data.geminiApiKey;
+      const provToMigrate = isOp ? 'openai' : 'gemini';
+      const modelToMigrate = isOp ? 'gpt-4o-mini' : 'gemini-2.5-flash';
+      
+      const migrationFields = {
+        aiProvider: provToMigrate,
+        providerConfigured: true,
+        encryptedApiKey: keyToMigrate,
+        selectedModel: modelToMigrate,
+        providerLastValidated: data.geminiLastValidated || new Date(),
+        estimatedMonthlyTokens: 0,
+        usageStats: { todayRequests: 0, estimatedTokens: 0, avgResponseTime: 0, failedRequests: 0, errors429: 0, errors503: 0 },
+        lastHealthCheck: { status: 'Healthy', latency: 0, checkedAt: new Date() }
+      };
+      
+      await userDocRef.set(migrationFields, { merge: true });
+      data = { ...data, ...migrationFields };
+    }
+
+    if (!data || !data.providerConfigured) {
+      res.json({ configured: false });
+      return;
+    }
+
+    const provider = data.aiProvider || 'gemini';
+    const encryptedKey = data.encryptedApiKey;
     let maskedKey = '';
 
     if (encryptedKey) {
@@ -369,7 +387,11 @@ app.get('/api/ai/config-status', authenticateFirebaseUser, async (req, res) => {
       configured: true,
       provider,
       maskedKey,
-      lastValidated: data?.geminiLastValidated || null
+      lastValidated: data.providerLastValidated || data.geminiLastValidated || null,
+      selectedModel: data.selectedModel || '',
+      usageStats: data.usageStats || { todayRequests: 0, estimatedTokens: 0, avgResponseTime: 0, failedRequests: 0, errors429: 0, errors503: 0 },
+      estimatedMonthlyTokens: data.estimatedMonthlyTokens || 0,
+      lastHealthCheck: data.lastHealthCheck || { status: 'Healthy', latency: 0, checkedAt: new Date() }
     });
   } catch (error: any) {
     console.error('Error fetching config status:', error);
@@ -393,7 +415,7 @@ app.post('/api/ai/revalidate', authenticateFirebaseUser, async (req, res) => {
 
     const data = userDoc.data();
     const provider = data?.aiProvider || 'gemini';
-    const encryptedKey = provider === 'openai' ? data?.openaiApiKey : data?.geminiApiKey;
+    const encryptedKey = data?.encryptedApiKey;
 
     if (!encryptedKey) {
       res.status(400).json({ error: 'API key is not configured.' });
@@ -401,15 +423,15 @@ app.post('/api/ai/revalidate', authenticateFirebaseUser, async (req, res) => {
     }
 
     const decryptedKey = decryptKey(encryptedKey);
-    const adapter = getAIAdapter(provider, decryptedKey);
-    const isValid = await adapter.validateKey();
+    const providerInstance = ProviderFactory.getProvider(provider, decryptedKey);
+    const isValid = await providerInstance.validateKey();
 
     if (!isValid) {
       res.status(400).json({ error: `The configured API key is no longer valid.` });
       return;
     }
 
-    await userDocRef.set({ geminiLastValidated: new Date() }, { merge: true });
+    await userDocRef.set({ providerLastValidated: new Date() }, { merge: true });
 
     res.json({ success: true, message: 'API key revalidated successfully.' });
   } catch (error: any) {
@@ -428,8 +450,13 @@ app.delete('/api/ai/config', authenticateFirebaseUser, async (req, res) => {
     await userDocRef.set({
       geminiApiKey: '',
       openaiApiKey: '',
+      encryptedApiKey: '',
       providerConfigured: false,
-      geminiLastValidated: null
+      providerLastValidated: null,
+      selectedModel: '',
+      estimatedMonthlyTokens: 0,
+      usageStats: null,
+      lastHealthCheck: null
     }, { merge: true });
 
     res.json({ success: true, message: 'AI API key configuration removed successfully' });

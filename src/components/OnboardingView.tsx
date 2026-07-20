@@ -6,11 +6,83 @@ import {
   Phone, 
   ArrowRight,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  ChevronDown,
+  Search,
+  Check,
+  ExternalLink,
+  Lock
 } from 'lucide-react';
 import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebaseConfig';
 import { API_BASE_URL } from '../config';
+
+const PROVIDER_METADATA: Record<string, {
+  name: string;
+  description: string;
+  defaultModel: string;
+  docLink: string;
+  getKeyLink: string;
+  models: string[];
+}> = {
+  gemini: {
+    name: 'Google Gemini',
+    description: 'Highly capable multimodal model for fast note synthesis, quizzes, and mind maps.',
+    defaultModel: 'gemini-2.5-flash',
+    docLink: 'https://ai.google.dev/gemini-api/docs',
+    getKeyLink: 'https://aistudio.google.com/apikey',
+    models: ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-1.5-flash', 'gemini-1.5-pro']
+  },
+  groq: {
+    name: 'Groq',
+    description: 'Ultra-low latency open models. Excellent for speedy revision synthesis.',
+    defaultModel: 'llama-3.3-70b-versatile',
+    docLink: 'https://console.groq.com/docs',
+    getKeyLink: 'https://console.groq.com/keys',
+    models: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768', 'gemma2-9b-it']
+  },
+  openai: {
+    name: 'OpenAI',
+    description: 'Industry-standard general purpose models with high accuracy and speed.',
+    defaultModel: 'gpt-4o-mini',
+    docLink: 'https://platform.openai.com/docs',
+    getKeyLink: 'https://platform.openai.com/api-keys',
+    models: ['gpt-4o-mini', 'gpt-4o', 'gpt-4', 'o3-mini', 'o1-mini']
+  },
+  claude: {
+    name: 'Anthropic Claude',
+    description: 'Advanced reasoning and writing capabilities. Top-tier notes output quality.',
+    defaultModel: 'claude-3-5-sonnet-latest',
+    docLink: 'https://docs.anthropic.com',
+    getKeyLink: 'https://console.anthropic.com/settings/keys',
+    models: ['claude-3-5-sonnet-latest', 'claude-3-5-haiku-latest', 'claude-3-opus-20240229']
+  },
+  deepseek: {
+    name: 'DeepSeek',
+    description: 'High-performance cost-effective reasoning and general-purpose models.',
+    defaultModel: 'deepseek-chat',
+    docLink: 'https://api-docs.deepseek.com',
+    getKeyLink: 'https://platform.deepseek.com/api_keys',
+    models: ['deepseek-chat', 'deepseek-reasoner']
+  },
+  openrouter: {
+    name: 'OpenRouter',
+    description: 'Access any open or closed model through a single unified API key.',
+    defaultModel: 'google/gemini-2.5-flash',
+    docLink: 'https://openrouter.ai/docs',
+    getKeyLink: 'https://openrouter.ai/keys',
+    models: ['google/gemini-2.5-flash', 'meta-llama/llama-3.3-70b-instruct', 'deepseek/deepseek-chat', 'anthropic/claude-3.5-sonnet', 'openai/gpt-4o-mini']
+  },
+  mistral: {
+    name: 'Mistral',
+    description: 'Sovereign European open-source models with high academic synthesis reasoning.',
+    defaultModel: 'mistral-large-latest',
+    docLink: 'https://docs.mistral.ai',
+    getKeyLink: 'https://console.mistral.ai/api-keys',
+    models: ['mistral-large-latest', 'mistral-small-latest', 'open-mixtral-8x22b', 'codestral-latest']
+  }
+};
+
 
 interface OnboardingViewProps {
   userId: string;
@@ -55,8 +127,12 @@ export default function OnboardingView({
   const [countryCode, setCountryCode] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
 
-  // Gemini Key Configuration
-  const [geminiKey, setGeminiKey] = useState('');
+  // AI Provider configuration state
+  const [selectedProvider, setSelectedProvider] = useState('gemini');
+  const [apiKey, setApiKey] = useState('');
+  const [selectedModel, setSelectedModel] = useState('gemini-2.5-flash');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isValidatingKey, setIsValidatingKey] = useState(false);
   const [validationSuccess, setValidationSuccess] = useState(false);
 
@@ -198,8 +274,8 @@ export default function OnboardingView({
     setError(null);
     setValidationSuccess(false);
 
-    if (!geminiKey.trim()) {
-      setError('Please enter a Gemini API Key.');
+    if (!apiKey.trim()) {
+      setError(`Please enter an API Key for ${PROVIDER_METADATA[selectedProvider]?.name || 'the selected provider'}.`);
       return;
     }
 
@@ -217,8 +293,9 @@ export default function OnboardingView({
           'Authorization': `Bearer ${idToken}`
         },
         body: JSON.stringify({
-          key: geminiKey.trim(),
-          provider: 'gemini'
+          key: apiKey.trim(),
+          provider: selectedProvider,
+          model: selectedModel
         })
       });
 
@@ -244,7 +321,7 @@ export default function OnboardingView({
       }, 1000);
     } catch (err: any) {
       console.error("Validation error:", err);
-      setError(err.message || 'Failed to validate API key. Please check your key and quota.');
+      setError(err.message || 'Failed to validate API key. Please check your key and network connection.');
     } finally {
       setIsValidatingKey(false);
     }
@@ -497,40 +574,147 @@ export default function OnboardingView({
             {step === 4 && (
               <div className="space-y-4 animate-fade-in text-left">
                 <div className="border-b border-neutral-900/10 dark:border-neutral-800/40 pb-2 mb-2">
-                  <h3 className="text-sm font-black">AI Configuration</h3>
-                  <p className="text-[10px] text-neutral-400">Bring Your Own Key (BYOK) - connect your Gemini API Key.</p>
+                  <h3 className="text-sm font-black">Configure Your AI Provider</h3>
+                  <p className="text-[10px] text-neutral-400">Bring Your Own Key (BYOK) - connect and validate your preferred LLM provider.</p>
                 </div>
-                <div className="space-y-2">
+
+                {/* Searchable Dropdown */}
+                <div className="space-y-1.5 relative">
                   <label className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 block">
-                    Gemini API Key *
+                    Select Provider *
+                  </label>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                      className={`w-full flex items-center justify-between rounded-xl border px-4 py-3 text-xs outline-none cursor-pointer transition-all ${
+                        isDark
+                          ? 'bg-[#18191e] border-neutral-800 text-white focus:border-indigo-500'
+                          : 'bg-gray-50 border-gray-200 text-gray-900 focus:border-black'
+                      }`}
+                    >
+                      <span>{PROVIDER_METADATA[selectedProvider]?.name || 'Choose Provider...'}</span>
+                      <ChevronDown className="h-4 w-4 text-neutral-400" />
+                    </button>
+
+                    {isDropdownOpen && (
+                      <div className={`absolute z-50 mt-1.5 w-full rounded-xl border shadow-xl p-2.5 space-y-2 ${
+                        isDark ? 'bg-[#0e0f13] border-neutral-800 text-white' : 'bg-white border-gray-200 text-gray-900'
+                      }`}>
+                        <div className="relative">
+                          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-500" />
+                          <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search providers..."
+                            className={`w-full rounded-lg border pl-8 pr-3 py-1.5 text-xs outline-none ${
+                              isDark ? 'bg-[#18191e] border-neutral-800 focus:border-indigo-500' : 'bg-gray-50 border-gray-200 focus:border-black'
+                            }`}
+                          />
+                        </div>
+                        <div className="max-h-48 overflow-y-auto space-y-0.5">
+                          {Object.entries(PROVIDER_METADATA)
+                            .filter(([_, meta]) => meta.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                            .map(([key, meta]) => (
+                              <button
+                                key={key}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedProvider(key);
+                                  setSelectedModel(meta.defaultModel);
+                                  setIsDropdownOpen(false);
+                                  setSearchQuery('');
+                                }}
+                                className={`w-full text-left px-3 py-2 rounded-lg text-xs flex items-center justify-between cursor-pointer hover:bg-indigo-500/10 hover:text-indigo-400 transition-colors ${
+                                  selectedProvider === key ? 'bg-indigo-500/10 text-indigo-400 font-bold' : ''
+                                }`}
+                              >
+                                <span>{meta.name}</span>
+                                {selectedProvider === key && <Check className="h-3.5 w-3.5" />}
+                              </button>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Selected Provider Details */}
+                <div className={`p-4 rounded-xl border space-y-3.5 ${
+                  isDark ? 'bg-[#0f1015]/60 border-neutral-800/80' : 'bg-gray-50/70 border-gray-200/80'
+                }`}>
+                  <div>
+                    <h4 className="text-xs font-bold text-indigo-400">{PROVIDER_METADATA[selectedProvider]?.name}</h4>
+                    <p className="text-[10px] text-neutral-400 mt-0.5 leading-normal">{PROVIDER_METADATA[selectedProvider]?.description}</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div className="space-y-1">
+                      <span className="text-[9px] uppercase font-bold text-neutral-500 tracking-wider">Default Model</span>
+                      <div className="font-semibold text-neutral-200">{PROVIDER_METADATA[selectedProvider]?.defaultModel}</div>
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <span className="text-[9px] uppercase font-bold text-neutral-500 tracking-wider">Choose Model</span>
+                      <select
+                        value={selectedModel}
+                        onChange={(e) => setSelectedModel(e.target.value)}
+                        className={`w-full rounded-lg border p-1 px-2 text-xs outline-none cursor-pointer ${
+                          isDark ? 'border-neutral-800 bg-[#0c0d12] text-white focus:border-indigo-500' : 'border-gray-200 bg-white text-gray-900 focus:border-black'
+                        }`}
+                      >
+                        {PROVIDER_METADATA[selectedProvider]?.models.map(m => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2.5 pt-1 border-t border-neutral-800/40">
+                    <a
+                      href={PROVIDER_METADATA[selectedProvider]?.getKeyLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:text-indigo-300 transition-colors"
+                    >
+                      Get API Key <ExternalLink className="h-3 w-3" />
+                    </a>
+                    <span className="text-neutral-600">•</span>
+                    <a
+                      href={PROVIDER_METADATA[selectedProvider]?.docLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-400 hover:text-neutral-300 transition-colors"
+                    >
+                      Documentation <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+                </div>
+
+                {/* API Key Input */}
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 block">
+                    API Key *
                   </label>
                   <input
                     type="password"
                     required
-                    value={geminiKey}
-                    onChange={(e) => setGeminiKey(e.target.value)}
-                    placeholder="AIzaSy..."
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder={`Paste your secret API key for ${PROVIDER_METADATA[selectedProvider]?.name}`}
                     className={`w-full rounded-xl border px-4 py-3 text-xs outline-none transition-all ${
                       isDark
                         ? 'bg-[#18191e] border-neutral-800 text-white placeholder-neutral-500 focus:border-indigo-500'
                         : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 focus:border-black'
                     }`}
                   />
-                  <p className="text-[10px] text-neutral-400 mt-1 leading-normal">
-                    Don't have a key? Get one for free at{' '}
-                    <a
-                      href="https://aistudio.google.com/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-indigo-500 hover:underline font-bold"
-                    >
-                      Google AI Studio
-                    </a>.
-                  </p>
                 </div>
-                <div className="rounded-xl bg-indigo-500/5 border border-indigo-500/10 p-3.5 mt-2">
+
+                <div className="rounded-xl bg-indigo-500/5 border border-indigo-500/10 p-3 mt-1.5 flex gap-2">
+                  <Lock className="h-4 w-4 text-indigo-400 shrink-0 mt-0.5" />
                   <p className="text-[10px] leading-relaxed text-indigo-400/90">
-                    💡 **Security Note:** Your key is encrypted server-side using AES-256-GCM and never exposed to the frontend. NoteIT AI uses your key directly to call the Gemini API on your behalf.
+                    Your key is securely encrypted server-side using AES-256-GCM and is never transmitted or exposed to the frontend.
                   </p>
                 </div>
               </div>

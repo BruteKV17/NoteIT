@@ -16,11 +16,101 @@ import {
   ExternalLink,
   Key,
   Trash2,
-  Lock
+  Lock,
+  ChevronDown,
+  Search,
+  Activity,
+  TrendingUp,
+  AlertTriangle
 } from 'lucide-react';
 import { PageId, UserSettings } from '../types';
 import { auth } from '../firebaseConfig';
 import { API_BASE_URL } from '../config';
+
+const PROVIDER_METADATA: Record<string, {
+  name: string;
+  description: string;
+  defaultModel: string;
+  docLink: string;
+  getKeyLink: string;
+  models: string[];
+  endpoint: string;
+}> = {
+  gemini: {
+    name: 'Google Gemini',
+    description: 'Highly capable multimodal model for fast note synthesis, quizzes, and mind maps.',
+    defaultModel: 'gemini-2.5-flash',
+    docLink: 'https://ai.google.dev/gemini-api/docs',
+    getKeyLink: 'https://aistudio.google.com/apikey',
+    models: ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-1.5-flash', 'gemini-1.5-pro'],
+    endpoint: 'generativelanguage.googleapis.com'
+  },
+  groq: {
+    name: 'Groq',
+    description: 'Ultra-low latency open models. Excellent for speedy revision synthesis.',
+    defaultModel: 'llama-3.3-70b-versatile',
+    docLink: 'https://console.groq.com/docs',
+    getKeyLink: 'https://console.groq.com/keys',
+    models: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768', 'gemma2-9b-it'],
+    endpoint: 'api.groq.com/openai/v1'
+  },
+  openai: {
+    name: 'OpenAI',
+    description: 'Industry-standard general purpose models with high accuracy and speed.',
+    defaultModel: 'gpt-4o-mini',
+    docLink: 'https://platform.openai.com/docs',
+    getKeyLink: 'https://platform.openai.com/api-keys',
+    models: ['gpt-4o-mini', 'gpt-4o', 'gpt-4', 'o3-mini', 'o1-mini'],
+    endpoint: 'api.openai.com/v1'
+  },
+  claude: {
+    name: 'Anthropic Claude',
+    description: 'Advanced reasoning and writing capabilities. Top-tier notes output quality.',
+    defaultModel: 'claude-3-5-sonnet-latest',
+    docLink: 'https://docs.anthropic.com',
+    getKeyLink: 'https://console.anthropic.com/settings/keys',
+    models: ['claude-3-5-sonnet-latest', 'claude-3-5-haiku-latest', 'claude-3-opus-20240229'],
+    endpoint: 'api.anthropic.com/v1'
+  },
+  deepseek: {
+    name: 'DeepSeek',
+    description: 'High-performance cost-effective reasoning and general-purpose models.',
+    defaultModel: 'deepseek-chat',
+    docLink: 'https://api-docs.deepseek.com',
+    getKeyLink: 'https://platform.deepseek.com/api_keys',
+    models: ['deepseek-chat', 'deepseek-reasoner'],
+    endpoint: 'api.deepseek.com/v1'
+  },
+  openrouter: {
+    name: 'OpenRouter',
+    description: 'Access any open or closed model through a single unified API key.',
+    defaultModel: 'google/gemini-2.5-flash',
+    docLink: 'https://openrouter.ai/docs',
+    getKeyLink: 'https://openrouter.ai/keys',
+    models: ['google/gemini-2.5-flash', 'meta-llama/llama-3.3-70b-instruct', 'deepseek/deepseek-chat', 'anthropic/claude-3.5-sonnet', 'openai/gpt-4o-mini'],
+    endpoint: 'openrouter.ai/api/v1'
+  },
+  mistral: {
+    name: 'Mistral',
+    description: 'Sovereign European open-source models with high academic synthesis reasoning.',
+    defaultModel: 'mistral-large-latest',
+    docLink: 'https://docs.mistral.ai',
+    getKeyLink: 'https://console.mistral.ai/api-keys',
+    models: ['mistral-large-latest', 'mistral-small-latest', 'open-mixtral-8x22b', 'codestral-latest'],
+    endpoint: 'api.mistral.ai/v1'
+  }
+};
+
+const PROVIDER_COSTS: Record<string, { input: number; output: number }> = {
+  gemini: { input: 0.075, output: 0.30 }, // per million tokens
+  groq: { input: 0.59, output: 0.79 },
+  openai: { input: 0.15, output: 0.60 },
+  claude: { input: 3.00, output: 15.00 },
+  deepseek: { input: 0.14, output: 0.28 },
+  openrouter: { input: 0.10, output: 0.40 },
+  mistral: { input: 2.00, output: 6.00 }
+};
+
 
 const COUNTRY_CODES = [
   { code: '+1', name: 'United States / Canada (+1)' },
@@ -71,14 +161,35 @@ export default function SettingsView({
   const [synthesis, setSynthesis] = useState(settings.aiLevels.highIntensitySynthesis);
 
   // AI Provider & API Keys state
-  const [aiProvider, setAiProvider] = useState<'gemini' | 'openai'>('gemini');
+  const [aiProvider, setAiProvider] = useState<string>('gemini');
+  const [selectedModel, setSelectedModel] = useState<string>('gemini-2.5-flash');
   
+  // Search & custom dropdowns
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
+
   // Configuration Status state
   const [configStatus, setConfigStatus] = useState<{
     configured: boolean;
     provider?: string;
     maskedKey?: string;
     lastValidated?: string | null;
+    selectedModel?: string;
+    usageStats?: {
+      todayRequests: number;
+      estimatedTokens: number;
+      avgResponseTime: number;
+      failedRequests: number;
+      errors429: number;
+      errors503: number;
+    };
+    estimatedMonthlyTokens?: number;
+    lastHealthCheck?: {
+      status: string;
+      latency: number;
+      checkedAt: string;
+    };
   } | null>(null);
   const [isLoadingConfig, setIsLoadingConfig] = useState(true);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -87,6 +198,7 @@ export default function SettingsView({
   const [savingKey, setSavingKey] = useState(false);
   const [newKey, setNewKey] = useState('');
   const [showReplaceForm, setShowReplaceForm] = useState(false);
+
 
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -167,6 +279,7 @@ export default function SettingsView({
         setConfigStatus(data);
         if (data.configured) {
           setAiProvider(data.provider || 'gemini');
+          setSelectedModel(data.selectedModel || PROVIDER_METADATA[data.provider || 'gemini']?.defaultModel || '');
         }
       }
     } catch (err) {
@@ -227,7 +340,6 @@ export default function SettingsView({
         }
       });
       if (res.ok) {
-        // Redirect to onboarding page by reloading
         window.location.reload();
       } else {
         const errorData = await res.json().catch(() => ({}));
@@ -261,7 +373,8 @@ export default function SettingsView({
         },
         body: JSON.stringify({
           key: newKey.trim(),
-          provider: aiProvider
+          provider: aiProvider,
+          model: selectedModel
         })
       });
       if (res.ok) {
@@ -521,47 +634,70 @@ export default function SettingsView({
                 <span className="text-xs text-neutral-400">Fetching API Key telemetry...</span>
               </div>
             ) : (
-              <div className="space-y-4">
-                {/* Usage Dashboard */}
+              <div className="space-y-5">
+                {/* AI Providers Connection Telemetry */}
                 <div className={`p-5 rounded-xl border space-y-4 ${
                   theme === 'dark' ? 'bg-[#08090c]/40 border-neutral-900' : 'bg-gray-50 border-gray-200'
                 }`}>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-neutral-800/40">
                     <div>
-                      <h4 className={`text-xs font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>AI API Connection Telemetry</h4>
+                      <h4 className={`text-xs font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>AI Connection Telemetry</h4>
                       <p className="text-[10px] text-gray-400 mt-0.5">Real-time status of your secure Bring Your Own Key configuration.</p>
                     </div>
-                    <span className={`self-start sm:self-center px-3 py-1 rounded-full text-[10px] font-black tracking-wide uppercase ${
-                      configStatus?.configured
-                        ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                        : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
-                    }`}>
-                      {configStatus?.configured ? 'Connected' : 'Not Configured'}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black tracking-wide uppercase ${
+                        configStatus?.lastHealthCheck?.status === 'Healthy'
+                          ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                          : configStatus?.lastHealthCheck?.status === 'Slow'
+                            ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                            : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
+                      }`}>
+                        {configStatus?.lastHealthCheck?.status || 'Unknown'}
+                      </span>
+                      <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black tracking-wide uppercase ${
+                        configStatus?.configured
+                          ? 'bg-indigo-500/15 text-indigo-400 border border-indigo-500/30'
+                          : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
+                      }`}>
+                        {configStatus?.configured ? 'Connected' : 'Not Configured'}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
                     <div>
                       <div className="text-neutral-400 text-[10px] font-bold uppercase tracking-wider">AI Provider</div>
                       <div className="mt-1 font-semibold text-neutral-200">
-                        {configStatus?.provider === 'openai' ? 'OpenAI GPT-4o-mini' : 'Gemini 2.5 Flash'}
+                        {PROVIDER_METADATA[configStatus?.provider || '']?.name || configStatus?.provider || 'None'}
                       </div>
                     </div>
                     <div>
-                      <div className="text-neutral-400 text-[10px] font-bold uppercase tracking-wider">Key Security</div>
-                      <div className="mt-1 font-semibold text-neutral-200 flex items-center gap-1">
-                        <Lock className="h-3 w-3 text-indigo-400" />
-                        <span>AES-256-GCM Secure</span>
+                      <div className="text-neutral-400 text-[10px] font-bold uppercase tracking-wider">Active Model</div>
+                      <div className="mt-1 font-mono text-neutral-300 font-bold">
+                        {configStatus?.selectedModel || 'None'}
                       </div>
                     </div>
                     <div>
-                      <div className="text-neutral-400 text-[10px] font-bold uppercase tracking-wider">Active Mask</div>
+                      <div className="text-neutral-400 text-[10px] font-bold uppercase tracking-wider">API Key Mask</div>
                       <div className="mt-1 font-mono font-bold text-neutral-300">
                         {configStatus?.maskedKey || 'No key loaded'}
                       </div>
                     </div>
                     <div>
-                      <div className="text-neutral-400 text-[10px] font-bold uppercase tracking-wider">Last Checked</div>
+                      <div className="text-neutral-400 text-[10px] font-bold uppercase tracking-wider">Latency (RTT)</div>
+                      <div className="mt-1 font-semibold text-neutral-200">
+                        {configStatus?.lastHealthCheck?.latency !== undefined ? `${configStatus.lastHealthCheck.latency} ms` : 'N/A'}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-neutral-400 text-[10px] font-bold uppercase tracking-wider">Security Profile</div>
+                      <div className="mt-1 font-semibold text-neutral-200 flex items-center gap-1">
+                        <Lock className="h-3 w-3 text-indigo-400" />
+                        <span>AES-256-GCM</span>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-neutral-400 text-[10px] font-bold uppercase tracking-wider">Last Validated</div>
                       <div className="mt-1 font-semibold text-neutral-200">
                         {configStatus?.lastValidated
                           ? new Date(configStatus.lastValidated).toLocaleDateString(undefined, {
@@ -580,13 +716,11 @@ export default function SettingsView({
                       onClick={handleRevalidateKey}
                       disabled={revalidating || !configStatus?.configured}
                       className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${
-                        theme === 'dark'
-                          ? 'bg-neutral-800 hover:bg-neutral-700 text-white'
-                          : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
+                        theme === 'dark' ? 'bg-neutral-800 hover:bg-neutral-700 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
                       }`}
                     >
                       <RefreshCw className={`h-3.5 w-3.5 ${revalidating ? 'animate-spin' : ''}`} />
-                      <span>Revalidate Connection</span>
+                      <span>Validate Again</span>
                     </button>
 
                     <button
@@ -598,7 +732,7 @@ export default function SettingsView({
                       }`}
                     >
                       <Key className="h-3.5 w-3.5" />
-                      <span>{showReplaceForm ? 'Hide Replace Form' : 'Replace API Key'}</span>
+                      <span>{showReplaceForm ? 'Hide Settings' : 'Change Provider'}</span>
                     </button>
 
                     <button
@@ -607,9 +741,145 @@ export default function SettingsView({
                       className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all bg-rose-600/10 border border-rose-500/20 text-rose-400 hover:bg-rose-600/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ml-auto"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
-                      <span>{deletingKey ? 'Deleting...' : 'Delete Key'}</span>
+                      <span>Delete Key</span>
                     </button>
                   </div>
+                </div>
+
+                {/* AI Usage Dashboard */}
+                <div className={`p-5 rounded-xl border space-y-4 ${
+                  theme === 'dark' ? 'bg-[#08090c]/40 border-neutral-900' : 'bg-gray-50 border-gray-200'
+                }`}>
+                  <div>
+                    <h4 className={`text-xs font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>AI Usage Dashboard</h4>
+                    <p className="text-[10px] text-gray-400 mt-0.5">Estimated metrics tracked locally from request execution counts.</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+                    <div className="p-3 rounded-lg bg-neutral-950/20 border border-neutral-800/20">
+                      <div className="text-neutral-400 text-[9px] font-bold uppercase tracking-wider">Today's Requests</div>
+                      <div className="mt-1.5 text-lg font-black text-white">{configStatus?.usageStats?.todayRequests || 0}</div>
+                    </div>
+                    <div className="p-3 rounded-lg bg-neutral-950/20 border border-neutral-800/20">
+                      <div className="text-neutral-400 text-[9px] font-bold uppercase tracking-wider">Monthly Tokens</div>
+                      <div className="mt-1.5 text-lg font-black text-white">
+                        {configStatus?.estimatedMonthlyTokens ? `${(configStatus.estimatedMonthlyTokens / 1000).toFixed(0)}K` : '0K'}
+                      </div>
+                    </div>
+                    <div className="p-3 rounded-lg bg-neutral-950/20 border border-neutral-800/20">
+                      <div className="text-neutral-400 text-[9px] font-bold uppercase tracking-wider">Monthly Cost Est.</div>
+                      <div className="mt-1.5 text-lg font-black text-indigo-400">
+                        ${((configStatus?.estimatedMonthlyTokens || 0) / 1000000 * (PROVIDER_COSTS[configStatus?.provider || '']?.output || 0.35)).toFixed(3)}
+                      </div>
+                    </div>
+                    <div className="p-3 rounded-lg bg-neutral-950/20 border border-neutral-800/20">
+                      <div className="text-neutral-400 text-[9px] font-bold uppercase tracking-wider">Response Speed</div>
+                      <div className="mt-1.5 text-lg font-black text-emerald-400">
+                        {configStatus?.usageStats?.avgResponseTime ? `${configStatus.usageStats.avgResponseTime}s` : 'N/A'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Usage Meter Progress Bar */}
+                  <div className="space-y-2 pt-2">
+                    <div className="flex justify-between items-center text-[10px] font-bold">
+                      <span className="text-neutral-400">ESTIMATED MONTHLY TOKENS UTILIZATION</span>
+                      <span className="text-indigo-400">
+                        {((configStatus?.estimatedMonthlyTokens || 0) / 5000000 * 100).toFixed(1)}% ({((configStatus?.estimatedMonthlyTokens || 0) / 1000000).toFixed(2)}M / 5.00M)
+                      </span>
+                    </div>
+                    <div className="w-full bg-neutral-800/60 rounded-full h-2.5 overflow-hidden">
+                      <div
+                        className="bg-indigo-500 h-2.5 rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min(100, ((configStatus?.estimatedMonthlyTokens || 0) / 5000000 * 100))}%` }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  {/* Horizontal visual chart */}
+                  <div className="grid grid-cols-3 gap-2 pt-2 text-[10px]">
+                    <div className="flex flex-col gap-1.5 p-2 rounded-lg bg-neutral-950/10 border border-neutral-900/60">
+                      <span className="text-neutral-400 uppercase font-black tracking-wider text-[8px]">Failure Rates</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-rose-400 font-bold">{configStatus?.usageStats?.failedRequests || 0}</span>
+                        <span className="text-neutral-500">Failed calls</span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1.5 p-2 rounded-lg bg-neutral-950/10 border border-neutral-900/60">
+                      <span className="text-neutral-400 uppercase font-black tracking-wider text-[8px]">Rate Limiting (429)</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-amber-400 font-bold">{configStatus?.usageStats?.errors429 || 0}</span>
+                        <span className="text-neutral-500">Errors</span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1.5 p-2 rounded-lg bg-neutral-950/10 border border-neutral-900/60">
+                      <span className="text-neutral-400 uppercase font-black tracking-wider text-[8px]">Service Faults (503)</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-rose-500 font-bold">{configStatus?.usageStats?.errors503 || 0}</span>
+                        <span className="text-neutral-500">Errors</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Diagnostics Panel */}
+                <div className={`p-4 rounded-xl border ${
+                  theme === 'dark' ? 'bg-[#08090c]/40 border-neutral-900' : 'bg-gray-50 border-gray-200'
+                }`}>
+                  <button
+                    type="button"
+                    onClick={() => setShowDiagnostics(!showDiagnostics)}
+                    className="w-full flex items-center justify-between text-xs font-bold text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <Activity className="h-4 w-4 text-indigo-400" />
+                      <span>AI Advanced Diagnostics</span>
+                    </div>
+                    <span>{showDiagnostics ? 'Hide Panel' : 'Show Panel'}</span>
+                  </button>
+
+                  {showDiagnostics && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5 pt-4 mt-3 border-t border-neutral-800/40 text-[11px] text-neutral-300 font-mono">
+                      <div className="flex justify-between py-1 border-b border-neutral-900/40">
+                        <span className="text-neutral-500">PROVIDER_ID</span>
+                        <span>{configStatus?.provider || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between py-1 border-b border-neutral-900/40">
+                        <span className="text-neutral-500">ACTIVE_MODEL</span>
+                        <span>{configStatus?.selectedModel || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between py-1 border-b border-neutral-900/40">
+                        <span className="text-neutral-500">API_STATUS</span>
+                        <span className="text-emerald-400">{configStatus?.lastHealthCheck?.status || 'Unknown'}</span>
+                      </div>
+                      <div className="flex justify-between py-1 border-b border-neutral-900/40">
+                        <span className="text-neutral-500">AUTH_MODE</span>
+                        <span>Bearer JWT</span>
+                      </div>
+                      <div className="flex justify-between py-1 border-b border-neutral-900/40">
+                        <span className="text-neutral-500">AVG_LATENCY</span>
+                        <span>{configStatus?.usageStats?.avgResponseTime ? `${configStatus.usageStats.avgResponseTime}s` : 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between py-1 border-b border-neutral-900/40">
+                        <span className="text-neutral-500">ENDPOINT_URI</span>
+                        <span className="text-[10px] break-all truncate max-w-[150px]">
+                          {PROVIDER_METADATA[configStatus?.provider || '']?.endpoint || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-1 border-b border-neutral-900/40">
+                        <span className="text-neutral-500">ENCRYPTION</span>
+                        <span className="text-indigo-400">AES-256-GCM (Cipher)</span>
+                      </div>
+                      <div className="flex justify-between py-1 border-b border-neutral-900/40">
+                        <span className="text-neutral-500">LAST_HEALTH_VAL</span>
+                        <span className="text-[10px]">
+                          {configStatus?.lastHealthCheck?.checkedAt
+                            ? new Date(configStatus.lastHealthCheck.checkedAt).toLocaleTimeString()
+                            : 'N/A'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Replace Key Form */}
@@ -618,41 +888,120 @@ export default function SettingsView({
                     theme === 'dark' ? 'bg-[#0a0b0d]/80 border-neutral-800' : 'bg-gray-50/50 border-gray-200'
                   }`}>
                     <div>
-                      <h4 className="text-xs font-black">Configure New API Key</h4>
-                      <p className="text-[10px] text-neutral-400 mt-0.5">Your key will be securely validated and encrypted before saving.</p>
+                      <h4 className="text-xs font-black">Configure AI Provider Connection</h4>
+                      <p className="text-[10px] text-neutral-400 mt-0.5">Your key is decrypted only during model requests and is encrypted server-side.</p>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <div className="space-y-1.5">
+                      {/* Searchable Dropdown Selector */}
+                      <div className="space-y-1.5 relative">
                         <label className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 block">AI Provider</label>
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                            className={`w-full flex items-center justify-between rounded-lg border p-2.5 text-xs outline-none cursor-pointer ${
+                              theme === 'dark'
+                                ? 'border-neutral-800 bg-[#0c0d12] text-white focus:border-indigo-500'
+                                : 'border-gray-200 bg-white text-gray-900 focus:border-black'
+                            }`}
+                          >
+                            <span>{PROVIDER_METADATA[aiProvider]?.name || 'Select...'}</span>
+                            <ChevronDown className="h-3.5 w-3.5 text-neutral-400" />
+                          </button>
+
+                          {isDropdownOpen && (
+                            <div className={`absolute z-50 mt-1.5 w-60 rounded-xl border shadow-xl p-2.5 space-y-2 ${
+                              theme === 'dark' ? 'bg-[#0e0f13] border-neutral-800 text-white' : 'bg-white border-gray-200 text-gray-900'
+                            }`}>
+                              <div className="relative">
+                                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-500" />
+                                <input
+                                  type="text"
+                                  value={searchQuery}
+                                  onChange={(e) => setSearchQuery(e.target.value)}
+                                  placeholder="Search providers..."
+                                  className={`w-full rounded-lg border pl-8 pr-3 py-1 text-[11px] outline-none ${
+                                    theme === 'dark' ? 'bg-[#18191e] border-neutral-800 focus:border-indigo-500' : 'bg-gray-50 border-gray-200 focus:border-black'
+                                  }`}
+                                />
+                              </div>
+                              <div className="max-h-40 overflow-y-auto space-y-0.5">
+                                {Object.entries(PROVIDER_METADATA)
+                                  .filter(([_, meta]) => meta.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                                  .map(([key, meta]) => (
+                                    <button
+                                      key={key}
+                                      type="button"
+                                      onClick={() => {
+                                        setAiProvider(key);
+                                        setSelectedModel(meta.defaultModel);
+                                        setIsDropdownOpen(false);
+                                        setSearchQuery('');
+                                      }}
+                                      className={`w-full text-left px-2 py-1.5 rounded text-xs flex items-center justify-between cursor-pointer hover:bg-indigo-500/10 hover:text-indigo-400 transition-colors ${
+                                        aiProvider === key ? 'bg-indigo-500/10 text-indigo-400 font-bold' : ''
+                                      }`}
+                                    >
+                                      <span>{meta.name}</span>
+                                      {aiProvider === key && <Check className="h-3 w-3" />}
+                                    </button>
+                                  ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Model Select */}
+                      <div className="space-y-1.5">
+                        <label className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 block font-sans">Active Model</label>
                         <select
-                          value={aiProvider}
-                          onChange={(e) => setAiProvider(e.target.value as any)}
+                          value={selectedModel}
+                          onChange={(e) => setSelectedModel(e.target.value)}
                           className={`w-full rounded-lg border p-2.5 text-xs outline-none cursor-pointer ${
                             theme === 'dark'
                               ? 'border-neutral-800 bg-[#0c0d12] text-white focus:border-indigo-500'
                               : 'border-gray-200 bg-white text-gray-900 focus:border-black'
                           }`}
                         >
-                          <option value="gemini">Gemini 2.5 Flash</option>
-                          <option value="openai">OpenAI GPT-4o-mini</option>
+                          {PROVIDER_METADATA[aiProvider]?.models.map(m => (
+                            <option key={m} value={m}>{m}</option>
+                          ))}
                         </select>
                       </div>
 
-                      <div className="sm:col-span-2 space-y-1.5">
+                      {/* API Key */}
+                      <div className="space-y-1.5">
                         <label className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 block">New API Key *</label>
                         <input
                           type="password"
                           required
                           value={newKey}
                           onChange={(e) => setNewKey(e.target.value)}
-                          placeholder={aiProvider === 'openai' ? 'sk-proj-...' : 'AIzaSy...'}
+                          placeholder={`Secret key for ${PROVIDER_METADATA[aiProvider]?.name}`}
                           className={`w-full rounded-lg border p-2.5 text-xs outline-none ${
                             theme === 'dark'
                               ? 'border-neutral-800 bg-[#0c0d12] text-white focus:border-indigo-500'
                               : 'border-gray-200 bg-white text-gray-900 focus:border-black'
                           }`}
                         />
+                      </div>
+                    </div>
+
+                    <div className="flex gap-4 p-3 rounded-lg bg-indigo-500/5 border border-indigo-500/10 justify-between items-center text-[10px]">
+                      <div className="text-indigo-400/90 leading-relaxed max-w-[65%]">
+                        Official {PROVIDER_METADATA[aiProvider]?.name} keys can be generated from their developer console.
+                      </div>
+                      <div className="flex gap-2">
+                        <a
+                          href={PROVIDER_METADATA[aiProvider]?.getKeyLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 font-bold text-indigo-400 hover:text-indigo-300"
+                        >
+                          Get API Key <ExternalLink className="h-3 w-3" />
+                        </a>
                       </div>
                     </div>
 
@@ -680,7 +1029,7 @@ export default function SettingsView({
                         {savingKey ? (
                           <>
                             <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                            <span>Validating & Saving...</span>
+                            <span>Validating...</span>
                           </>
                         ) : (
                           <span>Save & Connect</span>
