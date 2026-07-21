@@ -88,6 +88,14 @@ const PROVIDER_METADATA: Record<string, {
     docLink: 'https://docs.x.ai',
     getKeyLink: 'https://console.x.ai',
     models: ['grok-2', 'grok-2-latest', 'grok-beta']
+  },
+  nvidia: {
+    name: 'NVIDIA GLM',
+    description: 'High-performance GLM models hosted on NVIDIA NIM API catalog.',
+    defaultModel: 'z-ai/glm-5.2',
+    docLink: 'https://build.nvidia.com/z-ai/glm-5.2',
+    getKeyLink: 'https://build.nvidia.com/',
+    models: ['z-ai/glm-5.2']
   }
 };
 

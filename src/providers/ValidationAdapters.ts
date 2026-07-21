@@ -281,6 +281,53 @@ export class MistralAdapter implements ValidationAdapter {
   }
 }
 
+export class NvidiaAdapter implements ValidationAdapter {
+  async validate(apiKey: string, model?: string): Promise<void> {
+    const selectedModel = model || 'z-ai/glm-5.2';
+    try {
+      const response = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: selectedModel,
+          messages: [{ role: 'user', content: 'ping' }],
+          max_tokens: 1
+        })
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        const status = response.status;
+        let parsed: any = {};
+        try {
+          parsed = JSON.parse(text);
+        } catch {}
+
+        const errMsg = parsed.error?.message || parsed.error || text;
+
+        if (status === 401 || status === 403 || errMsg.includes('API key') || errMsg.includes('unauthorized') || errMsg.includes('invalid')) {
+          throw new ProviderValidationError(`Invalid or unauthorized API key: ${errMsg}`, 401);
+        } else if (status === 404 || errMsg.includes('Model not found') || errMsg.includes('model_not_found') || errMsg.includes('invalid-argument')) {
+          throw new ProviderValidationError(`The selected GLM model is currently unavailable. Please select another supported model.`, 404);
+        } else if (status === 429 || errMsg.includes('quota') || errMsg.includes('rate limit')) {
+          throw new ProviderValidationError(`Rate limit/quota exceeded: ${errMsg}`, 429);
+        } else if (status === 400) {
+          throw new ProviderValidationError(`Bad request/configuration error: ${errMsg}`, 400);
+        } else if (status >= 500) {
+          throw new ProviderValidationError(`NVIDIA GLM service unavailable: ${errMsg}`, 503);
+        } else {
+          throw new ProviderValidationError(`NVIDIA GLM validation failed: ${errMsg}`, status);
+        }
+      }
+    } catch (err: any) {
+      if (err instanceof ProviderValidationError) throw err;
+      throw new ProviderValidationError(`Provider unavailable: ${err.message || 'network timeout or connection failure'}`, 504);
+    }
+  }
+}
+
 export class ValidationAdapterFactory {
   static getAdapter(provider: string): ValidationAdapter {
     switch (provider.toLowerCase()) {
@@ -304,6 +351,10 @@ export class ValidationAdapterFactory {
         return new OpenRouterAdapter();
       case 'mistral':
         return new MistralAdapter();
+      case 'nvidia':
+      case 'glm':
+      case 'nvidia nim':
+        return new NvidiaAdapter();
       default:
         throw new ProviderValidationError(`Unsupported AI provider validation: ${provider}`, 400);
     }

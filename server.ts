@@ -121,6 +121,8 @@ app.post('/api/ai/validate-key', authenticateFirebaseUser, async (req, res) => {
     activeProvider = 'xai';
   } else if (activeProvider === 'claude' || activeProvider === 'anthropic claude') {
     activeProvider = 'anthropic';
+  } else if (activeProvider === 'nvidia' || activeProvider === 'glm' || activeProvider === 'nvidia nim') {
+    activeProvider = 'nvidia';
   }
 
   try {

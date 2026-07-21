@@ -107,6 +107,15 @@ const PROVIDER_METADATA: Record<string, {
     getKeyLink: 'https://console.x.ai',
     models: ['grok-2', 'grok-2-latest', 'grok-beta'],
     endpoint: 'api.x.ai/v1'
+  },
+  nvidia: {
+    name: 'NVIDIA GLM',
+    description: 'High-performance GLM models hosted on NVIDIA NIM API catalog.',
+    defaultModel: 'z-ai/glm-5.2',
+    docLink: 'https://build.nvidia.com/z-ai/glm-5.2',
+    getKeyLink: 'https://build.nvidia.com/',
+    models: ['z-ai/glm-5.2'],
+    endpoint: 'integrate.api.nvidia.com/v1'
   }
 };
 
@@ -118,7 +127,8 @@ const PROVIDER_COSTS: Record<string, { input: number; output: number }> = {
   deepseek: { input: 0.14, output: 0.28 },
   openrouter: { input: 0.10, output: 0.40 },
   mistral: { input: 2.00, output: 6.00 },
-  xai: { input: 2.00, output: 10.00 }
+  xai: { input: 2.00, output: 10.00 },
+  nvidia: { input: 0.55, output: 0.55 }
 };
 
 
@@ -294,6 +304,8 @@ export default function SettingsView({
             normalized = 'xai';
           } else if (normalized.includes('claude') || normalized.includes('anthropic')) {
             normalized = 'anthropic';
+          } else if (normalized.includes('nvidia') || normalized.includes('glm')) {
+            normalized = 'nvidia';
           }
           setAiProvider(normalized);
           setSelectedModel(data.selectedModel || PROVIDER_METADATA[normalized]?.defaultModel || '');

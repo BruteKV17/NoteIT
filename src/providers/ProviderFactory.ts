@@ -7,6 +7,7 @@ import { DeepSeekProvider } from './DeepSeekProvider';
 import { OpenRouterProvider } from './OpenRouterProvider';
 import { MistralProvider } from './MistralProvider';
 import { GrokProvider } from './GrokProvider';
+import { NvidiaProvider } from './NvidiaProvider';
 
 export class ProviderFactory {
   static getProvider(provider: string, apiKey: string): AIProvider {
@@ -33,6 +34,10 @@ export class ProviderFactory {
         return new OpenRouterProvider(apiKey);
       case 'mistral':
         return new MistralProvider(apiKey);
+      case 'nvidia':
+      case 'glm':
+      case 'nvidia nim':
+        return new NvidiaProvider(apiKey);
       default:
         throw new Error(`Unsupported AI provider: ${provider}`);
     }
