@@ -80,6 +80,14 @@ const PROVIDER_METADATA: Record<string, {
     docLink: 'https://docs.mistral.ai',
     getKeyLink: 'https://console.mistral.ai/api-keys',
     models: ['mistral-large-latest', 'mistral-small-latest', 'open-mixtral-8x22b', 'codestral-latest']
+  },
+  grok: {
+    name: 'xAI Grok',
+    description: 'Advanced reasoning, vision, and real-time knowledge capabilities from xAI.',
+    defaultModel: 'grok-2-1212',
+    docLink: 'https://docs.x.ai',
+    getKeyLink: 'https://console.x.ai',
+    models: ['grok-2-1212', 'grok-beta']
   }
 };
 

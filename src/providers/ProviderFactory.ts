@@ -6,6 +6,7 @@ import { ClaudeProvider } from './ClaudeProvider';
 import { DeepSeekProvider } from './DeepSeekProvider';
 import { OpenRouterProvider } from './OpenRouterProvider';
 import { MistralProvider } from './MistralProvider';
+import { GrokProvider } from './GrokProvider';
 
 export class ProviderFactory {
   static getProvider(provider: string, apiKey: string): AIProvider {
@@ -22,6 +23,9 @@ export class ProviderFactory {
         return new ClaudeProvider(apiKey);
       case 'deepseek':
         return new DeepSeekProvider(apiKey);
+      case 'grok':
+      case 'xai grok':
+        return new GrokProvider(apiKey);
       case 'openrouter':
         return new OpenRouterProvider(apiKey);
       case 'mistral':

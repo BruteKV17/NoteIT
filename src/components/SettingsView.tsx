@@ -98,6 +98,15 @@ const PROVIDER_METADATA: Record<string, {
     getKeyLink: 'https://console.mistral.ai/api-keys',
     models: ['mistral-large-latest', 'mistral-small-latest', 'open-mixtral-8x22b', 'codestral-latest'],
     endpoint: 'api.mistral.ai/v1'
+  },
+  grok: {
+    name: 'xAI Grok',
+    description: 'Advanced reasoning, vision, and real-time knowledge capabilities from xAI.',
+    defaultModel: 'grok-2-1212',
+    docLink: 'https://docs.x.ai',
+    getKeyLink: 'https://console.x.ai',
+    models: ['grok-2-1212', 'grok-beta'],
+    endpoint: 'api.x.ai/v1'
   }
 };
 
@@ -108,7 +117,8 @@ const PROVIDER_COSTS: Record<string, { input: number; output: number }> = {
   claude: { input: 3.00, output: 15.00 },
   deepseek: { input: 0.14, output: 0.28 },
   openrouter: { input: 0.10, output: 0.40 },
-  mistral: { input: 2.00, output: 6.00 }
+  mistral: { input: 2.00, output: 6.00 },
+  grok: { input: 2.00, output: 10.00 }
 };
 
 
