@@ -81,7 +81,7 @@ export class OpenAIAdapter implements ValidationAdapter {
 
 export class XAIAdapter implements ValidationAdapter {
   async validate(apiKey: string, model?: string): Promise<void> {
-    const selectedModel = model || 'grok-4.5';
+    const selectedModel = model || 'grok-2';
     try {
       const response = await fetch('https://api.x.ai/v1/chat/completions', {
         method: 'POST',
@@ -107,8 +107,8 @@ export class XAIAdapter implements ValidationAdapter {
 
         if (status === 401 || status === 403 || errMsg.includes('API key') || errMsg.includes('disabled')) {
           throw new ProviderValidationError(`Invalid or unauthorized API key: ${errMsg}`, 401);
-        } else if (status === 404 || errMsg.includes('Model not found') || errMsg.includes('model_not_found')) {
-          throw new ProviderValidationError(`Invalid API endpoint or model: ${errMsg}`, 404);
+        } else if (status === 404 || errMsg.includes('Model not found') || errMsg.includes('model_not_found') || errMsg.includes('invalid-argument')) {
+          throw new ProviderValidationError(`The selected xAI model is currently unavailable. Please select another supported model.`, 404);
         } else if (status === 429 || errMsg.includes('quota') || errMsg.includes('rate limit')) {
           throw new ProviderValidationError(`Rate limit/quota exceeded: ${errMsg}`, 429);
         } else if (status === 400) {

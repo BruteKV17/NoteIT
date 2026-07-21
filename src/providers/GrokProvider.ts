@@ -3,11 +3,11 @@ import { XAIAdapter } from './ValidationAdapters';
 
 export class GrokProvider extends BaseProvider {
   constructor(apiKey: string) {
-    super(apiKey, 'grok-4.5');
+    super(apiKey, 'grok-2');
   }
 
   getAvailableModels(): string[] {
-    return ['grok-4.5', 'grok-2-1212', 'grok-beta'];
+    return ['grok-2', 'grok-2-latest', 'grok-beta'];
   }
 
   async validateKey(): Promise<boolean> {

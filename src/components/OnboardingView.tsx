@@ -84,10 +84,10 @@ const PROVIDER_METADATA: Record<string, {
   xai: {
     name: 'xAI Grok',
     description: 'Advanced reasoning, vision, and real-time knowledge capabilities from xAI.',
-    defaultModel: 'grok-2-1212',
+    defaultModel: 'grok-2',
     docLink: 'https://docs.x.ai',
     getKeyLink: 'https://console.x.ai',
-    models: ['grok-2-1212', 'grok-beta']
+    models: ['grok-2', 'grok-2-latest', 'grok-beta']
   }
 };
 
