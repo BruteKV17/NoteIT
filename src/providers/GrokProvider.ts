@@ -11,20 +11,21 @@ export class GrokProvider extends BaseProvider {
 
   async validateKey(): Promise<boolean> {
     try {
-      const response = await fetch('https://api.x.ai/v1/chat/completions', {
-        method: 'POST',
+      const response = await fetch('https://api.x.ai/v1/models', {
+        method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${this.apiKey}`
-        },
-        body: JSON.stringify({
-          model: this.defaultModel,
-          messages: [{ role: 'user', content: 'ping' }],
-          max_tokens: 1
-        })
+        }
       });
+      if (!response.ok) {
+        const text = await response.text();
+        console.error(`[GrokProvider] Validation failed. Status: ${response.status}. Response: ${text}`);
+      } else {
+        console.log(`[GrokProvider] Validation succeeded. Status: ${response.status}`);
+      }
       return response.ok;
-    } catch {
+    } catch (err: any) {
+      console.error('[GrokProvider] Validation error:', err);
       return false;
     }
   }
