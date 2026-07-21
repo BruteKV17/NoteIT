@@ -83,6 +83,28 @@ export default function LectureCaptureView({
   const [seconds, setSeconds] = useState(0);
   const [aiStatus, setAiStatus] = useState<'idle' | 'recording_transcription' | 'synthesizing' | 'completed'>('idle');
   const [micError, setMicError] = useState<string | null>(null);
+
+  // Real-time live transcript state
+  const [liveTranscript, setLiveTranscript] = useState<string>('');
+  const recognitionRef = useRef<any>(null);
+  const accumulatedTranscriptRef = useRef<string>('');
+  const transcriptEndRef = useRef<HTMLDivElement | null>(null);
+
+  const isRecordingRef = useRef(false);
+  const isPausedRef = useRef(false);
+  const liveTranscriptRef = useRef('');
+
+  useEffect(() => {
+    isRecordingRef.current = isRecording;
+  }, [isRecording]);
+
+  useEffect(() => {
+    isPausedRef.current = isPaused;
+  }, [isPaused]);
+
+  useEffect(() => {
+    liveTranscriptRef.current = liveTranscript;
+  }, [liveTranscript]);
   
   // Refs for audio capturing
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -182,6 +204,11 @@ export default function LectureCaptureView({
       cleanupAudio();
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
+      }
+      if (recognitionRef.current) {
+        recognitionRef.current.onend = null;
+        recognitionRef.current.stop();
+        recognitionRef.current = null;
       }
     };
   }, []);
@@ -319,10 +346,65 @@ export default function LectureCaptureView({
     }
   };
 
+  // Auto-scroll the transcript to bottom
+  useEffect(() => {
+    if (transcriptEndRef.current) {
+      transcriptEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [liveTranscript]);
+
+  const startSpeechRecognition = () => {
+    const SpeechRecognitionClass = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognitionClass) {
+      console.warn('SpeechRecognition API not supported in this browser.');
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognitionClass();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      recognition.onresult = (event: any) => {
+        let currentSessionTranscript = '';
+        for (let i = 0; i < event.results.length; ++i) {
+          currentSessionTranscript += event.results[i][0].transcript + ' ';
+        }
+        
+        const base = accumulatedTranscriptRef.current;
+        setLiveTranscript((base + ' ' + currentSessionTranscript).trim());
+      };
+
+      recognition.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+      };
+
+      recognition.onend = () => {
+        if (isRecordingRef.current && !isPausedRef.current && recognitionRef.current === recognition) {
+          accumulatedTranscriptRef.current = liveTranscriptRef.current;
+          try {
+            recognition.start();
+          } catch (err) {
+            console.error('Failed to restart speech recognition:', err);
+          }
+        }
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch (err) {
+      console.error('Error starting speech recognition:', err);
+    }
+  };
+
   const handleStartCapture = async () => {
     setMicError(null);
     chunksRef.current = [];
     lectureIdRef.current = null;
+    setLiveTranscript('');
+    accumulatedTranscriptRef.current = '';
+    liveTranscriptRef.current = '';
     
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -394,6 +476,7 @@ export default function LectureCaptureView({
       setIsPaused(false);
       secondsRef.current = 0;
       setSeconds(0);
+      startSpeechRecognition();
     } catch (err: any) {
       console.error('Microphone access denied:', err);
       setMicError('Microphone permission denied. Please enable mic access to capture lectures.');
@@ -408,11 +491,17 @@ export default function LectureCaptureView({
         startVisualizer(streamRef.current);
       }
       setIsPaused(false);
+      startSpeechRecognition();
     } else {
       mediaRecorderRef.current.pause();
       cleanupAudio();
       resetWaveform();
       setIsPaused(true);
+      if (recognitionRef.current) {
+        recognitionRef.current.onend = null;
+        recognitionRef.current.stop();
+      }
+      accumulatedTranscriptRef.current = liveTranscriptRef.current;
     }
   };
 
@@ -428,6 +517,11 @@ export default function LectureCaptureView({
     }
     setIsRecording(false);
     setIsPaused(false);
+    if (recognitionRef.current) {
+      recognitionRef.current.onend = null;
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
   };
 
   const formatTime = (totalSec: number) => {
@@ -2475,19 +2569,42 @@ export default function LectureCaptureView({
                       </div>
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center justify-center text-center h-full text-gray-500 font-sans space-y-3 animate-fade-in">
-                      <div className="relative flex items-center justify-center">
-                        <div className="absolute -inset-3 rounded-full bg-indigo-500/10 animate-ping" />
-                        <div className="h-10 w-10 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-                          <Mic className="h-5 w-5 animate-pulse" />
+                    <div className="flex flex-col items-center justify-center text-center h-full text-gray-500 font-sans space-y-3 animate-fade-in w-full h-full overflow-hidden">
+                      {liveTranscript ? (
+                        <div className="flex flex-col h-full w-full justify-between items-stretch text-left overflow-hidden">
+                          {/* Live Transcript Header */}
+                          <div className="flex items-center gap-2 mb-2 pb-2 border-b border-gray-100 dark:border-neutral-800/40 shrink-0">
+                            <span className="relative flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                            </span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 font-mono">
+                              Live Transcription (Decoded Real-time)
+                            </span>
+                          </div>
+                          
+                          {/* Scrollable transcript area */}
+                          <div className="flex-1 overflow-y-auto pr-1 text-[13px] leading-relaxed font-sans text-neutral-700 dark:text-neutral-300 scrollbar-thin">
+                            <p className="whitespace-pre-wrap">{liveTranscript}</p>
+                            <div ref={transcriptEndRef} />
+                          </div>
                         </div>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-[11px] font-bold text-indigo-400 animate-pulse font-mono uppercase tracking-wider">Listening...</p>
-                        <p className="text-[10px] text-gray-400 dark:text-neutral-400 leading-normal font-semibold max-w-[200px]">
-                          Audio stream is active and recording live input. Press 'Pause' to suspend or 'Stop & Sync' to submit.
-                        </p>
-                      </div>
+                      ) : (
+                        <>
+                          <div className="relative flex items-center justify-center">
+                            <div className="absolute -inset-3 rounded-full bg-indigo-500/10 animate-ping" />
+                            <div className="h-10 w-10 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                              <Mic className="h-5 w-5 animate-pulse" />
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-[11px] font-bold text-indigo-400 animate-pulse font-mono uppercase tracking-wider">Listening...</p>
+                            <p className="text-[10px] text-gray-400 dark:text-neutral-400 leading-normal font-semibold max-w-[200px]">
+                              Waiting for audio input. Speak to see real-time transcription...
+                            </p>
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
