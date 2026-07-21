@@ -771,10 +771,15 @@ export default function LectureCaptureView({
     const uid = auth.currentUser?.uid;
     if (!uid) return;
 
+    const textContent = activeLecture.transcript || activeLecture.cleanTranscript || '';
+    if (!textContent.trim()) {
+      alert("No transcript content available to generate notes.");
+      return;
+    }
+
     setIsGeneratingNotes(true);
     try {
       const { generateNotes: callGenerateNotes } = await import('../services/gemini');
-      const textContent = activeLecture.transcript || activeLecture.cleanTranscript || '';
       const generated = await callGenerateNotes(textContent, mode, import.meta.env.VITE_GEMINI_API_KEY || '');
       
       const docRef = doc(db, 'users', uid, 'lectures', activeLecture.id);
@@ -795,10 +800,15 @@ export default function LectureCaptureView({
     const uid = auth.currentUser?.uid;
     if (!uid) return;
 
+    const textContent = activeLecture.transcript || activeLecture.cleanTranscript || '';
+    if (!textContent.trim()) {
+      alert("No transcript content available to generate summary.");
+      return;
+    }
+
     setIsGeneratingSummary(true);
     try {
       const { generateSummary: callGenerateSummary } = await import('../services/gemini');
-      const textContent = activeLecture.transcript || activeLecture.cleanTranscript || '';
       const generated = await callGenerateSummary(textContent, mode, import.meta.env.VITE_GEMINI_API_KEY || '');
 
       const docRef = doc(db, 'users', uid, 'lectures', activeLecture.id);
@@ -819,10 +829,15 @@ export default function LectureCaptureView({
     const uid = auth.currentUser?.uid;
     if (!uid) return;
 
+    const textContent = activeLecture.transcript || activeLecture.cleanTranscript || '';
+    if (!textContent.trim()) {
+      alert("No transcript content available to generate flashcards.");
+      return;
+    }
+
     setIsGeneratingFlashcards(true);
     try {
       const { generateFlashcards: callGenerateFlashcards } = await import('../services/gemini');
-      const textContent = activeLecture.transcript || activeLecture.cleanTranscript || '';
       
       // Flashcard count based on lecture size
       const textLen = textContent.length;
@@ -848,10 +863,15 @@ export default function LectureCaptureView({
     const uid = auth.currentUser?.uid;
     if (!uid) return;
 
+    const textContent = activeLecture.transcript || activeLecture.cleanTranscript || '';
+    if (!textContent.trim()) {
+      alert("No transcript content available to generate flashcards.");
+      return;
+    }
+
     setIsGeneratingFlashcards(true);
     try {
       const { generateFlashcards: callGenerateFlashcards } = await import('../services/gemini');
-      const textContent = activeLecture.transcript || activeLecture.cleanTranscript || '';
       const existing = activeLecture.flashcards || [];
 
       const generated = await callGenerateFlashcards(textContent, 10, existing, import.meta.env.VITE_GEMINI_API_KEY || '');
@@ -874,10 +894,15 @@ export default function LectureCaptureView({
     const uid = auth.currentUser?.uid;
     if (!uid) return;
 
+    const textContent = activeLecture.transcript || activeLecture.cleanTranscript || '';
+    if (!textContent.trim()) {
+      alert("No transcript content available to generate quiz.");
+      return;
+    }
+
     setIsGeneratingQuiz(true);
     try {
       const { generateQuiz: callGenerateQuiz } = await import('../services/gemini');
-      const textContent = activeLecture.transcript || activeLecture.cleanTranscript || '';
       
       const generated = await callGenerateQuiz(textContent, import.meta.env.VITE_GEMINI_API_KEY || '');
       
@@ -899,10 +924,15 @@ export default function LectureCaptureView({
     const uid = auth.currentUser?.uid;
     if (!uid) return;
 
+    const textContent = activeLecture.transcript || activeLecture.cleanTranscript || '';
+    if (!textContent.trim()) {
+      alert("No transcript content available to generate quiz.");
+      return;
+    }
+
     setIsGeneratingQuiz(true);
     try {
       const { generateMoreQuestions: callGenerateMoreQuiz } = await import('../services/gemini');
-      const textContent = activeLecture.transcript || activeLecture.cleanTranscript || '';
       const existing = activeLecture.quiz || [];
       const difficultyQuestions = existing.filter((q: any) => q.difficulty === selectedQuizDifficulty);
       const questionTexts = difficultyQuestions.map((q: any) => q.question);
@@ -927,10 +957,15 @@ export default function LectureCaptureView({
     const uid = auth.currentUser?.uid;
     if (!uid) return;
 
+    const textContent = activeLecture.transcript || activeLecture.cleanTranscript || '';
+    if (!textContent.trim()) {
+      alert("No transcript content available to generate mind map.");
+      return;
+    }
+
     setIsGeneratingMindmap(true);
     try {
       const { generateMindmap: callGenerateMindmap } = await import('../services/gemini');
-      const textContent = activeLecture.transcript || activeLecture.cleanTranscript || '';
       const sections = activeLecture.sections || [];
 
       const generated = await callGenerateMindmap(textContent, sections, import.meta.env.VITE_GEMINI_API_KEY || '');
@@ -955,6 +990,9 @@ export default function LectureCaptureView({
 
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
     if (!apiKey) return;
+
+    const hasTranscript = !!(activeLecture.transcript?.trim() || activeLecture.cleanTranscript?.trim());
+    if (!hasTranscript) return;
 
     if (activeOutputTab === 'notes') {
       if (!activeLecture.notes?.[selectedNotesMode] && !isGeneratingNotes) {

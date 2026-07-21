@@ -237,11 +237,18 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
 
   const triggerGenerateNotes = async (format: 'academic' | 'executive' | 'revision' | 'bhailang') => {
     if (!activeSourceId || !userId || !activeSource || isGeneratingNotes) return;
+
+    const textContent = activeSource.content || activeSource.transcript || '';
+    if (!textContent.trim()) {
+      alert("No content available to generate notes.");
+      return;
+    }
+
     setIsGeneratingNotes(true);
     try {
       const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
       const notesData = await generateStructuredNotes(
-        activeSource.content || activeSource.transcript || '',
+        textContent,
         format,
         apiKey
       );
@@ -260,6 +267,13 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
 
   const triggerGenerateSummary = async (format: 'academic' | 'revision' | 'executive' | 'beginner' | 'bhailang') => {
     if (!activeSourceId || !userId || !activeSource || isGeneratingSummary) return;
+
+    const textContent = activeSource.content || activeSource.transcript || '';
+    if (!textContent.trim()) {
+      alert("No content available to generate summary.");
+      return;
+    }
+
     setIsGeneratingSummary(true);
     try {
       const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
@@ -271,7 +285,7 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
       else if (format === 'bhailang') serviceMode = 'bhailang';
 
       const summaryText = await generateSummary(
-        activeSource.content || activeSource.transcript || '',
+        textContent,
         serviceMode,
         apiKey
       );
@@ -290,10 +304,16 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
 
   const triggerGenerateFlashcards = async () => {
     if (!activeSourceId || !userId || !activeSource || isGeneratingFlashcards) return;
+
+    const textContent = activeSource.content || activeSource.transcript || '';
+    if (!textContent.trim()) {
+      alert("No content available to generate flashcards.");
+      return;
+    }
+
     setIsGeneratingFlashcards(true);
     try {
       const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
-      const textContent = activeSource.content || activeSource.transcript || '';
       const textLen = textContent.length;
       const count = textLen < 3000 ? 15 : textLen < 10000 ? 30 : 50;
 
@@ -312,10 +332,16 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
 
   const triggerGenerateQuiz = async () => {
     if (!activeSourceId || !userId || !activeSource || isGeneratingQuiz) return;
+
+    const textContent = activeSource.content || activeSource.transcript || '';
+    if (!textContent.trim()) {
+      alert("No content available to generate quiz.");
+      return;
+    }
+
     setIsGeneratingQuiz(true);
     try {
       const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
-      const textContent = activeSource.content || activeSource.transcript || '';
       const generated = await generateQuiz(textContent, apiKey);
       const docRef = doc(db, 'users', userId, 'sources', activeSourceId);
       await updateDoc(docRef, {
@@ -331,10 +357,16 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
 
   const triggerGenerateMoreQuiz = async () => {
     if (!activeSourceId || !userId || !activeSource || isGeneratingQuiz) return;
+
+    const textContent = activeSource.content || activeSource.transcript || '';
+    if (!textContent.trim()) {
+      alert("No content available to generate quiz.");
+      return;
+    }
+
     setIsGeneratingQuiz(true);
     try {
       const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
-      const textContent = activeSource.content || activeSource.transcript || '';
       const existing = activeSource.quiz || [];
       const questionTexts = existing.map((q: any) => q.question);
 
@@ -353,10 +385,16 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
 
   const triggerGenerateMindmap = async () => {
     if (!activeSourceId || !userId || !activeSource || isGeneratingMindmap) return;
+
+    const textContent = activeSource.content || activeSource.transcript || '';
+    if (!textContent.trim()) {
+      alert("No content available to generate mind map.");
+      return;
+    }
+
     setIsGeneratingMindmap(true);
     try {
       const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
-      const textContent = activeSource.content || activeSource.transcript || '';
       const sections = activeSource.sections || [];
 
       const generated = await generateMindmap(textContent, sections, apiKey);
@@ -378,6 +416,9 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
 
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
     if (!apiKey) return;
+
+    const hasContent = !!(activeSource.content?.trim() || activeSource.transcript?.trim());
+    if (!hasContent) return;
 
     if (activeOutputTab === 'notes') {
       const currentNotes = getActiveNotes();
