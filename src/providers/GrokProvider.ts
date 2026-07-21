@@ -3,11 +3,11 @@ import { XAIAdapter } from './ValidationAdapters';
 
 export class GrokProvider extends BaseProvider {
   constructor(apiKey: string) {
-    super(apiKey, 'grok-2-1212');
+    super(apiKey, 'grok-4.5');
   }
 
   getAvailableModels(): string[] {
-    return ['grok-2-1212', 'grok-beta'];
+    return ['grok-4.5', 'grok-2-1212', 'grok-beta'];
   }
 
   async validateKey(): Promise<boolean> {
@@ -16,11 +16,7 @@ export class GrokProvider extends BaseProvider {
       await adapter.validate(this.apiKey, this.defaultModel);
       return true;
     } catch (err) {
-      console.warn('[GrokProvider] Validation failed during check, attempting pattern match:', err);
-      if (this.apiKey.startsWith('xai-') && this.apiKey.length > 20) {
-        console.log('[GrokProvider] Fallback validation succeeded based on xai- structural key format.');
-        return true;
-      }
+      console.error('[GrokProvider] Key validation failed:', err);
       return false;
     }
   }

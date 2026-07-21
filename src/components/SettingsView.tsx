@@ -63,7 +63,7 @@ const PROVIDER_METADATA: Record<string, {
     models: ['gpt-4o-mini', 'gpt-4o', 'gpt-4', 'o3-mini', 'o1-mini'],
     endpoint: 'api.openai.com/v1'
   },
-  claude: {
+  anthropic: {
     name: 'Anthropic Claude',
     description: 'Advanced reasoning and writing capabilities. Top-tier notes output quality.',
     defaultModel: 'claude-3-5-sonnet-latest',
@@ -114,7 +114,7 @@ const PROVIDER_COSTS: Record<string, { input: number; output: number }> = {
   gemini: { input: 0.075, output: 0.30 }, // per million tokens
   groq: { input: 0.59, output: 0.79 },
   openai: { input: 0.15, output: 0.60 },
-  claude: { input: 3.00, output: 15.00 },
+  anthropic: { input: 3.00, output: 15.00 },
   deepseek: { input: 0.14, output: 0.28 },
   openrouter: { input: 0.10, output: 0.40 },
   mistral: { input: 2.00, output: 6.00 },
@@ -289,7 +289,12 @@ export default function SettingsView({
         setConfigStatus(data);
         if (data.configured) {
           const prov = data.provider || 'gemini';
-          const normalized = prov.toLowerCase().includes('grok') || prov.toLowerCase().includes('xai') ? 'xai' : prov;
+          let normalized = prov.toLowerCase();
+          if (normalized.includes('grok') || normalized.includes('xai')) {
+            normalized = 'xai';
+          } else if (normalized.includes('claude') || normalized.includes('anthropic')) {
+            normalized = 'anthropic';
+          }
           setAiProvider(normalized);
           setSelectedModel(data.selectedModel || PROVIDER_METADATA[normalized]?.defaultModel || '');
         }

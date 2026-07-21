@@ -19,6 +19,7 @@ export class ProviderFactory {
       case 'openai':
         return new OpenAIProvider(apiKey);
       case 'claude':
+      case 'anthropic':
       case 'anthropic claude':
         return new ClaudeProvider(apiKey);
       case 'deepseek':

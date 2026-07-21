@@ -49,7 +49,7 @@ const PROVIDER_METADATA: Record<string, {
     getKeyLink: 'https://platform.openai.com/api-keys',
     models: ['gpt-4o-mini', 'gpt-4o', 'gpt-4', 'o3-mini', 'o1-mini']
   },
-  claude: {
+  anthropic: {
     name: 'Anthropic Claude',
     description: 'Advanced reasoning and writing capabilities. Top-tier notes output quality.',
     defaultModel: 'claude-3-5-sonnet-latest',

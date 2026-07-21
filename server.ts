@@ -118,7 +118,9 @@ app.post('/api/ai/validate-key', authenticateFirebaseUser, async (req, res) => {
   // Sanitize/map provider name
   let activeProvider = inputProvider.toLowerCase().trim();
   if (activeProvider === 'grok' || activeProvider === 'xai' || activeProvider === 'xai grok' || activeProvider === 'xai/grok') {
-    activeProvider = 'xAI/Grok';
+    activeProvider = 'xai';
+  } else if (activeProvider === 'claude' || activeProvider === 'anthropic claude') {
+    activeProvider = 'anthropic';
   }
 
   try {

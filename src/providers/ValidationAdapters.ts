@@ -81,50 +81,47 @@ export class OpenAIAdapter implements ValidationAdapter {
 
 export class XAIAdapter implements ValidationAdapter {
   async validate(apiKey: string, model?: string): Promise<void> {
+    const selectedModel = model || 'grok-4.5';
     try {
-      const response = await fetch('https://api.x.ai/v1/models', {
-        method: 'GET',
+      const response = await fetch('https://api.x.ai/v1/chat/completions', {
+        method: 'POST',
         headers: {
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`
-        }
+        },
+        body: JSON.stringify({
+          model: selectedModel,
+          messages: [{ role: 'user', content: 'ping' }],
+          max_tokens: 1
+        })
       });
       if (!response.ok) {
         const text = await response.text();
         const status = response.status;
+        let parsed: any = {};
+        try {
+          parsed = JSON.parse(text);
+        } catch {}
 
-        // Pattern fallback for network validation issues (CORS, WAF challenge, etc.)
-        if (apiKey.startsWith('xai-') && apiKey.length > 20) {
-          console.warn('[XAIAdapter] xAI key looks structurally valid. Bypassing validation status response:', status, text);
-          return;
-        }
+        const errMsg = parsed.error?.message || parsed.error || text;
 
-        if (status === 401 || status === 403) {
-          throw new ProviderValidationError('Invalid or unauthorized API key', 401);
-        } else if (status === 404) {
-          throw new ProviderValidationError('Invalid API endpoint or model', 404);
-        } else if (status === 429) {
-          throw new ProviderValidationError('Rate limit/quota exceeded', 429);
+        if (status === 401 || status === 403 || errMsg.includes('API key') || errMsg.includes('disabled')) {
+          throw new ProviderValidationError(`Invalid or unauthorized API key: ${errMsg}`, 401);
+        } else if (status === 404 || errMsg.includes('Model not found') || errMsg.includes('model_not_found')) {
+          throw new ProviderValidationError(`Invalid API endpoint or model: ${errMsg}`, 404);
+        } else if (status === 429 || errMsg.includes('quota') || errMsg.includes('rate limit')) {
+          throw new ProviderValidationError(`Rate limit/quota exceeded: ${errMsg}`, 429);
+        } else if (status === 400) {
+          throw new ProviderValidationError(`Bad request/configuration error: ${errMsg}`, 400);
         } else if (status >= 500) {
-          throw new ProviderValidationError('xAI service unavailable', 503);
+          throw new ProviderValidationError(`xAI service unavailable: ${errMsg}`, 503);
         } else {
-          throw new ProviderValidationError(`xAI validation failed: ${text}`, status);
-        }
-      }
-      if (model) {
-        const data = await response.json();
-        const modelsList = data.models || data.data || [];
-        const exists = modelsList.some((m: any) => (m.id || m.name)?.toLowerCase() === model.toLowerCase());
-        if (!exists) {
-          throw new ProviderValidationError(`Selected model '${model}' is not valid or available for your Grok key`, 404);
+          throw new ProviderValidationError(`xAI validation failed: ${errMsg}`, status);
         }
       }
     } catch (err: any) {
       if (err instanceof ProviderValidationError) throw err;
-      if (apiKey.startsWith('xai-') && apiKey.length > 20) {
-        console.warn('[XAIAdapter] xAI key is structurally valid. Bypassing validation fetch error:', err.message);
-        return;
-      }
-      throw new ProviderValidationError('Provider unavailable due to network timeout or connection failure', 504);
+      throw new ProviderValidationError(`Provider unavailable: ${err.message || 'network timeout or connection failure'}`, 504);
     }
   }
 }
@@ -298,6 +295,7 @@ export class ValidationAdapterFactory {
       case 'xai/grok':
         return new XAIAdapter();
       case 'claude':
+      case 'anthropic':
       case 'anthropic claude':
         return new ClaudeAdapter();
       case 'deepseek':
