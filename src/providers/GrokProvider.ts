@@ -1,4 +1,5 @@
 import { BaseProvider, extractJsonObject } from './AIProvider';
+import { XAIAdapter } from './ValidationAdapters';
 
 export class GrokProvider extends BaseProvider {
   constructor(apiKey: string) {
@@ -11,26 +12,13 @@ export class GrokProvider extends BaseProvider {
 
   async validateKey(): Promise<boolean> {
     try {
-      const response = await fetch('https://api.x.ai/v1/models', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`
-        }
-      });
-      if (!response.ok) {
-        const text = await response.text();
-        console.error(`[GrokProvider] Validation failed. Status: ${response.status}. Response: ${text}`);
-        if (this.apiKey.startsWith('xai-') && this.apiKey.length > 20) {
-          console.warn('[GrokProvider] xAI key looks structurally valid. Allowing fallback validation due to possible cloud/CORS/billing checks.');
-          return true;
-        }
-      } else {
-        console.log(`[GrokProvider] Validation succeeded. Status: ${response.status}`);
-      }
-      return response.ok;
-    } catch (err: any) {
-      console.error('[GrokProvider] Validation error:', err);
+      const adapter = new XAIAdapter();
+      await adapter.validate(this.apiKey, this.defaultModel);
+      return true;
+    } catch (err) {
+      console.warn('[GrokProvider] Validation failed during check, attempting pattern match:', err);
       if (this.apiKey.startsWith('xai-') && this.apiKey.length > 20) {
+        console.log('[GrokProvider] Fallback validation succeeded based on xai- structural key format.');
         return true;
       }
       return false;

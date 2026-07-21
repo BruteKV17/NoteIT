@@ -1,6 +1,8 @@
 import express from 'express';
 import crypto from 'crypto';
 import { ProviderFactory } from './src/providers/ProviderFactory';
+import { ValidationAdapterFactory } from './src/providers/ValidationAdapters';
+import { ProviderValidationError } from './src/providers/AIProvider';
 
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -104,27 +106,30 @@ function decryptKey(encryptedText: string): string {
 
 // AI Provider Abstraction endpoints
 app.post('/api/ai/validate-key', authenticateFirebaseUser, async (req, res) => {
-  const { key, provider, model } = req.body;
-  const activeProvider = provider || 'gemini';
+  const { key, apiKey, provider, model } = req.body;
+  const inputKey = key || apiKey;
+  const inputProvider = provider || 'gemini';
 
-  if (!key) {
-    res.status(400).json({ error: 'Missing required parameter: key' });
+  if (!inputKey) {
+    res.status(400).json({ error: 'Missing required parameter: key or apiKey' });
     return;
   }
 
-  try {
-    const providerInstance = ProviderFactory.getProvider(activeProvider, key);
-    const isValid = await providerInstance.validateKey();
+  // Sanitize/map provider name
+  let activeProvider = inputProvider.toLowerCase().trim();
+  if (activeProvider === 'grok' || activeProvider === 'xai' || activeProvider === 'xai grok' || activeProvider === 'xai/grok') {
+    activeProvider = 'xAI/Grok';
+  }
 
-    if (!isValid) {
-      res.status(400).json({ error: `Invalid ${activeProvider} API key` });
-      return;
-    }
+  try {
+    const adapter = ValidationAdapterFactory.getAdapter(inputProvider);
+    await adapter.validate(inputKey, model);
 
     const user = req.body.user;
     const uid = user.uid;
-    const encrypted = encryptKey(key);
+    const encrypted = encryptKey(inputKey);
 
+    const providerInstance = ProviderFactory.getProvider(inputProvider, inputKey);
     const defaultModel = model || providerInstance.getAvailableModels()[0];
 
     const adminDb = getFirestore();
@@ -145,8 +150,12 @@ app.post('/api/ai/validate-key', authenticateFirebaseUser, async (req, res) => {
 
     res.json({ success: true, message: `${activeProvider} API connected successfully` });
   } catch (error: any) {
-    console.error('API key validation error:', error);
-    res.status(500).json({ error: error.message || 'Internal server error validating key' });
+    console.error(`API key validation error for provider ${inputProvider}:`, error);
+    if (error.name === 'ProviderValidationError') {
+      res.status(error.status).json({ error: error.message });
+    } else {
+      res.status(500).json({ error: error.message || 'Internal server error validating key' });
+    }
   }
 });
 

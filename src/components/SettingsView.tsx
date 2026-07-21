@@ -99,7 +99,7 @@ const PROVIDER_METADATA: Record<string, {
     models: ['mistral-large-latest', 'mistral-small-latest', 'open-mixtral-8x22b', 'codestral-latest'],
     endpoint: 'api.mistral.ai/v1'
   },
-  grok: {
+  xai: {
     name: 'xAI Grok',
     description: 'Advanced reasoning, vision, and real-time knowledge capabilities from xAI.',
     defaultModel: 'grok-2-1212',
@@ -118,7 +118,7 @@ const PROVIDER_COSTS: Record<string, { input: number; output: number }> = {
   deepseek: { input: 0.14, output: 0.28 },
   openrouter: { input: 0.10, output: 0.40 },
   mistral: { input: 2.00, output: 6.00 },
-  grok: { input: 2.00, output: 10.00 }
+  xai: { input: 2.00, output: 10.00 }
 };
 
 
@@ -288,8 +288,10 @@ export default function SettingsView({
         const data = await res.json();
         setConfigStatus(data);
         if (data.configured) {
-          setAiProvider(data.provider || 'gemini');
-          setSelectedModel(data.selectedModel || PROVIDER_METADATA[data.provider || 'gemini']?.defaultModel || '');
+          const prov = data.provider || 'gemini';
+          const normalized = prov.toLowerCase().includes('grok') || prov.toLowerCase().includes('xai') ? 'xai' : prov;
+          setAiProvider(normalized);
+          setSelectedModel(data.selectedModel || PROVIDER_METADATA[normalized]?.defaultModel || '');
         }
       }
     } catch (err) {

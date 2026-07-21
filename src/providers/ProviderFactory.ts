@@ -24,7 +24,9 @@ export class ProviderFactory {
       case 'deepseek':
         return new DeepSeekProvider(apiKey);
       case 'grok':
+      case 'xai':
       case 'xai grok':
+      case 'xai/grok':
         return new GrokProvider(apiKey);
       case 'openrouter':
         return new OpenRouterProvider(apiKey);

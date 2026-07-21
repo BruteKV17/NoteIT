@@ -4,6 +4,15 @@ export interface TokenUsage {
   totalTokens: number;
 }
 
+export class ProviderValidationError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'ProviderValidationError';
+    this.status = status;
+  }
+}
+
 export interface AIProvider {
   validateKey(): Promise<boolean>;
   generateText(prompt: string, model?: string): Promise<string>;
