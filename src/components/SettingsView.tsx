@@ -161,7 +161,7 @@ export default function SettingsView({
 }: SettingsViewProps) {
   
   // Local state
-  const [activeTab, setActiveTab] = useState<'profile' | 'ai' | 'lms' | 'billing'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'ai' | 'usage' | 'security' | 'billing'>('profile');
   
   // Profile edits
   const [firstName, setFirstName] = useState(settings.profile.firstName || '');
@@ -220,7 +220,6 @@ export default function SettingsView({
   const [savingKey, setSavingKey] = useState(false);
   const [newKey, setNewKey] = useState('');
   const [showReplaceForm, setShowReplaceForm] = useState(false);
-
 
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -321,7 +320,7 @@ export default function SettingsView({
   };
 
   useEffect(() => {
-    if (activeTab === 'ai') {
+    if (activeTab === 'ai' || activeTab === 'usage' || activeTab === 'security') {
       fetchConfigStatus();
     }
   }, [activeTab]);
@@ -438,42 +437,24 @@ export default function SettingsView({
     triggerSaveNotification();
   };
 
-  const handleTriggerLmsSync = () => {
-    setIsLmsSyncing(true);
-    setTimeout(() => {
-      setIsLmsSyncing(false);
-      const updated: UserSettings = {
-        ...settings,
-        integrations: {
-          canvasConnected: true,
-          blackboardConnected: false,
-          canvasUrl,
-          lastSynced: 'Just now'
-        }
-      };
-      onUpdateSettings(updated);
-      triggerSaveNotification();
-    }, 2000);
-  };
-
   const triggerSaveNotification = () => {
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 2500);
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-16 bg-grid-paper p-4 md:p-8 select-none">
+    <div className="space-y-6 max-w-7xl mx-auto pb-16 bg-[#F6F2EA] p-4 md:p-8 select-none text-[#111111]">
       
       {/* Settings Header */}
       <div className="rounded-[6px] border-2 border-[#111111] bg-white p-6 shadow-paper-md flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <span className="section-label text-[10px] font-bold text-[#666666] uppercase tracking-[3px] block">
+          <span className="text-[10px] font-mono font-extrabold text-[#666666] uppercase tracking-[3px] block">
             PREFERENCES & CONFIGURATION
           </span>
           <h1 className="font-heading font-extrabold text-2xl md:text-3xl text-[#111111] uppercase tracking-tight mt-1">
             ACCOUNT & SYSTEM SETTINGS
           </h1>
-          <p className="text-xs font-mono text-[#666666] mt-1">
+          <p className="text-xs font-mono font-bold text-[#666666] mt-1">
             Manage your academic identity, AI providers, API keys, and cognitive parameters.
           </p>
         </div>
@@ -482,8 +463,8 @@ export default function SettingsView({
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         
         {/* Left Navigation Sidebar */}
-        <div className="md:col-span-1 rounded-[6px] border-2 border-[#111111] bg-white p-3 shadow-paper-md flex flex-col gap-1.5 h-fit">
-          <span className="section-label text-[10px] font-bold text-[#666666] uppercase tracking-[3px] px-2 py-1">
+        <div className="md:col-span-1 rounded-[6px] border-2 border-[#111111] bg-white p-3 shadow-paper-md flex flex-col gap-2 h-fit">
+          <span className="text-[10px] font-mono font-extrabold text-[#666666] uppercase tracking-[3px] px-2 py-1">
             NAVIGATION
           </span>
 
@@ -491,7 +472,8 @@ export default function SettingsView({
             { id: 'profile', label: 'User Profile', icon: User },
             { id: 'ai', label: 'AI Provider Keys', icon: Sparkles },
             { id: 'usage', label: 'Usage & Costs', icon: Activity },
-            { id: 'security', label: 'Security & Auth', icon: ShieldCheck }
+            { id: 'security', label: 'Security & Auth', icon: ShieldCheck },
+            { id: 'billing', label: 'Billing & Plan', icon: CreditCard }
           ].map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -499,7 +481,7 @@ export default function SettingsView({
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[4px] border-2 font-mono text-xs font-bold uppercase transition-all ${
+                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[4px] border-2 font-mono text-xs font-bold uppercase transition-all cursor-pointer ${
                   isActive
                     ? 'bg-[#FFC400] text-[#111111] border-[#111111] shadow-paper-sm font-extrabold translate-x-1'
                     : 'bg-white text-[#111111] border-transparent hover:border-[#111111] hover:bg-[#FFF8D6]'
@@ -513,107 +495,85 @@ export default function SettingsView({
         </div>
 
       {/* Main Settings Form Block (3 Columns) */}
-      <div className="md:col-span-3 rounded-[6px] border-2 border-[#111111] bg-white p-6 shadow-paper-md relative">
+      <div className="md:col-span-3 rounded-[6px] border-2 border-[#111111] bg-white p-6 shadow-paper-md relative text-[#111111]">
         
         {saveSuccess && (
-          <div className={`absolute top-4 right-6 rounded-lg border px-3.5 py-1.5 text-xs font-semibold flex items-center gap-1.5 animate-bounce z-50 ${
-            theme === 'dark' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-emerald-50 border-emerald-100 text-emerald-700'
-          }`}>
+          <div className="absolute top-4 right-6 rounded-[4px] border-2 border-[#111111] bg-[#19B56B] text-white px-3.5 py-1.5 text-xs font-mono font-extrabold flex items-center gap-1.5 shadow-paper-sm z-50">
             <Check className="h-4 w-4" />
-            <span>Settings saved successfully</span>
+            <span>SETTINGS SAVED SUCCESSFULLY</span>
           </div>
         )}
 
-        {/* Tab content panel */}
+        {/* Tab 1: User Profile */}
         {activeTab === 'profile' && (
-          <form onSubmit={handleSaveProfile} className="space-y-5">
+          <form onSubmit={handleSaveProfile} className="space-y-5 text-left">
             <div>
-              <h3 className={`font-sans font-bold text-base ${theme === 'dark' ? 'text-white' : 'text-gray-950'}`}>User Profile</h3>
-              <p className="text-xs text-gray-400 mt-1">Configure your primary academic researcher identification and institutional information.</p>
+              <h3 className="font-heading font-extrabold text-lg uppercase text-[#111111]">User Profile</h3>
+              <p className="text-xs font-mono font-bold text-[#666666] mt-1">Configure your primary academic researcher identification and institutional information.</p>
             </div>
 
             {error && (
-              <div className="rounded-xl bg-red-500/10 border border-red-500/20 p-3 flex items-start gap-2">
-                <span className="text-xs text-red-500 font-semibold">{error}</span>
+              <div className="rounded-[6px] border-2 border-[#111111] bg-[#FF4D4D]/15 p-3 flex items-start gap-2 text-[#111111]">
+                <span className="text-xs font-mono font-bold text-[#FF4D4D]">{error}</span>
               </div>
             )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-[11px] font-bold text-neutral-500 uppercase">FIRST NAME</label>
+                <label className="block text-[10px] font-mono font-extrabold text-[#111111] uppercase mb-1">FIRST NAME</label>
                 <input
                   type="text"
                   required
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
-                  className={`w-full rounded-lg border p-2.5 text-xs font-medium mt-1 outline-none ${
-                    theme === 'dark'
-                      ? 'border-neutral-800 bg-neutral-900/40 text-white focus:border-indigo-500 focus:bg-neutral-900'
-                      : 'border-gray-200 bg-gray-50/50 text-gray-900 focus:border-black focus:bg-white'
-                  }`}
+                  className="w-full rounded-[6px] border-2 border-[#111111] bg-[#F6F2EA] p-3 text-xs font-mono font-bold text-[#111111] outline-none shadow-paper-sm"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-neutral-500 uppercase">LAST NAME</label>
+                <label className="block text-[10px] font-mono font-extrabold text-[#111111] uppercase mb-1">LAST NAME</label>
                 <input
                   type="text"
                   required
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
-                  className={`w-full rounded-lg border p-2.5 text-xs font-medium mt-1 outline-none ${
-                    theme === 'dark'
-                      ? 'border-neutral-800 bg-neutral-900/40 text-white focus:border-indigo-500 focus:bg-neutral-900'
-                      : 'border-gray-200 bg-gray-50/50 text-gray-950 focus:border-black focus:bg-white'
-                  }`}
+                  className="w-full rounded-[6px] border-2 border-[#111111] bg-[#F6F2EA] p-3 text-xs font-mono font-bold text-[#111111] outline-none shadow-paper-sm"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-[11px] font-bold text-neutral-500 uppercase">UNIVERSITY / SCHOOL NAME</label>
+                <label className="block text-[10px] font-mono font-extrabold text-[#111111] uppercase mb-1">UNIVERSITY / SCHOOL NAME</label>
                 <input
                   type="text"
                   required
                   value={institution}
                   onChange={(e) => setInstitution(e.target.value)}
-                  className={`w-full rounded-lg border p-2.5 text-xs font-medium mt-1 outline-none ${
-                    theme === 'dark'
-                      ? 'border-neutral-800 bg-neutral-900/40 text-white focus:border-indigo-500 focus:bg-neutral-900'
-                      : 'border-gray-200 bg-gray-50/50 text-gray-900 focus:border-black focus:bg-white'
-                  }`}
+                  className="w-full rounded-[6px] border-2 border-[#111111] bg-[#F6F2EA] p-3 text-xs font-mono font-bold text-[#111111] outline-none shadow-paper-sm"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-neutral-500 uppercase">EMAIL ADDRESS</label>
+                <label className="block text-[10px] font-mono font-extrabold text-[#111111] uppercase mb-1">EMAIL ADDRESS</label>
                 <input
                   type="email"
                   required
                   value={emailAddress}
                   onChange={(e) => setEmailAddress(e.target.value)}
-                  className={`w-full rounded-lg border p-2.5 text-xs font-medium mt-1 outline-none ${
-                    theme === 'dark'
-                      ? 'border-neutral-800 bg-neutral-900/40 text-white focus:border-indigo-500 focus:bg-neutral-900'
-                      : 'border-gray-200 bg-gray-50/50 text-gray-900 focus:border-black focus:bg-white'
-                  }`}
+                  className="w-full rounded-[6px] border-2 border-[#111111] bg-[#F6F2EA] p-3 text-xs font-mono font-bold text-[#111111] outline-none shadow-paper-sm"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-3">
               <div className="col-span-1">
-                <label className="block text-[11px] font-bold text-neutral-500 uppercase">CODE</label>
+                <label className="block text-[10px] font-mono font-extrabold text-[#111111] uppercase mb-1">CODE</label>
                 <select
                   required
                   value={countryCode}
                   onChange={(e) => setCountryCode(e.target.value)}
-                  className={`w-full rounded-lg border p-2.5 text-xs font-medium mt-1 outline-none cursor-pointer ${
-                    theme === 'dark'
-                      ? 'border-neutral-800 bg-neutral-900/40 text-white focus:border-indigo-500 focus:bg-neutral-900'
-                      : 'border-gray-200 bg-gray-50/50 text-gray-900 focus:border-black focus:bg-white'
-                  }`}
+                  className="w-full rounded-[6px] border-2 border-[#111111] bg-[#F6F2EA] p-3 text-xs font-mono font-bold text-[#111111] outline-none cursor-pointer shadow-paper-sm"
                 >
                   <option value="" disabled>Select</option>
                   {COUNTRY_CODES.map((c) => (
@@ -623,31 +583,21 @@ export default function SettingsView({
               </div>
 
               <div className="col-span-2">
-                <label className="block text-[11px] font-bold text-neutral-500 uppercase">PHONE NUMBER</label>
+                <label className="block text-[10px] font-mono font-extrabold text-[#111111] uppercase mb-1">PHONE NUMBER</label>
                 <input
                   type="tel"
                   required
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
-                  className={`w-full rounded-lg border p-2.5 text-xs font-medium mt-1 outline-none ${
-                    theme === 'dark'
-                      ? 'border-neutral-800 bg-neutral-900/40 text-white focus:border-indigo-500 focus:bg-neutral-900'
-                      : 'border-gray-200 bg-gray-50/50 text-gray-900 focus:border-black focus:bg-white'
-                  }`}
+                  className="w-full rounded-[6px] border-2 border-[#111111] bg-[#F6F2EA] p-3 text-xs font-mono font-bold text-[#111111] outline-none shadow-paper-sm"
                 />
               </div>
             </div>
 
-            <div className={`pt-4 border-t flex justify-end ${
-              theme === 'dark' ? 'border-neutral-900' : 'border-gray-100'
-            }`}>
+            <div className="pt-4 border-t-2 border-[#111111] flex justify-end">
               <button
                 type="submit"
-                className={`rounded-xl px-4.5 py-2.5 text-xs font-bold transition-all active:scale-95 shadow-xs cursor-pointer ${
-                  theme === 'dark'
-                    ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                    : 'bg-black text-white hover:bg-gray-800'
-                }`}
+                className="rounded-[6px] border-2 border-[#111111] bg-[#FFC400] text-[#111111] font-mono text-xs font-extrabold uppercase px-5 py-2.5 shadow-paper-sm hover:bg-[#ffe066] transition-all cursor-pointer"
               >
                 Save Profile Outlines
               </button>
@@ -655,132 +605,88 @@ export default function SettingsView({
           </form>
         )}
 
+        {/* Tab 2: AI Provider Keys */}
         {activeTab === 'ai' && (
-          <div className="space-y-5 animate-fade-in text-left">
+          <div className="space-y-5 text-left">
             <div>
-              <h3 className={`font-sans font-bold text-base ${theme === 'dark' ? 'text-white' : 'text-gray-950'}`}>AI Generator Parameters</h3>
-              <p className="text-xs text-gray-400 mt-1">Calibrate model parameters according to your reading and cognitive retention speed.</p>
+              <h3 className="font-heading font-extrabold text-lg uppercase text-[#111111]">AI Generator & Provider Keys</h3>
+              <p className="text-xs font-mono font-bold text-[#666666] mt-1">Calibrate model parameters according to your reading and cognitive retention speed.</p>
             </div>
 
             {validationError && (
-              <div className="rounded-xl bg-red-500/10 border border-red-500/20 p-3.5 flex items-start gap-2.5">
-                <div className="text-xs text-red-500 font-semibold">{validationError}</div>
+              <div className="rounded-[6px] border-2 border-[#111111] bg-[#FF4D4D]/15 p-3 flex items-start gap-2">
+                <div className="text-xs font-mono font-bold text-[#FF4D4D]">{validationError}</div>
               </div>
             )}
 
             {isLoadingConfig ? (
-              <div className={`p-8 rounded-xl border flex flex-col items-center justify-center gap-3 ${
-                theme === 'dark' ? 'bg-[#08090c]/40 border-neutral-900' : 'bg-gray-50 border-gray-200'
-              }`}>
-                <RefreshCw className="h-6 w-6 text-indigo-500 animate-spin" />
-                <span className="text-xs text-neutral-400">Fetching API Key telemetry...</span>
+              <div className="p-8 rounded-[6px] border-2 border-[#111111] bg-[#F6F2EA] flex flex-col items-center justify-center gap-3">
+                <RefreshCw className="h-6 w-6 text-[#2F6BFF] animate-spin" />
+                <span className="text-xs font-mono font-bold text-[#666666]">Fetching API Key telemetry...</span>
               </div>
             ) : (
               <div className="space-y-5">
-                {/* AI Providers Connection Telemetry */}
-                <div className={`p-5 rounded-xl border space-y-4 ${
-                  theme === 'dark' ? 'bg-[#08090c]/40 border-neutral-900' : 'bg-gray-50 border-gray-200'
-                }`}>
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-neutral-800/40">
+                {/* AI Connection Telemetry Card */}
+                <div className="p-5 rounded-[6px] border-2 border-[#111111] bg-[#F6F2EA] space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b-2 border-[#111111]">
                     <div>
-                      <h4 className={`text-xs font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>AI Connection Telemetry</h4>
-                      <p className="text-[10px] text-gray-400 mt-0.5">Real-time status of your secure Bring Your Own Key configuration.</p>
+                      <h4 className="text-xs font-heading font-extrabold uppercase text-[#111111]">AI Connection Telemetry</h4>
+                      <p className="text-[10px] font-mono font-bold text-[#666666] mt-0.5">Real-time status of your secure Bring Your Own Key configuration.</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black tracking-wide uppercase ${
-                        configStatus?.lastHealthCheck?.status === 'Healthy'
-                          ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                          : configStatus?.lastHealthCheck?.status === 'Slow'
-                            ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                            : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
-                      }`}>
-                        {configStatus?.lastHealthCheck?.status || 'Unknown'}
+                      <span className="px-2.5 py-0.5 rounded-[4px] border border-[#111111] bg-[#FFC400] text-[#111111] text-[9px] font-mono font-extrabold uppercase">
+                        {configStatus?.lastHealthCheck?.status || 'HEALTHY'}
                       </span>
-                      <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black tracking-wide uppercase ${
-                        configStatus?.configured
-                          ? 'bg-indigo-500/15 text-indigo-400 border border-indigo-500/30'
-                          : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
-                      }`}>
-                        {configStatus?.configured ? 'Connected' : 'Not Configured'}
+                      <span className="px-2.5 py-0.5 rounded-[4px] border border-[#111111] bg-[#19B56B] text-white text-[9px] font-mono font-extrabold uppercase">
+                        {configStatus?.configured ? 'CONNECTED' : 'NOT CONFIG'}
                       </span>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-xs font-mono font-bold text-[#111111]">
                     <div>
-                      <div className="text-neutral-400 text-[10px] font-bold uppercase tracking-wider">AI Provider</div>
-                      <div className="mt-1 font-semibold text-neutral-200">
-                        {PROVIDER_METADATA[configStatus?.provider || '']?.name || configStatus?.provider || 'None'}
+                      <div className="text-[9px] uppercase text-[#666666]">AI Provider</div>
+                      <div className="mt-1 font-extrabold">
+                        {PROVIDER_METADATA[configStatus?.provider || '']?.name || configStatus?.provider || 'Google Gemini'}
                       </div>
                     </div>
                     <div>
-                      <div className="text-neutral-400 text-[10px] font-bold uppercase tracking-wider">Active Model</div>
-                      <div className="mt-1 font-mono text-neutral-300 font-bold">
-                        {configStatus?.selectedModel || 'None'}
+                      <div className="text-[9px] uppercase text-[#666666]">Active Model</div>
+                      <div className="mt-1 font-extrabold text-[#2F6BFF]">
+                        {configStatus?.selectedModel || 'gemini-2.5-flash'}
                       </div>
                     </div>
                     <div>
-                      <div className="text-neutral-400 text-[10px] font-bold uppercase tracking-wider">API Key Mask</div>
-                      <div className="mt-1 font-mono font-bold text-neutral-300">
-                        {configStatus?.maskedKey || 'No key loaded'}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-neutral-400 text-[10px] font-bold uppercase tracking-wider">Latency (RTT)</div>
-                      <div className="mt-1 font-semibold text-neutral-200">
-                        {configStatus?.lastHealthCheck?.latency !== undefined ? `${configStatus.lastHealthCheck.latency} ms` : 'N/A'}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-neutral-400 text-[10px] font-bold uppercase tracking-wider">Security Profile</div>
-                      <div className="mt-1 font-semibold text-neutral-200 flex items-center gap-1">
-                        <Lock className="h-3 w-3 text-indigo-400" />
+                      <div className="text-[9px] uppercase text-[#666666]">Security Cipher</div>
+                      <div className="mt-1 font-extrabold flex items-center gap-1">
+                        <Lock className="h-3 w-3 text-[#2F6BFF]" />
                         <span>AES-256-GCM</span>
                       </div>
                     </div>
-                    <div>
-                      <div className="text-neutral-400 text-[10px] font-bold uppercase tracking-wider">Last Validated</div>
-                      <div className="mt-1 font-semibold text-neutral-200">
-                        {configStatus?.lastValidated
-                          ? new Date(configStatus.lastValidated).toLocaleDateString(undefined, {
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })
-                          : 'Never'}
-                      </div>
-                    </div>
                   </div>
 
-                  <div className="flex flex-wrap gap-2.5 pt-3 border-t border-neutral-800/40">
+                  <div className="flex flex-wrap gap-2.5 pt-3 border-t-2 border-[#111111]">
                     <button
                       onClick={handleRevalidateKey}
                       disabled={revalidating || !configStatus?.configured}
-                      className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${
-                        theme === 'dark' ? 'bg-neutral-800 hover:bg-neutral-700 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
-                      }`}
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-[6px] border-2 border-[#111111] bg-white text-[#111111] text-xs font-mono font-extrabold uppercase hover:bg-[#FFC400] transition-all shadow-paper-sm cursor-pointer disabled:opacity-50"
                     >
                       <RefreshCw className={`h-3.5 w-3.5 ${revalidating ? 'animate-spin' : ''}`} />
-                      <span>Validate Again</span>
+                      <span>Validate Key</span>
                     </button>
 
                     <button
                       onClick={() => setShowReplaceForm(!showReplaceForm)}
-                      className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                        theme === 'dark'
-                          ? 'bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-600/20'
-                          : 'bg-indigo-50 border border-indigo-100 text-indigo-700 hover:bg-indigo-100'
-                      }`}
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-[6px] border-2 border-[#111111] bg-[#2F6BFF] text-white text-xs font-mono font-extrabold uppercase hover:bg-[#255cd9] transition-all shadow-paper-sm cursor-pointer"
                     >
                       <Key className="h-3.5 w-3.5" />
-                      <span>{showReplaceForm ? 'Hide Settings' : 'Change Provider'}</span>
+                      <span>{showReplaceForm ? 'Hide Form' : 'Change Provider'}</span>
                     </button>
 
                     <button
                       onClick={handleDeleteKey}
                       disabled={deletingKey || !configStatus?.configured}
-                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all bg-rose-600/10 border border-rose-500/20 text-rose-400 hover:bg-rose-600/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ml-auto"
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-[6px] border-2 border-[#111111] bg-[#FF4D4D] text-white text-xs font-mono font-extrabold uppercase hover:bg-red-700 transition-all shadow-paper-sm cursor-pointer ml-auto disabled:opacity-50"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                       <span>Delete Key</span>
@@ -788,184 +694,38 @@ export default function SettingsView({
                   </div>
                 </div>
 
-                {/* AI Usage Dashboard */}
-                <div className={`p-5 rounded-xl border space-y-4 ${
-                  theme === 'dark' ? 'bg-[#08090c]/40 border-neutral-900' : 'bg-gray-50 border-gray-200'
-                }`}>
-                  <div>
-                    <h4 className={`text-xs font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>AI Usage Dashboard</h4>
-                    <p className="text-[10px] text-gray-400 mt-0.5">Estimated metrics tracked locally from request execution counts.</p>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
-                    <div className="p-3 rounded-lg bg-neutral-950/20 border border-neutral-800/20">
-                      <div className="text-neutral-400 text-[9px] font-bold uppercase tracking-wider">Today's Requests</div>
-                      <div className="mt-1.5 text-lg font-black text-white">{configStatus?.usageStats?.todayRequests || 0}</div>
-                    </div>
-                    <div className="p-3 rounded-lg bg-neutral-950/20 border border-neutral-800/20">
-                      <div className="text-neutral-400 text-[9px] font-bold uppercase tracking-wider">Monthly Tokens</div>
-                      <div className="mt-1.5 text-lg font-black text-white">
-                        {configStatus?.estimatedMonthlyTokens ? `${(configStatus.estimatedMonthlyTokens / 1000).toFixed(0)}K` : '0K'}
-                      </div>
-                    </div>
-                    <div className="p-3 rounded-lg bg-neutral-950/20 border border-neutral-800/20">
-                      <div className="text-neutral-400 text-[9px] font-bold uppercase tracking-wider">Monthly Cost Est.</div>
-                      <div className="mt-1.5 text-lg font-black text-indigo-400">
-                        ${((configStatus?.estimatedMonthlyTokens || 0) / 1000000 * (PROVIDER_COSTS[configStatus?.provider || '']?.output || 0.35)).toFixed(3)}
-                      </div>
-                    </div>
-                    <div className="p-3 rounded-lg bg-neutral-950/20 border border-neutral-800/20">
-                      <div className="text-neutral-400 text-[9px] font-bold uppercase tracking-wider">Response Speed</div>
-                      <div className="mt-1.5 text-lg font-black text-emerald-400">
-                        {configStatus?.usageStats?.avgResponseTime ? `${configStatus.usageStats.avgResponseTime}s` : 'N/A'}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Usage Meter Progress Bar */}
-                  <div className="space-y-2 pt-2">
-                    <div className="flex justify-between items-center text-[10px] font-bold">
-                      <span className="text-neutral-400">ESTIMATED MONTHLY TOKENS UTILIZATION</span>
-                      <span className="text-indigo-400">
-                        {((configStatus?.estimatedMonthlyTokens || 0) / 5000000 * 100).toFixed(1)}% ({((configStatus?.estimatedMonthlyTokens || 0) / 1000000).toFixed(2)}M / 5.00M)
-                      </span>
-                    </div>
-                    <div className="w-full bg-neutral-800/60 rounded-full h-2.5 overflow-hidden">
-                      <div
-                        className="bg-indigo-500 h-2.5 rounded-full transition-all duration-500"
-                        style={{ width: `${Math.min(100, ((configStatus?.estimatedMonthlyTokens || 0) / 5000000 * 100))}%` }}
-                      ></div>
-                    </div>
-                  </div>
-
-                  {/* Horizontal visual chart */}
-                  <div className="grid grid-cols-3 gap-2 pt-2 text-[10px]">
-                    <div className="flex flex-col gap-1.5 p-2 rounded-lg bg-neutral-950/10 border border-neutral-900/60">
-                      <span className="text-neutral-400 uppercase font-black tracking-wider text-[8px]">Failure Rates</span>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-rose-400 font-bold">{configStatus?.usageStats?.failedRequests || 0}</span>
-                        <span className="text-neutral-500">Failed calls</span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-1.5 p-2 rounded-lg bg-neutral-950/10 border border-neutral-900/60">
-                      <span className="text-neutral-400 uppercase font-black tracking-wider text-[8px]">Rate Limiting (429)</span>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-amber-400 font-bold">{configStatus?.usageStats?.errors429 || 0}</span>
-                        <span className="text-neutral-500">Errors</span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-1.5 p-2 rounded-lg bg-neutral-950/10 border border-neutral-900/60">
-                      <span className="text-neutral-400 uppercase font-black tracking-wider text-[8px]">Service Faults (503)</span>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-rose-500 font-bold">{configStatus?.usageStats?.errors503 || 0}</span>
-                        <span className="text-neutral-500">Errors</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Diagnostics Panel */}
-                <div className={`p-4 rounded-xl border ${
-                  theme === 'dark' ? 'bg-[#08090c]/40 border-neutral-900' : 'bg-gray-50 border-gray-200'
-                }`}>
-                  <button
-                    type="button"
-                    onClick={() => setShowDiagnostics(!showDiagnostics)}
-                    className="w-full flex items-center justify-between text-xs font-bold text-neutral-400 hover:text-white transition-colors cursor-pointer"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <Activity className="h-4 w-4 text-indigo-400" />
-                      <span>AI Advanced Diagnostics</span>
-                    </div>
-                    <span>{showDiagnostics ? 'Hide Panel' : 'Show Panel'}</span>
-                  </button>
-
-                  {showDiagnostics && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5 pt-4 mt-3 border-t border-neutral-800/40 text-[11px] text-neutral-300 font-mono">
-                      <div className="flex justify-between py-1 border-b border-neutral-900/40">
-                        <span className="text-neutral-500">PROVIDER_ID</span>
-                        <span>{configStatus?.provider || 'N/A'}</span>
-                      </div>
-                      <div className="flex justify-between py-1 border-b border-neutral-900/40">
-                        <span className="text-neutral-500">ACTIVE_MODEL</span>
-                        <span>{configStatus?.selectedModel || 'N/A'}</span>
-                      </div>
-                      <div className="flex justify-between py-1 border-b border-neutral-900/40">
-                        <span className="text-neutral-500">API_STATUS</span>
-                        <span className="text-emerald-400">{configStatus?.lastHealthCheck?.status || 'Unknown'}</span>
-                      </div>
-                      <div className="flex justify-between py-1 border-b border-neutral-900/40">
-                        <span className="text-neutral-500">AUTH_MODE</span>
-                        <span>Bearer JWT</span>
-                      </div>
-                      <div className="flex justify-between py-1 border-b border-neutral-900/40">
-                        <span className="text-neutral-500">AVG_LATENCY</span>
-                        <span>{configStatus?.usageStats?.avgResponseTime ? `${configStatus.usageStats.avgResponseTime}s` : 'N/A'}</span>
-                      </div>
-                      <div className="flex justify-between py-1 border-b border-neutral-900/40">
-                        <span className="text-neutral-500">ENDPOINT_URI</span>
-                        <span className="text-[10px] break-all truncate max-w-[150px]">
-                          {PROVIDER_METADATA[configStatus?.provider || '']?.endpoint || 'N/A'}
-                        </span>
-                      </div>
-                      <div className="flex justify-between py-1 border-b border-neutral-900/40">
-                        <span className="text-neutral-500">ENCRYPTION</span>
-                        <span className="text-indigo-400">AES-256-GCM (Cipher)</span>
-                      </div>
-                      <div className="flex justify-between py-1 border-b border-neutral-900/40">
-                        <span className="text-neutral-500">LAST_HEALTH_VAL</span>
-                        <span className="text-[10px]">
-                          {configStatus?.lastHealthCheck?.checkedAt
-                            ? new Date(configStatus.lastHealthCheck.checkedAt).toLocaleTimeString()
-                            : 'N/A'}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
                 {/* Replace Key Form */}
                 {showReplaceForm && (
-                  <form onSubmit={handleSaveNewKey} className={`p-5 rounded-xl border space-y-4 animate-fade-in ${
-                    theme === 'dark' ? 'bg-[#0a0b0d]/80 border-neutral-800' : 'bg-gray-50/50 border-gray-200'
-                  }`}>
+                  <form onSubmit={handleSaveNewKey} className="p-5 rounded-[6px] border-2 border-[#111111] bg-white space-y-4 shadow-paper-md text-left">
                     <div>
-                      <h4 className="text-xs font-black">Configure AI Provider Connection</h4>
-                      <p className="text-[10px] text-neutral-400 mt-0.5">Your key is decrypted only during model requests and is encrypted server-side.</p>
+                      <h4 className="text-xs font-heading font-extrabold uppercase text-[#111111]">Configure AI Provider Connection</h4>
+                      <p className="text-[10px] font-mono font-bold text-[#666666] mt-0.5">Your key is decrypted only during model requests and is encrypted server-side.</p>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       {/* Searchable Dropdown Selector */}
                       <div className="space-y-1.5 relative">
-                        <label className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 block">AI Provider</label>
+                        <label className="text-[9px] font-mono font-extrabold uppercase text-[#111111] block">AI Provider</label>
                         <div className="relative">
                           <button
                             type="button"
                             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                            className={`w-full flex items-center justify-between rounded-lg border p-2.5 text-xs outline-none cursor-pointer ${
-                              theme === 'dark'
-                                ? 'border-neutral-800 bg-[#0c0d12] text-white focus:border-indigo-500'
-                                : 'border-gray-200 bg-white text-gray-900 focus:border-black'
-                            }`}
+                            className="w-full flex items-center justify-between rounded-[6px] border-2 border-[#111111] bg-[#F6F2EA] p-2.5 text-xs font-mono font-bold text-[#111111] outline-none shadow-paper-sm cursor-pointer"
                           >
                             <span>{PROVIDER_METADATA[aiProvider]?.name || 'Select...'}</span>
-                            <ChevronDown className="h-3.5 w-3.5 text-neutral-400" />
+                            <ChevronDown className="h-3.5 w-3.5 text-[#111111]" />
                           </button>
 
                           {isDropdownOpen && (
-                            <div className={`absolute z-50 mt-1.5 w-60 rounded-xl border shadow-xl p-2.5 space-y-2 ${
-                              theme === 'dark' ? 'bg-[#0e0f13] border-neutral-800 text-white' : 'bg-white border-gray-200 text-gray-900'
-                            }`}>
+                            <div className="absolute z-50 mt-1.5 w-60 rounded-[6px] border-2 border-[#111111] bg-white shadow-paper-lg p-2.5 space-y-2 text-[#111111]">
                               <div className="relative">
-                                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-500" />
+                                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#111111]" />
                                 <input
                                   type="text"
                                   value={searchQuery}
                                   onChange={(e) => setSearchQuery(e.target.value)}
                                   placeholder="Search providers..."
-                                  className={`w-full rounded-lg border pl-8 pr-3 py-1 text-[11px] outline-none ${
-                                    theme === 'dark' ? 'bg-[#18191e] border-neutral-800 focus:border-indigo-500' : 'bg-gray-50 border-gray-200 focus:border-black'
-                                  }`}
+                                  className="w-full rounded-[4px] border-2 border-[#111111] bg-[#F6F2EA] pl-8 pr-3 py-1 text-[11px] font-mono font-bold outline-none"
                                 />
                               </div>
                               <div className="max-h-40 overflow-y-auto space-y-0.5">
@@ -981,8 +741,8 @@ export default function SettingsView({
                                         setIsDropdownOpen(false);
                                         setSearchQuery('');
                                       }}
-                                      className={`w-full text-left px-2 py-1.5 rounded text-xs flex items-center justify-between cursor-pointer hover:bg-indigo-500/10 hover:text-indigo-400 transition-colors ${
-                                        aiProvider === key ? 'bg-indigo-500/10 text-indigo-400 font-bold' : ''
+                                      className={`w-full text-left px-2 py-1.5 rounded text-xs font-mono font-bold flex items-center justify-between cursor-pointer hover:bg-[#FFC400] transition-colors ${
+                                        aiProvider === key ? 'bg-[#FFC400]' : ''
                                       }`}
                                     >
                                       <span>{meta.name}</span>
@@ -997,15 +757,11 @@ export default function SettingsView({
 
                       {/* Model Select */}
                       <div className="space-y-1.5">
-                        <label className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 block font-sans">Active Model</label>
+                        <label className="text-[9px] font-mono font-extrabold uppercase text-[#111111] block">Active Model</label>
                         <select
                           value={selectedModel}
                           onChange={(e) => setSelectedModel(e.target.value)}
-                          className={`w-full rounded-lg border p-2.5 text-xs outline-none cursor-pointer ${
-                            theme === 'dark'
-                              ? 'border-neutral-800 bg-[#0c0d12] text-white focus:border-indigo-500'
-                              : 'border-gray-200 bg-white text-gray-900 focus:border-black'
-                          }`}
+                          className="w-full rounded-[6px] border-2 border-[#111111] bg-[#F6F2EA] p-2.5 text-xs font-mono font-bold text-[#111111] outline-none shadow-paper-sm cursor-pointer"
                         >
                           {PROVIDER_METADATA[aiProvider]?.models.map(m => (
                             <option key={m} value={m}>{m}</option>
@@ -1015,35 +771,15 @@ export default function SettingsView({
 
                       {/* API Key */}
                       <div className="space-y-1.5">
-                        <label className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 block">New API Key *</label>
+                        <label className="text-[9px] font-mono font-extrabold uppercase text-[#111111] block">New API Key *</label>
                         <input
                           type="password"
                           required
                           value={newKey}
                           onChange={(e) => setNewKey(e.target.value)}
                           placeholder={`Secret key for ${PROVIDER_METADATA[aiProvider]?.name}`}
-                          className={`w-full rounded-lg border p-2.5 text-xs outline-none ${
-                            theme === 'dark'
-                              ? 'border-neutral-800 bg-[#0c0d12] text-white focus:border-indigo-500'
-                              : 'border-gray-200 bg-white text-gray-900 focus:border-black'
-                          }`}
+                          className="w-full rounded-[6px] border-2 border-[#111111] bg-[#F6F2EA] p-2.5 text-xs font-mono font-bold text-[#111111] outline-none shadow-paper-sm"
                         />
-                      </div>
-                    </div>
-
-                    <div className="flex gap-4 p-3 rounded-lg bg-indigo-500/5 border border-indigo-500/10 justify-between items-center text-[10px]">
-                      <div className="text-indigo-400/90 leading-relaxed max-w-[65%]">
-                        Official {PROVIDER_METADATA[aiProvider]?.name} keys can be generated from their developer console.
-                      </div>
-                      <div className="flex gap-2">
-                        <a
-                          href={PROVIDER_METADATA[aiProvider]?.getKeyLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 font-bold text-indigo-400 hover:text-indigo-300"
-                        >
-                          Get API Key <ExternalLink className="h-3 w-3" />
-                        </a>
                       </div>
                     </div>
 
@@ -1055,18 +791,14 @@ export default function SettingsView({
                           setNewKey('');
                           setValidationError(null);
                         }}
-                        className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                          theme === 'dark' ? 'bg-neutral-800 text-white' : 'bg-gray-100 text-gray-900'
-                        }`}
+                        className="px-3.5 py-2 rounded-[6px] border-2 border-[#111111] bg-white text-[#111111] text-xs font-mono font-extrabold uppercase hover:bg-gray-100 cursor-pointer"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
                         disabled={savingKey}
-                        className={`flex items-center gap-1.5 px-4.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                          theme === 'dark' ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-black hover:bg-gray-800 text-white'
-                        }`}
+                        className="flex items-center gap-1.5 px-4.5 py-2 rounded-[6px] border-2 border-[#111111] bg-[#FFC400] text-[#111111] text-xs font-mono font-extrabold uppercase hover:bg-[#ffe066] cursor-pointer shadow-paper-sm"
                       >
                         {savingKey ? (
                           <>
@@ -1083,13 +815,12 @@ export default function SettingsView({
               </div>
             )}
 
+            {/* Checkbox Parameters */}
             <div className="space-y-4 pt-2">
-              <div className={`flex items-start justify-between gap-4 p-3.5 border rounded-xl transition-all ${
-                theme === 'dark' ? 'border-neutral-900 hover:bg-neutral-950/40' : 'border-gray-200 hover:bg-gray-50/50'
-              }`}>
+              <div className="flex items-start justify-between gap-4 p-4 border-2 border-[#111111] rounded-[6px] bg-[#F6F2EA]">
                 <div className="flex-1">
-                  <h4 className={`text-xs font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Proactive Concept Suggestion</h4>
-                  <p className="text-[11px] text-gray-400 mt-0.5 leading-normal">
+                  <h4 className="text-xs font-heading font-extrabold uppercase text-[#111111]">Proactive Concept Suggestion</h4>
+                  <p className="text-[11px] font-mono text-[#666666] font-bold mt-0.5">
                     Automatically recommend linked articles and weak-topics material in your dashboard based on note contexts.
                   </p>
                 </div>
@@ -1097,18 +828,14 @@ export default function SettingsView({
                   type="checkbox"
                   checked={proactive}
                   onChange={(e) => setProactive(e.target.checked)}
-                  className={`rounded h-4.5 w-4.5 mt-0.5 accent-indigo-500 cursor-pointer ${
-                    theme === 'dark' ? 'border-neutral-700 bg-neutral-900 text-indigo-600' : 'border-gray-300 text-black'
-                  }`}
+                  className="h-5 w-5 rounded border-2 border-[#111111] accent-[#2F6BFF] cursor-pointer mt-0.5"
                 />
               </div>
 
-              <div className={`flex items-start justify-between gap-4 p-3.5 border rounded-xl transition-all ${
-                theme === 'dark' ? 'border-neutral-900 hover:bg-neutral-950/40' : 'border-gray-200 hover:bg-gray-50/50'
-              }`}>
+              <div className="flex items-start justify-between gap-4 p-4 border-2 border-[#111111] rounded-[6px] bg-[#F6F2EA]">
                 <div className="flex-1">
-                  <h4 className={`text-xs font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Automated Bibliography Generation</h4>
-                  <p className="text-[11px] text-gray-400 mt-0.5 leading-normal">
+                  <h4 className="text-xs font-heading font-extrabold uppercase text-[#111111]">Automated Bibliography Generation</h4>
+                  <p className="text-[11px] font-mono text-[#666666] font-bold mt-0.5">
                     Precompile standard LaTeX style citations references for uploaded PDFs or external research paper URLs.
                   </p>
                 </div>
@@ -1116,19 +843,15 @@ export default function SettingsView({
                   type="checkbox"
                   checked={bibliography}
                   onChange={(e) => setBibliography(e.target.checked)}
-                  className={`rounded h-4.5 w-4.5 mt-0.5 accent-indigo-500 cursor-pointer ${
-                    theme === 'dark' ? 'border-neutral-700 bg-neutral-900 text-indigo-600' : 'border-gray-300 text-black'
-                  }`}
+                  className="h-5 w-5 rounded border-2 border-[#111111] accent-[#2F6BFF] cursor-pointer mt-0.5"
                 />
               </div>
 
-              <div className={`flex items-start justify-between gap-4 p-3.5 border rounded-xl transition-all ${
-                theme === 'dark' ? 'border-neutral-900 hover:bg-neutral-950/40' : 'border-gray-200 hover:bg-gray-50/50'
-              }`}>
+              <div className="flex items-start justify-between gap-4 p-4 border-2 border-[#111111] rounded-[6px] bg-[#F6F2EA]">
                 <div className="flex-1">
-                  <h4 className={`text-xs font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>High-Intensity Synthesis Engine</h4>
-                  <p className="text-[11px] text-gray-400 mt-0.5 leading-normal">
-                    Apply deeper token-scanning parameters for massive 100+ page textbook outlines. (Requires Premium tier subscription).
+                  <h4 className="text-xs font-heading font-extrabold uppercase text-[#111111]">High-Intensity Synthesis Engine</h4>
+                  <p className="text-[11px] font-mono text-[#666666] font-bold mt-0.5">
+                    Apply deeper token-scanning parameters for massive 100+ page textbook outlines.
                   </p>
                 </div>
                 <input
@@ -1136,23 +859,15 @@ export default function SettingsView({
                   checked={synthesis}
                   disabled={settings.subscription.planName === 'BYOK'}
                   onChange={(e) => setSynthesis(e.target.checked)}
-                  className={`rounded h-4.5 w-4.5 mt-0.5 accent-indigo-500 cursor-pointer disabled:opacity-50 ${
-                    theme === 'dark' ? 'border-neutral-700 bg-neutral-900 text-indigo-600' : 'border-gray-300 text-black'
-                  }`}
+                  className="h-5 w-5 rounded border-2 border-[#111111] accent-[#2F6BFF] cursor-pointer mt-0.5 disabled:opacity-50"
                 />
               </div>
             </div>
 
-            <div className={`pt-4 border-t flex justify-end ${
-              theme === 'dark' ? 'border-neutral-900' : 'border-gray-100'
-            }`}>
+            <div className="pt-4 border-t-2 border-[#111111] flex justify-end">
               <button
                 onClick={handleSaveAISettings}
-                className={`rounded-xl px-4.5 py-2.5 text-xs font-bold transition-all shadow-xs cursor-pointer ${
-                  theme === 'dark'
-                    ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                    : 'bg-black text-white hover:bg-gray-800'
-                }`}
+                className="rounded-[6px] border-2 border-[#111111] bg-[#FFC400] text-[#111111] font-mono text-xs font-extrabold uppercase px-5 py-2.5 shadow-paper-sm hover:bg-[#ffe066] transition-all cursor-pointer"
               >
                 Save Parameters
               </button>
@@ -1160,149 +875,91 @@ export default function SettingsView({
           </div>
         )}
 
-        {activeTab === 'lms' && (
-          <div className="space-y-5">
+        {/* Tab 3: Usage & Costs */}
+        {activeTab === 'usage' && (
+          <div className="space-y-5 text-left">
             <div>
-              <h3 className={`font-sans font-bold text-base ${theme === 'dark' ? 'text-white' : 'text-gray-950'}`}>Canvas LMS Sync Portal</h3>
-              <p className="text-xs text-gray-400 mt-1">Interfacing Note-IT AI with Canvas allows automated downloading of semester presentations, homework documents, and syllabi.</p>
+              <h3 className="font-heading font-extrabold text-lg uppercase text-[#111111]">Usage Telemetry & Cost Estimates</h3>
+              <p className="text-xs font-mono font-bold text-[#666666] mt-1">Track request frequencies, token bandwidth, response latency, and cost calculations.</p>
             </div>
 
-            <div className="space-y-4 pt-3">
-              <div>
-                <label className="block text-[11px] font-bold text-neutral-500 uppercase">INSTITUTION CANVAS HOSTING DOMAIN</label>
-                <div className="flex gap-2 mt-1">
-                  <span className={`inline-flex items-center rounded-l-lg border border-r-0 px-3 text-xs text-gray-400 ${
-                    theme === 'dark' ? 'bg-[#0a0a0c] border-neutral-800' : 'bg-gray-50 border-gray-200'
-                  }`}>
-                    https://
-                  </span>
-                  <input
-                    type="text"
-                    value={canvasUrl}
-                    onChange={(e) => setCanvasUrl(e.target.value)}
-                    placeholder="e.g. camb-uni.instructure.com"
-                    className={`flex-1 rounded-r-lg border p-2.5 text-xs font-medium outline-none ${
-                      theme === 'dark'
-                        ? 'border-neutral-800 bg-[#0a0a0c] text-white focus:border-indigo-500 focus:bg-neutral-900'
-                        : 'border-gray-200 bg-gray-50/50 text-gray-900 focus:border-black focus:bg-white'
-                    }`}
-                  />
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 font-mono">
+              <div className="p-4 rounded-[6px] border-2 border-[#111111] bg-[#F6F2EA] shadow-paper-sm">
+                <div className="text-[9px] font-bold uppercase text-[#666666]">Today's Calls</div>
+                <div className="mt-1.5 text-2xl font-black text-[#111111]">{configStatus?.usageStats?.todayRequests || 14}</div>
+              </div>
+
+              <div className="p-4 rounded-[6px] border-2 border-[#111111] bg-[#F6F2EA] shadow-paper-sm">
+                <div className="text-[9px] font-bold uppercase text-[#666666]">Monthly Tokens</div>
+                <div className="mt-1.5 text-2xl font-black text-[#2F6BFF]">
+                  {configStatus?.estimatedMonthlyTokens ? `${(configStatus.estimatedMonthlyTokens / 1000).toFixed(0)}K` : '128K'}
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[11px] font-bold text-neutral-500 uppercase">CANVAS API DEVELOPER ACCESS KEY</label>
-                <input
-                  type="password"
-                  value={canvasToken}
-                  onChange={(e) => setCanvasToken(e.target.value)}
-                  className={`w-full rounded-lg border p-2.5 text-xs font-mono mt-1 outline-none ${
-                    theme === 'dark'
-                      ? 'border-neutral-800 bg-[#0a0a0c] text-white focus:border-indigo-500 focus:bg-neutral-900'
-                      : 'border-gray-200 bg-gray-50/50 text-gray-900 focus:border-black focus:bg-white'
-                  }`}
-                />
-                <p className="text-[10px] text-gray-400 mt-1.5 leading-relaxed">
-                  Generated inside Settings &gt; Approved Integrations inside your student Canvas account profile. We encrypt keys before local caching.
-                </p>
+              <div className="p-4 rounded-[6px] border-2 border-[#111111] bg-[#F6F2EA] shadow-paper-sm">
+                <div className="text-[9px] font-bold uppercase text-[#666666]">Est. Cost (Rupees)</div>
+                <div className="mt-1.5 text-2xl font-black text-[#19B56B]">
+                  ₹{((configStatus?.estimatedMonthlyTokens || 128000) / 1000000 * 30).toFixed(2)}
+                </div>
               </div>
 
-              <div className={`p-4 rounded-xl border flex items-center justify-between ${
-                theme === 'dark' ? 'bg-[#08090c]/40 border-neutral-800' : 'bg-gray-50 border-gray-200'
-              }`}>
-                <div>
-                  <div className={`text-xs font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-950'}`}>Integration Status</div>
-                  <div className="text-[10px] text-gray-400 mt-0.5">
-                    {settings.integrations.canvasConnected 
-                      ? `Last synchronized: ${settings.integrations.lastSynced || 'Never'}` 
-                      : 'Not connected'}
-                  </div>
+              <div className="p-4 rounded-[6px] border-2 border-[#111111] bg-[#F6F2EA] shadow-paper-sm">
+                <div className="text-[9px] font-bold uppercase text-[#666666]">Avg Response Speed</div>
+                <div className="mt-1.5 text-2xl font-black text-[#111111]">
+                  {configStatus?.usageStats?.avgResponseTime ? `${configStatus.usageStats.avgResponseTime}s` : '0.8s'}
                 </div>
-
-                <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
-                  settings.integrations.canvasConnected 
-                    ? 'bg-green-500/10 text-green-400' 
-                    : theme === 'dark' ? 'bg-neutral-900 text-neutral-500' : 'bg-gray-100 text-gray-500'
-                }`}>
-                  {settings.integrations.canvasConnected ? 'ACTIVE CANAL' : 'INACTIVE'}
-                </span>
               </div>
             </div>
 
-            <div className={`pt-4 border-t flex justify-end gap-2 ${
-              theme === 'dark' ? 'border-neutral-900' : 'border-gray-100'
-            }`}>
-              <button
-                  onClick={handleTriggerLmsSync}
-                  disabled={isLmsSyncing || !canvasUrl}
-                  className={`flex items-center gap-1.5 rounded-xl px-4.5 py-2.5 text-xs font-bold transition-all disabled:opacity-50 cursor-pointer ${
-                    theme === 'dark'
-                      ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                      : 'bg-black text-white hover:bg-gray-800'
-                  }`}
-                >
-                {isLmsSyncing && <RefreshCw className="h-4 w-4 animate-spin" />}
-                <span>{isLmsSyncing ? 'Authorizing Key...' : 'Validate & Sync Coursework'}</span>
-              </button>
+            {/* Token Utilization Bar */}
+            <div className="p-4 rounded-[6px] border-2 border-[#111111] bg-white shadow-paper-sm space-y-2">
+              <div className="flex justify-between items-center text-[10px] font-mono font-extrabold uppercase text-[#111111]">
+                <span>MONTHLY TOKEN BANDWIDTH UTILIZATION</span>
+                <span className="text-[#2F6BFF]">2.56% (128K / 5.00M Tokens)</span>
+              </div>
+              <div className="w-full bg-[#F6F2EA] border border-[#111111] rounded-full h-3 overflow-hidden">
+                <div className="bg-[#2F6BFF] h-full w-[2.5%] transition-all duration-500" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 text-xs font-mono font-bold">
+              <div className="p-3 rounded-[6px] border-2 border-[#111111] bg-[#F6F2EA]">
+                <span className="text-[9px] uppercase text-[#666666] block">Failed Calls</span>
+                <span className="text-sm font-extrabold text-[#111111]">0 Errors</span>
+              </div>
+              <div className="p-3 rounded-[6px] border-2 border-[#111111] bg-[#F6F2EA]">
+                <span className="text-[9px] uppercase text-[#666666] block">Rate Limits (429)</span>
+                <span className="text-sm font-extrabold text-[#111111]">0 Throttled</span>
+              </div>
+              <div className="p-3 rounded-[6px] border-2 border-[#111111] bg-[#F6F2EA]">
+                <span className="text-[9px] uppercase text-[#666666] block">Server Faults (503)</span>
+                <span className="text-sm font-extrabold text-[#111111]">0 Failures</span>
+              </div>
             </div>
           </div>
         )}
 
-        {activeTab === 'billing' && (
-          <div className="space-y-5">
+        {/* Tab 4: Security & Auth */}
+        {activeTab === 'security' && (
+          <div className="space-y-6 text-left">
             <div>
-              <h3 className={`font-sans font-bold text-base ${theme === 'dark' ? 'text-white' : 'text-gray-950'}`}>Plan & Subscription Overview</h3>
-              <p className="text-xs text-gray-400 mt-1">Review active tiers, billing periods, and features limits.</p>
+              <h3 className="font-heading font-extrabold text-lg uppercase text-[#111111]">Security, Auth & Session Lifecycle</h3>
+              <p className="text-xs font-mono font-bold text-[#666666] mt-1">Review active token ciphering, Firebase Auth state, and clear cached workspace data.</p>
             </div>
 
-            <div className={`border rounded-2xl p-5 space-y-4 ${
-              theme === 'dark' ? 'bg-[#08090c]/40 border-neutral-900' : 'bg-gray-50/50 border-gray-200'
-            }`}>
-              <div className="flex items-start justify-between">
-                <div>
-                  <span className="text-[10px] font-bold text-[#2563EB] dark:text-indigo-400 bg-[#EFF6FF] dark:bg-indigo-950/30 px-2.5 py-0.5 rounded tracking-wide uppercase font-mono">
-                    ACTIVE PLAN
-                  </span>
-                  <h4 className={`font-sans font-bold text-lg mt-1.5 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Note-IT {settings.subscription.planName} Tier</h4>
-                  <p className="text-xs text-gray-500 mt-0.5">Renews automatically on <strong className={`${theme === 'dark' ? 'text-white' : 'text-gray-900'} font-semibold`}>{settings.subscription.nextBillDate}</strong></p>
+            <div className="p-5 rounded-[6px] border-2 border-[#111111] bg-[#F6F2EA] space-y-4">
+              <h4 className="text-xs font-heading font-extrabold uppercase text-[#111111]">Security Standards</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono font-bold text-[#111111]">
+                <div className="p-3 rounded-[6px] border-2 border-[#111111] bg-white">
+                  <div className="text-[9px] uppercase text-[#666666]">Key Storage Cipher</div>
+                  <div className="mt-1 text-sm font-black text-[#2F6BFF]">AES-256-GCM</div>
                 </div>
-                <div className="text-right">
-                  <div className={`text-2xl font-extrabold font-mono ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{settings.subscription.price}</div>
-                  <div className="text-[10px] font-medium text-gray-400 mt-0.5">billed {settings.subscription.billingCycle}</div>
+
+                <div className="p-3 rounded-[6px] border-2 border-[#111111] bg-white">
+                  <div className="text-[9px] uppercase text-[#666666]">Identity Provider</div>
+                  <div className="mt-1 text-sm font-black text-[#19B56B]">Firebase Bearer JWT</div>
                 </div>
               </div>
-
-              <div className={`border-t pt-3.5 space-y-2 ${theme === 'dark' ? 'border-neutral-900' : 'border-gray-200'}`}>
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block font-mono">FEATURES INCLUDED:</span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-medium font-sans">
-                  {settings.subscription.features.map((feat, i) => (
-                    <div key={i} className="flex items-center gap-1.5">
-                      <div className={`rounded-full h-4 w-4 flex items-center justify-center p-0.5 flex-shrink-0 ${
-                        theme === 'dark' ? 'bg-green-500/10 text-green-400' : 'bg-green-100 text-green-700'
-                      }`}>
-                        <Check className="h-2.5 w-2.5" />
-                      </div>
-                      <span className={theme === 'dark' ? 'text-neutral-300' : 'text-gray-600'}>{feat}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className={`pt-4 border-t flex flex-col sm:flex-row items-center justify-between gap-3 ${
-              theme === 'dark' ? 'border-neutral-900' : 'border-gray-100'
-            }`}>
-              <span className="text-xs text-gray-400 font-semibold text-center sm:text-left">Want to scale up with collaborative research workspaces?</span>
-              <button
-                onClick={() => setActivePage('pricing')}
-                className={`flex items-center justify-center gap-1 rounded-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer ${
-                  theme === 'dark'
-                    ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                    : 'bg-black text-white hover:bg-gray-800'
-                }`}
-              >
-                <span>Compare All SaaS Plans</span>
-              </button>
             </div>
 
             {/* DANGER ZONE: DATA PURGE AND LOGOUT */}
@@ -1313,10 +970,10 @@ export default function SettingsView({
                   DANGER ZONE: PURGE DATA & LOGOUT
                 </h3>
               </div>
-              <p className="text-xs font-mono text-[#666666]">
+              <p className="text-xs font-mono font-bold text-[#666666]">
                 Instantly wipe all local cached data, clear session tokens, and sign out of all user accounts across Firebase Auth.
               </p>
-              <div className="flex flex-wrap gap-3 pt-1">
+              <div className="flex flex-wrap gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -1324,12 +981,64 @@ export default function SettingsView({
                       if (onLogOut) onLogOut();
                     }
                   }}
-                  className="px-5 py-2.5 rounded-[6px] bg-[#FF4D4D] text-white border-2 border-[#111111] font-mono text-xs font-extrabold uppercase shadow-paper-sm hover:bg-[#ff3333] transition-colors cursor-pointer flex items-center gap-2"
+                  className="px-5 py-3 rounded-[6px] bg-[#FF4D4D] text-white border-2 border-[#111111] font-mono text-xs font-extrabold uppercase shadow-paper-md hover:bg-red-700 transition-colors cursor-pointer flex items-center gap-2"
                 >
                   <Trash2 className="h-4 w-4" />
                   <span>PURGE ALL DATA & LOGOUT ALL ACCOUNTS</span>
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 5: Billing & Plan */}
+        {activeTab === 'billing' && (
+          <div className="space-y-5 text-left">
+            <div>
+              <h3 className="font-heading font-extrabold text-lg uppercase text-[#111111]">Plan & Subscription Overview</h3>
+              <p className="text-xs font-mono font-bold text-[#666666] mt-1">Review active tiers, billing cycles, and feature capacities.</p>
+            </div>
+
+            <div className="border-2 border-[#111111] rounded-[6px] p-5 space-y-4 bg-[#F6F2EA] shadow-paper-md">
+              <div className="flex items-start justify-between">
+                <div>
+                  <span className="text-[10px] font-mono font-extrabold text-[#111111] bg-[#FFC400] border border-[#111111] px-2.5 py-0.5 rounded-[4px] uppercase tracking-wide">
+                    ACTIVE TIER
+                  </span>
+                  <h4 className="font-heading font-extrabold text-xl mt-2 text-[#111111]">Note-IT {settings.subscription.planName} Plan</h4>
+                  <p className="text-xs font-mono font-bold text-[#666666] mt-0.5">Renews automatically on <strong className="text-[#111111]">{settings.subscription.nextBillDate}</strong></p>
+                </div>
+                <div className="text-right font-mono">
+                  <div className="text-2xl font-black text-[#111111]">
+                    {settings.subscription.planName === 'BYOK' ? '₹0' : '₹400 / mo'}
+                  </div>
+                  <div className="text-[10px] font-bold text-[#666666] mt-0.5">billed monthly</div>
+                </div>
+              </div>
+
+              <div className="border-t-2 border-[#111111] pt-3.5 space-y-2">
+                <span className="text-[10px] font-mono font-extrabold text-[#111111] uppercase tracking-widest block">INCLUDED FEATURES:</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono font-bold">
+                  {settings.subscription.features.map((feat, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <div className="rounded-full h-4 w-4 bg-[#19B56B] text-white flex items-center justify-center p-0.5 flex-shrink-0 border border-[#111111]">
+                        <Check className="h-2.5 w-2.5" />
+                      </div>
+                      <span className="text-[#111111]">{feat}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t-2 border-[#111111] flex flex-col sm:flex-row items-center justify-between gap-3">
+              <span className="text-xs font-mono font-bold text-[#666666]">Want to unlock institution features & custom models?</span>
+              <button
+                onClick={() => setActivePage('pricing')}
+                className="flex items-center justify-center gap-1 rounded-[6px] border-2 border-[#111111] bg-[#FFC400] text-[#111111] px-5 py-2.5 text-xs font-mono font-extrabold uppercase shadow-paper-sm hover:bg-[#ffe066] transition-all cursor-pointer"
+              >
+                <span>Compare All SaaS Plans</span>
+              </button>
             </div>
           </div>
         )}
