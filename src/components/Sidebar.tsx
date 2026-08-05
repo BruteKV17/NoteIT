@@ -91,7 +91,7 @@ export default function Sidebar({
               <div className="font-heading font-bold text-base tracking-tight text-[#111111] flex items-center gap-1.5">
                 NOTEIT
                 <span className="rounded-[3px] bg-[#FFC400] px-1 py-0.2 text-[9px] font-bold text-[#111111] border border-[#111111] font-mono">
-                  v1.5
+                  v2.0
                 </span>
               </div>
               <div className="text-[9px] font-bold uppercase tracking-[2px] text-[#666666] font-mono">
