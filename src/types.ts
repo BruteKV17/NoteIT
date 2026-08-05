@@ -42,6 +42,17 @@ export interface Source {
   wordCount?: number;
 }
 
+export type RecordingStatus = 'recording' | 'uploaded' | 'failed';
+export type TranscriptionStatus = 'pending' | 'processing' | 'completed' | 'failed';
+export type ResourceGenerationStatus = 'pending' | 'processing' | 'completed' | 'failed';
+
+export interface ResourceGenerationError {
+  code?: string;
+  message?: string;
+  provider?: string;
+  timestamp?: any;
+}
+
 export interface Lecture {
   id: string;
   title: string;
@@ -50,6 +61,10 @@ export interface Lecture {
   pages?: number;
   addedAt: string;
   status: 'recording' | 'uploading' | 'uploaded' | 'transcribing' | 'generating_notes' | 'generated' | 'failed' | 'extracting' | 'analyzing' | 'completed';
+  recordingStatus?: RecordingStatus;
+  transcriptionStatus?: TranscriptionStatus;
+  resourceGenerationStatus?: ResourceGenerationStatus;
+  resourceGenerationError?: ResourceGenerationError | null;
   type: 'recording' | 'pdf' | 'ppt' | 'text';
   audioUrl?: string;
   blobPath?: string;
@@ -64,10 +79,11 @@ export interface Lecture {
   transcript?: string;
   summary?: string;
   summaries?: { [key: string]: string };
-  notes?: { quick?: string; detailed?: string; academic?: string; exam?: string; };
+  notes?: any;
   flashcards?: { q: string; a: string; category?: 'Basic Recall' | 'Concept Understanding' | 'Application Based' }[];
   quiz?: { question: string; options: string[]; correctAnswer: number; explanation: string; difficulty?: 'easy' | 'medium' | 'hard' | 'scenario' | 'application'; sourceCitation?: string }[];
-  keyConcepts?: { id: string; label: string; desc: string; parent?: string; x: number; y: number; group: string }[];
+  keyConcepts?: { id: string; label: string; desc: string; parent?: string; x: number; y: number; group: string; examples?: string; formula?: string; applications?: string }[];
+  weakTopics?: WeakTopic[];
   cleanTranscript?: string;
   sections?: { id: string; title: string; startTime: string; endTime: string; content: string }[];
   timeline?: { time: string; title: string; description: string }[];
@@ -80,6 +96,9 @@ export interface Lecture {
     slideCount: number;
     blueprint: any[];
   };
+  lastGenerationProvider?: string;
+  lastGenerationModel?: string;
+  lastGeneratedAt?: any;
 }
 
 export interface WeakTopic {

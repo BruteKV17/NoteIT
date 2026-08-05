@@ -18,12 +18,19 @@ import {
   ArrowUpRight,
   ExternalLink,
   CheckCircle,
+  AlertCircle,
   Plus,
   Play,
   RotateCw,
-  Upload
+  Upload,
+  Settings,
+  Brain,
+  RefreshCw,
+  MoreVertical,
+  BookOpen
 } from 'lucide-react';
 import { PageId, Lecture } from '../types';
+import { generateResourcesFromTranscript } from '../services/gemini';
 
 interface LibraryViewProps {
   lectures: Lecture[];
@@ -35,6 +42,7 @@ interface LibraryViewProps {
   setSearchQuery: (q: string) => void;
   theme?: 'light' | 'dark';
   onUpdateLecture?: (id: string, data: any) => Promise<void>;
+  setActiveLectureId?: (id: string | null) => void;
 }
 
 export default function LibraryView({
@@ -46,7 +54,8 @@ export default function LibraryView({
   searchQuery,
   setSearchQuery,
   theme = 'dark',
-  onUpdateLecture
+  onUpdateLecture,
+  setActiveLectureId
 }: LibraryViewProps) {
   
   // Renaming lecture states
@@ -75,6 +84,37 @@ export default function LibraryView({
   const [newTitle, setNewTitle] = useState('');
   const [newSubject, setNewSubject] = useState('Computer Science');
   const [newType, setNewType] = useState<'recording' | 'pdf' | 'ppt' | 'text'>('pdf');
+
+  // Resource Generation States
+  const [generatingLectureId, setGeneratingLectureId] = useState<string | null>(null);
+  const [generationStep, setGenerationStep] = useState<number>(0);
+  const [generationError, setGenerationError] = useState<{ message: string; code?: string; provider?: string } | null>(null);
+  const [confirmRegenerateLectureId, setConfirmRegenerateLectureId] = useState<string | null>(null);
+
+  const handleRetryOrGenerateResources = async (lectureId: string, modeType: 'missing' | 'all' = 'missing') => {
+    setGeneratingLectureId(lectureId);
+    setGenerationStep(1);
+    setGenerationError(null);
+
+    try {
+      setGenerationStep(1); // Reading transcript
+      await new Promise(r => setTimeout(r, 400));
+      
+      setGenerationStep(2); // Generating summary & notes
+      await generateResourcesFromTranscript(lectureId, undefined, { mode: 'academic', modeType });
+
+      setGenerationStep(5); // Complete
+      await new Promise(r => setTimeout(r, 600));
+      setGeneratingLectureId(null);
+    } catch (err: any) {
+      console.error("Resource generation failed:", err);
+      setGenerationError({
+        message: err.message || "Failed to generate AI resources. Your transcript is safe.",
+        code: err.code,
+        provider: err.provider
+      });
+    }
+  };
 
   // Subjects derived
   const subjectsList = ['All', 'Physics', 'Economics', 'Computer Science', 'Philosophy', 'Chemistry', 'Mathematics'];
@@ -118,109 +158,33 @@ export default function LibraryView({
   });
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12" id="search-anchor-point">
-      {/* Search Header and Action Row */}
-      <div className={`relative rounded-3xl overflow-hidden border p-8 transition-all duration-300 ${
-        theme === 'dark' 
-          ? 'bg-[#0d0e12] border-neutral-800/80 shadow-2xl' 
-          : 'bg-white border-gray-200 shadow-xs'
-      }`}>
-        {/* Animated Premium Space Background */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-          {theme === 'dark' ? (
-            <>
-              {/* Deep space cosmic gradient */}
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-zinc-950 to-[#0a0a0c] opacity-90" />
-              <div className="absolute inset-0 bg-[#0d0e12] opacity-30 mix-blend-color-dodge" />
-              
-              {/* Twinkling stars */}
-              {spaceStars.map((star) => (
-                <div
-                  key={star.id}
-                  className="absolute bg-white rounded-full animate-pulse opacity-70"
-                  style={{
-                    left: `${star.left}%`,
-                    top: `${star.top}%`,
-                    width: `${star.size}px`,
-                    height: `${star.size}px`,
-                    animationDelay: `${star.delay}s`,
-                    animationDuration: `${star.duration}s`,
-                  }}
-                />
-              ))}
-            </>
-          ) : (
-            <div className="absolute inset-0 bg-gradient-to-tr from-gray-50/50 to-white opacity-50" />
-          )}
-        </div>
-
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-1">
-            <h2 className={`font-sans font-black text-2xl md:text-3.5xl tracking-tight leading-none ${
-              theme === 'dark' ? 'text-white' : 'text-gray-900'
-            }`}>
-              Academic Library
-            </h2>
-            <p className={`text-xs font-semibold mt-1.5 ${
-              theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'
-            }`}>
-              Central hub for outlines, text references, and recorded audio.
+    <div className="space-y-6 max-w-7xl mx-auto pb-16 bg-grid-paper p-4 md:p-8 select-none">
+      
+      {/* 1. ACADEMIC LIBRARY BAUHAUS HERO BANNER (Matching Stitch Mockup 1) */}
+      <div className="relative rounded-[6px] border-2 border-[#111111] bg-[#FFC400] p-6 md:p-8 shadow-paper-lg flex flex-col justify-between overflow-hidden">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+          <div className="space-y-2 max-w-2xl">
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 rounded-[4px] bg-[#111111] text-white font-mono text-[10px] font-bold uppercase">
+                NOTEIT COGNITIVE HUB
+              </span>
+            </div>
+            <h1 className="font-heading font-extrabold text-3xl md:text-5xl tracking-tight text-[#111111] uppercase leading-tight">
+              ACADEMIC LIBRARY
+            </h1>
+            <p className="text-xs md:text-sm text-[#111111] font-mono font-bold border-l-4 border-[#111111] pl-3 py-1">
+              CENTRAL HUB FOR SYNTHESIZED OUTLINES, TEXT REFERENCES, AND PROCESSED AUDIO NODES.
             </p>
           </div>
-          
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Dedicated Lecture Search Input */}
-            <div className="relative">
-              <Search className={`absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 ${
-                theme === 'dark' ? 'text-neutral-500' : 'text-gray-400'
-              }`} />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search lectures..."
-                className={`pl-10 pr-4 py-2.5 rounded-xl text-xs font-semibold outline-none border transition-all w-52 sm:w-64 ${
-                  theme === 'dark' 
-                    ? 'bg-neutral-900 border-neutral-800 text-white placeholder-neutral-600 focus:border-indigo-500/50' 
-                    : 'bg-[#F9FAFB] border-gray-200 text-gray-900 placeholder-gray-400 focus:border-black'
-                }`}
-              />
-            </div>
 
-            {/* List/Grid View toggles */}
-            <div className={`flex items-center gap-1 p-1 rounded-xl ${
-              theme === 'dark' ? 'bg-neutral-900/60 border border-neutral-800' : 'bg-gray-200'
-            }`}>
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`h-7.5 w-7.5 flex items-center justify-center rounded-lg cursor-pointer transition-all ${
-                  viewMode === 'grid' 
-                    ? theme === 'dark' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-black shadow-xs'
-                    : 'text-gray-400 hover:text-gray-900'
-                }`}
-              >
-                <Grid className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`h-7.5 w-7.5 flex items-center justify-center rounded-lg cursor-pointer transition-all ${
-                  viewMode === 'list' 
-                    ? theme === 'dark' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-black shadow-xs'
-                    : 'text-gray-400 hover:text-gray-900'
-                }`}
-              >
-                <List className="h-4 w-4" />
-              </button>
-            </div>
-
+          {/* Action buttons */}
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
             <button
               onClick={() => setActivePage('knowledge-studio')}
-              className={`flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-black shadow-lg cursor-pointer transition-all active:scale-95 ${
-                theme === 'dark' ? 'bg-white text-black hover:bg-neutral-100' : 'bg-black text-white hover:bg-gray-800'
-              }`}
+              className="px-4 py-2.5 rounded-[6px] border-2 border-[#111111] bg-white text-[#111111] font-bold uppercase text-xs shadow-paper-sm hover:bg-[#FFF8D6] transition-all cursor-pointer flex items-center gap-2"
             >
-              <Plus className="h-4 w-4" />
-              <span>Sync New Document</span>
+              <Plus className="h-4 w-4 text-[#111111]" />
+              <span>Sync Document</span>
             </button>
           </div>
         </div>
@@ -232,12 +196,10 @@ export default function LibraryView({
           <button
             key={subject}
             onClick={() => setActiveSubject(subject)}
-            className={`px-3.5 py-1.5 rounded-lg font-sans text-xs font-semibold tracking-tight transition-all cursor-pointer ${
+            className={`px-4 py-2 rounded-[6px] font-mono text-xs font-bold uppercase tracking-tight transition-all cursor-pointer border-2 border-[#111111] ${
               activeSubject === subject
-                ? theme === 'dark' ? 'bg-indigo-500/10 border border-indigo-500/25 text-indigo-400' : 'bg-black text-white'
-                : theme === 'dark' 
-                  ? 'bg-neutral-900 border border-neutral-800 text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200' 
-                  : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50 hover:text-gray-900'
+                ? 'bg-[#FFC400] text-[#111111] shadow-paper-sm font-extrabold'
+                : 'bg-white text-[#111111] hover:bg-[#FFF8D6]'
             }`}
           >
             {subject}
@@ -247,54 +209,40 @@ export default function LibraryView({
 
       {/* Grid or List list output */}
       {filteredLectures.length === 0 ? (
-        <div className={`rounded-2xl border p-12 text-center max-w-xl mx-auto space-y-4 shadow-xl ${
-          theme === 'dark' ? 'bg-[#0d0e12] border-neutral-900' : 'bg-white border-gray-200'
-        }`}>
-          <div className="flex h-12 w-12 items-center justify-center rounded-full mx-auto border border-dashed border-indigo-500/20 bg-indigo-500/5">
-            <Filter className="h-5 w-5 text-indigo-400 animate-pulse" />
+        <div className="rounded-[6px] border-2 border-[#111111] bg-white p-12 text-center max-w-xl mx-auto space-y-4 shadow-paper-lg">
+          <div className="flex h-12 w-12 items-center justify-center rounded-[6px] mx-auto border-2 border-[#111111] bg-[#FFC400] text-[#111111] shadow-paper-sm">
+            <Filter className="h-6 w-6 text-[#111111]" />
           </div>
           <div>
-            <h4 className={`font-sans font-bold text-sm ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>No items found</h4>
-            <p className="text-xs text-gray-400 mt-1 max-w-xs mx-auto">
+            <h4 className="font-heading font-extrabold text-base text-[#111111] uppercase">No items found</h4>
+            <p className="text-xs text-[#666666] font-mono mt-1 max-w-xs mx-auto">
               We couldn't find matches for "{searchQuery || activeSubject}". Try resetting filters or recording a new lecture.
             </p>
           </div>
           <button
             onClick={() => { setSearchQuery(''); setActiveSubject('All'); }}
-            className={`rounded-xl border px-3.5 py-1.8 text-xs font-bold cursor-pointer transition-all ${
-              theme === 'dark' ? 'border-neutral-800 bg-neutral-900 text-white hover:bg-neutral-800' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
-            }`}
+            className="rounded-[6px] border-2 border-[#111111] bg-[#FFC400] px-4 py-2 text-xs font-mono font-bold text-[#111111] shadow-paper-sm hover:bg-[#ffe066] cursor-pointer transition-colors"
           >
             Clear Filters
           </button>
         </div>
       ) : viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredLectures.map((lec) => {
             const isRecording = lec.type === 'recording';
             const isTranscribing = lec.status === 'transcribing';
             return (
               <div 
                 key={lec.id}
-                className={`rounded-2xl border p-5 hover:scale-101 hover:-translate-y-0.5 transition-all flex flex-col justify-between min-h-[195px] relative group overflow-hidden ${
-                  theme === 'dark' 
-                    ? 'bg-[#0d0e12]/60 border-neutral-900 hover:border-indigo-500/20 shadow-2xl' 
-                    : 'bg-white border-gray-200 hover:border-black/30 hover:shadow-xs'
-                }`}
+                className="rounded-[6px] border-2 border-[#111111] bg-white p-5 hover:shadow-paper-lg transition-all flex flex-col justify-between min-h-[210px] relative group shadow-paper-md text-[#111111]"
               >
                 <div>
                   {/* Category and icon indicator */}
                   <div className="flex items-center justify-between">
-                    <span className={`rounded px-2.5 py-0.5 text-[9.5px] font-black tracking-wide uppercase ${
-                      theme === 'dark' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-gray-100 text-gray-600'
-                    }`}>
+                    <span className="rounded-[4px] px-2.5 py-1 text-[10px] font-mono font-extrabold tracking-wide uppercase bg-[#FFC400] text-[#111111] border border-[#111111] shadow-paper-sm">
                       {lec.subject}
                     </span>
-                    <div className={`p-2 rounded-xl border ${
-                      isRecording 
-                        ? theme === 'dark' ? 'bg-orange-500/10 border-orange-500/10 text-orange-400' : 'bg-orange-50/70 border-orange-100 text-orange-600'
-                        : theme === 'dark' ? 'bg-blue-500/10 border-blue-500/10 text-blue-400' : 'bg-blue-50/70 border-blue-100 text-blue-600'
-                    }`}>
+                    <div className="p-2 rounded-[6px] border-2 border-[#111111] bg-[#F6F2EA] text-[#111111] shadow-paper-sm">
                       {isRecording ? <Volume2 className="h-4.5 w-4.5" /> : <FileText className="h-4.5 w-4.5" />}
                     </div>
                   </div>
@@ -320,92 +268,108 @@ export default function LibraryView({
                         type="text"
                         value={renamingTitle}
                         onChange={(e) => setRenamingTitle(e.target.value)}
-                        className={`rounded-lg text-xs font-semibold px-2 py-1.5 focus:border-indigo-500 outline-none w-full ${
-                          theme === 'dark' ? 'bg-neutral-900 border border-neutral-800 text-white' : 'bg-[#F9FAFB] border border-gray-200 text-gray-900'
-                        }`}
+                        className="rounded-[4px] text-xs font-mono font-bold p-2 border-2 border-[#111111] bg-white text-[#111111] outline-none w-full"
                         autoFocus
                       />
                       <button
                         type="submit"
-                        className="px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-sans text-[10px] font-bold cursor-pointer hover:bg-emerald-500/20 transition-all focus:outline-none"
+                        className="px-3 py-2 rounded-[4px] bg-[#19B56B] text-white border-2 border-[#111111] font-mono text-[10px] font-bold uppercase cursor-pointer"
                       >
                         Save
                       </button>
                       <button
                         type="button"
                         onClick={() => setRenamingLectureId(null)}
-                        className="px-2 py-1 rounded bg-neutral-900/65 border border-neutral-800 text-neutral-400 font-sans text-[10px] font-bold cursor-pointer hover:bg-neutral-800 transition-all focus:outline-none"
+                        className="px-3 py-2 rounded-[4px] bg-white text-[#111111] border-2 border-[#111111] font-mono text-[10px] font-bold uppercase cursor-pointer"
                       >
                         Cancel
                       </button>
                     </form>
                   ) : (
-                    <h3 className={`font-sans font-black text-sm mt-4 leading-normal line-clamp-2 pr-2 ${
-                      theme === 'dark' ? 'text-white' : 'text-gray-900'
-                    }`}>
+                    <h3 className="font-heading font-extrabold text-base text-[#111111] mt-4 uppercase leading-snug line-clamp-2 pr-2 tracking-tight">
                       {lec.title}
                     </h3>
                   )}
 
-                  <div className="flex items-center gap-4.5 text-[11px] font-medium text-gray-400 mt-2 font-mono">
+                  <div className="flex items-center gap-4 text-xs font-mono text-[#666666] font-bold mt-2">
                     <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3 text-indigo-400/50" />
+                      <Clock className="h-3.5 w-3.5 text-[#111111]" />
                       {lec.addedAt}
                     </span>
                     {lec.pages && <span>{lec.pages} pages</span>}
                     {lec.duration && <span>{lec.duration}</span>}
                   </div>
+
+                  {/* Stage Status Badges */}
+                  <div className="flex flex-wrap items-center gap-1.5 mt-3 select-none">
+                    {(lec.transcript || lec.cleanTranscript || lec.transcriptionStatus === 'completed') && (
+                      <span className="rounded-[4px] px-2 py-0.5 text-[9.5px] font-mono font-bold bg-[#2F6BFF]/15 text-[#111111] border border-[#111111] inline-flex items-center gap-1">
+                        <CheckCircle className="h-3 w-3 text-[#2F6BFF]" />
+                        Transcript Ready
+                      </span>
+                    )}
+
+                    {lec.resourceGenerationStatus === 'failed' || lec.status === 'failed' || lec.resourceGenerationError ? (
+                      <span className="rounded-[4px] px-2 py-0.5 text-[9.5px] font-mono font-bold bg-[#FF4D4D]/20 text-[#111111] border border-[#111111] inline-flex items-center gap-1" title={lec.resourceGenerationError?.message}>
+                        <AlertCircle className="h-3 w-3 text-[#FF4D4D] animate-pulse" />
+                        AI Resources Failed
+                      </span>
+                    ) : lec.summary && lec.notes ? (
+                      <span className="rounded-[4px] px-2 py-0.5 text-[9.5px] font-mono font-bold bg-[#19B56B]/20 text-[#111111] border border-[#111111] inline-flex items-center gap-1">
+                        <CheckCircle className="h-3 w-3 text-[#19B56B]" />
+                        AI Resources Ready
+                      </span>
+                    ) : (lec.transcript || lec.cleanTranscript) ? (
+                      <span className="rounded-[4px] px-2 py-0.5 text-[9.5px] font-mono font-bold bg-[#FFC400] text-[#111111] border border-[#111111] inline-flex items-center gap-1">
+                        <Sparkles className="h-3 w-3 text-[#111111]" />
+                        Resources Missing
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
 
                 {/* Sub Action panel container */}
-                <div className={`mt-6 pt-3.5 border-t flex items-center justify-between ${
-                  theme === 'dark' ? 'border-neutral-900' : 'border-gray-100'
-                }`}>
-                  {isTranscribing ? (
-                    <div className="flex items-center gap-1.5 text-amber-500 font-bold text-[11px] animate-pulse">
-                      <RotateCw className="h-3.5 w-3.5 animate-spin" />
-                      <span>TRANSCRIBING AUDIO...</span>
-                    </div>
-                  ) : lec.status === 'uploading' ? (
-                    <div className="flex items-center gap-1.5 text-indigo-500 font-bold text-[11px] animate-pulse">
-                      <RotateCw className="h-3.5 w-3.5 animate-spin" />
-                      <span>UPLOADING DOCUMENT...</span>
-                    </div>
-                  ) : lec.status === 'extracting' ? (
-                    <div className="flex items-center gap-1.5 text-indigo-400 font-bold text-[11px] animate-pulse">
-                      <RotateCw className="h-3.5 w-3.5 animate-spin" />
-                      <span>EXTRACTING TEXT...</span>
-                    </div>
-                  ) : lec.status === 'analyzing' ? (
-                    <div className="flex items-center gap-1.5 text-amber-500 font-bold text-[11px] animate-pulse">
-                      <RotateCw className="h-3.5 w-3.5 animate-spin" />
-                      <span>AI ANALYZING...</span>
-                    </div>
-                  ) : lec.status === 'generating_notes' ? (
-                    <div className="flex items-center gap-1.5 text-amber-500 font-bold text-[11px] animate-pulse">
-                      <RotateCw className="h-3.5 w-3.5 animate-spin" />
-                      <span>GENERATING NOTES...</span>
-                    </div>
-                  ) : (
-                    <div className={`flex items-center gap-1.5 font-bold text-[11px] ${
-                      theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'
-                    }`}>
-                      <CheckCircle className="h-3.5 w-3.5 fill-emerald-500/15" />
-                      <span>SYNTHESIZED READY</span>
-                    </div>
-                  )}
-
-                  {!isTranscribing && (
+                <div className="mt-5 pt-3.5 border-t-2 border-[#111111]">
+                  <div className="flex items-center justify-between gap-2">
                     <button
-                      onClick={() => setActivePage('research-hub')}
-                      className={`group flex items-center gap-1 text-xs font-black transition-all focus:outline-none cursor-pointer ${
-                        theme === 'dark' ? 'text-white hover:text-indigo-400' : 'text-black hover:opacity-75'
-                      }`}
+                      onClick={() => {
+                        if (setActiveLectureId) setActiveLectureId(lec.id);
+                        setActivePage('research-hub');
+                      }}
+                      className="group flex items-center gap-1 text-xs font-mono font-extrabold uppercase text-[#111111] hover:underline cursor-pointer"
                     >
-                      <span>Analyze Workspace</span>
+                      <BookOpen className="h-4 w-4" />
+                      <span>View Transcript</span>
                       <ArrowUpRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                     </button>
-                  )}
+
+                    {lec.resourceGenerationStatus === 'failed' || lec.status === 'failed' || lec.resourceGenerationError ? (
+                      <button
+                        onClick={() => handleRetryOrGenerateResources(lec.id, 'missing')}
+                        className="px-3 py-1.5 rounded-[4px] bg-[#FF4D4D] text-white border-2 border-[#111111] text-xs font-mono font-bold uppercase hover:bg-[#ff3333] transition-colors cursor-pointer flex items-center gap-1 shadow-paper-sm"
+                      >
+                        <RotateCw className="h-3.5 w-3.5" />
+                        <span>Retry Generation</span>
+                      </button>
+                    ) : (!lec.summary || !lec.notes) && (lec.transcript || lec.cleanTranscript) ? (
+                      <button
+                        onClick={() => handleRetryOrGenerateResources(lec.id, 'missing')}
+                        className="px-3 py-1.5 rounded-[4px] bg-[#2F6BFF] text-white border-2 border-[#111111] text-xs font-mono font-bold uppercase hover:bg-[#1a57ee] transition-colors cursor-pointer flex items-center gap-1 shadow-paper-sm"
+                      >
+                        <Sparkles className="h-3.5 w-3.5" />
+                        <span>Generate Resources</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmRegenerateLectureId(lec.id)}
+                        className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase text-[#666666] hover:text-[#111111] transition-colors cursor-pointer flex items-center gap-1"
+                        title="Regenerate All Resources"
+                      >
+                        <RefreshCw className="h-3.5 w-3.5" />
+                        <span>Regenerate All</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Inline Action Overlays: Rename/Delete */}
@@ -415,12 +379,10 @@ export default function LibraryView({
                       setRenamingLectureId(lec.id);
                       setRenamingTitle(lec.title);
                     }}
-                    className={`h-7 w-7 rounded-lg items-center justify-center hidden group-hover:flex focus:outline-none cursor-pointer ${
-                      theme === 'dark' ? 'hover:bg-indigo-500/10 text-neutral-500 hover:text-indigo-400' : 'hover:bg-indigo-50 text-gray-400 hover:text-indigo-600'
-                    }`}
+                    className="h-7 w-7 rounded-[4px] items-center justify-center hidden group-hover:flex border-2 border-[#111111] bg-white text-[#111111] shadow-paper-sm hover:bg-[#FFC400] cursor-pointer"
                     title="Rename Lecture"
                   >
-                    <Edit className="h-4 w-4" />
+                    <Edit className="h-3.5 w-3.5" />
                   </button>
                   <button
                     onClick={() => {
@@ -428,12 +390,10 @@ export default function LibraryView({
                         onDeleteLecture(lec.id);
                       }
                     }}
-                    className={`h-7 w-7 rounded-lg items-center justify-center hidden group-hover:flex focus:outline-none cursor-pointer ${
-                      theme === 'dark' ? 'hover:bg-red-500/10 text-neutral-500 hover:text-red-400' : 'hover:bg-red-50 text-gray-400 hover:text-red-500'
-                    }`}
+                    className="h-7 w-7 rounded-[4px] items-center justify-center hidden group-hover:flex border-2 border-[#111111] bg-[#FF4D4D] text-white shadow-paper-sm hover:bg-[#ff3333] cursor-pointer"
                     title="Delete Lecture"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>
 
@@ -895,6 +855,150 @@ export default function LibraryView({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Generation Progress Modal */}
+      {generatingLectureId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
+          <div className={`rounded-3xl border p-7 max-w-md w-full space-y-6 shadow-2xl ${
+            theme === 'dark' ? 'bg-[#0d0e12] border-neutral-800 text-white' : 'bg-white border-gray-200 text-gray-900'
+          }`}>
+            <div className="flex items-center gap-3">
+              <div className="p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+                <Brain className="h-6 w-6 animate-bounce" />
+              </div>
+              <div>
+                <h3 className="font-sans font-black text-lg">Generating Study Resources</h3>
+                <p className="text-xs font-semibold text-gray-400">Processing transcript through active AI provider...</p>
+              </div>
+            </div>
+
+            <div className="space-y-3 font-sans">
+              <div className={`p-3 rounded-xl border flex items-center gap-3 transition-all ${
+                generationStep >= 1 ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400' : 'border-neutral-800/50 text-gray-500'
+              }`}>
+                {generationStep > 1 ? <CheckCircle className="h-4 w-4 text-emerald-400" /> : <RotateCw className="h-4 w-4 animate-spin text-indigo-400" />}
+                <span className="text-xs font-bold">1. Reading transcript</span>
+              </div>
+              <div className={`p-3 rounded-xl border flex items-center gap-3 transition-all ${
+                generationStep >= 2 ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400' : generationStep === 2 ? 'border-indigo-500/30 bg-indigo-500/5 text-indigo-400' : 'border-neutral-800/50 text-gray-500'
+              }`}>
+                {generationStep > 2 ? <CheckCircle className="h-4 w-4 text-emerald-400" /> : generationStep === 2 ? <RotateCw className="h-4 w-4 animate-spin text-indigo-400" /> : <Clock className="h-4 w-4" />}
+                <span className="text-xs font-bold">2. Creating summary</span>
+              </div>
+              <div className={`p-3 rounded-xl border flex items-center gap-3 transition-all ${
+                generationStep >= 3 ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400' : generationStep === 2 ? 'border-indigo-500/30 bg-indigo-500/5 text-indigo-400' : 'border-neutral-800/50 text-gray-500'
+              }`}>
+                {generationStep > 3 ? <CheckCircle className="h-4 w-4 text-emerald-400" /> : generationStep === 2 ? <RotateCw className="h-4 w-4 animate-spin text-indigo-400" /> : <Clock className="h-4 w-4" />}
+                <span className="text-xs font-bold">3. Creating academic notes</span>
+              </div>
+              <div className={`p-3 rounded-xl border flex items-center gap-3 transition-all ${
+                generationStep >= 4 ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400' : 'border-neutral-800/50 text-gray-500'
+              }`}>
+                {generationStep >= 4 ? <CheckCircle className="h-4 w-4 text-emerald-400" /> : <Clock className="h-4 w-4" />}
+                <span className="text-xs font-bold">4. Creating flashcards & quiz</span>
+              </div>
+              <div className={`p-3 rounded-xl border flex items-center gap-3 transition-all ${
+                generationStep >= 5 ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400' : 'border-neutral-800/50 text-gray-500'
+              }`}>
+                {generationStep >= 5 ? <CheckCircle className="h-4 w-4 text-emerald-400" /> : <Clock className="h-4 w-4" />}
+                <span className="text-xs font-bold">5. Creating mind map & saving workspace</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Generation Error Modal */}
+      {generationError && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+          <div className={`rounded-3xl border p-7 max-w-md w-full space-y-5 shadow-2xl text-center ${
+            theme === 'dark' ? 'bg-[#0d0e12] border-neutral-800 text-white' : 'bg-white border-gray-200 text-gray-900'
+          }`}>
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto animate-pulse" />
+            <div>
+              <h3 className="font-sans font-black text-lg">AI Resource Generation Failed</h3>
+              <div className="mt-2 text-xs font-bold text-emerald-400 bg-emerald-500/10 rounded-lg p-2.5 flex items-center justify-center gap-1.5">
+                <CheckCircle className="h-4 w-4" />
+                <span>Your lecture recording and transcript are safe.</span>
+              </div>
+              <p className="text-xs text-gray-400 mt-3 leading-relaxed">{generationError.message}</p>
+            </div>
+            <div className="flex flex-col gap-2.5 pt-2">
+              <button
+                onClick={() => {
+                  const targetId = generatingLectureId;
+                  setGenerationError(null);
+                  if (targetId) handleRetryOrGenerateResources(targetId, 'missing');
+                }}
+                className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
+              >
+                <RotateCw className="h-4 w-4" />
+                <span>Retry Generation</span>
+              </button>
+              <button
+                onClick={() => {
+                  setGenerationError(null);
+                  setGeneratingLectureId(null);
+                  setActivePage('settings');
+                }}
+                className="w-full py-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <Settings className="h-4 w-4" />
+                <span>Change AI Provider in Settings</span>
+              </button>
+              <button
+                onClick={() => {
+                  setGenerationError(null);
+                  setGeneratingLectureId(null);
+                }}
+                className="w-full py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white transition-all cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Regenerate All Modal */}
+      {confirmRegenerateLectureId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+          <div className={`rounded-3xl border p-7 max-w-md w-full space-y-5 shadow-2xl ${
+            theme === 'dark' ? 'bg-[#0d0e12] border-neutral-800 text-white' : 'bg-white border-gray-200 text-gray-900'
+          }`}>
+            <div className="flex items-center gap-3">
+              <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                <RefreshCw className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="font-sans font-black text-lg">Regenerate All Resources?</h3>
+                <p className="text-xs font-semibold text-gray-400">Overwrites existing generated study content.</p>
+              </div>
+            </div>
+            <p className="text-xs text-gray-300 leading-relaxed">
+              This action will re-process the existing transcript to generate a fresh Summary, Notes, Flashcards, Quiz, Mind Map, and Weak Topics. Existing generated content will be overwritten.
+            </p>
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                onClick={() => setConfirmRegenerateLectureId(null)}
+                className="px-4 py-2.5 rounded-xl border border-neutral-800 text-xs font-bold text-gray-400 hover:text-white transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  const targetId = confirmRegenerateLectureId;
+                  setConfirmRegenerateLectureId(null);
+                  handleRetryOrGenerateResources(targetId, 'all');
+                }}
+                className="px-4.5 py-2.5 rounded-xl bg-amber-500 text-black hover:bg-amber-400 text-xs font-black transition-all cursor-pointer shadow-md"
+              >
+                Regenerate All
+              </button>
+            </div>
           </div>
         </div>
       )}

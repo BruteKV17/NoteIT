@@ -260,6 +260,7 @@ export default function App() {
 
   // High-level dashboard states
   const [activePage, setActivePage] = useState<PageId>('landing');
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const [isOpenMobile, setIsOpenMobile] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedQuizId, setSelectedQuizId] = useState<string | null>(null);
@@ -563,7 +564,16 @@ export default function App() {
 
   const handleLogOut = async () => {
     try {
+      localStorage.clear();
+      sessionStorage.clear();
       await signOut(auth);
+      setSessionUser(null);
+      setLectures([]);
+      setSources([]);
+      setWeakTopics([]);
+      setNotifications([]);
+      setQuizzes([]);
+      setActivePage('landing');
     } catch (err) {
       console.error('Logout error:', err);
     }
@@ -660,6 +670,7 @@ export default function App() {
             setSearchQuery={setSearchQuery}
             theme={theme}
             onUpdateLecture={updateLecture}
+            setActiveLectureId={setActiveLectureId}
           />
         );
       case 'quiz-mode':
@@ -698,6 +709,7 @@ export default function App() {
             onUpdateSettings={handleUpdateSettings}
             setActivePage={setActivePage}
             theme={theme}
+            onLogOut={handleLogOut}
           />
         );
       case 'help-support':
@@ -716,8 +728,8 @@ export default function App() {
             onEnterApp={() => setActivePage('dashboard')}
             onLoginSuccess={handleLoginSuccess}
             onNavigateToPricing={() => setActivePage('pricing')}
-            onGetStarted={() => setActivePage('auth')}
-            onSignIn={() => setActivePage('auth')}
+            onGetStarted={() => { setAuthMode('signup'); setActivePage('auth'); }}
+            onSignIn={() => { setAuthMode('login'); setActivePage('auth'); }}
           />
         );
     }
@@ -746,8 +758,8 @@ export default function App() {
             onEnterApp={() => setActivePage('dashboard')}
             onLoginSuccess={handleLoginSuccess}
             onNavigateToPricing={() => setActivePage('pricing')}
-            onGetStarted={() => setActivePage('auth')}
-            onSignIn={() => setActivePage('auth')}
+            onGetStarted={() => { setAuthMode('signup'); setActivePage('auth'); }}
+            onSignIn={() => { setAuthMode('login'); setActivePage('auth'); }}
           />
           <FeedbackWidget theme={theme} />
         </ErrorBoundary>
@@ -773,7 +785,7 @@ export default function App() {
             <main className="p-6">
               <PricingView
                 settings={settings}
-                onUpgradePlan={() => setActivePage('auth')}
+                onUpgradePlan={() => { setAuthMode('signup'); setActivePage('auth'); }}
                 setActivePage={setActivePage}
               />
             </main>
@@ -786,6 +798,7 @@ export default function App() {
       <ErrorBoundary theme={theme}>
         <AuthView 
           onLoginSuccess={handleLoginSuccess}
+          initialMode={authMode}
           theme={theme}
           onNavigateToLanding={() => setActivePage('landing')}
         />

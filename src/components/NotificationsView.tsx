@@ -10,12 +10,12 @@ import {
   Trash2, 
   Sparkles, 
   MessageSquare, 
-  FolderPlus, 
-  ArrowRight,
   ShieldCheck,
-  Calendar
+  Calendar,
+  BellOff
 } from 'lucide-react';
 import { PageId, NotificationItem } from '../types';
+import { Button, Card, Badge, SectionHeader, TimelineItem } from './bauhaus';
 
 interface NotificationsViewProps {
   notifications: NotificationItem[];
@@ -47,23 +47,11 @@ export default function NotificationsView({
   const getCategoryIcon = (category: string) => {
     switch (category) {
       case 'ai-insights':
-        return (
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
-            <Sparkles className="h-4.5 w-4.5" />
-          </div>
-        );
+        return <Sparkles className="w-4 h-4 text-[#111111]" />;
       case 'collaboration':
-        return (
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-            <MessageSquare className="h-4.5 w-4.5" />
-          </div>
-        );
+        return <MessageSquare className="w-4 h-4 text-[#111111]" />;
       default:
-        return (
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-100 text-gray-700">
-            <ShieldCheck className="h-4.5 w-4.5" />
-          </div>
-        );
+        return <ShieldCheck className="w-4 h-4 text-[#111111]" />;
     }
   };
 
@@ -74,182 +62,158 @@ export default function NotificationsView({
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-12">
-      {/* Title & mark-all-read toolbar panel */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-200">
+    <div className="space-y-6 max-w-4xl mx-auto pb-16 bg-grid-paper p-4 md:p-8 select-none">
+      
+      {/* 1. HERO HEADER (Matching Stitch Mockup 5) */}
+      <div className="relative rounded-[6px] border-2 border-[#111111] bg-white p-6 md:p-8 shadow-paper-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="font-sans font-bold text-xl text-gray-900 tracking-tight">Activity Center</h2>
-          <p className="text-xs text-gray-500 mt-0.5">Track AI synthesis completion alerts, collaborative notes shares, and academic progress logs.</p>
+          <span className="section-label text-[10px] font-bold text-[#666666] uppercase tracking-[3px] block">
+            NOTEIT LOG SYSTEM
+          </span>
+          <h1 className="font-heading font-extrabold text-3xl md:text-4xl text-[#111111] uppercase tracking-tight mt-1">
+            ACTIVITY CENTER
+          </h1>
+          <p className="text-xs md:text-sm font-mono text-[#666666] mt-1 border-l-4 border-[#FFC400] pl-3 py-1">
+            Track AI synthesis completion alerts, collaborative notes shares, and academic progress logs.
+          </p>
         </div>
 
         {notifications.length > 0 && (
-          <div className="flex items-center gap-2">
-            <button
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              variant="tertiary"
+              size="sm"
               onClick={onMarkAllRead}
-              className="flex items-center gap-1 hover:bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 text-xs text-gray-700 font-semibold focus:outline-none"
+              icon={<Check className="h-4 w-4 text-[#19B56B]" />}
             >
-              <Check className="h-4.5 w-4.5 text-green-600" />
-              <span>Mark all as read</span>
-            </button>
-            <button
+              Mark all read
+            </Button>
+
+            <Button
+              variant="danger"
+              size="sm"
               onClick={onClearNotifications}
-              className="flex items-center gap-1 hover:bg-red-50 hover:text-red-600 hover:border-red-200 border border-gray-200 rounded-lg px-3 py-1.5 text-xs text-gray-700 font-semibold focus:outline-none"
+              icon={<Trash2 className="h-4 w-4" />}
             >
-              <Trash2 className="h-4.5 w-4.5" />
-              <span>Clear Activity</span>
-            </button>
+              Clear Log
+            </Button>
           </div>
         )}
       </div>
 
+      {/* 2. TIMELINE OR EMPTY STATE (Matching Stitch Mockup 5) */}
       {notifications.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center max-w-md mx-auto space-y-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-50 border border-gray-100 mx-auto">
-            <Bell className="h-5.5 w-5.5 text-slate-400" />
+        <Card shadow="lg" className="p-8 md:p-12 bg-white max-w-xl mx-auto border-2 border-[#111111] text-center flex flex-col items-center">
+          <div className="w-16 h-16 rounded-[6px] bg-[#F6F2EA] border-2 border-[#111111] shadow-paper-sm flex items-center justify-center text-[#111111] mb-4">
+            <BellOff className="w-8 h-8 text-[#111111]" />
           </div>
-          <div>
-            <h4 className="font-sans font-bold text-slate-800 text-sm">No new activity</h4>
-            <p className="text-xs text-gray-400 mt-1 max-w-xs mx-auto">Your academic transcripts are completely organized and compiled with no outstanding actions.</p>
-          </div>
-        </div>
+
+          <h3 className="font-heading text-xl font-extrabold uppercase text-[#111111] tracking-tight mb-2">
+            NO NEW ACTIVITY
+          </h3>
+
+          <p className="text-xs md:text-sm text-[#666666] font-mono leading-relaxed border-l-2 border-[#FF4D4D] pl-3 py-1 max-w-md mb-6 text-left">
+            Your academic transcripts are completely organized and compiled with no outstanding actions. Enjoy the silence.
+          </p>
+
+          <Button
+            variant="tertiary"
+            size="md"
+            onClick={() => window.location.reload()}
+            className="border-2 border-[#111111] shadow-paper-sm hover:bg-[#FFC400]"
+          >
+            REFRESH STATUS
+          </Button>
+        </Card>
       ) : (
         <div className="space-y-6">
-          {/* Timeline Section: Today */}
+          {/* Today Timeline */}
           {today.length > 0 && (
             <div className="space-y-3">
-              <div className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-widest pl-1 font-mono">
+              <div className="flex items-center gap-2 section-label text-xs font-bold uppercase tracking-[3px] text-[#666666]">
                 <Calendar className="h-3.5 w-3.5" />
-                <span>Today</span>
+                <span>TODAY</span>
               </div>
-              <div className="bg-white rounded-2xl border border-gray-200 divide-y divide-gray-200 overflow-hidden shadow-xs">
+              <div className="space-y-3">
                 {today.map((item) => (
-                  <div 
+                  <TimelineItem
                     key={item.id}
-                    className={`p-4 flex items-start gap-4 transition-colors ${item.read ? 'bg-white' : 'bg-indigo-50/15'}`}
-                  >
-                    {getCategoryIcon(item.category)}
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <h4 className={`text-[13px] font-bold truncate ${item.read ? 'text-gray-900' : 'text-slate-900'}`}>
-                          {item.title}
-                        </h4>
-                        <span className="text-[10px] text-gray-400 font-mono flex-shrink-0">{item.timestamp}</span>
-                      </div>
-                      
-                      <p className="text-xs text-gray-500 mt-1 leading-normal">
-                        {item.description}
-                      </p>
-
-                      {/* Action trigger links mapped */}
-                      {item.actionLabel && (
-                        <div className="mt-3 flex items-center gap-3">
-                          <button
-                            onClick={() => handleActionClick(item.actionPage)}
-                            className="group flex items-center gap-1 text-[11px] font-bold text-black border-b border-black pb-0.5 hover:opacity-75 focus:outline-none"
-                          >
-                            <span>{item.actionLabel}</span>
-                            <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
-                          </button>
-                          
-                          {!item.read && (
-                            <button
-                              onClick={() => onMarkRead(item.id)}
-                              className="text-[10px] font-semibold text-gray-400 hover:text-black focus:outline-none"
-                            >
-                              Mark as read
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                    icon={getCategoryIcon(item.category)}
+                    title={item.title}
+                    timestamp={item.timestamp}
+                    description={item.description}
+                    category={item.category}
+                    action={
+                      item.actionLabel ? (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handleActionClick(item.actionPage)}
+                        >
+                          {item.actionLabel}
+                        </Button>
+                      ) : undefined
+                    }
+                  />
                 ))}
               </div>
             </div>
           )}
 
-          {/* Timeline Section: Yesterday */}
+          {/* Yesterday Timeline */}
           {yesterday.length > 0 && (
             <div className="space-y-3">
-              <div className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-1 font-mono">
-                Yesterday
+              <div className="flex items-center gap-2 section-label text-xs font-bold uppercase tracking-[3px] text-[#666666]">
+                <Calendar className="h-3.5 w-3.5" />
+                <span>YESTERDAY</span>
               </div>
-              <div className="bg-white rounded-2xl border border-[#E5E7EB] divide-y divide-[#F3F4F6] overflow-hidden">
+              <div className="space-y-3">
                 {yesterday.map((item) => (
-                  <div 
+                  <TimelineItem
                     key={item.id}
-                    className={`p-4 flex items-start gap-4 transition-colors ${item.read ? 'bg-white' : 'bg-indigo-50/10'}`}
-                  >
-                    {getCategoryIcon(item.category)}
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <h4 className="text-[13px] font-bold text-gray-950 truncate">
-                          {item.title}
-                        </h4>
-                        <span className="text-[10px] font-mono text-gray-400 flex-shrink-0">{item.timestamp}</span>
-                      </div>
-                      
-                      <p className="text-xs text-gray-500 mt-1">
-                        {item.description}
-                      </p>
-
-                      {item.actionLabel && (
-                        <div className="mt-2.5 flex items-center gap-3">
-                          <button
-                            onClick={() => handleActionClick(item.actionPage)}
-                            className="text-[11px] font-bold text-black border-b border-black pb-0.5"
-                          >
-                            {item.actionLabel}
-                          </button>
-                          {!item.read && (
-                            <button
-                              onClick={() => onMarkRead(item.id)}
-                              className="text-[10px] font-semibold text-gray-400 hover:text-black focus:outline-none"
-                            >
-                              Mark as read
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                    icon={getCategoryIcon(item.category)}
+                    title={item.title}
+                    timestamp={item.timestamp}
+                    description={item.description}
+                    category={item.category}
+                    action={
+                      item.actionLabel ? (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handleActionClick(item.actionPage)}
+                        >
+                          {item.actionLabel}
+                        </Button>
+                      ) : undefined
+                    }
+                  />
                 ))}
               </div>
             </div>
           )}
 
-          {/* Older Timelines */}
+          {/* Older Timeline */}
           {older.length > 0 && (
             <div className="space-y-3">
-              <div className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-1 font-mono">
-                Earlier Actions
+              <div className="flex items-center gap-2 section-label text-xs font-bold uppercase tracking-[3px] text-[#666666]">
+                <Calendar className="h-3.5 w-3.5" />
+                <span>PREVIOUS LOGS</span>
               </div>
-              <div className="bg-white rounded-2xl border border-gray-200 divide-y divide-[#F3F4F6] overflow-hidden">
+              <div className="space-y-3">
                 {older.map((item) => (
-                  <div 
+                  <TimelineItem
                     key={item.id}
-                    className="p-4 flex items-start gap-4"
-                  >
-                    {getCategoryIcon(item.category)}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <h4 className="text-[13px] font-bold text-gray-900 truncate">
-                          {item.title}
-                        </h4>
-                        <span className="text-[10px] font-mono text-gray-400 flex-shrink-0">{item.timestamp}</span>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {item.description}
-                      </p>
-                    </div>
-                  </div>
+                    icon={getCategoryIcon(item.category)}
+                    title={item.title}
+                    timestamp={item.timestamp}
+                    description={item.description}
+                    category={item.category}
+                  />
                 ))}
               </div>
             </div>
           )}
-
         </div>
       )}
 

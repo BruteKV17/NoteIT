@@ -17,6 +17,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { UserSettings } from '../types';
+import { Button, Card, Badge, Input } from './bauhaus';
 
 interface ProfileViewProps {
   settings: UserSettings;
@@ -44,21 +45,18 @@ export default function ProfileView({
   theme
 }: ProfileViewProps) {
   
-  // Local editable fields initialized from global state settings
   const [firstName, setFirstName] = useState(settings.profile.firstName || '');
   const [lastName, setLastName] = useState(settings.profile.lastName || '');
   const [school, setSchool] = useState(settings.profile.institution || '');
   const [email, setEmail] = useState(settings.profile.emailAddress || '');
-  const [countryCode, setCountryCode] = useState(settings.profile.countryCode || '');
+  const [countryCode, setCountryCode] = useState(settings.profile.countryCode || '+91');
   const [phoneNumber, setPhoneNumber] = useState(settings.profile.phoneNumber || '');
   const [avatarUrl, setAvatarUrl] = useState(settings.profile.avatarUrl || '');
   
-  // Feedback states
   const [showToast, setShowToast] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadLoading, setUploadLoading] = useState(false);
 
-  // Profile image mock upload handler
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setUploadLoading(true);
@@ -70,7 +68,7 @@ export default function ProfileView({
         setTimeout(() => {
           setAvatarUrl(reader.result as string);
           setUploadLoading(false);
-        }, 1200); // realistic mock loading latency
+        }, 1200);
       };
       
       reader.readAsDataURL(file);
@@ -85,7 +83,6 @@ export default function ProfileView({
     e.preventDefault();
     setError(null);
     
-    // Field validations
     if (!firstName.trim() || !lastName.trim() || !school.trim() || !email.trim() || !countryCode || !phoneNumber.trim()) {
       setError('All fields are required.');
       return;
@@ -104,7 +101,6 @@ export default function ProfileView({
       return;
     }
 
-    // Construct updated settings object
     const updatedSettings: UserSettings = {
       ...settings,
       profile: {
@@ -131,94 +127,86 @@ export default function ProfileView({
   };
 
   return (
-    <div className="max-w-4xl mx-auto pb-16 space-y-6 md:space-y-8 animate-fade-in relative">
+    <div className="max-w-5xl mx-auto pb-16 space-y-6 bg-grid-paper p-4 md:p-8 select-none">
       
       {/* Save Success Toast */}
       {showToast && (
-        <div className="fixed top-6 right-6 z-50 bg-[#121318] text-white rounded-2xl p-4.5 border border-neutral-800 shadow-2xl flex items-center gap-3 animate-slide-in">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500">
-            <CheckCircle className="h-4.5 w-4.5" />
-          </div>
+        <div className="fixed top-6 right-6 z-50 bg-[#19B56B] text-white rounded-[6px] p-4 border-2 border-[#111111] shadow-paper-lg flex items-center gap-3">
+          <CheckCircle className="h-5 w-5 text-white" />
           <div>
-            <h4 className="text-xs font-bold font-sans">Profile Updated successfully</h4>
-            <p className="text-[10px] text-neutral-400 mt-0.5">Recalibrating academic filters...</p>
+            <h4 className="text-xs font-heading font-extrabold uppercase">PROFILE UPDATED SUCCESSFULLY</h4>
+            <p className="text-[10px] font-mono mt-0.5">Recalibrating academic identity...</p>
           </div>
         </div>
       )}
 
       {/* Header Page row */}
-      <div className="flex items-center justify-between border-b pb-5 border-gray-200/60 dark:border-neutral-800/65">
-        <div className="space-y-1">
+      <div className="rounded-[6px] border-2 border-[#111111] bg-white p-6 shadow-paper-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
           <button
             onClick={() => setActivePage('dashboard')}
-            className="flex items-center gap-1.5 text-xs font-bold text-gray-400 hover:text-black dark:hover:text-white transition-colors pb-1 focus:outline-none"
+            className="flex items-center gap-1 text-xs font-mono font-bold text-[#666666] hover:text-[#111111] transition-colors mb-1"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Back to Dashboard</span>
+            <span>BACK TO DASHBOARD</span>
           </button>
-          <h1 className="font-sans font-extrabold text-2xl md:text-3.5xl tracking-tight">Academic Identity</h1>
-          <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider font-mono">
-            {firstName && lastName ? `${firstName} ${lastName}` : 'Scholar Profile'} • Identity Management
+          <h1 className="font-heading font-extrabold text-2xl md:text-3xl text-[#111111] uppercase tracking-tight">
+            ACADEMIC IDENTITY
+          </h1>
+          <p className="text-xs text-[#666666] font-mono mt-1">
+            {firstName && lastName ? `${firstName} ${lastName}` : 'Scholar Profile'} • IDENTITY MANAGEMENT
           </p>
         </div>
 
-        <button
+        <Button
+          variant="secondary"
+          size="md"
           onClick={handleSaveChanges}
-          className={`flex items-center gap-2 rounded-xl py-3 px-5 text-xs font-bold shadow-md cursor-pointer transition-all active:scale-98 focus:outline-none ${
-            theme === 'dark' 
-              ? 'bg-[#2563EB] text-white hover:bg-indigo-500' 
-              : 'bg-black text-white hover:bg-neutral-800'
-          }`}
+          icon={<Save className="h-4 w-4" />}
+          className="bg-[#FFC400]"
         >
-          <Save className="h-4 w-4" />
-          <span>Save Changes</span>
-        </button>
+          Save Changes
+        </Button>
       </div>
 
-      <form onSubmit={handleSaveChanges} className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <form onSubmit={handleSaveChanges} className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
-        {/* Left Column: Avatar & Details */}
+        {/* Left Column: Avatar & Summary */}
         <div className="space-y-6">
-          <div className={`rounded-xl border p-6 flex flex-col items-center text-center space-y-4 shadow-xs ${
-            theme === 'dark' ? 'bg-[#121318]/40 border-neutral-800' : 'bg-white border-gray-200'
-          }`}>
+          <Card shadow="md" className="p-6 bg-white border-2 border-[#111111] flex flex-col items-center text-center space-y-4">
             <div className="relative">
               {avatarUrl ? (
                 <img
                   src={avatarUrl}
                   alt="Profile Avatar"
-                  className="h-28 w-28 rounded-full border-2 border-indigo-500 object-cover"
+                  className="h-28 w-28 rounded-[6px] border-2 border-[#111111] object-cover shadow-paper-sm"
                 />
               ) : (
-                <div className="h-28 w-28 rounded-full border-2 border-dashed border-indigo-500/50 bg-gray-100 dark:bg-neutral-800 flex items-center justify-center text-gray-400 dark:text-neutral-500">
-                  <User className="h-12 w-12" />
+                <div className="h-28 w-28 rounded-[6px] border-2 border-[#111111] bg-[#FFC400] flex items-center justify-center text-[#111111] font-heading font-bold text-3xl shadow-paper-sm">
+                  {firstName ? firstName.charAt(0) : 'U'}
                 </div>
               )}
               {uploadLoading && (
-                <div className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center">
-                  <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <div className="absolute inset-0 bg-[#111111]/70 rounded-[6px] flex items-center justify-center">
+                  <div className="h-6 w-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 </div>
               )}
             </div>
 
             <div className="space-y-1">
-              <h3 className="font-sans font-bold text-base">
+              <h3 className="font-heading font-extrabold text-base text-[#111111] uppercase">
                 {firstName && lastName ? `${firstName} ${lastName}` : 'Anonymous Scholar'}
               </h3>
-              <p className="text-[11px] font-medium text-gray-400 leading-normal truncate max-w-[180px]">
+              <p className="text-xs font-mono text-[#666666] truncate max-w-[180px]">
                 {school || 'Institutional workspace'}
               </p>
             </div>
 
             <div className="flex flex-col gap-2 pt-1 w-full items-center">
               {avatarUrl ? (
-                <div className="flex flex-col sm:flex-row gap-2 justify-center w-full">
-                  <label className={`flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-[11px] font-bold border transition-all focus:outline-none cursor-pointer ${
-                    theme === 'dark'
-                      ? 'border-neutral-800 hover:bg-neutral-800 text-neutral-300'
-                      : 'border-gray-200 hover:bg-gray-50 text-gray-700'
-                  }`}>
-                    <Camera className="h-3.5 w-3.5" />
+                <div className="flex flex-col gap-2 w-full">
+                  <label className="w-full flex items-center justify-center gap-2 p-2 rounded-[6px] border-2 border-[#111111] bg-white font-mono text-xs font-bold uppercase shadow-paper-sm hover:bg-[#FFC400] transition-colors cursor-pointer text-[#111111]">
+                    <Camera className="h-4 w-4" />
                     <span>Change Photo</span>
                     <input
                       type="file"
@@ -227,27 +215,20 @@ export default function ProfileView({
                       className="hidden"
                     />
                   </label>
-                  <button
-                    type="button"
+                  <Button
+                    variant="danger"
+                    size="sm"
                     onClick={handleRemovePhoto}
-                    className={`flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-[11px] font-bold border transition-all focus:outline-none ${
-                      theme === 'dark'
-                        ? 'border-neutral-800 hover:bg-red-500/15 hover:text-red-400 text-neutral-400'
-                        : 'border-gray-200 hover:bg-red-50 text-red-600 text-gray-600'
-                    }`}
+                    icon={<Trash2 className="h-4 w-4" />}
+                    className="w-full"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
-                    <span>Remove Photo</span>
-                  </button>
+                    Remove Photo
+                  </Button>
                 </div>
               ) : (
-                <label className={`flex items-center justify-center gap-1.5 py-1.5 px-4.5 rounded-lg text-[11px] font-bold border transition-all focus:outline-none cursor-pointer ${
-                  theme === 'dark'
-                    ? 'bg-neutral-800 hover:bg-neutral-700 text-white border-neutral-800'
-                    : 'bg-black hover:bg-neutral-800 text-white border-black'
-                }`}>
-                  <Camera className="h-3.5 w-3.5" />
-                  <span>Upload Profile Photo</span>
+                <label className="w-full flex items-center justify-center gap-2 p-2.5 rounded-[6px] border-2 border-[#111111] bg-[#FFC400] font-mono text-xs font-extrabold uppercase shadow-paper-sm hover:bg-[#ffe066] transition-colors cursor-pointer text-[#111111]">
+                  <Camera className="h-4 w-4" />
+                  <span>Upload Photo</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -257,159 +238,94 @@ export default function ProfileView({
                 </label>
               )}
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* Right Columns: Form Fields */}
         <div className="md:col-span-2 space-y-6">
-          <div className={`rounded-xl border p-6 space-y-5 ${
-            theme === 'dark' ? 'bg-[#121318]/40 border-neutral-800' : 'bg-white border-gray-200'
-          }`}>
-            <h3 className="font-sans font-extrabold text-base border-b pb-3 border-gray-200/60 dark:border-neutral-800">
-              Personal Credentials
+          <Card shadow="md" className="p-6 bg-white border-2 border-[#111111] space-y-5">
+            <h3 className="section-label text-xs font-bold text-[#111111] uppercase tracking-[3px] border-b-2 border-[#111111] pb-3">
+              PERSONAL CREDENTIALS
             </h3>
             
             {error && (
-              <div className="rounded-xl bg-red-500/10 border border-red-500/20 p-3.5 flex items-start gap-2.5">
-                <AlertCircle className="h-4.5 w-4.5 text-red-500 flex-shrink-0 mt-0.5" />
-                <div className="text-xs text-red-500 font-semibold">{error}</div>
+              <div className="rounded-[4px] bg-[#FF4D4D]/10 border-2 border-[#FF4D4D] p-3.5 flex items-start gap-2.5">
+                <AlertCircle className="h-4.5 w-4.5 text-[#FF4D4D] shrink-0 mt-0.5" />
+                <div className="text-xs text-[#FF4D4D] font-mono font-bold">{error}</div>
               </div>
             )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block">
-                  First Name
-                </label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="text"
-                    required
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    placeholder="First name"
-                    className={`w-full rounded-xl border pl-10 pr-4 py-2.5 text-xs font-semibold outline-none transition-all ${
-                      theme === 'dark'
-                        ? 'bg-[#18191e] border-neutral-800 text-white focus:border-indigo-500'
-                        : 'bg-gray-50 border-gray-200 text-gray-900 focus:border-black'
-                    }`}
-                  />
-                </div>
-              </div>
+              <Input
+                label="FIRST NAME"
+                type="text"
+                required
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="First name"
+              />
 
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block">
-                  Last Name
-                </label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="text"
-                    required
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    placeholder="Last name"
-                    className={`w-full rounded-xl border pl-10 pr-4 py-2.5 text-xs font-semibold outline-none transition-all ${
-                      theme === 'dark'
-                        ? 'bg-[#18191e] border-neutral-800 text-white focus:border-indigo-500'
-                        : 'bg-gray-50 border-gray-200 text-gray-900 focus:border-black'
-                    }`}
-                  />
-                </div>
-              </div>
+              <Input
+                label="LAST NAME"
+                type="text"
+                required
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Last name"
+              />
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block">
-                University / School Name
-              </label>
-              <div className="relative">
-                <GraduationCap className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  required
-                  value={school}
-                  onChange={(e) => setSchool(e.target.value)}
-                  placeholder="University / school"
-                  className={`w-full rounded-xl border pl-10 pr-4 py-2.5 text-xs font-semibold outline-none transition-all ${
-                    theme === 'dark'
-                      ? 'bg-[#18191e] border-neutral-800 text-white focus:border-indigo-500'
-                      : 'bg-gray-50 border-gray-200 text-gray-900 focus:border-black'
-                  }`}
-                />
-              </div>
-            </div>
+            <Input
+              label="UNIVERSITY / SCHOOL NAME"
+              type="text"
+              required
+              value={school}
+              onChange={(e) => setSchool(e.target.value)}
+              placeholder="e.g. Chandigarh University"
+            />
 
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@institution.edu"
-                  className={`w-full rounded-xl border pl-10 pr-4 py-2.5 text-xs font-semibold outline-none transition-all ${
-                    theme === 'dark'
-                      ? 'bg-[#18191e] border-neutral-800 text-white focus:border-indigo-500'
-                      : 'bg-gray-50 border-gray-200 text-gray-950 focus:border-black'
-                  }`}
-                />
-              </div>
-            </div>
+            <Input
+              label="EMAIL ADDRESS"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="scholar@university.edu"
+            />
 
-            <div className="grid grid-cols-3 gap-3">
-              <div className="col-span-1 space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block truncate">
-                  Country Code
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-1.5 sm:col-span-1">
+                <label className="section-label text-[10px] font-bold text-[#666666] uppercase tracking-[2px]">
+                  COUNTRY CODE
                 </label>
                 <select
-                  required
                   value={countryCode}
                   onChange={(e) => setCountryCode(e.target.value)}
-                  className={`w-full rounded-xl border px-3 py-2.5 text-xs font-semibold outline-none cursor-pointer transition-all ${
-                    theme === 'dark'
-                      ? 'bg-[#18191e] border-neutral-800 text-white focus:border-indigo-500'
-                      : 'bg-gray-50 border-gray-200 text-gray-900 focus:border-black'
-                  }`}
+                  className="w-full rounded-[6px] border-2 border-[#111111] bg-white p-3 text-xs font-mono font-bold text-[#111111] outline-none shadow-paper-sm cursor-pointer"
                 >
-                  <option value="" disabled>Select</option>
                   {COUNTRY_CODES.map((c) => (
-                    <option key={c.code} value={c.code}>{c.code}</option>
+                    <option key={c.code} value={c.code}>
+                      {c.code} ({c.name.split('(')[0].trim()})
+                    </option>
                   ))}
                 </select>
               </div>
 
-              <div className="col-span-2 space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block">
-                  Phone Number
-                </label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="tel"
-                    required
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    placeholder="Phone number"
-                    className={`w-full rounded-xl border pl-10 pr-4 py-2.5 text-xs font-semibold outline-none transition-all ${
-                      theme === 'dark'
-                        ? 'bg-[#18191e] border-neutral-800 text-white focus:border-indigo-500'
-                        : 'bg-gray-50 border-gray-200 text-gray-950 focus:border-black'
-                    }`}
-                  />
-                </div>
+              <div className="sm:col-span-2">
+                <Input
+                  label="PHONE NUMBER"
+                  type="tel"
+                  required
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  placeholder="7471111980"
+                />
               </div>
             </div>
-          </div>
+          </Card>
         </div>
 
       </form>
-
     </div>
   );
 }

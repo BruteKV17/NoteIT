@@ -26,6 +26,7 @@ import {
   ChevronRight,
   ChevronLeft,
   Plus,
+  ChevronDown,
   Trash2,
   Share2,
   FileAudio,
@@ -128,6 +129,7 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
   const [isChatCollapsed, setIsChatCollapsed] = useState(false);
 
   // Output Studio state
+  const [addSourceDropdownOpen, setAddSourceDropdownOpen] = useState(false);
   const [activeOutputTab, setActiveOutputTab] = useState<'notes' | 'summary' | 'flashcards' | 'quiz' | 'mindmap' | 'slides' | 'podcast' | 'infographics'>('notes');
   const [notesFormat, setNotesFormat] = useState<'academic' | 'executive' | 'revision' | 'bhailang'>('academic');
   const [summaryFormat, setSummaryFormat] = useState<'academic' | 'revision' | 'executive' | 'beginner' | 'bhailang'>('academic');
@@ -238,9 +240,9 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
   const triggerGenerateNotes = async (format: 'academic' | 'executive' | 'revision' | 'bhailang') => {
     if (!activeSourceId || !userId || !activeSource || isGeneratingNotes) return;
 
-    const textContent = activeSource.content || activeSource.transcript || '';
+    const textContent = activeSource.transcript || activeSource.cleanTranscript || activeSource.content || activeSource.text || '';
     if (!textContent.trim()) {
-      alert("No content available to generate notes.");
+      alert("A valid transcript is required to generate notes.");
       return;
     }
 
@@ -2450,25 +2452,23 @@ ${queryText}`;
   }, []);
 
   return (
-    <div className={`flex flex-col h-full rounded-2xl overflow-hidden border transition-all select-none ${
-      theme === 'dark' ? 'bg-[#0a0b0e] border-neutral-900 text-white' : 'bg-[#FAF9F5] border-gray-200 text-gray-900'
-    }`}>
+    <div className="flex flex-col h-full bg-grid-paper rounded-[6px] border-2 border-[#111111] shadow-paper-lg overflow-hidden select-none">
       
       {/* HEADER BANNER */}
-      <div className={`p-4 border-b flex items-center justify-between ${
-        theme === 'dark' ? 'bg-[#0d0e12] border-neutral-900' : 'bg-white border-gray-200'
-      }`}>
+      <div className="p-4 border-b-2 border-[#111111] bg-white flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Sparkles className="h-5 w-5 text-indigo-400 animate-pulse" />
+          <div className="p-1 rounded-[4px] bg-[#FFC400] border-2 border-[#111111] shadow-paper-sm">
+            <Sparkles className="h-5 w-5 text-[#111111]" />
+          </div>
           <div>
-            <h1 className="text-sm font-black tracking-tight font-sans">KNOWLEDGE STUDIO</h1>
-            <p className="text-[10px] text-neutral-400 font-medium">NotebookLM Ingestions • Premium Cyber Workspace</p>
+            <h1 className="text-base font-heading font-extrabold tracking-tight text-[#111111] uppercase">KNOWLEDGE STUDIO</h1>
+            <p className="text-xs text-[#666666] font-mono">NotebookLM Ingestions • Premium AI Workspace</p>
           </div>
         </div>
 
         {/* Global loader overlay */}
         {isUploading && (
-          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 text-[10px] font-bold border border-indigo-500/20">
+          <div className="flex items-center gap-2 px-3 py-1 rounded-[4px] bg-[#FFC400] text-[#111111] text-xs font-mono font-bold border-2 border-[#111111] shadow-paper-sm">
             <BruteLoader size="xs" message="" />
             <span>{processingStatus || 'Processing...'} ({uploadProgress}%)</span>
           </div>
@@ -2508,42 +2508,72 @@ ${queryText}`;
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         
         {/* PANEL 1: LEFT - SOURCE HUB (Knowledge Sources) */}
-        <div className={`w-full md:w-80 flex-shrink-0 flex-col border-r overflow-y-auto p-4 space-y-4 ${
+        <div className={`w-full md:w-80 shrink-0 flex-col border-r-2 border-[#111111] overflow-y-auto p-4 space-y-4 bg-white text-[#111111] ${
           isMobile && mobilePanelTab !== 'sources' ? 'hidden' : 'flex'
-        } ${
-          theme === 'dark' ? 'bg-[#08090c] border-neutral-900' : 'bg-gray-50/50 border-gray-200'
         }`}>
           <div>
-            <h2 className="text-xs font-black text-indigo-400 uppercase tracking-widest font-mono">Knowledge Sources</h2>
-            <p className="text-[10px] text-neutral-400 mt-0.5">Attach documents, URLs, or Drive files to start.</p>
+            <h2 className="section-label text-xs font-bold text-[#111111] uppercase tracking-[3px]">Knowledge Sources</h2>
+            <p className="text-[11px] text-[#666666] font-mono mt-0.5">Attach documents, URLs, or Drive files to start.</p>
           </div>
 
           {importError && (
-            <div className="rounded-xl bg-red-500/10 border border-red-500/20 p-3.5 flex items-start gap-2.5">
-              <div className="text-xs text-red-500 font-semibold flex-1 leading-normal">{importError}</div>
+            <div className="rounded-[4px] bg-[#FF4D4D]/10 border-2 border-[#FF4D4D] p-3 flex items-start gap-2">
+              <div className="text-xs text-[#FF4D4D] font-mono font-bold flex-1">{importError}</div>
               <button 
                 type="button"
                 onClick={() => setImportError(null)} 
-                className="text-red-400 hover:text-red-600 text-sm font-bold focus:outline-none cursor-pointer"
+                className="text-[#FF4D4D] font-bold text-sm"
               >
                 &times;
               </button>
             </div>
           )}
 
-          {/* Action Grid Buttons */}
-          <div className="grid grid-cols-2 gap-2">
+          {/* Minimalist Add Source Dropdown Button */}
+          <div className="relative">
             <button
-              onClick={() => fileInputRef.current?.click()}
-              className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border text-[11px] font-extrabold transition-all hover:scale-98 cursor-pointer ${
-                theme === 'dark' 
-                  ? 'bg-neutral-950/60 border-neutral-800 hover:bg-neutral-900 hover:border-neutral-700 text-white' 
-                  : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-700'
-              }`}
+              onClick={() => setAddSourceDropdownOpen(!addSourceDropdownOpen)}
+              className="w-full flex items-center justify-between p-2.5 rounded-[6px] border-2 border-[#111111] bg-[#FFC400] text-[#111111] font-mono text-xs font-extrabold uppercase shadow-paper-sm hover:bg-[#ffe066] transition-colors cursor-pointer"
             >
-              <Upload className="h-3.5 w-3.5 text-indigo-400" />
-              <span>Upload File</span>
+              <span className="flex items-center gap-2">
+                <Plus className="h-4 w-4 text-[#111111]" />
+                <span>Add Source</span>
+              </span>
+              <ChevronDown className={`h-4 w-4 text-[#111111] transition-transform ${addSourceDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
+
+            {addSourceDropdownOpen && (
+              <div className="absolute left-0 right-0 mt-2 rounded-[6px] border-2 border-[#111111] bg-white p-1.5 shadow-paper-md space-y-1 z-30 font-mono text-xs font-bold uppercase text-[#111111]">
+                <button
+                  onClick={() => { setAddSourceDropdownOpen(false); fileInputRef.current?.click(); }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[4px] text-left hover:bg-[#FFC400] transition-colors cursor-pointer"
+                >
+                  <Upload className="h-4 w-4 text-[#111111] shrink-0" />
+                  <span>Upload Local File</span>
+                </button>
+                <button
+                  onClick={() => { setAddSourceDropdownOpen(false); setUrlType('website'); setShowUrlModal(true); }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[4px] text-left hover:bg-[#FFC400] transition-colors cursor-pointer"
+                >
+                  <Globe className="h-4 w-4 text-[#111111] shrink-0" />
+                  <span>Add Web URL</span>
+                </button>
+                <button
+                  onClick={() => { setAddSourceDropdownOpen(false); setUrlType('youtube'); setShowUrlModal(true); }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[4px] text-left hover:bg-[#FFC400] transition-colors cursor-pointer"
+                >
+                  <Youtube className="h-4 w-4 text-[#FF4D4D] shrink-0" />
+                  <span>Import YouTube</span>
+                </button>
+                <button
+                  onClick={() => { setAddSourceDropdownOpen(false); setShowDriveModal(true); }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[4px] text-left hover:bg-[#FFC400] transition-colors cursor-pointer"
+                >
+                  <HardDrive className="h-4 w-4 text-[#2F6BFF] shrink-0" />
+                  <span>Google Drive</span>
+                </button>
+              </div>
+            )}
             <input
               type="file"
               ref={fileInputRef}
@@ -2551,42 +2581,6 @@ ${queryText}`;
               onChange={handleFileUpload}
               accept=".pdf,.docx,.txt,.md,.pptx,.xlsx,.csv"
             />
-
-            <button
-              onClick={() => { setUrlType('website'); setShowUrlModal(true); }}
-              className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border text-[11px] font-extrabold transition-all hover:scale-98 cursor-pointer ${
-                theme === 'dark' 
-                  ? 'bg-neutral-950/60 border-neutral-800 hover:bg-neutral-900 hover:border-neutral-700 text-white' 
-                  : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-700'
-              }`}
-            >
-              <Globe className="h-3.5 w-3.5 text-teal-400" />
-              <span>Add URL</span>
-            </button>
-
-            <button
-              onClick={() => setShowDriveModal(true)}
-              className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border text-[11px] font-extrabold transition-all hover:scale-98 cursor-pointer ${
-                theme === 'dark' 
-                  ? 'bg-neutral-950/60 border-neutral-800 hover:bg-neutral-900 hover:border-neutral-700 text-white' 
-                  : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-700'
-              }`}
-            >
-              <HardDrive className="h-3.5 w-3.5 text-blue-400" />
-              <span>Google Drive</span>
-            </button>
-
-            <button
-              onClick={() => { setUrlType('youtube'); setShowUrlModal(true); }}
-              className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border text-[11px] font-extrabold transition-all hover:scale-98 cursor-pointer ${
-                theme === 'dark' 
-                  ? 'bg-neutral-950/60 border-neutral-800 hover:bg-neutral-900 hover:border-neutral-700 text-white' 
-                  : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-700'
-              }`}
-            >
-              <Youtube className="h-3.5 w-3.5 text-red-500" />
-              <span>Import YT</span>
-            </button>
           </div>
 
           {/* Sources List Cards */}
@@ -2730,12 +2724,6 @@ ${queryText}`;
                           }
                         })()}
                       </div>
-                      <button
-                        onClick={() => handleDeleteSource(src.id)}
-                        className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/10 text-neutral-400 hover:text-red-500 transition-all cursor-pointer"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
                     </div>
                   </div>
                 );
@@ -2744,19 +2732,17 @@ ${queryText}`;
           </div>
         </div>
 
-        {/* PANEL 2: CENTER - AI WORKSPACE */}
-        <div className={`flex-grow flex-1 flex-col overflow-hidden p-4 space-y-4 ${
+          {/* PANEL 2: CENTER - AI WORKSPACE */}
+        <div className={`flex-1 flex flex-col overflow-hidden p-4 space-y-4 bg-[#F6F2EA] text-[#111111] ${
           isMobile && mobilePanelTab !== 'chat' ? 'hidden' : 'flex'
-        } ${
-          theme === 'dark' ? 'bg-[#050608]' : 'bg-[#FAF9F5]'
         }`}>
           <div>
-            <h2 className="text-xs font-black text-indigo-400 uppercase tracking-widest font-mono">AI Workspace</h2>
-            <p className="text-[10px] text-neutral-400 mt-0.5">Synthesize outlines, check contradictions, or query sources.</p>
+            <h2 className="section-label text-xs font-bold text-[#111111] uppercase tracking-[3px]">AI Workspace</h2>
+            <p className="text-[11px] text-[#666666] font-mono mt-0.5">Synthesize outlines, check contradictions, or query sources.</p>
           </div>
 
-          {/* Quick Prompts Chips */}
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none whitespace-nowrap">
+          {/* Quick Prompts Pills */}
+          <div className="flex flex-wrap gap-1.5">
             {[
               "Summarize selected sources",
               "Compare all sources",
@@ -2767,11 +2753,7 @@ ${queryText}`;
               <button
                 key={idx}
                 onClick={() => handleQuickPrompt(prompt)}
-                className={`px-3 py-1.5 rounded-lg border text-[10px] font-extrabold transition-all hover:scale-98 cursor-pointer ${
-                  theme === 'dark'
-                    ? 'bg-neutral-900 border-neutral-800 text-neutral-300 hover:bg-neutral-800 hover:border-neutral-700'
-                    : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
-                }`}
+                className="px-2.5 py-1 rounded-[4px] border-2 border-[#111111] bg-white font-mono text-[10px] font-bold uppercase text-[#111111] shadow-paper-sm hover:bg-[#FFC400] transition-colors cursor-pointer"
               >
                 {prompt}
               </button>
@@ -2779,31 +2761,25 @@ ${queryText}`;
           </div>
 
           {/* Chat Messages Log */}
-          <div className={`flex-1 rounded-2xl border p-4 overflow-y-auto space-y-4 font-sans ${
-            theme === 'dark' ? 'bg-[#090b0e]/75 border-neutral-900/60' : 'bg-white border-gray-200'
-          }`}>
+          <div className="flex-1 rounded-[6px] border-2 border-[#111111] bg-white p-4 overflow-y-auto space-y-4 font-sans text-[#111111] shadow-paper-sm">
             {chatMessages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-2">
-                <Sparkles className="h-8 w-8 text-indigo-500 animate-pulse" />
-                <h3 className="text-xs font-bold text-neutral-400">Search Workspace Active</h3>
-                <p className="text-[10px] text-neutral-500 max-w-xs leading-relaxed">
+                <Sparkles className="h-8 w-8 text-[#111111] animate-pulse" />
+                <h3 className="text-xs font-bold text-[#111111] uppercase">Search Workspace Active</h3>
+                <p className="text-[11px] font-mono text-[#666666] max-w-xs leading-relaxed">
                   Enter a query below. AI will reference all selected sources ({selectedSourceIds.length} active) to answer.
                 </p>
               </div>
             ) : (
               chatMessages.map((msg, i) => (
                 <div key={i} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-xs leading-relaxed select-text ${
+                  <div className={`max-w-[85%] rounded-[6px] border-2 border-[#111111] p-3 text-xs leading-relaxed select-text font-mono ${
                     msg.sender === 'user'
-                      ? theme === 'dark' 
-                        ? 'bg-indigo-600 text-white' 
-                        : 'bg-black text-white'
-                      : theme === 'dark'
-                        ? 'bg-[#121318] border border-neutral-800 text-neutral-200'
-                        : 'bg-gray-100 text-gray-800'
+                      ? 'bg-[#FFC400] text-[#111111] shadow-paper-sm font-bold'
+                      : 'bg-[#F6F2EA] text-[#111111]'
                   }`}>
-                    <span className="font-mono text-[9px] font-black uppercase tracking-wider block opacity-60 mb-1">
-                      {msg.sender === 'user' ? 'Student query' : 'NoteIT Intelligence'}
+                    <span className="text-[9px] font-bold uppercase tracking-wider block text-[#666666] mb-1">
+                      {msg.sender === 'user' ? 'STUDENT QUERY' : 'NOTEIT INTELLIGENCE'}
                     </span>
                     {(() => {
                       const parts = msg.text.split(/Sources:\s*/i);
@@ -2813,13 +2789,13 @@ ${queryText}`;
                         <div>
                           <p className="whitespace-pre-wrap">{answerText.trim()}</p>
                           {sourcesBlock && (
-                            <div className="mt-3 pt-2 border-t border-indigo-500/20">
-                              <span className="font-mono text-[8px] font-black uppercase text-indigo-400 block mb-1">Sources:</span>
+                            <div className="mt-3 pt-2 border-t-2 border-[#111111]">
+                              <span className="text-[9px] font-bold uppercase text-[#111111] block mb-1">Sources:</span>
                               <div className="flex flex-wrap gap-1 mt-1">
                                 {sourcesBlock.split('\n').map(l => l.trim()).filter(l => l.length > 0).map((line, idx) => {
                                   const cleanLine = line.replace(/^-\s*/, '').trim();
                                   return (
-                                    <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+                                    <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded-[3px] text-[9px] font-bold bg-white text-[#111111] border-2 border-[#111111]">
                                       {cleanLine}
                                     </span>
                                   );
@@ -2836,7 +2812,7 @@ ${queryText}`;
             )}
             {isChatLoading && (
               <div className="flex justify-start">
-                <div className={`rounded-2xl px-4 py-3 border flex items-center gap-3 ${theme === 'dark' ? 'bg-[#121318] border-neutral-800 text-neutral-400' : 'bg-gray-100 border-gray-200 text-gray-500'}`}>
+                <div className="rounded-[6px] border-2 border-[#111111] bg-white p-3 flex items-center gap-3 text-[#111111]">
                   <BruteLoader size="xs" message="" />
                   <span className="text-xs font-mono font-bold tracking-wider animate-pulse">Synthesizing logical layers...</span>
                 </div>
@@ -2852,18 +2828,12 @@ ${queryText}`;
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
               placeholder="Ask anything about your selected sources..."
-              className={`flex-grow rounded-xl text-xs font-semibold outline-none p-3.5 transition-all ${
-                theme === 'dark' 
-                  ? 'bg-neutral-950 border border-neutral-800 text-white placeholder-neutral-600 focus:border-indigo-500' 
-                  : 'bg-white border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-black'
-              }`}
+              className="flex-grow rounded-[6px] border-2 border-[#111111] bg-white text-[#111111] placeholder-[#888888] text-xs font-mono font-bold outline-none p-3 focus:bg-[#FFF8D6] transition-all"
             />
             <button
               type="submit"
               disabled={isChatLoading || selectedSourceIds.length === 0}
-              className={`rounded-xl px-5 py-3.5 text-xs font-black shadow-lg transition-all active:scale-95 cursor-pointer disabled:opacity-30 disabled:pointer-events-none ${
-                theme === 'dark' ? 'bg-white text-black hover:bg-neutral-100' : 'bg-black text-white hover:bg-gray-800'
-              }`}
+              className="rounded-[6px] border-2 border-[#111111] bg-[#FFC400] text-[#111111] px-5 py-3 text-xs font-mono font-extrabold uppercase shadow-paper-sm hover:bg-[#ffe066] transition-all cursor-pointer disabled:opacity-30 disabled:pointer-events-none"
             >
               Ask
             </button>
@@ -2874,43 +2844,35 @@ ${queryText}`;
         {activeSourceId && !isMobile && (
           <div
             onMouseDown={startResizing}
-            className={`w-1.5 cursor-col-resize hover:bg-indigo-500/40 active:bg-indigo-600 transition-all flex-shrink-0 flex items-center justify-center border-l border-r ${
-              theme === 'dark' ? 'bg-[#0b0c10] border-neutral-900/60' : 'bg-gray-100 border-gray-200'
-            }`}
+            className="w-2 cursor-col-resize hover:bg-[#FFC400] active:bg-[#FFC400] transition-all flex-shrink-0 flex items-center justify-center border-l-2 border-r-2 border-[#111111] bg-[#F6F2EA]"
             title="Drag to resize Output Studio"
           >
-            <div className="h-8 w-0.5 rounded bg-neutral-600/80" />
+            <div className="h-8 w-0.5 bg-[#111111]" />
           </div>
         )}
 
         {/* PANEL 3: RIGHT - OUTPUT STUDIO */}
         <div 
           style={activeSourceId && !isMobile ? { width: `${outputStudioWidth}px` } : undefined}
-          className={`flex-col overflow-y-auto p-4 space-y-4 ${
+          className={`flex-col overflow-y-auto p-4 space-y-4 bg-white border-l-2 border-[#111111] text-[#111111] ${
             isMobile && mobilePanelTab !== 'outputs' ? 'hidden' : 'flex'
           } ${
-            activeSourceId
-              ? `${theme === 'dark' ? 'bg-[#08090c]' : 'bg-gray-50/50'}`
-              : `w-full md:w-[420px] flex-shrink-0 border-l ${theme === 'dark' ? 'bg-[#08090c] border-neutral-900' : 'bg-gray-50/50 border-gray-200'}`
+            activeSourceId ? '' : 'w-full md:w-[420px] shrink-0'
           }`}
         >
           <div>
-            <h2 className="text-xs font-black text-indigo-400 uppercase tracking-widest font-mono">Output Studio</h2>
-            <p className="text-[10px] text-neutral-400 mt-0.5">Generate, display, and export materials.</p>
+            <h2 className="section-label text-xs font-bold text-[#111111] uppercase tracking-[3px]">Output Studio</h2>
+            <p className="text-[11px] text-[#666666] font-mono mt-0.5">Generate, display, and export materials.</p>
           </div>
 
           {/* Multi-language selector */}
           {activeSourceId && (
-            <div className={`flex items-center justify-between p-2.5 rounded-xl border ${
-              theme === 'dark' ? 'bg-neutral-950/70 border-neutral-900/60' : 'bg-gray-50 border-gray-200'
-            }`}>
-              <span className="text-[10px] font-black uppercase text-neutral-400 tracking-wider">Output Language</span>
+            <div className="flex items-center justify-between p-2.5 rounded-[6px] border-2 border-[#111111] bg-[#F6F2EA]">
+              <span className="text-[10px] font-mono font-bold uppercase text-[#111111] tracking-wider">Output Language</span>
               <select
                 value={outputLanguage}
                 onChange={(e) => handleLanguageChange(e.target.value)}
-                className={`rounded px-2.5 py-1 text-xs font-bold border outline-none cursor-pointer ${
-                  theme === 'dark' ? 'bg-neutral-900 border-neutral-800 text-white' : 'bg-white border-gray-300 text-black'
-                }`}
+                className="rounded-[4px] px-2 py-1 text-xs font-mono font-bold border-2 border-[#111111] bg-white text-[#111111] outline-none cursor-pointer"
               >
                 {['English', 'Hindi', 'Hinglish', 'Marathi', 'Tamil', 'Gujarati', 'Bengali'].map(lang => (
                   <option key={lang} value={lang}>{lang}</option>
@@ -2919,42 +2881,31 @@ ${queryText}`;
             </div>
           )}
 
-          <div className={`grid grid-cols-4 gap-1 p-1 rounded-xl ${theme === 'dark' ? 'bg-neutral-950' : 'bg-gray-200'}`}>
-            {(['notes', 'summary', 'flashcards', 'quiz'] as const).map(tab => (
-              <button
-                key={tab}
-                onClick={() => {
-                  setActiveOutputTab(tab);
+          {/* Minimalist Output Material Select Dropdown */}
+          <div className="space-y-1">
+            <label className="section-label text-[10px] font-bold text-[#666666] uppercase tracking-[2px] block">
+              SELECT OUTPUT MATERIAL
+            </label>
+            <div className="relative">
+              <select
+                value={activeOutputTab}
+                onChange={(e) => {
+                  setActiveOutputTab(e.target.value as any);
                   setSelectedMindmapNode(null);
                 }}
-                className={`py-1.5 rounded-lg text-[10px] font-black capitalize transition-all cursor-pointer ${
-                  activeOutputTab === tab 
-                    ? theme === 'dark' ? 'bg-indigo-600 text-white' : 'bg-white text-black shadow-xs' 
-                    : theme === 'dark' ? 'text-neutral-400 hover:text-white' : 'text-neutral-500 hover:text-neutral-900'
-                }`}
+                className="w-full rounded-[6px] border-2 border-[#111111] bg-white p-3 font-mono text-xs font-extrabold uppercase text-[#111111] outline-none shadow-paper-sm cursor-pointer appearance-none pr-8 hover:bg-[#FFF8D6] transition-colors"
               >
-                {tab}
-              </button>
-            ))}
-          </div>
-
-          <div className={`grid grid-cols-4 gap-1 p-1 rounded-xl ${theme === 'dark' ? 'bg-neutral-950' : 'bg-gray-200'}`}>
-            {(['mindmap', 'slides', 'podcast', 'infographics'] as const).map(tab => (
-              <button
-                key={tab}
-                onClick={() => {
-                  setActiveOutputTab(tab);
-                  setSelectedMindmapNode(null);
-                }}
-                className={`py-1.5 rounded-lg text-[10px] font-black capitalize transition-all cursor-pointer ${
-                  activeOutputTab === tab 
-                    ? theme === 'dark' ? 'bg-indigo-600 text-white' : 'bg-white text-black shadow-xs' 
-                    : theme === 'dark' ? 'text-neutral-400 hover:text-white' : 'text-neutral-500 hover:text-neutral-900'
-                }`}
-              >
-                {tab === 'mindmap' ? 'Mind Map' : tab === 'slides' ? 'Slides' : tab === 'podcast' ? 'Podcast' : 'Infographics'}
-              </button>
-            ))}
+                <option value="notes">📄 Structured Study Notes</option>
+                <option value="summary">📝 Executive Summary</option>
+                <option value="flashcards">⚡ Active Recall Flashcards</option>
+                <option value="quiz">🎯 Practice Quiz Deck</option>
+                <option value="mindmap">🧠 Dynamic Relationship Mind Map</option>
+                <option value="slides">📊 Presentation Slides Deck</option>
+                <option value="podcast">🎙️ Audio Podcast Overview</option>
+                <option value="infographics">📈 Visual Infographics</option>
+              </select>
+              <ChevronDown className="h-4 w-4 text-[#111111] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
           </div>
 
           {/* Tab contents block */}
@@ -3903,7 +3854,6 @@ ${queryText}`;
           </div>
         </div>
       )}
-
     </div>
   );
 }

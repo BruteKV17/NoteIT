@@ -48,12 +48,17 @@ export function useLectures(userId: string | undefined) {
             formattedAddedAt = data.addedAt;
           }
 
+          const rawTranscript = data.transcript || data.cleanTranscript || data.transcriptText || data.text || '';
+
           lectureList.push({
             id: docSnap.id,
             ...data,
             title: data.title || '',
             subject: data.subject || '',
             status: data.status || 'transcribing',
+            transcriptionStatus: data.transcriptionStatus || (rawTranscript ? 'completed' : 'pending'),
+            transcript: rawTranscript,
+            cleanTranscript: data.cleanTranscript || rawTranscript,
             type: data.type || 'recording',
             addedAt: formattedAddedAt,
           });

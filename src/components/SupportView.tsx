@@ -9,15 +9,12 @@ import {
   Search, 
   MessageSquare, 
   ChevronDown, 
-  ChevronDown as ChevronUp, 
-  BookOpen, 
-  Mail, 
   CheckCircle,
   FileQuestion,
-  ExternalLink
+  Send
 } from 'lucide-react';
-import { FAQItem } from '../types';
 import { FAQ_ITEMS } from '../data';
+import { Card, Button, Input, Badge } from './bauhaus';
 
 export default function SupportView() {
   
@@ -39,7 +36,6 @@ export default function SupportView() {
     e.preventDefault();
     if (!subject.trim() || !ticketMsg.trim()) return;
 
-    // Simulate sending
     setTicketSubmitSuccess(true);
     setSubject('');
     setTicketMsg('');
@@ -52,62 +48,69 @@ export default function SupportView() {
   );
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-6xl mx-auto pb-12">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-6xl mx-auto pb-12 select-none text-[#111111]">
       
       {/* Knowledge search and FAQs (2 Columns) */}
       <div className="lg:col-span-2 space-y-6">
         
         {/* Knowledge Base Search */}
-        <div className="bg-white p-5 rounded-2xl border border-gray-200">
-          <h2 className="font-sans font-bold text-lg text-gray-950 flex items-center gap-1.5">
-            <HelpCircle className="h-5 w-5 text-gray-700" />
-            <span>Help Knowledge Base</span>
-          </h2>
-          <p className="text-xs text-gray-500 mt-1">Search official guides, citations mechanics, and student security frameworks.</p>
+        <Card shadow="md" className="bg-white p-6 border-2 border-[#111111] space-y-4">
+          <div className="flex items-center gap-2">
+            <Badge variant="yellow" size="sm">HELP CENTER</Badge>
+            <h2 className="font-heading font-extrabold text-xl text-[#111111] uppercase tracking-tight">
+              KNOWLEDGE BASE
+            </h2>
+          </div>
+          <p className="text-xs font-mono text-[#666666]">
+            Search official guides, citations mechanics, and student security frameworks.
+          </p>
           
-          <div className="relative mt-4">
-            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <div className="relative mt-2">
+            <Search className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-[#111111]" />
             <input
               type="text"
               value={supportSearch}
               onChange={(e) => setSupportSearch(e.target.value)}
               placeholder="Search concepts, backup configurations, billing cycles..."
-              className="w-full rounded-xl border border-gray-200 bg-[#F9FAFB] pl-10 pr-4 py-2.5 text-xs font-semibold text-gray-900 outline-none focus:border-black focus:bg-white transition-all"
+              className="w-full rounded-[6px] border-2 border-[#111111] bg-white pl-10 pr-4 py-2.5 text-xs font-mono font-bold text-[#111111] outline-none shadow-paper-sm"
             />
           </div>
-        </div>
+        </Card>
 
         {/* Accordions */}
         <div className="space-y-3">
-          <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-1 font-mono">Frequently Asked Questions</h3>
+          <span className="text-xs font-mono font-bold text-[#666666] uppercase tracking-widest pl-1">
+            FREQUENTLY ASKED QUESTIONS
+          </span>
           
           {filteredFaqs.length === 0 ? (
-            <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-xs text-gray-400 font-medium">
+            <Card shadow="sm" className="bg-white rounded-[6px] border-2 border-[#111111] p-8 text-center text-xs font-mono text-[#666666]">
               We couldn't find matching guides for "{supportSearch}".
-            </div>
+            </Card>
           ) : (
-            <div className="space-y-2.5">
+            <div className="space-y-3">
               {filteredFaqs.map((faq) => {
                 const isOpen = expandedFaqId === faq.id;
                 return (
-                  <div 
+                  <Card 
                     key={faq.id}
-                    className="bg-white border border-gray-200 rounded-xl overflow-hidden transition-all shadow-xs"
+                    shadow="sm"
+                    className="bg-white border-2 border-[#111111] rounded-[6px] overflow-hidden"
                   >
                     <button
                       onClick={() => toggleFaq(faq.id)}
-                      className="w-full flex items-center justify-between p-4.5 text-left font-sans text-[13px] font-bold text-slate-900 hover:bg-gray-50/50 focus:outline-none"
+                      className="w-full flex items-center justify-between p-4 text-left font-heading text-sm font-extrabold text-[#111111] uppercase hover:bg-[#FFF8D6] transition-colors cursor-pointer"
                     >
                       <span className="pr-4">{faq.question}</span>
-                      <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180 text-black' : ''}`} />
+                      <ChevronDown className={`h-4 w-4 text-[#111111] transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                     </button>
                     
                     {isOpen && (
-                      <div className="px-4.5 pb-4 px-5 border-t border-gray-100 bg-gray-50/20 pt-3 text-xs text-gray-600 leading-relaxed font-sans">
+                      <div className="px-4 pb-4 pt-3 border-t-2 border-[#111111] bg-[#F6F2EA] text-xs font-mono text-[#111111] leading-relaxed">
                         {faq.answer}
                       </div>
                     )}
-                  </div>
+                  </Card>
                 );
               })}
             </div>
@@ -117,78 +120,82 @@ export default function SupportView() {
       </div>
 
       {/* Contact Ticketing form sidebar (1 Column) */}
-      <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-xs flex flex-col justify-between">
-        
-        <form onSubmit={handleSendTicket} className="space-y-4">
-          <div>
-            <h3 className="font-sans font-bold text-sm text-gray-950 flex items-center gap-1.5">
-              <Mail className="h-4 w-4 text-gray-700" />
-              <span>Contact Support Desk</span>
+      <Card shadow="md" className="bg-white border-2 border-[#111111] p-6 space-y-5 flex flex-col justify-between">
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 border-b-2 border-[#111111] pb-3">
+            <MessageSquare className="h-5 w-5 text-[#111111]" />
+            <h3 className="font-heading font-extrabold text-base uppercase text-[#111111]">
+              SUBMIT TICKETING REQ
             </h3>
-            <p className="text-[11px] text-gray-400 mt-1">Our academic engineering team typically responds within 4-6 hours.</p>
           </div>
 
+          <p className="text-xs font-mono text-[#666666]">
+            Can't find what you need? Send a ticket directly to NoteIT AI research engineering team.
+          </p>
+
           {ticketSubmitSuccess && (
-            <div className="rounded-xl bg-emerald-50 border border-emerald-100 p-3.5 text-xs text-emerald-800 flex items-start gap-2 animate-pulse">
-              <CheckCircle className="h-4 w-4 text-emerald-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <strong className="block font-bold">Ticket Submitted Successfully!</strong>
-                <span className="text-[10px] mt-0.5 block leading-normal">Academic ID ticket reference: #{Math.floor(1000 + Math.random() * 9000)}. We'll email your registered inbox.</span>
-              </div>
+            <div className="p-3 rounded-[4px] bg-[#19B56B]/20 border-2 border-[#111111] text-[#111111] text-xs font-mono font-bold flex items-center gap-2">
+              <CheckCircle className="h-4 w-4 text-[#19B56B] shrink-0" />
+              <span>Ticket submitted successfully! Response team notified.</span>
             </div>
           )}
 
-          <div>
-            <label className="block text-[10px] font-bold text-gray-400 uppercase">SUBJECT SUMMARY</label>
-            <input
-              type="text"
-              required
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              placeholder="e.g. Canvas Sync API Key fail"
-              className="w-full rounded-lg border border-gray-200 bg-[#F9FAFB] p-2.5 text-xs font-semibold text-gray-900 mt-1 focus:border-black focus:bg-white outline-none"
-            />
-          </div>
+          <form onSubmit={handleSendTicket} className="space-y-3">
+            <div>
+              <label className="section-label text-[10px] font-bold text-[#666666] uppercase tracking-[2px] block mb-1">
+                TICKET SUBJECT
+              </label>
+              <input
+                type="text"
+                required
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder="e.g. Issue with Gemini Key SAS"
+                className="w-full rounded-[6px] border-2 border-[#111111] bg-white p-2.5 text-xs font-mono font-bold text-[#111111] outline-none shadow-paper-sm"
+              />
+            </div>
 
-          <div>
-            <label className="block text-[10px] font-bold text-gray-400 uppercase">URGENCY PRIORITY</label>
-            <select
-              value={priority}
-              onChange={(e) => setPriority(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 bg-[#F9FAFB] p-2.5 text-xs font-semibold text-gray-900 mt-1 focus:border-black focus:bg-white outline-none"
+            <div>
+              <label className="section-label text-[10px] font-bold text-[#666666] uppercase tracking-[2px] block mb-1">
+                PRIORITY LEVEL
+              </label>
+              <select
+                value={priority}
+                onChange={(e) => setPriority(e.target.value)}
+                className="w-full rounded-[6px] border-2 border-[#111111] bg-white p-2.5 text-xs font-mono font-bold text-[#111111] outline-none shadow-paper-sm"
+              >
+                <option value="Standard">Standard Priority</option>
+                <option value="Urgent">Urgent Priority</option>
+                <option value="Critical">Critical Academic Emergency</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="section-label text-[10px] font-bold text-[#666666] uppercase tracking-[2px] block mb-1">
+                MESSAGE DESCRIPTION
+              </label>
+              <textarea
+                required
+                rows={4}
+                value={ticketMsg}
+                onChange={(e) => setTicketMsg(e.target.value)}
+                placeholder="Provide detailed description of the error or feature request..."
+                className="w-full rounded-[6px] border-2 border-[#111111] bg-white p-2.5 text-xs font-mono font-bold text-[#111111] outline-none shadow-paper-sm resize-none"
+              />
+            </div>
+
+            <Button
+              variant="primary"
+              size="md"
+              type="submit"
+              className="w-full justify-center"
+              icon={<Send className="h-4 w-4" />}
             >
-              <option value="Standard">Standard Review</option>
-              <option value="Urgent">Urgent Block (Premium plan only)</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-[10px] font-bold text-gray-400 uppercase">DETAILED MESSAGE</label>
-            <textarea
-              required
-              rows={4}
-              value={ticketMsg}
-              onChange={(e) => setTicketMsg(e.target.value)}
-              placeholder="Outline your issue with precision..."
-              className="w-full rounded-lg border border-gray-200 bg-[#F9FAFB] p-2.5 text-xs font-semibold text-gray-900 mt-1 focus:border-black focus:bg-white outline-none font-sans resize-none"
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full rounded-xl bg-black px-4 py-2.5 text-center text-xs font-bold text-white hover:bg-gray-800 transition-all active:scale-98 shadow-xs"
-          >
-            Submit Support Request
-          </button>
-        </form>
-
-        <div className="mt-6 pt-4 border-t border-gray-100 text-center">
-          <div className="text-[11px] font-semibold text-gray-400 leading-relaxed max-w-xs mx-auto">
-            Review our official <a href="#" className="text-black border-b border-black font-bold">Privacy Sandbox Protocols</a> which details absolute isolation models.
-          </div>
+              SEND SUPPORT TICKET
+            </Button>
+          </form>
         </div>
-
-      </div>
+      </Card>
 
     </div>
   );

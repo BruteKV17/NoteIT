@@ -5,10 +5,13 @@ import {
   AlertCircle,
   BookMarked,
   CloudLightning,
-  Brain
+  Brain,
+  Settings,
+  RotateCcw,
+  FileText
 } from 'lucide-react';
 import { PageId } from '../types';
-import { blobToBase64, generateLectureContent } from '../services/gemini';
+import { blobToBase64, generateLectureContent, generateResourcesFromTranscript } from '../services/gemini';
 import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebaseConfig';
 import BruteLoader from './BruteLoader';
@@ -171,19 +174,20 @@ export default function LectureProcessingView({
             await updateLecture(lectureId, { status: 'saving' });
           }
 
-          // Save transcript, cleanTranscript, sections, timeline, sourceIntelligence directly in the lecture document
+          // Save Stage 1 and Stage 2 results immediately to Firestore
           await updateLecture(lectureId, {
+            recordingStatus: 'uploaded',
+            transcriptionStatus: 'completed',
+            resourceGenerationStatus: 'processing',
             transcript: aiData.transcript || '',
             cleanTranscript: aiData.cleanTranscript || '',
             sections: aiData.sections || [],
             timeline: aiData.timeline || [],
             sourceIntelligence: aiData.sourceIntelligence || null,
-            keyConcepts: [], // Initial empty mind map concepts
+            keyConcepts: [],
             geminiModel: 'gemini-2.5-flash',
             processingTimeMs,
-            status: 'generated',
-            generationFinishedAt: serverTimestamp(),
-            processingCompletedAt: serverTimestamp()
+            transcriptionFinishedAt: serverTimestamp()
           });
 
           // Call RAG grounding engine
@@ -192,7 +196,7 @@ export default function LectureProcessingView({
             if (currentUser) {
               const idToken = await currentUser.getIdToken(true);
               const requestUrl = `${API_BASE_URL}/api/storage/ground-source`;
-              const res = await fetch(requestUrl, {
+              await fetch(requestUrl, {
                 method: 'POST',
                 headers: {
                   'Authorization': `Bearer ${idToken}`,
@@ -204,25 +208,43 @@ export default function LectureProcessingView({
                   text: aiData.cleanTranscript || aiData.transcript || extractedText || ''
                 })
               });
-              console.log(`[API Diagnostic] Base: ${API_BASE_URL}, Endpoint: ${requestUrl}, Status: ${res.status}`);
-              console.log('[RAG] Grounding completed for lecture document');
             }
           } catch (ragErr) {
             console.error('[RAG] Grounding failed for lecture document:', ragErr);
           }
 
-          if (!isSubscribed) return;
-          setUploadStatus('completed');
-          setCurrentStepIndex(DOCUMENT_COMPILATION_STEPS.length);
+          // Stage 3: AI Resource Generation
+          try {
+            setUploadStatus('analyzing');
+            setCurrentStepIndex(3); // Detecting Chapters / Generating Resources
+            await generateResourcesFromTranscript(lectureId, aiData.cleanTranscript || aiData.transcript, { mode: 'academic', modeType: 'all' });
+            
+            await updateLecture(lectureId, {
+              resourceGenerationStatus: 'completed',
+              status: 'generated',
+              generationFinishedAt: serverTimestamp(),
+              processingCompletedAt: serverTimestamp()
+            });
 
-          if (setActiveLectureId && lectureId) {
-            setActiveLectureId(lectureId);
-          }
-          setTimeout(() => {
-            if (isSubscribed) {
-              setActivePage('lecture-capture');
+            if (!isSubscribed) return;
+            setUploadStatus('completed');
+            setCurrentStepIndex(DOCUMENT_COMPILATION_STEPS.length);
+
+            if (setActiveLectureId && lectureId) {
+              setActiveLectureId(lectureId);
             }
-          }, 2000);
+            setTimeout(() => {
+              if (isSubscribed) {
+                setActivePage('lecture-capture');
+              }
+            }, 2000);
+          } catch (resErr: any) {
+            console.error("Resource generation stage failed:", resErr);
+            if (isSubscribed) {
+              setErrorMsg(resErr.message || "AI resource generation failed. Your transcript and document are safe.");
+              setUploadStatus('failed');
+            }
+          }
 
         } else {
           // --- AUDIO WORKFLOW ---
@@ -231,6 +253,7 @@ export default function LectureProcessingView({
             setCurrentStepIndex(0);
             await updateLecture(lectureId, { 
               status: 'uploading',
+              recordingStatus: 'recording',
               uploadStartedAt: serverTimestamp()
             });
 
@@ -242,6 +265,7 @@ export default function LectureProcessingView({
             if (!isSubscribed) return;
 
             await updateLecture(lectureId, {
+              recordingStatus: 'uploaded',
               uploadFinishedAt: serverTimestamp()
             });
           } else {
@@ -254,6 +278,7 @@ export default function LectureProcessingView({
           setCurrentStepIndex(1);
           await updateLecture(lectureId, { 
             status: 'transcribing',
+            transcriptionStatus: 'processing',
             transcriptionStartedAt: serverTimestamp(),
             processingStartedAt: serverTimestamp()
           });
@@ -294,18 +319,20 @@ export default function LectureProcessingView({
             await updateLecture(lectureId, { status: 'saving' });
           }
 
+          // Save Stage 1 and Stage 2 results immediately to Firestore
           await updateLecture(lectureId, {
+            recordingStatus: 'uploaded',
+            transcriptionStatus: 'completed',
+            resourceGenerationStatus: 'processing',
             transcript: aiData.transcript || '',
             cleanTranscript: aiData.cleanTranscript || '',
             sections: aiData.sections || [],
             timeline: aiData.timeline || [],
             sourceIntelligence: aiData.sourceIntelligence || null,
-            keyConcepts: [], // Initial empty mind map concepts
+            keyConcepts: [],
             geminiModel: 'gemini-2.5-flash',
             processingTimeMs,
-            status: 'generated',
-            generationFinishedAt: serverTimestamp(),
-            processingCompletedAt: serverTimestamp()
+            transcriptionFinishedAt: serverTimestamp()
           });
 
           // Call RAG grounding engine
@@ -314,7 +341,7 @@ export default function LectureProcessingView({
             if (currentUser) {
               const idToken = await currentUser.getIdToken(true);
               const requestUrl = `${API_BASE_URL}/api/storage/ground-source`;
-              const res = await fetch(requestUrl, {
+              await fetch(requestUrl, {
                 method: 'POST',
                 headers: {
                   'Authorization': `Bearer ${idToken}`,
@@ -326,32 +353,48 @@ export default function LectureProcessingView({
                   text: aiData.cleanTranscript || aiData.transcript || ''
                 })
               });
-              console.log(`[API Diagnostic] Base: ${API_BASE_URL}, Endpoint: ${requestUrl}, Status: ${res.status}`);
-              console.log('[RAG] Grounding completed for lecture audio');
             }
           } catch (ragErr) {
             console.error('[RAG] Grounding failed for lecture audio:', ragErr);
           }
 
-          if (!isSubscribed) return;
-          setUploadStatus('completed');
-          setCurrentStepIndex(COMPILATION_STEPS.length);
+          // Stage 3: AI Resource Generation
+          try {
+            setUploadStatus('analyzing');
+            await generateResourcesFromTranscript(lectureId, aiData.cleanTranscript || aiData.transcript, { mode: 'academic', modeType: 'all' });
+            
+            await updateLecture(lectureId, {
+              resourceGenerationStatus: 'completed',
+              status: 'generated',
+              generationFinishedAt: serverTimestamp(),
+              processingCompletedAt: serverTimestamp()
+            });
 
-          if (setActiveLectureId && lectureId) {
-            setActiveLectureId(lectureId);
-          }
-          setTimeout(() => {
-            if (isSubscribed) {
-              setActivePage('lecture-capture');
+            if (!isSubscribed) return;
+            setUploadStatus('completed');
+            setCurrentStepIndex(COMPILATION_STEPS.length);
+
+            if (setActiveLectureId && lectureId) {
+              setActiveLectureId(lectureId);
             }
-          }, 2000);
+            setTimeout(() => {
+              if (isSubscribed) {
+                setActivePage('lecture-capture');
+              }
+            }, 2000);
+          } catch (resErr: any) {
+            console.error("Resource generation stage failed:", resErr);
+            if (isSubscribed) {
+              setErrorMsg(resErr.message || "AI resource generation failed. Your transcript and audio are safe.");
+              setUploadStatus('failed');
+            }
+          }
         }
       } catch (err: any) {
         console.error("Lecture compilation pipeline failed:", err);
         if (isSubscribed) {
           setErrorMsg(err.message || "An unexpected error occurred during synthesis.");
           setUploadStatus('failed');
-          updateLecture(lectureId, { status: 'failed' }).catch(console.error);
         }
       }
     };
@@ -364,106 +407,76 @@ export default function LectureProcessingView({
   }, [lectureId, audioBlob, documentFile, userId, retryTrigger]);
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8 pb-16 pt-4 md:pt-8 select-none">
+    <div className="max-w-3xl mx-auto space-y-8 pb-16 pt-4 md:pt-8 select-none text-[#111111]">
       
-      {/* Premium Glassmorphic Header */}
-      <div className={`rounded-2xl border p-6.5 relative overflow-hidden shadow-md ${
-        theme === 'dark' ? 'bg-[#121318] border-neutral-800' : 'bg-white border-gray-200'
-      }`}>
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.01)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.01)_1px,transparent_1px)] bg-[size:16px_16px] opacity-15" />
-        
+      {/* Premium Header */}
+      <div className="rounded-[6px] border-2 border-[#111111] bg-white p-6.5 relative overflow-hidden shadow-paper-lg">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
-          <div className="space-y-1.5">
-            <span className="rounded-lg bg-indigo-500/10 border border-indigo-500/10 px-2.5 py-1 text-[10px] font-bold text-indigo-400 font-sans inline-flex items-center gap-1">
-              <CloudLightning className="h-3 w-3 animate-pulse" />
+          <div className="space-y-2">
+            <span className="rounded-[4px] bg-[#FFC400] border-2 border-[#111111] px-2.5 py-1 text-[10px] font-mono font-extrabold text-[#111111] inline-flex items-center gap-1 shadow-paper-sm uppercase">
+              <CloudLightning className="h-3.5 w-3.5" />
               <span>COGNITIVE SYNTHESIS GATEWAY</span>
             </span>
-            <h2 className="font-sans font-black text-xl md:text-2xl text-gray-900 dark:text-neutral-50 tracking-tight">
+            <h2 className="font-heading font-extrabold text-2xl md:text-3xl text-[#111111] uppercase tracking-tight">
               Compiling Lecture Workspace
             </h2>
-            <p className="text-xs font-semibold text-gray-400">
+            <p className="text-xs font-mono font-bold text-[#666666]">
               Please keep this page open while NoteIT AI translates, indexes, and publishes your course materials.
             </p>
           </div>
 
           <div className="flex-shrink-0">
             {uploadStatus === 'failed' && (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-red-500/10 px-3.5 py-2 text-xs font-bold text-red-500 font-mono">
+              <span className="inline-flex items-center gap-1.5 rounded-[4px] bg-[#FF4D4D] border-2 border-[#111111] px-3.5 py-2 text-xs font-mono font-bold text-white shadow-paper-sm uppercase">
                 <AlertCircle className="h-4 w-4" />
                 PIPELINE ABORTED
               </span>
             )}
             {uploadStatus === 'uploading' && (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-500/10 px-3.5 py-2 text-xs font-bold text-indigo-400 font-mono animate-pulse">
-                <Cpu className="h-4 w-4 animate-spin text-indigo-500" />
+              <span className="inline-flex items-center gap-1.5 rounded-[4px] bg-[#2F6BFF] border-2 border-[#111111] px-3.5 py-2 text-xs font-mono font-bold text-white shadow-paper-sm uppercase animate-pulse">
+                <Cpu className="h-4 w-4 animate-spin text-white" />
                 UPLOADING ({uploadProgress}%)
               </span>
             )}
             {uploadStatus === 'uploaded' && (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-500/20 px-3.5 py-2 text-xs font-bold text-indigo-400 font-mono animate-pulse">
-                <CheckCircle className="h-4 w-4 text-indigo-500" />
+              <span className="inline-flex items-center gap-1.5 rounded-[4px] bg-[#FFC400] border-2 border-[#111111] px-3.5 py-2 text-xs font-mono font-bold text-[#111111] shadow-paper-sm uppercase">
+                <CheckCircle className="h-4 w-4 text-[#111111]" />
                 UPLOADED
               </span>
             )}
             {uploadStatus === 'transcribing' && (
-              <span className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-bold font-mono animate-pulse ${
-                isGeminiBusy 
-                  ? 'bg-amber-500/10 text-amber-500' 
-                  : 'bg-blue-500/10 text-blue-400'
-              }`}>
-                {isGeminiBusy ? (
-                  <>
-                    <Brain className="h-4 w-4 animate-bounce text-amber-500" />
-                    RETRYING SYNTHESIS...
-                  </>
-                ) : (
-                  <>
-                    <Brain className="h-4 w-4 animate-bounce text-blue-500" />
-                    TRANSCRIBING LECTURE
-                  </>
-                )}
+              <span className="inline-flex items-center gap-1.5 rounded-[4px] bg-[#2F6BFF] border-2 border-[#111111] px-3.5 py-2 text-xs font-mono font-bold text-white shadow-paper-sm uppercase animate-pulse">
+                <Brain className="h-4 w-4 animate-bounce text-white" />
+                {isGeminiBusy ? 'RETRYING SYNTHESIS...' : 'TRANSCRIBING LECTURE'}
               </span>
             )}
             {uploadStatus === 'extracting' && (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-500/10 px-3.5 py-2 text-xs font-bold text-indigo-400 font-mono animate-pulse">
-                <Cpu className="h-4 w-4 animate-spin text-indigo-500" />
+              <span className="inline-flex items-center gap-1.5 rounded-[4px] bg-[#2F6BFF] border-2 border-[#111111] px-3.5 py-2 text-xs font-mono font-bold text-white shadow-paper-sm uppercase animate-pulse">
+                <Cpu className="h-4 w-4 animate-spin text-white" />
                 EXTRACTING TEXT
               </span>
             )}
             {uploadStatus === 'analyzing' && (
-              <span className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-bold font-mono animate-pulse ${
-                isGeminiBusy 
-                  ? 'bg-amber-500/10 text-amber-500' 
-                  : 'bg-indigo-500/10 text-indigo-400'
-              }`}>
-                {isGeminiBusy ? (
-                  <>
-                    <Brain className="h-4 w-4 animate-bounce text-amber-500" />
-                    RETRYING SYNTHESIS...
-                  </>
-                ) : (
-                  <>
-                    <Brain className="h-4 w-4 animate-bounce text-indigo-500" />
-                    AI ANALYZING
-                  </>
-                )}
+              <span className="inline-flex items-center gap-1.5 rounded-[4px] bg-[#FFC400] border-2 border-[#111111] px-3.5 py-2 text-xs font-mono font-bold text-[#111111] shadow-paper-sm uppercase animate-pulse">
+                <Brain className="h-4 w-4 animate-bounce text-[#111111]" />
+                {isGeminiBusy ? 'RETRYING SYNTHESIS...' : 'AI ANALYZING'}
               </span>
             )}
             {uploadStatus === 'generating_notes' && (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-3.5 py-2 text-xs font-bold text-amber-500 font-mono animate-pulse">
-                <Cpu className="h-4 w-4 animate-spin text-amber-500" />
+              <span className="inline-flex items-center gap-1.5 rounded-[4px] bg-[#FFC400] border-2 border-[#111111] px-3.5 py-2 text-xs font-mono font-bold text-[#111111] shadow-paper-sm uppercase animate-pulse">
+                <Cpu className="h-4 w-4 animate-spin text-[#111111]" />
                 GENERATING NOTES
               </span>
             )}
             {uploadStatus === 'saving' && (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-500/10 px-3.5 py-2 text-xs font-bold text-purple-400 font-mono animate-pulse">
-                <Cpu className="h-4 w-4 animate-spin text-purple-500" />
+              <span className="inline-flex items-center gap-1.5 rounded-[4px] bg-[#FFC400] border-2 border-[#111111] px-3.5 py-2 text-xs font-mono font-bold text-[#111111] shadow-paper-sm uppercase animate-pulse">
+                <Cpu className="h-4 w-4 animate-spin text-[#111111]" />
                 SAVING RESULTS
               </span>
             )}
             {uploadStatus === 'completed' && (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3.5 py-2 text-xs font-bold text-emerald-500 font-mono">
-                <CheckCircle className="h-4 w-4" />
+              <span className="inline-flex items-center gap-1.5 rounded-[4px] bg-[#FFC400] border-2 border-[#111111] px-3.5 py-2 text-xs font-mono font-bold text-[#111111] shadow-paper-sm uppercase">
+                <CheckCircle className="h-4 w-4 text-[#111111]" />
                 COMPILED & RESOLVED
               </span>
             )}
@@ -472,7 +485,7 @@ export default function LectureProcessingView({
 
         {/* Global Progress Bar */}
         <div className="mt-6.5 relative">
-          <div className="h-2 w-full rounded-full bg-gray-200 dark:bg-neutral-800 overflow-hidden">
+          <div className="h-3 w-full rounded-[4px] bg-[#F6F2EA] border-2 border-[#111111] overflow-hidden">
             <div 
               style={{ 
                 width: uploadStatus === 'completed' 
@@ -481,12 +494,12 @@ export default function LectureProcessingView({
                     ? '0%'
                     : `${Math.max(5, (currentStepIndex / steps.length) * 100)}%` 
               }}
-              className={`h-full rounded-full transition-all duration-500 ease-out ${
+              className={`h-full transition-all duration-500 ease-out ${
                 uploadStatus === 'failed' 
-                  ? 'bg-red-500' 
+                  ? 'bg-[#FF4D4D]' 
                   : uploadStatus === 'completed'
-                    ? 'bg-emerald-500'
-                    : 'bg-gradient-to-r from-indigo-500 via-indigo-400 to-purple-400'
+                    ? 'bg-[#FFC400]'
+                    : 'bg-[#2F6BFF]'
               }`}
             />
           </div>
@@ -494,48 +507,65 @@ export default function LectureProcessingView({
       </div>
  
       {/* Main Process Checklist Card */}
-      <div className={`rounded-2xl border p-6.5 space-y-6 ${
-        theme === 'dark' ? 'bg-[#121318] border-neutral-800' : 'bg-white border-gray-200'
-      }`}>
-        <div className="flex items-center justify-between border-b border-gray-100 dark:border-neutral-800/50 pb-4">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 font-mono">
-            Pipeline Compilation Sequence
+      <div className="rounded-[6px] border-2 border-[#111111] bg-white p-6.5 space-y-6 shadow-paper-lg">
+        <div className="flex items-center justify-between border-b-2 border-[#111111] pb-4">
+          <span className="text-xs font-mono font-extrabold uppercase tracking-wider text-[#111111]">
+            PIPELINE COMPILATION SEQUENCE
           </span>
-          <span className="text-[10px] font-bold text-indigo-400 font-mono">
-            Step {Math.min(steps.length, currentStepIndex + 1)} of {steps.length}
+          <span className="text-xs font-mono font-extrabold text-[#2F6BFF] uppercase">
+            STEP {Math.min(steps.length, currentStepIndex + 1)} OF {steps.length}
           </span>
         </div>
 
         {uploadStatus !== 'completed' && uploadStatus !== 'failed' && (
-          <div className="py-4 flex justify-center border-b border-gray-100 dark:border-neutral-800/50">
+          <div className="py-4 flex justify-center border-b-2 border-[#111111]">
             <BruteLoader size="md" message={`Current Phase: ${steps[currentStepIndex]?.label || 'Processing'}`} />
           </div>
         )}
  
         {errorMsg ? (
-          <div className="p-5 rounded-xl border border-red-500/20 bg-red-500/5 text-center space-y-3">
-            <AlertCircle className="h-10 w-10 text-red-500 mx-auto animate-pulse" />
-            <div className="text-sm font-bold text-gray-900 dark:text-neutral-50">Upload & Sync Failed</div>
-            <div className="text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 rounded-lg p-2.5 max-w-md mx-auto">
-              Your lecture recording is safe. Click Continue Processing.
+          <div className="p-6 rounded-[6px] border-2 border-[#FF4D4D] bg-[#F6F2EA] text-center space-y-4 shadow-paper-sm">
+            <AlertCircle className="h-10 w-10 text-[#FF4D4D] mx-auto animate-pulse" />
+            <div className="text-base font-heading font-extrabold text-[#111111] uppercase">AI Resource Generation Paused</div>
+            <div className="text-xs font-mono font-bold text-[#111111] bg-[#FFC400] border-2 border-[#111111] rounded-[4px] p-3 max-w-md mx-auto flex items-center justify-center gap-2 shadow-paper-sm">
+              <CheckCircle className="h-4 w-4 text-[#111111]" />
+              <span>Your lecture recording and transcript are safe.</span>
             </div>
-            <p className="text-xs text-gray-400 leading-relaxed max-w-md mx-auto">{errorMsg}</p>
-            <div className="flex justify-center gap-3">
+            <p className="text-xs font-mono font-bold text-[#666666] leading-relaxed max-w-md mx-auto">{errorMsg}</p>
+            <div className="flex flex-wrap justify-center gap-3 pt-2">
               <button
-                onClick={() => {
+                onClick={async () => {
+                  if (!lectureId) return;
                   setErrorMsg(null);
-                  setUploadStatus('uploading');
-                  setRetryTrigger(prev => prev + 1);
+                  setUploadStatus('analyzing');
+                  try {
+                    await generateResourcesFromTranscript(lectureId, undefined, { mode: 'academic', modeType: 'missing' });
+                    setUploadStatus('completed');
+                    if (setActiveLectureId) setActiveLectureId(lectureId);
+                    setTimeout(() => setActivePage('lecture-capture'), 1500);
+                  } catch (err: any) {
+                    console.error("Retry failed:", err);
+                    setErrorMsg(err.message || "Retry failed. Please check your provider key in Settings.");
+                    setUploadStatus('failed');
+                  }
                 }}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 text-xs font-bold transition-all focus:outline-none cursor-pointer"
+                className="inline-flex items-center gap-2 rounded-[6px] border-2 border-[#111111] bg-[#2F6BFF] text-white px-5 py-3 text-xs font-mono font-extrabold uppercase hover:bg-[#255cd9] transition-all shadow-paper-sm cursor-pointer"
               >
-                Continue Processing
+                <RotateCcw className="h-4 w-4" />
+                <span>RETRY AI GENERATION</span>
+              </button>
+              <button
+                onClick={() => setActivePage('settings')}
+                className="inline-flex items-center gap-2 rounded-[6px] border-2 border-[#111111] bg-[#FFC400] text-[#111111] px-5 py-3 text-xs font-mono font-extrabold uppercase hover:bg-[#ffe066] transition-all shadow-paper-sm cursor-pointer"
+              >
+                <Settings className="h-4 w-4" />
+                <span>CHANGE AI PROVIDER</span>
               </button>
               <button
                 onClick={() => setActivePage('academic-library')}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-neutral-800 text-gray-700 dark:text-neutral-300 px-4 py-2.5 text-xs font-bold hover:bg-gray-50 dark:hover:bg-neutral-800 transition-all focus:outline-none cursor-pointer"
+                className="inline-flex items-center gap-2 rounded-[6px] border-2 border-[#111111] bg-white text-[#111111] px-5 py-3 text-xs font-mono font-extrabold uppercase hover:bg-[#F6F2EA] transition-all shadow-paper-sm cursor-pointer"
               >
-                <span>Return to Library</span>
+                <span>RETURN TO LIBRARY</span>
               </button>
             </div>
           </div>
@@ -549,49 +579,43 @@ export default function LectureProcessingView({
               return (
                 <div 
                   key={idx}
-                  className={`flex items-start gap-4 p-3 rounded-xl border transition-all duration-300 ${
+                  className={`flex items-start gap-4 p-4 rounded-[6px] border-2 border-[#111111] transition-all ${
                     isActive 
-                      ? theme === 'dark' 
-                        ? 'border-indigo-500/30 bg-indigo-500/5 text-white' 
-                        : 'border-indigo-100 bg-indigo-50/20 text-gray-900'
+                      ? 'bg-[#FFC400] text-[#111111] shadow-paper-sm font-bold' 
                       : isFinished
-                        ? theme === 'dark'
-                          ? 'border-neutral-800/50 opacity-70 text-neutral-300'
-                          : 'border-gray-100 opacity-70 text-gray-700'
-                        : theme === 'dark'
-                          ? 'border-transparent opacity-35 text-neutral-500'
-                          : 'border-transparent opacity-35 text-gray-400'
+                        ? 'bg-white text-[#111111]'
+                        : 'bg-[#F6F2EA] text-[#666666]'
                   }`}
                 >
                   <div className="flex-shrink-0 mt-0.5">
                     {isFinished && (
-                      <div className="h-5 w-5 rounded-full bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
-                        <CheckCircle className="h-3.5 w-3.5" />
+                      <div className="h-6 w-6 rounded-[4px] bg-white border border-[#111111] flex items-center justify-center text-[#111111]">
+                        <CheckCircle className="h-4 w-4" />
                       </div>
                     )}
                     {isActive && (
-                      <div className="h-5 w-5 rounded-full bg-indigo-500/10 dark:bg-indigo-500/15 border border-indigo-500/20 flex items-center justify-center text-indigo-500">
-                        <Cpu className="h-3.5 w-3.5 animate-spin" />
+                      <div className="h-6 w-6 rounded-[4px] bg-white border border-[#111111] flex items-center justify-center text-[#111111]">
+                        <Cpu className="h-4 w-4 animate-spin" />
                       </div>
                     )}
                     {isPending && (
-                      <div className="h-5 w-5 rounded-full bg-gray-100 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 flex items-center justify-center text-gray-400 dark:text-neutral-500 font-mono text-[9px] font-bold">
+                      <div className="h-6 w-6 rounded-[4px] bg-white border border-[#111111] flex items-center justify-center text-[#666666] font-mono text-xs font-bold">
                         {idx + 1}
                       </div>
                     )}
                   </div>
  
                   <div className="flex-1 min-w-0">
-                    <div className="text-xs font-bold flex items-center gap-1.5">
+                    <div className="text-xs font-heading font-extrabold uppercase flex items-center gap-2">
                       <span>{step.label}</span>
                       {isActive && idx === 0 && (
-                        <span className="font-mono text-[9px] text-indigo-400">({uploadProgress}%)</span>
+                        <span className="font-mono text-[10px] text-[#111111]">({uploadProgress}%)</span>
                       )}
                       {isActive && idx === 2 && isGeminiBusy && (
-                        <span className="font-mono text-[9px] text-amber-500 animate-pulse">(Gemini is busy. Retrying...)</span>
+                        <span className="font-mono text-[10px] text-[#FF4D4D] animate-pulse">(Gemini is busy. Retrying...)</span>
                       )}
                     </div>
-                    <p className="text-[10px] text-gray-400 mt-1 leading-normal font-semibold">
+                    <p className="text-xs font-mono text-[#666666] mt-1 leading-normal font-bold">
                       {isActive && idx === 2 && isGeminiBusy 
                         ? "Gemini is busy. Retrying AI synthesis..." 
                         : step.description}
@@ -601,9 +625,9 @@ export default function LectureProcessingView({
               );
             })}
             {isGeminiBusy && (
-              <div className="p-4 rounded-xl border border-amber-500/20 bg-amber-500/5 text-center flex items-center justify-center gap-3 animate-pulse mt-2">
-                <Brain className="h-5 w-5 text-amber-500 animate-bounce" />
-                <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
+              <div className="p-4 rounded-[6px] border-2 border-[#111111] bg-[#FFC400] text-center flex items-center justify-center gap-3 animate-pulse mt-2 shadow-paper-sm">
+                <Brain className="h-5 w-5 text-[#111111] animate-bounce" />
+                <span className="text-xs font-mono font-extrabold text-[#111111] uppercase">
                   Gemini is busy. Retrying AI synthesis...
                 </span>
               </div>
@@ -613,9 +637,9 @@ export default function LectureProcessingView({
 
         {/* Sync completed CTA overlay panel */}
         {uploadStatus === 'completed' && (
-          <div className="pt-4 border-t border-gray-100 dark:border-neutral-800/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-in">
-            <span className="text-[10px] font-bold text-emerald-500 font-mono flex items-center gap-1">
-              <CheckCircle className="h-4 w-4" />
+          <div className="pt-4 border-t-2 border-[#111111] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <span className="text-xs font-mono font-extrabold text-[#111111] uppercase flex items-center gap-2">
+              <CheckCircle className="h-4 w-4 text-[#2F6BFF]" />
               WORKSPACE GENERATED SUCCESSFULLY! REDIRECTING NOW...
             </span>
             <button
@@ -625,10 +649,10 @@ export default function LectureProcessingView({
                 }
                 setActivePage('lecture-capture');
               }}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-black dark:bg-white text-white dark:text-black px-4 py-2.5 text-xs font-black hover:opacity-90 active:scale-95 transition-all shadow-md focus:outline-none cursor-pointer"
+              className="inline-flex items-center gap-2 rounded-[6px] border-2 border-[#111111] bg-[#2F6BFF] text-white px-5 py-3 text-xs font-mono font-extrabold uppercase hover:bg-[#255cd9] transition-all shadow-paper-md cursor-pointer"
             >
               <span>Go to Active Review Workspace</span>
-              <BookMarked className="h-3.5 w-3.5" />
+              <BookMarked className="h-4 w-4" />
             </button>
           </div>
         )}

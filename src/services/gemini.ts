@@ -177,6 +177,212 @@ export const executeGeminiCall = async (
   }
 };
 
+export const generateResourcesFromTranscript = async (
+  lectureId: string,
+  transcript?: string,
+  options?: {
+    language?: string;
+    mode?: 'academic' | 'executive' | 'revision' | 'bhailang';
+    modeType?: 'missing' | 'all';
+    provider?: string;
+    model?: string;
+  },
+  onBusy?: (isBusy: boolean) => void
+): Promise<any> => {
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    throw new Error('User not authenticated with Firebase Auth.');
+  }
+
+  if (onBusy) onBusy(true);
+
+  try {
+    const idToken = await currentUser.getIdToken(true);
+    const endpointUrl = `${API_BASE_URL}/api/lectures/${lectureId}/generate-resources`;
+
+    const response = await fetch(endpointUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${idToken}`
+      },
+      body: JSON.stringify({
+        lectureId,
+        transcript,
+        options
+      })
+    });
+
+    if (onBusy) onBusy(false);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMsg = errorData.error || `Resource generation failed with status ${response.status}`;
+      const errObj: any = new Error(errorMsg);
+      errObj.status = response.status;
+      errObj.code = errorData.code || String(response.status);
+      errObj.provider = errorData.provider;
+      throw errObj;
+    }
+
+    return await response.json();
+  } catch (error: any) {
+    if (onBusy) onBusy(false);
+    throw error;
+  }
+};
+
+export const generateNotesFromTranscript = async (
+  transcript: string,
+  onBusy?: (isBusy: boolean) => void,
+  customGeminiApiKey?: string
+): Promise<{
+  title: string;
+  overview: string;
+  keyConcepts: { heading: string; explanation: string; details: string[] }[];
+  importantPoints: string[];
+  examples: string[];
+  formulas: string[];
+  definitions: { term: string; definition: string }[];
+  takeaways: string[];
+  markdownNotes: string;
+}> => {
+  if (!transcript || typeof transcript !== 'string' || transcript.trim().length === 0) {
+    throw new Error("A valid transcript is required to generate notes.");
+  }
+
+  const prompt = `You are an AI study assistant for students.
+
+Generate structured study notes ONLY from the transcript provided below.
+
+Use the transcript as the sole source of truth.
+
+Do not:
+- Add facts from your own knowledge.
+- Search or use external information.
+- Invent missing information.
+- Assume facts that are not explicitly supported by the transcript.
+- Add information simply because it is generally true.
+
+If something is unclear or missing from the transcript, do not hallucinate it.
+
+Transcript:
+${transcript}`;
+
+  const schema = {
+    type: 'OBJECT',
+    properties: {
+      title: { type: 'STRING' },
+      overview: { type: 'STRING' },
+      keyConcepts: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          properties: {
+            heading: { type: 'STRING' },
+            explanation: { type: 'STRING' },
+            details: { type: 'ARRAY', items: { type: 'STRING' } }
+          },
+          required: ['heading', 'explanation', 'details']
+        }
+      },
+      importantPoints: { type: 'ARRAY', items: { type: 'STRING' } },
+      examples: { type: 'ARRAY', items: { type: 'STRING' } },
+      formulas: { type: 'ARRAY', items: { type: 'STRING' } },
+      definitions: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          properties: {
+            term: { type: 'STRING' },
+            definition: { type: 'STRING' }
+          },
+          required: ['term', 'definition']
+        }
+      },
+      takeaways: { type: 'ARRAY', items: { type: 'STRING' } }
+    },
+    required: ['title', 'overview', 'keyConcepts', 'importantPoints', 'examples', 'formulas', 'definitions', 'takeaways']
+  };
+
+  const rawResult = await executeGeminiCall(prompt, customGeminiApiKey || '', undefined, schema, onBusy, 'gemini-2.5-flash', 'generate-notes');
+
+  const title = rawResult.title || 'Lecture Study Notes';
+  const overview = rawResult.overview || '';
+  const keyConcepts = Array.isArray(rawResult.keyConcepts) ? rawResult.keyConcepts : [];
+  const importantPoints = Array.isArray(rawResult.importantPoints) ? rawResult.importantPoints : [];
+  const examples = Array.isArray(rawResult.examples) ? rawResult.examples : [];
+  const formulas = Array.isArray(rawResult.formulas) ? rawResult.formulas : [];
+  const definitions = Array.isArray(rawResult.definitions) ? rawResult.definitions : [];
+  const takeaways = Array.isArray(rawResult.takeaways) ? rawResult.takeaways : [];
+
+  let markdown = `# ${title}\n\n## Overview\n${overview}\n\n`;
+
+  if (keyConcepts.length > 0) {
+    markdown += `## Key Concepts\n`;
+    keyConcepts.forEach((kc: any) => {
+      markdown += `### ${kc.heading || 'Concept'}\n${kc.explanation || ''}\n`;
+      if (Array.isArray(kc.details) && kc.details.length > 0) {
+        kc.details.forEach((d: string) => {
+          markdown += `- ${d}\n`;
+        });
+      }
+      markdown += `\n`;
+    });
+  }
+
+  if (definitions.length > 0) {
+    markdown += `## Definitions\n`;
+    definitions.forEach((def: any) => {
+      markdown += `- **${def.term || 'Term'}**: ${def.definition || ''}\n`;
+    });
+    markdown += `\n`;
+  }
+
+  if (importantPoints.length > 0) {
+    markdown += `## Important Points\n`;
+    importantPoints.forEach((pt: string) => {
+      markdown += `- ${pt}\n`;
+    });
+    markdown += `\n`;
+  }
+
+  if (examples.length > 0) {
+    markdown += `## Examples\n`;
+    examples.forEach((ex: string) => {
+      markdown += `- ${ex}\n`;
+    });
+    markdown += `\n`;
+  }
+
+  if (formulas.length > 0) {
+    markdown += `## Formulas\n`;
+    formulas.forEach((f: string) => {
+      markdown += `- \`${f}\`\n`;
+    });
+    markdown += `\n`;
+  }
+
+  if (takeaways.length > 0) {
+    markdown += `## Key Takeaways\n`;
+    takeaways.forEach((t: string) => {
+      markdown += `- ${t}\n`;
+    });
+    markdown += `\n`;
+  }
+
+  return {
+    title,
+    overview,
+    keyConcepts,
+    importantPoints,
+    examples,
+    formulas,
+    definitions,
+    takeaways,
+    markdownNotes: markdown.trim()
+  };
+};
 
 export const transcribeAudio = async (
   base64Audio: string,

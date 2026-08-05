@@ -12,16 +12,13 @@ import {
   Plus, 
   ChevronRight,
   Sparkles,
-  GraduationCap,
   User,
   CreditCard,
-  Sun,
-  Moon,
-  Shield,
   HelpCircle,
   LogOut
 } from 'lucide-react';
 import { PageId, UserSettings } from '../types';
+import { Button, Badge } from './bauhaus';
 
 interface NavbarProps {
   activePage: PageId;
@@ -66,39 +63,28 @@ export default function Navbar({
   const getPageTitle = () => {
     switch (activePage) {
       case 'dashboard':
-        return 'Overview';
+        return 'OVERVIEW';
       case 'lecture-capture':
-        return 'Lecture Capture';
+        return 'CAPTURE LIVE';
       case 'research-hub':
-        return 'Research Hub';
+        return 'RESEARCH HUB';
       case 'academic-library':
-        return 'Academic Library';
+        return 'ACADEMIC LIBRARY';
       case 'quiz-mode':
-        return 'Interactive Study Mode';
+        return 'QUIZ MODE';
       case 'notifications':
-        return 'Activity Center';
+        return 'ACTIVITY CENTER';
       case 'settings':
-        return 'Account Settings';
+        return 'SETTINGS';
       case 'help-support':
-        return 'Help & Support';
+        return 'HELP & SUPPORT';
       case 'pricing':
-        return 'Subscription Plans';
+        return 'SUBSCRIPTION PLANS';
       case 'profile':
-        return 'My Profile';
+        return 'MY PROFILE';
       default:
-        return 'Workspace';
+        return 'WORKSPACE';
     }
-  };
-
-  const getBreadcrumbs = () => {
-    const title = getPageTitle();
-    return (
-      <div className="flex items-center gap-1.5 font-sans text-xs text-neutral-400 font-medium">
-        <span className="cursor-pointer hover:text-[#2563EB]" onClick={() => setActivePage('dashboard')}>NoteIT</span>
-        <ChevronRight className="h-3 w-3 text-neutral-300 dark:text-neutral-700" />
-        <span className="text-gray-900 dark:text-neutral-50 font-semibold">{title}</span>
-      </div>
-    );
   };
 
   const handleDropdownOption = (page: PageId) => {
@@ -107,231 +93,184 @@ export default function Navbar({
   };
 
   return (
-    <header className={`sticky top-0 z-40 flex h-16 w-full items-center justify-between border-b px-4 md:px-6 transition-all duration-300 ${
-      theme === 'dark' 
-        ? 'bg-[#0a0a0c]/85 border-neutral-900/60 text-white' 
-        : 'bg-white/80 border-[#E5E7EB] text-gray-900'
-    } backdrop-blur-md`}>
+    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b-2 border-[#111111] bg-[#F6F2EA] px-4 md:px-6 select-none">
       
       {/* Left items: Mobile trigger & Branded Breadcrumbs */}
       <div className="flex items-center gap-3">
         <button
           onClick={() => setIsOpenMobile(true)}
-          className={`flex h-9 w-9 items-center justify-center rounded-lg border md:hidden focus:outline-none hover:opacity-85 ${
-            theme === 'dark' ? 'bg-[#121318] border-neutral-800' : 'bg-white border-gray-200'
-          }`}
+          className="flex h-9 w-9 items-center justify-center rounded-[6px] border-2 border-[#111111] bg-white text-[#111111] shadow-paper-sm md:hidden focus:outline-none hover:bg-[#FFC400]"
+          aria-label="Open navigation drawer"
         >
-          <Menu className="h-4.5 w-4.5 text-current" />
+          <Menu className="h-4 w-4" />
         </button>
         
-        <div className="hidden sm:block">
-          {getBreadcrumbs()}
-        </div>
-        <div className="block sm:hidden font-sans font-extrabold text-sm tracking-tight">
-          {getPageTitle()}
+        <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#666666]">
+          <span 
+            className="bg-[#111111] text-white px-2 py-0.5 rounded-[4px] cursor-pointer hover:bg-[#FFC400] hover:text-[#111111] transition-colors"
+            onClick={() => setActivePage('dashboard')}
+          >
+            NOTEIT
+          </span>
+          <ChevronRight className="h-3.5 w-3.5 text-[#111111]" />
+          <span className="bg-[#FFC400] text-[#111111] px-2.5 py-0.5 rounded-[4px] font-bold border-2 border-[#111111] shadow-paper-sm uppercase tracking-wider">
+            {getPageTitle()}
+          </span>
         </div>
       </div>
 
       {/* Center Search Input */}
-      <div className="hidden md:flex flex-1 max-w-sm mx-6">
+      <div className="hidden md:flex flex-1 max-w-sm mx-6 relative">
         <div className="relative w-full">
-          <Search className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[#666666]" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search notes, summaries, transcripts..."
-            className={`w-full rounded-xl pl-10 pr-4 py-2.5 text-xs font-semibold outline-none transition-all ${
-              theme === 'dark'
-                ? 'bg-[#121318] text-white border border-neutral-800 placeholder-neutral-500 focus:border-indigo-500'
-                : 'bg-gray-50 text-gray-900 border border-gray-200 placeholder-gray-400 focus:border-black'
-            }`}
+            className="w-full rounded-[6px] border-2 border-[#111111] bg-white pl-9 pr-14 py-1.5 text-xs font-medium text-[#111111] shadow-paper-sm placeholder:text-[#888888] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FFC400]"
           />
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 bg-[#F6F2EA] px-1.5 py-0.5 rounded-[3px] border border-[#111111] text-[10px] font-mono font-bold text-[#666666]">
+            <span>⌘</span>
+            <span>K</span>
+          </div>
         </div>
       </div>
 
       {/* Right widgets: Quick triggers, actions, profiles */}
       <div className="flex items-center gap-2.5 relative">
         
-        {/* Pro Badge */}
+        {/* Pro Badge / Trigger */}
         {settings.subscription.planName === 'BYOK' ? (
-          <button
+          <Button
+            variant="primary"
+            size="sm"
             onClick={() => setActivePage('pricing')}
-            className="hidden lg:flex items-center gap-1.5 rounded-xl bg-indigo-50 border border-indigo-100 dark:bg-indigo-950/20 dark:border-indigo-900/30 px-4 py-2.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100/50 focus:outline-none cursor-pointer"
+            className="hidden lg:inline-flex"
+            icon={<Sparkles className="h-3.5 w-3.5 text-[#FFC400]" />}
           >
-            <Sparkles className="h-3.5 w-3.5 text-indigo-500" />
-            <span>Unleash Pro Tiers</span>
-          </button>
+            Unleash Pro
+          </Button>
         ) : (
-          <span className="hidden lg:inline-flex items-center gap-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/15 px-3 py-1.5 text-xs font-bold text-indigo-400">
-            <Sparkles className="h-3.5 w-3.5 text-indigo-400 fill-indigo-400" />
-            <span>Premium Active</span>
-          </span>
+          <Badge variant="yellow" size="md" icon={<Sparkles className="h-3.5 w-3.5" />}>
+            Pro Active
+          </Badge>
         )}
 
         {/* Short-path Actions */}
         {onNewAnalysis && (
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => setActivePage('lecture-capture')}
-            className={`hidden sm:flex items-center gap-1.5 rounded-xl border px-3.5 py-2.5 text-xs font-bold transition-colors focus:outline-none cursor-pointer ${
-              theme === 'dark' 
-                ? 'border-neutral-800 bg-[#121318] hover:bg-neutral-800' 
-                : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-700'
-            }`}
+            className="hidden sm:inline-flex"
+            icon={<Plus className="h-4 w-4" />}
           >
-            <Plus className="h-4 w-4 text-gray-500" />
-            <span>Capture Lecture</span>
-          </button>
+            Capture
+          </Button>
         )}
 
         {/* Activity Center indicator */}
         <button
           onClick={() => handleDropdownOption('notifications')}
-          className={`relative flex h-9 w-9 items-center justify-center rounded-xl focus:outline-none hover:bg-gray-50/10 ${
-            theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'
-          }`}
+          className="relative flex h-9 w-9 items-center justify-center rounded-[6px] border-2 border-[#111111] bg-white shadow-paper-sm text-[#111111] hover:bg-[#FFF8D6] focus:outline-none"
           title="Activity Center"
         >
-          <Bell className="h-4.5 w-4.5" />
-          <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 shadow-sm animate-pulse" />
+          <Bell className="h-4 w-4" />
+          <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-[#FF4D4D] border border-[#111111]" />
         </button>
 
-        {/* Brightness switcher */}
-        <button
-          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          className={`flex h-9 w-9 items-center justify-center rounded-xl focus:outline-none hover:bg-gray-50/10 ${
-            theme === 'dark' ? 'text-amber-400' : 'text-gray-500'
-          }`}
-          title={theme === 'dark' ? 'Activate Light Mode' : 'Activate Dark Mode'}
-        >
-          {theme === 'dark' ? <Sun className="h-4.5 w-4.5" /> : <Moon className="h-4.5 w-4.5" />}
-        </button>
+        <div className="h-6 w-[2px] bg-[#111111] mx-1 hidden sm:block" />
 
-        <div className={`h-6 w-[1.5px] mx-1 md:block hidden ${theme === 'dark' ? 'bg-[#1a1b24]' : 'bg-[#E5E7EB]'}`} />
-
-        {/* User avatar - Click avatar opens premium menu dropdown */}
+        {/* User avatar - Dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-1.5 rounded-full hover:opacity-85 focus:outline-none cursor-pointer"
+            className="flex items-center gap-1.5 focus:outline-none cursor-pointer"
           >
             {settings.profile.avatarUrl ? (
               <img
                 src={settings.profile.avatarUrl}
                 alt={settings.profile.fullName}
-                className="h-9 w-9 rounded-full border border-indigo-500 object-cover"
+                className="h-9 w-9 rounded-[6px] border-2 border-[#111111] shadow-paper-sm object-cover"
               />
             ) : (
-              <div className="h-9 w-9 rounded-full border border-indigo-500 bg-gray-100 dark:bg-neutral-800 flex items-center justify-center text-gray-400 dark:text-neutral-500">
-                <User className="h-4.5 w-4.5" />
+              <div className="h-9 w-9 rounded-[6px] border-2 border-[#111111] shadow-paper-sm bg-[#FFC400] flex items-center justify-center font-bold text-xs text-[#111111] uppercase">
+                {settings.profile.fullName ? settings.profile.fullName.charAt(0) : 'U'}
               </div>
             )}
           </button>
 
-          {/* Premium Avatar dropdown panel */}
+          {/* Avatar dropdown panel */}
           {dropdownOpen && (
-            <div className={`absolute right-0 mt-3.5 w-64 rounded-2xl border p-4 shadow-2xl space-y-4 animate-fade-in ${
-              theme === 'dark' 
-                ? 'bg-[#0f1015]/95 border-neutral-800 text-white shadow-[#000]/60' 
-                : 'bg-white border-gray-200 text-gray-900'
-            }`}>
+            <div className="absolute right-0 mt-3 w-64 rounded-[8px] border-2 border-[#111111] bg-white p-4 shadow-paper-lg space-y-3 z-50">
               {/* Dropdown Header Info */}
-              <div className="flex items-center gap-3 pb-3 border-b border-neutral-800/10 dark:border-neutral-800/40">
+              <div className="flex items-center gap-3 pb-3 border-b-2 border-[#111111]">
                 {settings.profile.avatarUrl ? (
                   <img
                     src={settings.profile.avatarUrl}
                     alt={settings.profile.fullName}
-                    className="h-10 w-10 rounded-full border border-gray-200 object-cover"
+                    className="h-10 w-10 rounded-[6px] border-2 border-[#111111] object-cover"
                   />
                 ) : (
-                  <div className="h-10 w-10 rounded-full border border-gray-200 bg-gray-100 dark:bg-neutral-800 flex items-center justify-center text-gray-400 dark:text-neutral-500">
-                    <User className="h-5 w-5" />
+                  <div className="h-10 w-10 rounded-[6px] border-2 border-[#111111] bg-[#FFC400] flex items-center justify-center font-bold text-sm text-[#111111] uppercase">
+                    {settings.profile.fullName ? settings.profile.fullName.charAt(0) : 'U'}
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-bold truncate">{settings.profile.fullName}</div>
-                  <div className="text-[10px] uppercase font-bold tracking-widest text-[#2563EB] dark:text-indigo-400 mt-0.5 truncate">
-                    {settings.profile.role}
+                  <div className="text-sm font-heading font-bold text-[#111111] truncate">{settings.profile.fullName}</div>
+                  <div className="text-[10px] font-mono font-bold uppercase text-[#666666] truncate mt-0.5">
+                    {settings.profile.role || 'Academic Scholar'}
                   </div>
                 </div>
               </div>
 
-              {/* Items List Mapping */}
-              <div className="space-y-1.5">
-                
-                {/* Profile Option */}
+              {/* Items List */}
+              <div className="space-y-1 font-mono text-xs text-[#111111]">
                 <button
                   onClick={() => handleDropdownOption('profile')}
-                  className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-xs font-semibold text-left transition-colors focus:outline-none hover:bg-gray-100 dark:hover:bg-neutral-800 cursor-pointer"
+                  className="flex w-full items-center gap-2.5 rounded-[4px] px-2.5 py-2 font-bold text-left text-[#111111] hover:bg-[#FFC400] transition-colors cursor-pointer"
                 >
-                  <User className="h-4.5 w-4.5 text-neutral-400" />
-                  <span>My Academic Profile</span>
+                  <User className="h-4 w-4 text-[#111111] shrink-0" />
+                  <span className="text-[#111111]">Academic Profile</span>
                 </button>
 
-                {/* Account settings Option */}
                 <button
                   onClick={() => handleDropdownOption('settings')}
-                  className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-xs font-semibold text-left transition-colors focus:outline-none hover:bg-gray-100 dark:hover:bg-neutral-800 cursor-pointer"
+                  className="flex w-full items-center gap-2.5 rounded-[4px] px-2.5 py-2 font-bold text-left text-[#111111] hover:bg-[#FFC400] transition-colors cursor-pointer"
                 >
-                  <Settings className="h-4.5 w-4.5 text-neutral-400" />
-                  <span>Account Settings</span>
+                  <Settings className="h-4 w-4 text-[#111111] shrink-0" />
+                  <span className="text-[#111111]">Account Settings</span>
                 </button>
 
-                {/* Billing options Option */}
                 <button
                   onClick={() => handleDropdownOption('pricing')}
-                  className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-xs font-semibold text-left transition-colors focus:outline-none hover:bg-gray-100 dark:hover:bg-neutral-800 cursor-pointer"
+                  className="flex w-full items-center gap-2.5 rounded-[4px] px-2.5 py-2 font-bold text-left text-[#111111] hover:bg-[#FFC400] transition-colors cursor-pointer"
                 >
-                  <CreditCard className="h-4.5 w-4.5 text-neutral-400" />
-                  <span>Billing & Subscription</span>
+                  <CreditCard className="h-4 w-4 text-[#111111] shrink-0" />
+                  <span className="text-[#111111]">Subscription Plans</span>
                 </button>
 
-                {/* Help support Option */}
                 <button
                   onClick={() => handleDropdownOption('help-support')}
-                  className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-xs font-semibold text-left transition-colors focus:outline-none hover:bg-gray-100 dark:hover:bg-neutral-800 cursor-pointer"
+                  className="flex w-full items-center gap-2.5 rounded-[4px] px-2.5 py-2 font-bold text-left text-[#111111] hover:bg-[#FFC400] transition-colors cursor-pointer"
                 >
-                  <HelpCircle className="h-4.5 w-4.5 text-neutral-400" />
-                  <span>Help & Documentation</span>
+                  <HelpCircle className="h-4 w-4 text-[#111111] shrink-0" />
+                  <span className="text-[#111111]">Documentation</span>
                 </button>
               </div>
 
-              {/* Theme toggle segment inside popover */}
-              <div className="flex items-center justify-between p-2.5.5 rounded-xl bg-gray-50 dark:bg-neutral-900 border border-neutral-800/5 dark:border-neutral-800">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Appearance Theme</span>
-                <div className="flex gap-1">
-                  <button 
-                    onClick={() => setTheme('light')}
-                    className={`p-1.5 rounded-md focus:outline-none ${
-                      theme === 'light' ? 'bg-white ring-1 ring-gray-200 text-amber-500 font-bold' : 'text-gray-400'
-                    }`}
-                    title="Light"
-                  >
-                    <Sun className="h-3.5 w-3.5" />
-                  </button>
-                  <button 
-                    onClick={() => setTheme('dark')}
-                    className={`p-1.5 rounded-md focus:outline-none ${
-                      theme === 'dark' ? 'bg-neutral-800 ring-1 ring-neutral-700 text-indigo-400 font-bold' : 'text-gray-400'
-                    }`}
-                    title="Dark"
-                  >
-                    <Moon className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Secure Log out */}
-              <div className="pt-2 border-t border-neutral-800/15 dark:border-neutral-800">
+              {/* Log out button */}
+              <div className="pt-2 border-t-2 border-[#111111]">
                 <button
                   onClick={() => {
                     setDropdownOpen(false);
                     onLogOut();
                   }}
-                  className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-xs font-bold text-left text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors focus:outline-none cursor-pointer"
+                  className="flex w-full items-center gap-2.5 rounded-[4px] px-2.5 py-2 font-bold text-left text-white bg-[#FF4D4D] border-2 border-[#111111] shadow-paper-sm hover:bg-[#ff6666] transition-colors font-mono text-xs uppercase"
                 >
-                  <LogOut className="h-4.5 w-4.5" />
-                  <span>Log Out Securely</span>
+                  <LogOut className="h-4 w-4" />
+                  <span>Log Out</span>
                 </button>
               </div>
 

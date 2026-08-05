@@ -89,19 +89,35 @@ function encryptKey(text: string): string {
 }
 
 function decryptKey(encryptedText: string): string {
+  if (!encryptedText || typeof encryptedText !== 'string') {
+    throw new Error('No API key string provided');
+  }
+
+  // If the string does not contain colons (not formatted as iv:authTag:encrypted),
+  // it is an unencrypted plain API key string. Return it directly!
   const parts = encryptedText.split(':');
   if (parts.length !== 3) {
-    throw new Error('Invalid encrypted format');
+    return encryptedText;
   }
-  const iv = Buffer.from(parts[0], 'hex');
-  const authTag = Buffer.from(parts[1], 'hex');
-  const encrypted = parts[2];
-  const key = crypto.scryptSync(ENCRYPTION_SECRET, 'noteit-salt', 32);
-  const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
-  decipher.setAuthTag(authTag);
-  let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-  decrypted += decipher.final('utf8');
-  return decrypted;
+
+  try {
+    const iv = Buffer.from(parts[0], 'hex');
+    const authTag = Buffer.from(parts[1], 'hex');
+    const encrypted = parts[2];
+    const key = crypto.scryptSync(ENCRYPTION_SECRET, 'noteit-salt', 32);
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+    decipher.setAuthTag(authTag);
+    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+  } catch (err) {
+    console.warn('[DECRYPT] Decryption failed, using raw string fallback:', err);
+    // If decryption fails, check if input string looks like a valid unencrypted key
+    if (encryptedText.length > 10) {
+      return encryptedText;
+    }
+    throw new Error('Decryption of AI API key failed');
+  }
 }
 
 // AI Provider Abstraction endpoints
@@ -187,7 +203,7 @@ app.post('/api/ai/provider-proxy', authenticateFirebaseUser, async (req, res) =>
       const migrationFields = {
         aiProvider: provToMigrate,
         providerConfigured: true,
-        encryptedApiKey: keyToMigrate,
+        encryptedApiKey: encryptKey(keyToMigrate),
         selectedModel: modelToMigrate,
         providerLastValidated: data.geminiLastValidated || new Date(),
         estimatedMonthlyTokens: 0,
@@ -199,27 +215,22 @@ app.post('/api/ai/provider-proxy', authenticateFirebaseUser, async (req, res) =>
       data = { ...data, ...migrationFields };
     }
 
-    if (!data || !data.providerConfigured) {
-      res.status(400).json({ error: 'AI provider is not configured. Please enter an API key.' });
+    const rawKey = data?.encryptedApiKey || data?.geminiApiKey || data?.openaiApiKey || process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+
+    if (!rawKey) {
+      res.status(400).json({ error: 'AI provider is not configured. Please enter an API key in Settings.' });
       return;
     }
 
-    const providerName = data.aiProvider || 'gemini';
-    const encryptedKey = data.encryptedApiKey;
-    const selectedModel = model || data.selectedModel || ProviderFactory.getAvailableModels(providerName)[0];
-
-    if (!encryptedKey) {
-      res.status(400).json({ error: `API key for provider ${providerName} is not configured.` });
-      return;
-    }
+    const providerName = data?.aiProvider || 'gemini';
+    const selectedModel = model || data?.selectedModel || ProviderFactory.getAvailableModels(providerName)[0];
 
     let decryptedKey: string;
     try {
-      decryptedKey = decryptKey(encryptedKey);
+      decryptedKey = decryptKey(rawKey);
     } catch (decryptErr) {
-      console.error('Decryption failed for uid:', uid, decryptErr);
-      res.status(400).json({ error: 'Decryption of AI API key failed. Please update your key in Settings.' });
-      return;
+      console.warn('Decryption error in provider-proxy, using raw key fallback:', decryptErr);
+      decryptedKey = rawKey;
     }
 
     const providerInstance = ProviderFactory.getProvider(providerName, decryptedKey);
@@ -479,9 +490,304 @@ app.delete('/api/ai/config', authenticateFirebaseUser, async (req, res) => {
   }
 });
 
+// Helper function to chunk long transcripts and prevent 413 Payload Too Large errors
+function chunkTranscriptText(text: string, chunkSize = 9000, overlap = 500): string[] {
+  if (text.length <= chunkSize) {
+    return [text];
+  }
+  const chunks: string[] = [];
+  let startIndex = 0;
+  while (startIndex < text.length) {
+    let endIndex = startIndex + chunkSize;
+    if (endIndex < text.length) {
+      const lastSpace = text.lastIndexOf(' ', endIndex);
+      if (lastSpace > startIndex + chunkSize / 2) {
+        endIndex = lastSpace;
+      }
+    }
+    chunks.push(text.slice(startIndex, endIndex));
+    startIndex = endIndex - overlap;
+  }
+  return chunks;
+}
+
+// Dedicated endpoint to generate / retry AI academic resources from existing transcript
+app.post(['/api/lectures/:lectureId/generate-resources', '/api/lectures/generate-resources'], authenticateFirebaseUser, async (req, res) => {
+  const user = req.body.user;
+  const uid = user.uid;
+  const lectureId = req.params.lectureId || req.body.lectureId;
+  const { options } = req.body;
+  const mode = options?.mode || 'academic';
+  const modeType = options?.modeType || 'missing'; // 'missing' or 'all'
+
+  if (!lectureId) {
+    res.status(400).json({ error: 'Missing required parameter: lectureId' });
+    return;
+  }
+
+  const adminDb = getFirestore();
+  const lectureRef = adminDb.collection('users').doc(uid).collection('lectures').doc(lectureId);
+  const userDocRef = adminDb.collection('users').doc(uid);
+
+  let userData: any = null;
+
+  try {
+    const lectureSnap = await lectureRef.get();
+    if (!lectureSnap.exists) {
+      res.status(404).json({ error: 'Lecture document not found.' });
+      return;
+    }
+
+    const lectureData = lectureSnap.data() || {};
+    const transcriptText = lectureData.cleanTranscript || lectureData.transcript || '';
+
+    if (!transcriptText || transcriptText.trim().length === 0) {
+      res.status(400).json({ error: 'Transcript is not available. Please transcribe the lecture first.' });
+      return;
+    }
+
+    // Set resource generation status to processing
+    await lectureRef.set({
+      resourceGenerationStatus: 'processing',
+      resourceGenerationError: null,
+      updatedAt: new Date()
+    }, { merge: true });
+
+    // Fetch user AI provider config
+    const userDoc = await userDocRef.get();
+    userData = userDoc.exists ? userDoc.data() : null;
+
+    const rawKey = userData?.encryptedApiKey || userData?.geminiApiKey || userData?.openaiApiKey || process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+
+    if (!rawKey) {
+      const errMsg = 'AI provider API key is not configured. Please configure an API key in Settings.';
+      await lectureRef.set({
+        resourceGenerationStatus: 'failed',
+        resourceGenerationError: {
+          code: '400',
+          message: errMsg,
+          provider: userData?.aiProvider || 'none',
+          timestamp: new Date()
+        },
+        updatedAt: new Date()
+      }, { merge: true });
+
+      res.status(400).json({ error: errMsg });
+      return;
+    }
+
+    const providerName = userData?.aiProvider || 'gemini';
+    const selectedModel = options?.model || userData?.selectedModel || ProviderFactory.getAvailableModels(providerName)[0];
+
+    let decryptedKey: string;
+    try {
+      decryptedKey = decryptKey(rawKey);
+    } catch (decryptErr) {
+      console.warn('Decryption error in generate-resources, using raw key fallback:', decryptErr);
+      decryptedKey = rawKey;
+    }
+
+    const providerInstance = ProviderFactory.getProvider(providerName, decryptedKey);
+
+    // Chunking logic for large transcripts
+    let sourceText = transcriptText;
+    if (transcriptText.length > 12000) {
+      console.log(`[CHUNK] Transcript length (${transcriptText.length} chars) exceeds threshold. Chunking...`);
+      const chunks = chunkTranscriptText(transcriptText, 9000, 500);
+      const chunkSummaries: string[] = [];
+      for (let i = 0; i < chunks.length; i++) {
+        const chunkPrompt = `Summarize the following lecture section (Chunk ${i + 1} of ${chunks.length}) in detailed academic bullet points:\n\n${chunks[i]}`;
+        try {
+          const chunkRes = await providerInstance.generateText(chunkPrompt, selectedModel);
+          chunkSummaries.push(`--- Chunk ${i + 1} ---\n${chunkRes}`);
+        } catch (cErr) {
+          console.warn(`[CHUNK] Failed to process chunk ${i + 1}, using fallback snippet:`, cErr);
+          chunkSummaries.push(`--- Chunk ${i + 1} ---\n${chunks[i].substring(0, 3000)}`);
+        }
+      }
+      sourceText = chunkSummaries.join('\n\n');
+    }
+
+    // Check existing resources if modeType === 'missing'
+    const needsSummary = modeType === 'all' || !lectureData.summary;
+    const needsNotes = modeType === 'all' || !lectureData.notes || (Array.isArray(lectureData.notes) && lectureData.notes.length === 0);
+    const needsFlashcards = modeType === 'all' || !lectureData.flashcards || lectureData.flashcards.length === 0;
+    const needsQuiz = modeType === 'all' || !lectureData.quiz || lectureData.quiz.length === 0;
+    const needsKeyConcepts = modeType === 'all' || !lectureData.keyConcepts || lectureData.keyConcepts.length === 0;
+    const needsWeakTopics = modeType === 'all' || !lectureData.weakTopics || lectureData.weakTopics.length === 0;
+    const needsTimeline = modeType === 'all' || !lectureData.timeline || lectureData.timeline.length === 0;
+    const needsSourceIntelligence = modeType === 'all' || !lectureData.sourceIntelligence;
+
+    const prompt = `
+      You are an expert academic tutor. Generate premium study resources for the provided lecture content.
+      Active Mode: ${mode}
+      
+      Content to process:
+      ${sourceText}
+
+      Return a JSON object matching the requested schema.
+    `;
+
+    const schema = {
+      type: 'OBJECT',
+      properties: {
+        summary: { type: 'STRING' },
+        notes: {
+          type: 'ARRAY',
+          items: {
+            type: 'OBJECT',
+            properties: {
+              title: { type: 'STRING' },
+              content: { type: 'STRING' }
+            },
+            required: ['title', 'content']
+          }
+        },
+        flashcards: {
+          type: 'ARRAY',
+          items: {
+            type: 'OBJECT',
+            properties: {
+              q: { type: 'STRING' },
+              a: { type: 'STRING' },
+              category: { type: 'STRING' }
+            },
+            required: ['q', 'a']
+          }
+        },
+        quiz: {
+          type: 'ARRAY',
+          items: {
+            type: 'OBJECT',
+            properties: {
+              question: { type: 'STRING' },
+              options: { type: 'ARRAY', items: { type: 'STRING' } },
+              correctAnswer: { type: 'INTEGER' },
+              explanation: { type: 'STRING' },
+              sourceCitation: { type: 'STRING' }
+            },
+            required: ['question', 'options', 'correctAnswer', 'explanation', 'sourceCitation']
+          }
+        },
+        keyConcepts: {
+          type: 'ARRAY',
+          items: {
+            type: 'OBJECT',
+            properties: {
+              id: { type: 'STRING' },
+              label: { type: 'STRING' },
+              desc: { type: 'STRING' },
+              parent: { type: 'STRING' },
+              x: { type: 'INTEGER' },
+              y: { type: 'INTEGER' },
+              group: { type: 'STRING' },
+              examples: { type: 'STRING' },
+              formula: { type: 'STRING' },
+              applications: { type: 'STRING' }
+            },
+            required: ['id', 'label', 'desc', 'x', 'y', 'group']
+          }
+        },
+        weakTopics: {
+          type: 'ARRAY',
+          items: {
+            type: 'OBJECT',
+            properties: {
+              topicName: { type: 'STRING' },
+              subject: { type: 'STRING' },
+              aiDiagnosis: { type: 'STRING' },
+              actionPlan: { type: 'ARRAY', items: { type: 'STRING' } }
+            },
+            required: ['topicName', 'subject', 'aiDiagnosis', 'actionPlan']
+          }
+        },
+        timeline: {
+          type: 'ARRAY',
+          items: {
+            type: 'OBJECT',
+            properties: {
+              time: { type: 'STRING' },
+              title: { type: 'STRING' },
+              description: { type: 'STRING' }
+            },
+            required: ['time', 'title', 'description']
+          }
+        },
+        sourceIntelligence: {
+          type: 'OBJECT',
+          properties: {
+            keyPeople: { type: 'ARRAY', items: { type: 'STRING' } },
+            keyTerms: { type: 'ARRAY', items: { type: 'STRING' } },
+            formulas: { type: 'ARRAY', items: { type: 'STRING' } },
+            dates: { type: 'ARRAY', items: { type: 'STRING' } },
+            statistics: { type: 'ARRAY', items: { type: 'STRING' } },
+            references: { type: 'ARRAY', items: { type: 'STRING' } }
+          },
+          required: ['keyPeople', 'keyTerms', 'formulas', 'dates', 'statistics', 'references']
+        }
+      },
+      required: ['summary', 'notes', 'flashcards', 'quiz', 'keyConcepts', 'weakTopics', 'timeline', 'sourceIntelligence']
+    };
+
+    const generated = await providerInstance.generateStructuredOutput(prompt, schema, selectedModel);
+
+    const updatedFields: any = {
+      resourceGenerationStatus: 'completed',
+      resourceGenerationError: null,
+      status: 'generated',
+      lastGenerationProvider: providerName,
+      lastGenerationModel: selectedModel,
+      lastGeneratedAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    if (needsSummary && generated.summary) updatedFields.summary = generated.summary;
+    if (needsNotes && generated.notes) updatedFields.notes = generated.notes;
+    if (needsFlashcards && generated.flashcards) updatedFields.flashcards = generated.flashcards;
+    if (needsQuiz && generated.quiz) updatedFields.quiz = generated.quiz;
+    if (needsKeyConcepts && generated.keyConcepts) updatedFields.keyConcepts = generated.keyConcepts;
+    if (needsWeakTopics && generated.weakTopics) updatedFields.weakTopics = generated.weakTopics;
+    if (needsTimeline && generated.timeline) updatedFields.timeline = generated.timeline;
+    if (needsSourceIntelligence && generated.sourceIntelligence) updatedFields.sourceIntelligence = generated.sourceIntelligence;
+
+    await lectureRef.set(updatedFields, { merge: true });
+
+    res.json({
+      success: true,
+      lectureId,
+      resources: updatedFields
+    });
+  } catch (error: any) {
+    console.error('[GENERATE-RESOURCES] Error generating resources:', error);
+    const status = error.status || (error.message?.includes('429') ? 429 : error.message?.includes('503') ? 503 : 500);
+    const message = error.message || 'AI resource generation failed.';
+    const provider = userData?.aiProvider || 'unknown';
+
+    try {
+      await lectureRef.set({
+        resourceGenerationStatus: 'failed',
+        resourceGenerationError: {
+          code: String(status),
+          message,
+          provider,
+          timestamp: new Date()
+        },
+        updatedAt: new Date()
+      }, { merge: true });
+    } catch (dbErr) {
+      console.error('[GENERATE-RESOURCES] Failed to update error status in Firestore:', dbErr);
+    }
+
+    res.status(status).json({
+      error: message,
+      code: String(status),
+      provider
+    });
+  }
+});
+
 // Health check endpoint for Render monitoring
 app.get('/api/health', (req, res) => {
-
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 

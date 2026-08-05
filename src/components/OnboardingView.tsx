@@ -352,71 +352,39 @@ export default function OnboardingView({
   const isDark = theme === 'dark';
 
   return (
-    <div className={`relative min-h-screen flex items-center justify-center overflow-hidden font-sans ${
-      isDark ? 'bg-[#0a0a0c] text-white' : 'bg-[#FAF9F5] text-gray-900'
-    }`}>
+    <div className="min-h-screen w-screen flex items-center justify-center p-4 relative overflow-y-auto font-sans bg-grid-paper text-[#111111] select-none">
       
-      {/* Floating particles background */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30">
-        {particles.map((p) => (
-          <div
-            key={p.id}
-            style={{
-              position: 'absolute',
-              left: `${p.x}%`,
-              top: `${p.y}%`,
-              width: `${p.s}px`,
-              height: `${p.s}px`,
-              animation: `float ${p.d}s infinite ease-in-out`
-            }}
-            className={`rounded-full ${
-              isDark ? 'bg-indigo-500/40' : 'bg-indigo-600/20'
-            }`}
-          />
-        ))}
-
-        {/* Ambient colored glowing clouds */}
-        <div className={`absolute top-[-20%] left-[-10%] w-[60vw] h-[60vw] rounded-full blur-[140px] pointer-events-none ${
-          isDark ? 'bg-indigo-950/20' : 'bg-indigo-100/30'
-        }`} />
-        <div className={`absolute bottom-[-20%] right-[-10%] w-[50vw] h-[50vw] rounded-full blur-[130px] pointer-events-none ${
-          isDark ? 'bg-purple-950/25' : 'bg-purple-100/25'
-        }`} />
-      </div>
-
       <div className="w-full max-w-md p-6 relative z-10">
-        <header className="text-center mb-8 space-y-3 animate-fade-in">
-          <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-black text-white dark:bg-white dark:text-black shadow-lg">
-            <GraduationCap className="h-6 w-6 text-indigo-500 animate-pulse" />
+        <header className="text-center mb-8 space-y-3">
+          <div className="inline-flex h-12 w-12 items-center justify-center rounded-[6px] bg-[#FFC400] text-[#111111] border-2 border-[#111111] shadow-paper-sm">
+            <GraduationCap className="h-6 w-6 text-[#111111]" />
           </div>
           <div>
-            <h2 className="text-2xl font-black tracking-tight font-sans text-gray-900 dark:text-white">
-              Welcome to NoteIT AI
+            <h2 className="text-2xl font-heading font-extrabold tracking-tight uppercase text-[#111111]">
+              WELCOME TO NOTEIT AI
             </h2>
-            <p className="text-xs text-gray-500 dark:text-neutral-400 mt-1.5 leading-relaxed max-w-xs mx-auto">
-              Let's set up your learning workspace in a few simple steps.
+            <p className="text-xs font-mono text-[#666666] mt-1.5 leading-relaxed max-w-xs mx-auto">
+              Let's set up your cognitive scholar workspace in a few simple steps.
             </p>
           </div>
         </header>
 
         {/* Main Card */}
-        <div className={`rounded-2xl border p-6 md:p-8 space-y-6 shadow-xl transition-all animate-fade-in ${
-          isDark ? 'bg-[#121318]/90 border-neutral-800' : 'bg-white border-gray-200'
-        }`}>
+        <div className="rounded-[6px] border-2 border-[#111111] bg-white p-6 md:p-8 space-y-6 shadow-paper-lg">
           {/* Step Progress Indicator */}
           <div className="flex items-center justify-between mb-6">
             {[1, 2, 3, 4].map((s) => (
               <div key={s} className="flex items-center flex-1 last:flex-none">
-                <div className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-black transition-all ${
+                <div className={`h-8 w-8 rounded-[4px] flex items-center justify-center font-mono text-xs font-bold border-2 border-[#111111] transition-all ${
                   step >= s 
-                    ? 'bg-indigo-600 text-white shadow-md' 
-                    : isDark ? 'bg-neutral-800 text-neutral-500 border border-neutral-700' : 'bg-gray-100 text-neutral-500 border border-gray-200'
+                    ? 'bg-[#FFC400] text-[#111111] shadow-paper-sm' 
+                    : 'bg-[#F6F2EA] text-[#666666]'
                 }`}>
                   {s}
                 </div>
                 {s < 4 && (
-                  <div className={`h-0.5 flex-1 mx-2 rounded-full transition-all ${
-                    step > s ? 'bg-indigo-500' : isDark ? 'bg-neutral-800' : 'bg-gray-200'
+                  <div className={`h-1 flex-1 mx-2 transition-all border-y border-[#111111] ${
+                    step > s ? 'bg-[#111111]' : 'bg-[#E0E0E0]'
                   }`} />
                 )}
               </div>

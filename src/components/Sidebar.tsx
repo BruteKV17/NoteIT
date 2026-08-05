@@ -10,7 +10,6 @@ import {
   Settings, 
   Bell, 
   GraduationCap,
-  Sparkles,
   BookMarked,
   X,
   Mic,
@@ -22,6 +21,7 @@ import {
 } from 'lucide-react';
 import { PageId, UserSettings } from '../types';
 import AILogo from './AILogo';
+import { SidebarItem, Button, Badge } from './bauhaus';
 
 interface SidebarProps {
   activePage: PageId;
@@ -70,163 +70,118 @@ export default function Sidebar({
   const isPro = settings.subscription.planName !== 'BYOK';
 
   const sidebarContent = (
-    <div className={`flex h-full flex-col select-none transition-all duration-300 ${
-      theme === 'dark' 
-        ? 'bg-[#0e0f14] text-neutral-300 border-r border-[#1a1b24]' 
-        : 'bg-white text-gray-700 border-r border-[#E5E7EB]'
-    } ${isCollapsed ? 'w-20' : 'w-[260px] lg:w-[280px]'}`}>
+    <div className={`flex h-full flex-col select-none transition-all duration-200 bg-[#F6F2EA] text-[#111111] border-r-2 border-[#111111] ${
+      isCollapsed ? 'w-20' : 'w-[260px] lg:w-[280px]'
+    }`}>
       
       {/* Brand area */}
-      <div className={`flex h-16 items-center justify-between px-4 border-b ${
-        theme === 'dark' ? 'border-[#1a1b24]' : 'border-[#F3F4F6]'
+      <div className={`flex h-16 items-center border-b-2 border-[#111111] bg-white ${
+        isCollapsed ? 'justify-center px-1 gap-1' : 'justify-between px-4'
       }`}>
         <div 
-          className="flex items-center gap-2.5 cursor-pointer overflow-hidden truncate"
+          className="flex items-center gap-2 cursor-pointer overflow-hidden truncate"
           onClick={() => handleNavClick('landing')}
         >
-          <AILogo size={38} theme={theme} />
+          <div className="p-1 rounded-[6px] bg-[#FFC400] border-2 border-[#111111] shadow-paper-sm shrink-0">
+            <AILogo size={26} theme="light" />
+          </div>
           
           {!isCollapsed && (
-            <div className="animate-fade-in">
-              <div className="font-sans font-black text-sm tracking-tight text-gray-900 dark:text-neutral-50 flex items-center gap-1">
-                NoteIT
-                <span className="rounded bg-indigo-500/10 px-1.5 py-0.5 text-[8.5px] font-bold text-indigo-400 font-mono">
+            <div className="flex flex-col">
+              <div className="font-heading font-bold text-base tracking-tight text-[#111111] flex items-center gap-1.5">
+                NOTEIT
+                <span className="rounded-[3px] bg-[#FFC400] px-1 py-0.2 text-[9px] font-bold text-[#111111] border border-[#111111] font-mono">
                   v1.5
                 </span>
               </div>
-              <div className="text-[10px] font-bold uppercase tracking-widest text-[#2563EB] dark:text-indigo-400">
+              <div className="text-[9px] font-bold uppercase tracking-[2px] text-[#666666] font-mono">
                 COGNITIVE LAB
               </div>
             </div>
           )}
         </div>
 
-        {/* Mobile close trigger or Collapse toggle */}
+        {/* Mobile close trigger */}
         <button 
           onClick={() => setIsOpenMobile(false)}
-          className="md:hidden flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-400 focus:outline-none"
+          className="md:hidden flex h-8 w-8 items-center justify-center rounded-[6px] border-2 border-[#111111] bg-white text-[#111111] shadow-paper-sm hover:bg-[#FFC400]"
+          aria-label="Close menu"
         >
-          <X className="h-5 w-5" />
+          <X className="h-4 w-4" />
         </button>
 
         {/* Desktop Collapse Trigger */}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className={`hidden md:flex h-7 w-7 items-center justify-center rounded-lg border focus:outline-none hover:opacity-85 ${
-            theme === 'dark' 
-              ? 'bg-[#121318] border-neutral-800 hover:bg-[#1a1b24]' 
-              : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-          }`}
+          className="hidden md:flex h-7 w-7 items-center justify-center rounded-[6px] border-2 border-[#111111] bg-white text-[#111111] shadow-paper-sm hover:bg-[#FFC400] focus:outline-none shrink-0"
           title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
         >
           {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </button>
       </div>
 
-      {/* Primary Capture Sync Trigger */}
+      {/* Primary Capture Live Trigger */}
       {!isCollapsed && onNewAnalysis && (
-        <div className={`px-4 py-4 border-b ${theme === 'dark' ? 'border-[#1a1b24]' : 'border-[#F3F4F6]'}`}>
-          <button
+        <div className="px-4 py-3 border-b-2 border-[#111111]">
+          <Button
+            variant="secondary"
+            size="md"
+            fullWidth
             onClick={() => handleNavClick('lecture-capture')}
-            className={`flex w-full items-center justify-center gap-2 rounded-xl py-3 px-4 font-sans text-xs font-bold text-white transition-all transform active:scale-[0.98] shadow-md focus:outline-none cursor-pointer ${
-              theme === 'dark' 
-                ? 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-950/20' 
-                : 'bg-black hover:bg-neutral-800'
-            }`}
+            icon={<Mic className="h-4 w-4 animate-pulse text-[#FF4D4D]" />}
           >
-            <Mic className="h-4 w-4 animate-pulse text-indigo-300" />
-            <span className="animate-fade-in">Capture Live Course</span>
-          </button>
+            Capture Live Course
+          </Button>
         </div>
       )}
 
       {/* Navigation Groups */}
-      <div className="flex-1 overflow-y-auto py-5 px-3 space-y-6">
+      <div className="flex-1 overflow-y-auto py-4 px-3 space-y-6">
         
         {/* GROUP 1: WORKSPACE */}
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           {!isCollapsed && (
-            <div className="px-3.5 mb-2 text-[10px] font-black uppercase tracking-widest text-[#2563EB] dark:text-indigo-400 font-mono">
-              Workspace
+            <div className="px-3 mb-1.5 section-label text-[10px] font-bold uppercase tracking-[3px] text-[#666666]">
+              WORKSPACE
             </div>
           )}
           {workspaceItems.map((item) => {
             const IconComponent = item.icon;
             const isActive = activePage === item.id;
             return (
-              <button
+              <SidebarItem
                 key={item.id}
+                icon={<IconComponent className="w-4 h-4" />}
+                label={item.label}
+                badge={item.badge}
+                active={isActive}
+                collapsed={isCollapsed}
                 onClick={() => handleNavClick(item.id as PageId)}
-                title={isCollapsed ? item.label : undefined}
-                className={`flex w-full items-center rounded-xl p-2.5 font-sans text-[13.5px] font-medium transition-all focus:outline-none cursor-pointer ${
-                  isActive
-                    ? theme === 'dark'
-                      ? 'bg-indigo-500/10 text-white font-semibold border-l-2 border-indigo-500 pl-2'
-                      : 'bg-gray-100 text-gray-900 font-bold border-l-2 border-black pl-2'
-                    : theme === 'dark'
-                      ? 'text-neutral-400 hover:bg-[#1a1b24]/40 hover:text-white'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                } ${isCollapsed ? 'justify-center px-0' : 'gap-3'}`}
-              >
-                <IconComponent className={`h-4.5 w-4.5 flex-shrink-0 ${
-                  isActive 
-                    ? theme === 'dark' ? 'text-indigo-400' : 'text-black' 
-                    : theme === 'dark' ? 'text-neutral-500' : 'text-gray-400'
-                }`} />
-                
-                {!isCollapsed && (
-                  <span className="flex-1 text-left truncate animate-fade-in">{item.label}</span>
-                )}
-
-                {item.badge && !isCollapsed && (
-                  <span className="rounded bg-red-500 text-white font-sans text-[8px] font-bold px-1 py-0.5 tracking-wide uppercase scale-95 animate-pulse">
-                    {item.badge}
-                  </span>
-                )}
-              </button>
+              />
             );
           })}
         </div>
 
         {/* GROUP 2: ACCOUNT */}
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           {!isCollapsed && (
-            <div className="px-3.5 mb-2 text-[10px] font-black uppercase tracking-widest text-[#2563EB] dark:text-indigo-400 font-mono">
-              Account
+            <div className="px-3 mb-1.5 section-label text-[10px] font-bold uppercase tracking-[3px] text-[#666666]">
+              ACCOUNT
             </div>
           )}
           {accountItems.map((item) => {
             const IconComponent = item.icon;
             const isActive = activePage === item.id;
             return (
-              <button
+              <SidebarItem
                 key={item.id}
+                icon={<IconComponent className="w-4 h-4" />}
+                label={item.label}
+                hasNotificationDot={item.indicator}
+                active={isActive}
+                collapsed={isCollapsed}
                 onClick={() => handleNavClick(item.id as PageId)}
-                title={isCollapsed ? item.label : undefined}
-                className={`flex w-full items-center rounded-xl p-2.5 font-sans text-[13.5px] font-medium transition-all focus:outline-none cursor-pointer ${
-                  isActive
-                    ? theme === 'dark'
-                      ? 'bg-indigo-500/10 text-white font-semibold border-l-2 border-indigo-500 pl-2'
-                      : 'bg-gray-100 text-gray-900 font-bold border-l-2 border-black pl-2'
-                    : theme === 'dark'
-                      ? 'text-neutral-400 hover:bg-[#1a1b24]/40 hover:text-white'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                } ${isCollapsed ? 'justify-center px-0' : 'gap-3'}`}
-              >
-                <IconComponent className={`h-4.5 w-4.5 flex-shrink-0 ${
-                  isActive 
-                    ? theme === 'dark' ? 'text-indigo-400' : 'text-black' 
-                    : 'text-gray-400'
-                }`} />
-                
-                {!isCollapsed && (
-                  <span className="flex-1 text-left truncate animate-fade-in">{item.label}</span>
-                )}
-
-                {item.indicator && (
-                  <span className="inline-flex h-2 w-2 items-center justify-center rounded-full bg-red-500 relative flex-shrink-0" />
-                )}
-              </button>
+              />
             );
           })}
         </div>
@@ -235,78 +190,68 @@ export default function Sidebar({
 
       {/* Subscription premium Tier banner */}
       {!isCollapsed && (
-        <div className={`px-4 py-4 border-t ${theme === 'dark' ? 'border-[#1a1b24]' : 'border-[#F3F4F6]'} bg-gray-50/10`}>
-          <div className={`rounded-xl border p-3.5 shadow-sm space-y-3 ${
-            theme === 'dark' ? 'bg-[#121318]/90 border-neutral-800' : 'bg-white border-gray-200'
-          }`}>
-            <div className="flex items-start gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#EFF6FF] dark:bg-indigo-950/40 text-[#2563EB] dark:text-indigo-400">
-                <Sparkles className="h-4.5 w-4.5 animate-pulse" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-xs font-bold text-gray-900 dark:text-neutral-50 truncate">
-                  Note-IT {settings.subscription.planName} Plan
-                </div>
-                <div className="text-[10px] text-gray-400 mt-0.5 leading-tight">
-                  {isPro ? 'Direct API Key Mode' : 'Bring Your Own Key Mode'}
-                </div>
-              </div>
-            </div>
-            
-            <button
-              onClick={() => handleNavClick('pricing')}
-              className={`flex w-full items-center justify-center gap-1.5 rounded-lg border py-2 text-center text-xs font-semibold focus:outline-none cursor-pointer ${
-                theme === 'dark' 
-                  ? 'border-neutral-800 hover:bg-[#1a1b24] text-neutral-300' 
-                  : 'border-gray-200 hover:bg-gray-50 text-gray-700'
-              }`}
-            >
-              <span>{isPro ? 'Upgrade SaaS Plan' : 'Unleash Pro Tiers'}</span>
-              <ExternalLink className="h-3 w-3" />
-            </button>
+        <div className="px-3 py-3 border-t-2 border-[#111111] bg-white m-3 rounded-[6px] shadow-paper-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="w-2 h-2 rounded-full bg-[#FFC400] border border-[#111111]" />
+            <span className="font-heading text-xs font-bold text-[#111111] uppercase tracking-tight truncate">
+              Note-IT {settings.subscription.planName} Plan
+            </span>
           </div>
+          <p className="text-[10px] text-[#666666] font-mono mb-2">
+            {isPro ? 'Direct API Key Mode' : 'Bring Your Own Key Mode'}
+          </p>
+          <Button
+            variant="tertiary"
+            size="sm"
+            fullWidth
+            onClick={() => handleNavClick('pricing')}
+            icon={<ExternalLink className="h-3 w-3" />}
+            iconPosition="right"
+          >
+            {isPro ? 'Upgrade SaaS Plan' : 'Unleash Pro Tiers'}
+          </Button>
         </div>
       )}
 
-      {/* Bottom Profile Identity card in the footer */}
-      <div className={`border-t p-4 ${theme === 'dark' ? 'border-[#1a1b24]' : 'border-[#F3F4F6]'}`}>
-        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
-          <button 
+      {/* Bottom Profile Identity card */}
+      <div className="border-t-2 border-[#111111] p-3 bg-white">
+        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
+          <div 
+            className="flex items-center gap-2 cursor-pointer min-w-0"
             onClick={() => handleNavClick('profile')}
-            className="flex-shrink-0 focus:outline-none"
             title="Update Profile"
           >
             {settings.profile.avatarUrl ? (
               <img
                 src={settings.profile.avatarUrl}
                 alt={settings.profile.fullName}
-                className="h-10 w-10 rounded-full border border-gray-200 dark:border-neutral-800 object-cover"
+                className="h-8 w-8 rounded-[4px] border-2 border-[#111111] object-cover shrink-0"
               />
             ) : (
-              <div className="h-10 w-10 rounded-full border border-gray-200 dark:border-neutral-800 bg-gray-100 dark:bg-neutral-800 flex items-center justify-center text-gray-400 dark:text-neutral-500">
-                <User className="h-5 w-5" />
+              <div className="h-8 w-8 rounded-[4px] border-2 border-[#111111] bg-[#FFC400] flex items-center justify-center font-bold text-xs text-[#111111] shrink-0">
+                {settings.profile.fullName ? settings.profile.fullName.charAt(0).toUpperCase() : 'U'}
               </div>
             )}
-          </button>
 
-          {!isCollapsed && (
-            <div className="flex-1 min-w-0 animate-fade-in" onClick={() => handleNavClick('profile')}>
-              <div className="text-sm font-bold text-gray-900 dark:text-neutral-50 truncate cursor-pointer hover:underline">
-                {settings.profile.fullName}
+            {!isCollapsed && (
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-bold text-[#111111] truncate font-heading uppercase">
+                  {settings.profile.fullName || 'Academic Scholar'}
+                </div>
+                <div className="text-[10px] font-mono text-[#666666] truncate" title={settings.profile.emailAddress}>
+                  {settings.profile.emailAddress}
+                </div>
               </div>
-              <div className="text-[10px] font-medium text-gray-400 truncate mt-0.5" title={settings.profile.emailAddress}>
-                {settings.profile.emailAddress}
-              </div>
-            </div>
-          )}
+            )}
+          </div>
 
           {!isCollapsed && (
             <button
               onClick={onLogOut}
               title="Secure Logout"
-              className="text-gray-400 hover:text-red-500 p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-neutral-800 transition-colors focus:outline-none cursor-pointer"
+              className="p-1.5 rounded-[4px] border-2 border-[#111111] bg-[#F6F2EA] text-[#111111] hover:bg-[#FF4D4D] hover:text-white transition-colors"
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="h-3.5 w-3.5" />
             </button>
           )}
         </div>
@@ -318,23 +263,23 @@ export default function Sidebar({
   return (
     <>
       {/* Desktop & Tablet Sidebar Frame */}
-      <aside className={`hidden md:block h-screen sticky top-0 flex-shrink-0 z-30 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-[260px] lg:w-[280px]'}`}>
+      <aside className={`hidden md:block h-screen sticky top-0 shrink-0 z-30 transition-all duration-200 ${isCollapsed ? 'w-20' : 'w-[260px] lg:w-[280px]'}`}>
         {sidebarContent}
       </aside>
 
       {/* Mobile Drawer Navigation overlay */}
       <div 
-        className={`fixed inset-0 z-50 md:hidden transition-opacity duration-300 ${
+        className={`fixed inset-0 z-50 md:hidden transition-opacity duration-200 ${
           isOpenMobile ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
       >
         <div 
           onClick={() => setIsOpenMobile(false)}
-          className="absolute inset-0 bg-[#0a0a0c]/60 backdrop-blur-xs" 
+          className="absolute inset-0 bg-[#111111]/70 backdrop-blur-[2px]" 
         />
         
         <div 
-          className={`absolute inset-y-0 left-0 w-[270px] max-w-xs transition-transform duration-300 ease-out transform ${
+          className={`absolute inset-y-0 left-0 w-[270px] max-w-xs transition-transform duration-200 ease-out transform ${
             isOpenMobile ? 'translate-x-0' : '-translate-x-full'
           }`}
         >

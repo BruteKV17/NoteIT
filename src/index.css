@@ -1,73 +1,140 @@
 @import "tailwindcss";
 
-@keyframes space-twinkle {
-  0%, 100% { opacity: 0.15; transform: scale(0.8); }
-  50% { opacity: 1; transform: scale(1.25); }
+@layer base {
+  :root {
+    --bg-paper: #F6F2EA;
+    --text-primary: #111111;
+    --text-secondary: #666666;
+    --border-main: #111111;
+    --border-subtle: #1D1D1D;
+    --accent-yellow: #FFC400;
+    --accent-red: #FF4D4D;
+    --accent-blue: #2F6BFF;
+    --accent-green: #19B56B;
+    --card-bg: #FFFFFF;
+    --hover-bg: #FFF8D6;
+  }
+
+  body {
+    background-color: #F6F2EA;
+    color: #111111;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6, .font-heading {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    letter-spacing: -0.02em;
+  }
+
+  code, kbd, samp, pre, .font-mono {
+    font-family: 'IBM Plex Mono', monospace;
+  }
 }
 
-@keyframes space-float {
-  0% { transform: translate3d(0, 0, 0); opacity: 0.3; }
-  50% { transform: translate3d(25px, -20px, 0); opacity: 0.8; }
-  100% { transform: translate3d(0, 0, 0); opacity: 0.3; }
+/* Bauhaus Grid Paper Background Pattern */
+.bg-grid-paper {
+  background-color: #F6F2EA;
+  background-image: 
+    linear-gradient(to right, rgba(17, 17, 17, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(17, 17, 17, 0.05) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
-@keyframes star-drift-left {
-  0% { transform: translate3d(180px, -60px, 0); opacity: 0; }
-  15% { opacity: 0.6; }
-  85% { opacity: 0.6; }
-  100% { transform: translate3d(-180px, 60px, 0); opacity: 0; }
+.bg-grid-paper-dense {
+  background-color: #F6F2EA;
+  background-image: 
+    linear-gradient(to right, rgba(17, 17, 17, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(17, 17, 17, 0.06) 1px, transparent 1px);
+  background-size: 16px 16px;
 }
 
-@keyframes shooting-star {
-  0% { transform: translate3d(0, 0, 0) rotate(-40deg) scaleX(0); opacity: 0; }
-  8% { opacity: 1; transform: translate3d(-40px, 30px, 0) rotate(-40deg) scaleX(1); }
-  20% { transform: translate3d(-250px, 190px, 0) rotate(-40deg) scaleX(1); opacity: 0; }
-  100% { transform: translate3d(-250px, 190px, 0) rotate(-40deg) scaleX(0); opacity: 0; }
+/* Hard Solid Offset Shadows */
+.shadow-paper-sm {
+  box-shadow: 2px 2px 0px #111111;
 }
 
-@keyframes space-drift-slow {
-  0% { transform: translate3d(0px, 0px, 0) rotate(0deg) scale(1); }
-  50% { transform: translate3d(40px, -20px, 0) rotate(180deg) scale(1.08); }
-  100% { transform: translate3d(0px, 0px, 0) rotate(360deg) scale(1); }
+.shadow-paper {
+  box-shadow: 3px 3px 0px #111111;
 }
 
-@keyframes space-drift-medium {
-  0% { transform: translate3d(0px, 0px, 0) scale(1) rotate(0deg); }
-  50% { transform: translate3d(-30px, 35px, 0) scale(1.15) rotate(180deg); }
-  100% { transform: translate3d(0px, 0px, 0) scale(1) rotate(360deg); }
+.shadow-paper-md {
+  box-shadow: 4px 4px 0px #111111;
 }
 
-@keyframes space-drift-fast {
-  0% { transform: translate3d(0px, 0px, 0) rotate(0deg); }
-  50% { transform: translate3d(25px, 25px, 0) rotate(-180deg); }
-  100% { transform: translate3d(0px, 0px, 0) rotate(-360deg); }
+.shadow-paper-lg {
+  box-shadow: 6px 6px 0px #111111;
 }
 
-.animate-space-twinkle {
-  animation: space-twinkle 4.5s infinite ease-in-out;
+.shadow-paper-yellow {
+  box-shadow: 4px 4px 0px #FFC400;
 }
 
-.animate-space-float {
-  animation: space-float 9s infinite ease-in-out;
+.shadow-paper-red {
+  box-shadow: 4px 4px 0px #FF4D4D;
 }
 
-.animate-star-drift {
-  animation: star-drift-left 14s infinite linear;
+.shadow-paper-blue {
+  box-shadow: 4px 4px 0px #2F6BFF;
 }
 
-.animate-shooting-star {
-  animation: shooting-star 8s infinite ease-in-out;
+/* Hover Translate and Active State */
+.interactive-hover {
+  transition: transform 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+}
+.interactive-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 5px 5px 0px #111111;
+}
+.interactive-hover:active {
+  transform: translateY(0px);
+  box-shadow: 2px 2px 0px #111111;
 }
 
-.animate-space-drift-slow {
-  animation: space-drift-slow 40s infinite linear;
+/* Focus outline for accessibility */
+.focus-paper {
+  outline: none;
+}
+.focus-paper:focus-visible {
+  outline: 2px solid #FFC400;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px #111111;
 }
 
-.animate-space-drift-medium {
-  animation: space-drift-medium 28s infinite ease-in-out;
+/* Custom Bauhaus Industrial Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #F6F2EA;
+  border-left: 1px solid #111111;
+}
+::-webkit-scrollbar-thumb {
+  background: #111111;
+  border-radius: 0px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #FFC400;
 }
 
-.animate-space-drift-fast {
-  animation: space-drift-fast 20s infinite linear;
+/* Section label tracking */
+.section-label {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  font-size: 11px;
 }
 
+/* Custom pulse animations for studio activity */
+@keyframes studio-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.animate-studio-pulse {
+  animation: studio-pulse 1.5s ease-in-out infinite;
+}

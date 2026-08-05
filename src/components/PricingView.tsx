@@ -7,15 +7,13 @@ import React, { useState } from 'react';
 import { 
   Check, 
   Sparkles, 
-  HelpCircle, 
-  AlertCircle, 
   CheckCircle,
   Building,
-  GraduationCap,
-  Bookmark
+  GraduationCap
 } from 'lucide-react';
 import { PageId, UserSettings } from '../types';
 import { PRICING_PLANS } from '../data';
+import { Button, Card, Badge } from './bauhaus';
 
 interface PricingViewProps {
   settings: UserSettings;
@@ -29,7 +27,6 @@ export default function PricingView({
   setActivePage
 }: PricingViewProps) {
   
-  // Billing cycle state
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [upgradedPlanName, setUpgradedPlanName] = useState<string | null>(null);
 
@@ -37,9 +34,8 @@ export default function PricingView({
     if (planName === 'BYOK') return '₹0';
     if (planName === 'Institution') return 'Custom';
     
-    // Premium Plan details
     if (billingCycle === 'yearly') {
-      return '₹320'; // 20% discount on yearly
+      return '₹320';
     }
     return '₹400';
   };
@@ -61,39 +57,39 @@ export default function PricingView({
   };
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto pb-16">
+    <div className="space-y-8 max-w-6xl mx-auto pb-16 bg-grid-paper p-4 md:p-8 select-none">
       
-      {/* Dynamic Selector Header */}
+      {/* Header section */}
       <div className="text-center space-y-4 max-w-2xl mx-auto">
-        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-gray-700 tracking-wider font-mono">
-          CHOOSE COGNITIVE TIERS
-        </span>
-        <h2 className="font-sans font-bold text-2.5xl md:text-4xl text-gray-900 tracking-tight leading-tighter">
-          Elevate Your Academic Intelligence
+        <Badge variant="yellow" size="md">
+          COGNITIVE TIERS
+        </Badge>
+        <h2 className="font-heading font-extrabold text-2xl md:text-4xl text-[#111111] uppercase tracking-tight">
+          ELEVATE YOUR ACADEMIC INTELLIGENCE
         </h2>
-        <p className="text-sm font-medium text-gray-500 max-w-lg mx-auto">
-          Scale your lecture outlines, citation catalogs, and active retention quizzes with advanced LLM analysis models.
+        <p className="text-xs md:text-sm font-mono text-[#666666] max-w-lg mx-auto">
+          Scale your lecture outlines, citation catalogs, and active retention quizzes with advanced LLM models.
         </p>
 
-        {/* Sync Duration billing switcher */}
+        {/* Billing cycle switcher */}
         <div className="pt-2">
-          <div className="inline-flex items-center gap-1 bg-gray-100 p-1.5 rounded-xl border border-gray-200">
+          <div className="inline-flex items-center gap-1 bg-white p-1.5 rounded-[6px] border-2 border-[#111111] shadow-paper-sm">
             <button
               onClick={() => setBillingCycle('monthly')}
-              className={`px-4 py-2 font-sans text-xs font-bold rounded-lg transition-all focus:outline-none ${
-                billingCycle === 'monthly' ? 'bg-white text-black shadow-xs' : 'text-gray-500 hover:text-gray-900'
+              className={`px-4 py-2 font-mono text-xs font-bold uppercase rounded-[4px] transition-colors cursor-pointer ${
+                billingCycle === 'monthly' ? 'bg-[#FFC400] text-[#111111] border-2 border-[#111111] shadow-paper-sm' : 'text-[#666666] hover:text-[#111111]'
               }`}
             >
               Monthly billing
             </button>
             <button
               onClick={() => setBillingCycle('yearly')}
-              className={`px-4 py-2 font-sans text-xs font-bold rounded-lg relative flex items-center gap-1.5 transition-all focus:outline-none ${
-                billingCycle === 'yearly' ? 'bg-white text-black shadow-xs' : 'text-gray-500 hover:text-gray-900'
+              className={`px-4 py-2 font-mono text-xs font-bold uppercase rounded-[4px] relative flex items-center gap-1.5 transition-colors cursor-pointer ${
+                billingCycle === 'yearly' ? 'bg-[#FFC400] text-[#111111] border-2 border-[#111111] shadow-paper-sm' : 'text-[#666666] hover:text-[#111111]'
               }`}
             >
               <span>Yearly billing</span>
-              <span className="rounded bg-sky-500 text-white font-bold text-[9px] px-1.5 py-0.5 tracking-wide scale-95 uppercase">
+              <span className="rounded bg-[#2F6BFF] text-white font-mono font-bold text-[9px] px-1.5 py-0.5 uppercase border border-[#111111]">
                 -20%
               </span>
             </button>
@@ -102,11 +98,11 @@ export default function PricingView({
       </div>
 
       {upgradedPlanName && (
-        <div className="max-w-md mx-auto rounded-2xl bg-emerald-50 border border-emerald-100 p-5 text-center space-y-2 animate-bounce">
-          <CheckCircle className="h-8 w-8 text-emerald-600 mx-auto" />
-          <h4 className="text-sm font-bold text-emerald-800">Checkout Completed Successfully!</h4>
-          <p className="text-xs text-emerald-700 leading-normal">
-            Your Note-IT AI student workspace has been successfully upgraded to the <strong className="font-bold">{upgradedPlanName}</strong> plan. Recalibrating dashboard limits...
+        <div className="max-w-md mx-auto rounded-[6px] bg-[#19B56B]/15 border-2 border-[#111111] p-4 text-center space-y-2 shadow-paper-md">
+          <CheckCircle className="h-8 w-8 text-[#19B56B] mx-auto" />
+          <h4 className="text-xs font-heading font-extrabold uppercase text-[#111111]">Plan Upgrade Successful!</h4>
+          <p className="text-xs font-mono text-[#666666]">
+            Your workspace has been upgraded to <strong className="text-[#111111]">{upgradedPlanName}</strong>. Recalibrating dashboard limits...
           </p>
         </div>
       )}
@@ -119,46 +115,45 @@ export default function PricingView({
           const isProPopular = plan.name === 'Premium';
 
           return (
-            <div 
+            <Card 
               key={plan.name}
-              className={`rounded-2xl p-6.5 flex flex-col justify-between border relative transition-all tracking-normal ${
+              shadow="lg"
+              className={`p-6 flex flex-col justify-between border-2 border-[#111111] relative transition-all ${
                 isProPopular 
-                  ? 'bg-[#121318] text-white border-neutral-800 shadow-xl scale-102 z-10' 
-                  : 'bg-white text-gray-900 border-gray-200'
+                  ? 'bg-[#FFC400] text-[#111111] shadow-paper-lg md:-translate-y-2' 
+                  : 'bg-white text-[#111111]'
               }`}
             >
               {isProPopular && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-indigo-600 text-white text-[10px] font-bold px-3 py-1 uppercase tracking-widest shadow-sm">
+                <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-[4px] bg-[#111111] text-white text-[9px] font-mono font-bold px-3 py-1 uppercase tracking-widest border border-[#111111] shadow-paper-sm">
                   MOST POPULAR WORKSPACE
                 </span>
               )}
 
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className={`text-[10px] font-bold tracking-widest font-mono uppercase ${
-                    isProPopular ? 'text-indigo-400' : 'text-gray-400'
-                  }`}>
+                  <span className="text-[10px] font-bold tracking-widest font-mono uppercase text-[#666666]">
                     {plan.tierLabel}
                   </span>
                   {isActive && (
-                    <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[9px] font-bold text-emerald-500 uppercase tracking-wider">
+                    <Badge variant="blue" size="sm">
                       Current Tier
-                    </span>
+                    </Badge>
                   )}
                 </div>
 
                 <div>
-                  <h3 className="font-sans font-bold text-lg">{plan.name} Plan</h3>
-                  <p className={`text-xs mt-1 leading-normal ${isProPopular ? 'text-neutral-400' : 'text-gray-500'}`}>
+                  <h3 className="font-heading font-extrabold text-xl uppercase text-[#111111]">{plan.name} Plan</h3>
+                  <p className="text-xs font-mono text-[#666666] mt-1">
                     {plan.tagline}
                   </p>
                 </div>
 
                 <div className="flex items-baseline gap-1 pt-2">
-                  <span className="text-4xl font-extrabold font-mono tracking-tight">{displayPrice}</span>
+                  <span className="text-4xl font-extrabold font-mono text-[#111111]">{displayPrice}</span>
                   {plan.period !== 'forever' && plan.period !== 'enterprise' && (
-                    <span className={`text-xs font-medium ${isProPopular ? 'text-neutral-400' : 'text-gray-400'}`}>
-                      / {billingCycle === 'yearly' ? 'mo, billed anchor' : 'month'}
+                    <span className="text-xs font-mono font-bold text-[#666666]">
+                      / {billingCycle === 'yearly' ? 'month (billed yearly)' : 'month'}
                     </span>
                   )}
                 </div>
@@ -166,21 +161,21 @@ export default function PricingView({
                 <div className="pt-2">
                   <button
                     onClick={() => handleUpgradeSimulated(plan.name, displayPrice)}
-                    disabled={plan.name === 'Premium' || (isActive && plan.name !== 'Institution')}
-                    className={`w-full py-3.5 px-4 font-sans text-xs font-bold rounded-xl transition-all active:scale-98 focus:outline-none ${
-                      plan.name === 'Premium'
-                        ? 'bg-neutral-800 text-neutral-500 cursor-not-allowed border border-neutral-700/50'
+                    disabled={plan.name === 'Institution' || isActive}
+                    className={`w-full py-3 px-4 font-mono text-xs font-bold uppercase rounded-[6px] border-2 border-[#111111] shadow-paper-sm transition-all ${
+                      plan.name === 'Institution'
+                        ? 'bg-gray-200 text-[#666666] cursor-not-allowed border-dashed'
                         : isProPopular
                           ? isActive 
-                            ? 'bg-neutral-800 text-neutral-400 cursor-pointer' 
-                            : 'bg-white text-black hover:bg-neutral-100 cursor-pointer'
+                            ? 'bg-white text-[#111111] cursor-default' 
+                            : 'bg-[#111111] text-white hover:bg-[#222222] cursor-pointer'
                           : isActive
-                            ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-default'
-                            : 'bg-black text-white hover:bg-gray-800 cursor-pointer'
+                            ? 'bg-[#F6F2EA] text-[#666666] cursor-default'
+                            : 'bg-[#FFC400] text-[#111111] hover:bg-[#ffe066] cursor-pointer'
                     }`}
                   >
-                    {plan.name === 'Premium' 
-                      ? 'Coming Soon (Gateway Pending)' 
+                    {plan.name === 'Institution' 
+                      ? '🔒 UNDER DEVELOPMENT' 
                       : isActive 
                         ? 'Current Active Tier' 
                         : plan.ctaText}
@@ -188,28 +183,24 @@ export default function PricingView({
                 </div>
               </div>
 
-              {/* Feature checkboxes block list */}
-              <div className="border-t border-neutral-700/30 pt-6 mt-6 space-y-3 flex-1">
-                <span className={`text-[10px] font-bold uppercase tracking-wider block ${
-                  isProPopular ? 'text-neutral-400' : 'text-gray-400'
-                }`}>
-                  Core benefits included:
+              {/* Feature list */}
+              <div className="border-t-2 border-[#111111] pt-6 mt-6 space-y-3 flex-1">
+                <span className="section-label text-[10px] font-bold uppercase tracking-[2px] text-[#666666] block">
+                  CORE BENEFITS INCLUDED:
                 </span>
-                <div className="grid gap-3.5">
+                <div className="grid gap-3">
                   {plan.features.map((feature, idx) => (
-                    <div key={idx} className="flex items-start gap-2 text-xs font-sans font-medium line-clamp-2">
-                      <div className="rounded-full bg-emerald-500/10 text-emerald-500 h-4 w-4 flex items-center justify-center p-0.5 flex-shrink-0 mt-0.5">
-                        <Check className="h-2.5 w-2.5" />
+                    <div key={idx} className="flex items-start gap-2 text-xs font-mono text-[#111111]">
+                      <div className="rounded-[3px] bg-[#19B56B] text-white h-4 w-4 flex items-center justify-center shrink-0 mt-0.5 border border-[#111111]">
+                        <Check className="h-3 w-3 stroke-[3]" />
                       </div>
-                      <span className={isProPopular ? 'text-neutral-300' : 'text-gray-600'}>
-                        {feature}
-                      </span>
+                      <span>{feature}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-            </div>
+            </Card>
           );
         })}
       </div>

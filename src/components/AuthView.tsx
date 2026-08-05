@@ -3,14 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   signInWithPopup, 
   GoogleAuthProvider, 
   GithubAuthProvider,
-  OAuthProvider,
   sendPasswordResetEmail,
   updateProfile 
 } from 'firebase/auth';
@@ -26,13 +25,11 @@ import {
   EyeOff, 
   CheckCircle,
   AlertCircle,
-  Send,
-  RefreshCw,
-  Linkedin,
-  Github
+  Github,
+  ArrowLeft
 } from 'lucide-react';
-import { motion } from 'motion/react';
 import AILogo from './AILogo';
+import { Button, Card, Badge, Input } from './bauhaus';
 
 interface AuthViewProps {
   onLoginSuccess: (userData: { fullName: string; emailAddress: string }) => void;
@@ -53,29 +50,12 @@ export default function AuthView({
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [otp, setOtp] = useState(['', '', '', '', '', '']); // 6-digit OTP
   const [showPassword, setShowPassword] = useState(false);
-  const [degree, setDegree] = useState('B.S. Computer Science');
   
   // Status states
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-
-  // Background particles for a premium linear/perplexity style
-  const [particles, setParticles] = useState<{ id: number; x: number; y: number; s: number; d: number }[]>([]);
-
-  useEffect(() => {
-    // Generate some elegant floating background dots
-    const items = Array.from({ length: 25 }).map((_, i) => ({
-      id: i,
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      s: Math.random() * 3 + 1,
-      d: Math.random() * 15 + 10
-    }));
-    setParticles(items);
-  }, []);
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,7 +72,7 @@ export default function AuthView({
         }
         
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        setSuccessMsg('Core token validated! Connecting to research sandbox...');
+        setSuccessMsg('Token validated! Connecting to research workspace...');
         setTimeout(() => {
           onLoginSuccess({
             fullName: userCredential.user.displayName || email.split('@')[0],
@@ -152,14 +132,14 @@ export default function AuthView({
   };
 
   const handleGoogleSignIn = async () => {
-    setLoading(true);
     setError(null);
+    setLoading(true);
     try {
       const provider = new GoogleAuthProvider();
       const userCredential = await signInWithPopup(auth, provider);
       onLoginSuccess({
-        fullName: userCredential.user.displayName || 'Google Scholar',
-        emailAddress: userCredential.user.email || 'google.scholar@gmail.com'
+        fullName: userCredential.user.displayName || 'Google User',
+        emailAddress: userCredential.user.email || ''
       });
     } catch (err: any) {
       console.error(err);
@@ -170,14 +150,14 @@ export default function AuthView({
   };
 
   const handleGithubSignIn = async () => {
-    setLoading(true);
     setError(null);
+    setLoading(true);
     try {
       const provider = new GithubAuthProvider();
       const userCredential = await signInWithPopup(auth, provider);
       onLoginSuccess({
-        fullName: userCredential.user.displayName || 'GitHub Scholar',
-        emailAddress: userCredential.user.email || 'github.scholar@gmail.com'
+        fullName: userCredential.user.displayName || 'GitHub User',
+        emailAddress: userCredential.user.email || ''
       });
     } catch (err: any) {
       console.error(err);
@@ -187,466 +167,244 @@ export default function AuthView({
     }
   };
 
-  const handleLinkedinSignIn = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const provider = new OAuthProvider('linkedin.com');
-      const userCredential = await signInWithPopup(auth, provider);
-      onLoginSuccess({
-        fullName: userCredential.user.displayName || 'LinkedIn Scholar',
-        emailAddress: userCredential.user.email || 'linkedin.scholar@gmail.com'
-      });
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || 'LinkedIn Sign-In failed.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleOtpChange = (index: number, val: string) => {
-    if (isNaN(Number(val))) return;
-    const cleanVal = val.slice(-1);
-    const nextOtp = [...otp];
-    nextOtp[index] = cleanVal;
-    setOtp(nextOtp);
-
-    // Auto focus next input
-    if (cleanVal !== '' && index < 5) {
-      const nextInput = document.getElementById(`otp-${index + 1}`);
-      nextInput?.focus();
-    }
-  };
-
-  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace' && otp[index] === '' && index > 0) {
-      const prevInput = document.getElementById(`otp-${index - 1}`);
-      prevInput?.focus();
-    }
-  };
-
   return (
-    <div className={`min-h-screen w-screen flex flex-col md:flex-row overflow-hidden font-sans ${
-      theme === 'dark' ? 'bg-[#0a0a0c] text-white' : 'bg-[#FAF9F5] text-gray-900'
-    }`}>
+    <div className="min-h-screen w-screen flex flex-col md:flex-row overflow-hidden font-sans bg-grid-paper select-none text-[#111111]">
       
       {/* LEFT COLUMN: Product Branding & Showcase */}
-      <div className={`hidden md:flex md:w-1/2 flex-col justify-between p-12 relative overflow-hidden border-r ${
-        theme === 'dark' ? 'border-neutral-900 bg-neutral-950/20' : 'border-gray-200 bg-gray-50/20'
-      }`}>
-        {/* Ambient background particles */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30">
-          {particles.map((p) => (
-            <div
-              key={p.id}
-              style={{
-                position: 'absolute',
-                left: `${p.x}%`,
-                top: `${p.y}%`,
-                width: `${p.s}px`,
-                height: `${p.s}px`,
-                animation: `float ${p.d}s infinite ease-in-out`
-              }}
-              className={`rounded-full ${
-                theme === 'dark' ? 'bg-indigo-500/40' : 'bg-indigo-600/20'
-              }`}
-            />
-          ))}
-          <div className={`absolute top-[-20%] left-[-10%] w-[40vw] h-[40vw] rounded-full blur-[120px] pointer-events-none ${
-            theme === 'dark' ? 'bg-indigo-950/20' : 'bg-indigo-100/30'
-          }`} />
-        </div>
-
+      <div className="hidden md:flex md:w-1/2 flex-col justify-between p-12 relative border-r-2 border-[#111111] bg-white">
+        
         {/* Brand Header */}
         <div 
-          className="flex items-center gap-2 cursor-pointer relative z-10"
+          className="flex items-center gap-3 cursor-pointer"
           onClick={onNavigateToLanding}
         >
-          <AILogo size={38} showText={true} theme={theme} />
-        </div>
-
-        {/* Tagline & Copy */}
-        <div className="space-y-6 my-auto max-w-lg relative z-10 text-left">
-          <h1 className="text-4xl font-sans font-black tracking-tight leading-[1.1]">
-            AI That Thinks <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#5F6DF8] to-[#2563EB] italic font-serif py-1 font-medium select-text">
-              While You Learn
-            </span>
-          </h1>
-          <p className="text-sm font-semibold leading-relaxed text-gray-500 dark:text-neutral-400">
-            NoteIT AI captures lectures, extracts structural text, generates dynamic notes, flashcards, interactive quizzes, and designs beautiful presentation slides in one unified workspace.
-          </p>
-
-          {/* Premium Preview Dashboard Card */}
-          <div className={`rounded-2xl border p-5.5 space-y-4 shadow-xl ${
-            theme === 'dark' ? 'bg-[#121318]/70 border-neutral-800' : 'bg-white border-gray-200'
-          }`}>
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 font-mono">
-                Speaker 1 • Active Synthesis
-              </span>
-              <span className="rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2.5 py-0.5 text-[9px] font-bold">
-                COMPLETED
-              </span>
-            </div>
-            
-            <p className="text-xs font-serif italic text-gray-500 leading-relaxed">
-              "Gradient descent scaling parameters decrease exponentially when optimization adaptive weights are scaled with moving averages of gradients..."
-            </p>
-
-            <div className="flex flex-wrap gap-1.5 pt-1">
-              <span className="rounded bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-500/10 px-2.5 py-0.5 text-[9px] font-semibold">
-                Adam Optimizer
-              </span>
-              <span className="rounded bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 text-gray-600 dark:text-neutral-400 px-2.5 py-0.5 text-[9px] font-semibold">
-                Gradient Descent
-              </span>
-            </div>
+          <div className="p-1 rounded-[6px] bg-[#FFC400] border-2 border-[#111111] shadow-paper-sm">
+            <AILogo size={32} theme="light" />
+          </div>
+          <div>
+            <div className="font-heading font-extrabold text-lg text-[#111111] tracking-tight">NOTEIT AI</div>
+            <div className="text-[10px] font-mono font-bold text-[#666666] uppercase tracking-[2px]">SCHOLAR WORKSPACE</div>
           </div>
         </div>
 
+        {/* Tagline & Showcase Card */}
+        <div className="space-y-6 my-auto max-w-lg text-left">
+          <Badge variant="yellow" size="md">
+            COGNITIVE AI PLATFORM
+          </Badge>
+          <h1 className="text-4xl font-heading font-extrabold tracking-tight uppercase leading-tight text-[#111111]">
+            AI THAT THINKS <br />
+            <span className="bg-[#FFC400] px-2 py-0.5 border-2 border-[#111111] inline-block shadow-paper-sm mt-1">
+              WHILE YOU LEARN
+            </span>
+          </h1>
+          <p className="text-sm font-mono text-[#666666] leading-relaxed border-l-4 border-[#111111] pl-3 py-1">
+            NoteIT AI captures lectures, extracts structural text, generates dynamic notes, flashcards, interactive quizzes, and designs beautiful presentation decks in one unified workspace.
+          </p>
+
+          {/* Premium Preview Card */}
+          <Card shadow="md" className="p-5 bg-[#F6F2EA] border-2 border-[#111111] space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono font-extrabold uppercase tracking-wider text-[#666666]">
+                SPEAKER 1 • ACTIVE SYNTHESIS
+              </span>
+              <Badge variant="green" size="sm">
+                COMPLETED
+              </Badge>
+            </div>
+            
+            <p className="text-xs font-mono text-[#111111] leading-relaxed italic">
+              "Gradient descent scaling parameters decrease exponentially when optimization adaptive weights are scaled with moving averages of gradients..."
+            </p>
+
+            <div className="flex flex-wrap gap-2 pt-1 font-mono text-[10px] font-bold">
+              <span className="rounded-[4px] bg-[#FFC400] px-2 py-0.5 border border-[#111111]">
+                Adam Optimizer
+              </span>
+              <span className="rounded-[4px] bg-white px-2 py-0.5 border border-[#111111]">
+                Gradient Descent
+              </span>
+            </div>
+          </Card>
+        </div>
+
         {/* Footer info */}
-        <div className="text-xs text-neutral-500 relative z-10">
+        <div className="text-xs font-mono text-[#666666]">
           © 2026 NoteIT AI Labs. Powered by BRUTE.
         </div>
       </div>
 
-      {/* RIGHT COLUMN: Glassmorphic Login Panel */}
-      <div className="flex-1 flex items-center justify-center p-6 relative overflow-y-auto z-10">
+      {/* RIGHT COLUMN: Bauhaus Login / Signup Panel */}
+      <div className="flex-1 flex items-center justify-center p-6 relative overflow-y-auto">
         
-        {/* Mobile Header Logo (visible only on small devices) */}
-        <div 
-          className="absolute top-6 left-6 md:hidden flex items-center gap-2 cursor-pointer"
-          onClick={onNavigateToLanding}
-        >
-          <AILogo size={32} showText={true} theme={theme} />
-        </div>
-
-        {/* Floating background particles for mobile */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30 md:hidden">
-          <div className={`absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] rounded-full blur-[100px] ${
-            theme === 'dark' ? 'bg-purple-950/20' : 'bg-purple-100/25'
-          }`} />
-        </div>
-
         <div className="w-full max-w-md space-y-6">
           {/* Back Navigation trigger */}
           {onNavigateToLanding && (
             <button
               onClick={onNavigateToLanding}
-              className="text-xs font-bold text-gray-400 hover:text-indigo-500 transition-colors flex items-center gap-1 focus:outline-none cursor-pointer"
+              className="text-xs font-mono font-bold text-[#666666] hover:text-[#111111] transition-colors flex items-center gap-1 cursor-pointer"
             >
-              ← Back to Landing
+              <ArrowLeft className="h-4 w-4" />
+              <span>Back to Landing</span>
             </button>
           )}
 
-          <header className="text-center md:text-left mb-6 space-y-2">
-            <h2 className="text-2.5xl font-black tracking-tight font-sans">
-              {mode === 'login' && 'Access AI Workspace'}
-              {mode === 'signup' && 'Create Academic Identity'}
-              {mode === 'forgot' && 'Discharge Security Token'}
-              {mode === 'verify' && 'Verify Academic Email'}
-            </h2>
-            <p className={`text-[10px] font-bold tracking-wider font-mono uppercase ${
-              theme === 'dark' ? 'text-indigo-400' : 'text-indigo-600'
-            }`}>
-              Note-IT AI • Secure Cognitive Portal
-            </p>
-          </header>
+          <Card shadow="lg" className="p-8 bg-white border-2 border-[#111111] space-y-6">
+            <header className="space-y-1">
+              <h2 className="text-2xl font-heading font-extrabold uppercase text-[#111111] tracking-tight">
+                {mode === 'login' && 'ACCESS AI WORKSPACE'}
+                {mode === 'signup' && 'CREATE ACADEMIC IDENTITY'}
+                {mode === 'forgot' && 'DISCHARGE RESET TOKEN'}
+              </h2>
+              <p className="text-xs font-mono text-[#666666]">
+                {mode === 'login' && 'Authenticate to enter your research workspace.'}
+                {mode === 'signup' && 'Register your scholar account to begin.'}
+                {mode === 'forgot' && 'Enter your email to receive a password reset link.'}
+              </p>
+            </header>
 
-          {/* Form Card */}
-          <div className={`rounded-2xl border p-6 md:p-8 space-y-6 shadow-xl transition-all ${
-            theme === 'dark' ? 'bg-[#121318]/90 border-neutral-800' : 'bg-white border-gray-200'
-          }`}>
-          {error && (
-            <div className="rounded-xl bg-red-500/10 border border-red-500/20 p-3.5 flex items-start gap-2.5">
-              <AlertCircle className="h-4.5 w-4.5 text-red-500 flex-shrink-0 mt-0.5" />
-              <div className="text-xs text-red-500 font-medium">{error}</div>
-            </div>
-          )}
-
-          {successMsg && (
-            <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3.5 flex items-start gap-2.5">
-              <CheckCircle className="h-4.5 w-4.5 text-emerald-500 flex-shrink-0 mt-0.5" />
-              <div className="text-xs text-emerald-500 font-medium">{successMsg}</div>
-            </div>
-          )}
-
-          {/* Form */}
-          <form onSubmit={handleAuthSubmit} className="space-y-4">
-            
-            {mode === 'signup' && (
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block">
-                  Full Name
-                </label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="text"
-                    required
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Enter your name"
-                    className={`w-full rounded-xl border pl-10 pr-4 py-3 text-xs outline-none transition-all ${
-                      theme === 'dark'
-                        ? 'bg-[#18191e] border-neutral-800 text-white placeholder-neutral-500 focus:border-indigo-500'
-                        : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 focus:border-black'
-                    }`}
-                  />
-                </div>
+            {error && (
+              <div className="p-3 rounded-[4px] bg-[#FF4D4D]/10 border-2 border-[#FF4D4D] text-[#FF4D4D] text-xs font-mono font-bold flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>{error}</span>
               </div>
             )}
 
-            {(mode === 'login' || mode === 'signup' || mode === 'forgot') && (
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block">
-                  Academic Mail Address
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="e.g. j.sterling@university.edu"
-                    className={`w-full rounded-xl border pl-10 pr-4 py-3 text-xs outline-none transition-all ${
-                      theme === 'dark'
-                        ? 'bg-[#18191e] border-neutral-800 text-white placeholder-neutral-500 focus:border-indigo-500'
-                        : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 focus:border-black'
-                    }`}
-                  />
-                </div>
+            {successMsg && (
+              <div className="p-3 rounded-[4px] bg-[#19B56B]/15 border-2 border-[#19B56B] text-[#111111] text-xs font-mono font-bold flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-[#19B56B] shrink-0" />
+                <span>{successMsg}</span>
               </div>
             )}
 
-            {(mode === 'login' || mode === 'signup') && (
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                    Security Password
-                  </label>
-                  {mode === 'login' && (
+            <form onSubmit={handleAuthSubmit} className="space-y-4">
+              {mode === 'signup' && (
+                <Input
+                  label="FULL NAME"
+                  type="text"
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Kishan Verma"
+                />
+              )}
+
+              <Input
+                label="ACADEMIC EMAIL ADDRESS"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="scholar@university.edu"
+              />
+
+              {mode !== 'forgot' && (
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center">
+                    <label className="section-label text-[10px] font-bold text-[#666666] uppercase tracking-[2px]">
+                      SECURITY PASSWORD
+                    </label>
+                    {mode === 'login' && (
+                      <button
+                        type="button"
+                        onClick={() => setMode('forgot')}
+                        className="text-[10px] font-mono font-bold text-[#2F6BFF] hover:underline cursor-pointer"
+                      >
+                        Forgot password?
+                      </button>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full rounded-[6px] border-2 border-[#111111] bg-white p-3 text-xs font-mono font-bold text-[#111111] outline-none shadow-paper-sm"
+                    />
                     <button
                       type="button"
-                      onClick={() => setMode('forgot')}
-                      className="text-[10px] font-bold text-gray-400 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors focus:outline-none"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#666666] hover:text-[#111111]"
                     >
-                      Forgot code?
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
-                  )}
+                  </div>
                 </div>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className={`w-full rounded-xl border pl-10 pr-10 py-3 text-xs outline-none transition-all ${
-                      theme === 'dark'
-                        ? 'bg-[#18191e] border-neutral-800 text-white placeholder-neutral-500 focus:border-indigo-500'
-                        : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 focus:border-black'
-                    }`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors focus:outline-none"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {mode === 'verify' && (
-              <div className="space-y-3">
-                <p className="text-xs text-center text-gray-400 leading-relaxed font-medium">
-                  We have dispatched a 6-digit confirmation code to your academic email. Provide it below to authenticate:
-                </p>
-                <div className="flex justify-between items-center gap-2 pt-2">
-                  {otp.map((digit, idx) => (
-                    <input
-                      key={idx}
-                      id={`otp-${idx}`}
-                      type="text"
-                      maxLength={1}
-                      value={digit}
-                      onChange={(e) => handleOtpChange(idx, e.target.value)}
-                      onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                      className={`w-12 h-14 rounded-xl border text-center text-xl font-mono font-black outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all ${
-                        theme === 'dark'
-                          ? 'bg-[#18191e] border-neutral-800 text-white'
-                          : 'bg-gray-50 border-gray-200 text-gray-900'
-                      }`}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className={`w-full py-3.5 px-4 rounded-xl font-sans text-xs font-bold transition-all active:scale-98 relative flex items-center justify-center gap-1.5 focus:outline-none cursor-pointer ${
-                theme === 'dark'
-                  ? 'bg-white text-black hover:bg-neutral-100 disabled:bg-neutral-700 disabled:text-neutral-500'
-                  : 'bg-black text-white hover:bg-neutral-800 disabled:bg-gray-200 disabled:text-gray-500'
-              }`}
-            >
-              {loading ? (
-                <RefreshCw className="h-4 w-4 animate-spin text-current" />
-              ) : (
-                <>
-                  <span>
-                    {mode === 'login' && 'Authenticate & Enter'}
-                    {mode === 'signup' && 'Register Academic Account'}
-                    {mode === 'forgot' && 'Authorize Token Dispatch'}
-                    {mode === 'verify' && 'Complete Verification'}
-                  </span>
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </>
               )}
-            </button>
-          </form>
 
-          {/* Social Sign-in section */}
-          {(mode === 'login' || mode === 'signup') && (
-            <div className="space-y-4">
-              <div className="relative flex items-center justify-center py-1">
-                <div className={`w-full border-t ${theme === 'dark' ? 'border-neutral-800' : 'border-gray-200'}`} />
-                <span className={`absolute px-3.5 text-[9px] font-bold tracking-widest font-mono uppercase ${
-                  theme === 'dark' ? 'bg-[#121318]/90 text-neutral-500' : 'bg-white text-gray-400'
-                }`}>
-                  Or connect with
-                </span>
-              </div>
-
-              {/* Google Sign-in */}
-              <button
-                type="button"
-                onClick={handleGoogleSignIn}
+              <Button
+                variant="primary"
+                size="md"
+                type="submit"
                 disabled={loading}
-                className={`w-full py-3.5 px-4 rounded-xl font-sans text-xs font-bold transition-all active:scale-98 flex items-center justify-center gap-2 border hover:bg-gray-50/5 cursor-pointer focus:outline-none ${
-                  theme === 'dark'
-                    ? 'border-neutral-800 text-neutral-300 hover:text-white'
-                    : 'border-gray-200 text-gray-700 hover:bg-gray-50'
-                }`}
+                className="w-full justify-center"
               >
-                <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0">
-                  <path
-                    fill="#4285F4"
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                  />
-                </svg>
-                <span>Sign in with Google</span>
-              </button>
+                {loading ? 'AUTHENTICATING...' : mode === 'login' ? 'AUTHENTICATE & ENTER →' : mode === 'signup' ? 'CREATE IDENTITY →' : 'SEND RESET LINK'}
+              </Button>
+            </form>
 
-              {/* LinkedIn & GitHub Grid */}
-              <div className="grid grid-cols-2 gap-3">
+            <div className="relative border-t-2 border-[#111111] pt-4 text-center">
+              <span className="bg-white px-3 text-[10px] font-mono font-bold uppercase text-[#666666] absolute -top-2.5 left-1/2 -translate-x-1/2">
+                OR CONNECT WITH
+              </span>
+              <div className="grid grid-cols-2 gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={handleLinkedinSignIn}
-                  disabled={loading}
-                  className={`py-3 px-4 rounded-xl font-sans text-xs font-bold transition-all active:scale-98 flex items-center justify-center gap-2 border hover:bg-gray-50/5 cursor-pointer focus:outline-none ${
-                    theme === 'dark'
-                      ? 'border-neutral-800 text-neutral-300 hover:text-white'
-                      : 'border-gray-200 text-gray-700 hover:bg-gray-50'
-                  }`}
+                  onClick={handleGoogleSignIn}
+                  className="flex items-center justify-center gap-2 p-2.5 rounded-[6px] border-2 border-[#111111] bg-white text-[#111111] font-mono text-xs font-bold uppercase shadow-paper-sm hover:bg-[#FFC400] transition-colors cursor-pointer"
                 >
-                  <Linkedin className="h-4 w-4 text-[#0A66C2]" />
-                  <span>LinkedIn</span>
+                  <svg className="h-4 w-4" viewBox="0 0 24 24">
+                    <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.2 9 5 12 5z"/>
+                    <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/>
+                    <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 10.8 0 12s.7 2.3 1.9 4.7l3.7-2.9z"/>
+                    <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.2-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z"/>
+                  </svg>
+                  <span>Google</span>
                 </button>
+
                 <button
                   type="button"
                   onClick={handleGithubSignIn}
-                  disabled={loading}
-                  className={`py-3 px-4 rounded-xl font-sans text-xs font-bold transition-all active:scale-98 flex items-center justify-center gap-2 border hover:bg-gray-50/5 cursor-pointer focus:outline-none ${
-                    theme === 'dark'
-                      ? 'border-neutral-800 text-neutral-300 hover:text-white'
-                      : 'border-gray-200 text-gray-700 hover:bg-gray-50'
-                  }`}
+                  className="flex items-center justify-center gap-2 p-2.5 rounded-[6px] border-2 border-[#111111] bg-white text-[#111111] font-mono text-xs font-bold uppercase shadow-paper-sm hover:bg-[#FFC400] transition-colors cursor-pointer"
                 >
-                  <Github className="h-4 w-4 text-neutral-400" />
+                  <Github className="h-4 w-4 text-[#111111]" />
                   <span>GitHub</span>
                 </button>
               </div>
             </div>
-          )}
 
-          {/* Selector Switch Layout */}
-          <div className="text-center pt-2">
-            {mode === 'login' && (
-              <p className="text-xs text-gray-400">
-                New to the platform?{' '}
-                <button
-                  onClick={() => setMode('signup')}
-                  className="font-bold text-indigo-500 dark:text-indigo-400 hover:underline focus:outline-none"
-                >
-                  Create academic identity
-                </button>
-              </p>
-            )}
-            {mode === 'signup' && (
-              <p className="text-xs text-gray-400">
-                Already registered?{' '}
-                <button
-                  onClick={() => setMode('login')}
-                  className="font-bold text-indigo-500 dark:text-indigo-400 hover:underline focus:outline-none"
-                >
-                  Log in secure
-                </button>
-              </p>
-            )}
-            {mode === 'forgot' && (
-              <p className="text-xs text-gray-400">
-                Remember your credentials?{' '}
-                <button
-                  onClick={() => setMode('login')}
-                  className="font-bold text-indigo-500 dark:text-indigo-400 hover:underline focus:outline-none"
-                >
-                  Log in here
-                </button>
-              </p>
-            )}
-            {mode === 'verify' && (
-              <p className="text-xs text-gray-400">
-                Didn't receive the code?{' '}
-                <button
-                  onClick={() => {
-                    setSuccessMsg('A new token was dispatched to your inbox.');
-                    setTimeout(() => setSuccessMsg(null), 3000);
-                  }}
-                  className="font-bold text-indigo-500 dark:text-indigo-400 hover:underline focus:outline-none"
-                >
-                  Dispatched fresh token
-                </button>
-              </p>
-            )}
-          </div>
+            <div className="text-center pt-2 border-t border-gray-200">
+              {mode === 'login' ? (
+                <p className="text-xs font-mono text-[#666666]">
+                  New to the platform?{' '}
+                  <button
+                    type="button"
+                    onClick={() => setMode('signup')}
+                    className="font-bold text-[#111111] underline hover:text-[#2F6BFF] cursor-pointer"
+                  >
+                    Create academic identity
+                  </button>
+                </p>
+              ) : (
+                <p className="text-xs font-mono text-[#666666]">
+                  Already registered?{' '}
+                  <button
+                    type="button"
+                    onClick={() => setMode('login')}
+                    className="font-bold text-[#111111] underline hover:text-[#2F6BFF] cursor-pointer"
+                  >
+                    Sign in to workspace
+                  </button>
+                </p>
+              )}
+            </div>
+          </Card>
 
-        </div>
-
-        {/* Footer specifications */}
-        <div className="text-center mt-6 text-[11px] font-medium text-neutral-500 leading-normal max-w-xs mx-auto">
-          Private academic workspace protected by decentralized key signatures. Powered by Note-IT AI Labs.
-        </div>
+          <p className="text-center text-[10px] font-mono text-[#666666]">
+            Private academic workspace protected by decentralized key signatures.<br />Powered by NoteIT AI Labs.
+          </p>
         </div>
       </div>
     </div>

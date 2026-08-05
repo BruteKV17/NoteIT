@@ -67,7 +67,7 @@ export default function FeedbackWidget({ theme }: FeedbackWidgetProps) {
   };
 
   return (
-    <div className="fixed bottom-6 left-6 z-50 font-sans">
+    <div className="fixed bottom-6 right-6 z-50 font-sans select-none">
       {/* Floating Action Button */}
       {!isOpen && (
         <button
@@ -76,14 +76,10 @@ export default function FeedbackWidget({ theme }: FeedbackWidgetProps) {
             setSubmitted(false);
             setErrorMsg(null);
           }}
-          className={`h-11 w-11 rounded-full flex items-center justify-center shadow-2xl border transition-all hover:scale-108 hover:rotate-6 active:scale-95 focus:outline-none cursor-pointer ${
-            isDark
-              ? 'bg-indigo-600 hover:bg-indigo-500 border-indigo-500/35 text-white shadow-indigo-950/45'
-              : 'bg-black hover:bg-neutral-800 border-neutral-800 text-white shadow-gray-400/30'
-          }`}
+          className="h-12 w-12 rounded-[6px] bg-[#FFC400] text-[#111111] border-2 border-[#111111] shadow-paper-md hover:-translate-y-0.5 hover:shadow-paper-lg transition-all flex items-center justify-center focus:outline-none cursor-pointer"
           title="Send Feedback"
         >
-          <MessageSquare className="h-5.5 w-5.5 text-indigo-200" />
+          <MessageSquare className="h-5 w-5 text-[#111111]" />
         </button>
       )}
 

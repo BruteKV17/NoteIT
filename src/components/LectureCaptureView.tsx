@@ -1182,42 +1182,36 @@ export default function LectureCaptureView({
     const filteredNotes = notes.filter((n: any) => n.lectureId === activeLectureId);
     
     return (
-      <div className={`flex flex-col h-full rounded-2xl overflow-hidden border transition-all select-none ${
-        theme === 'dark' ? 'bg-[#0a0b0e] border-neutral-900 text-white' : 'bg-[#FAF9F5] border-gray-200 text-gray-900'
-      }`}>
+      <div className="flex flex-col h-full bg-grid-paper rounded-[6px] border-2 border-[#111111] shadow-paper-lg overflow-hidden select-none">
         
         {/* ACTIVE WORKSPACE HEADER BAR */}
-        <div className={`p-4 border-b flex items-center justify-between ${
-          theme === 'dark' ? 'bg-[#0d0e12] border-neutral-900' : 'bg-white border-gray-200'
-        }`}>
+        <div className="p-4 border-b-2 border-[#111111] bg-white flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button 
               onClick={() => setActiveLectureId(null)}
-              className={`p-2 rounded-lg border transition-all cursor-pointer ${
-                theme === 'dark' ? 'border-neutral-800 bg-neutral-950/70 hover:bg-neutral-900 text-neutral-400 hover:text-white' : 'border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700'
-              }`}
+              className="p-2 rounded-[6px] border-2 border-[#111111] bg-white text-[#111111] shadow-paper-sm hover:bg-[#FFC400] transition-colors cursor-pointer"
               title="Back to Standby Capture"
             >
               <ArrowLeft className="h-4 w-4" />
             </button>
             <div>
               <div className="flex items-center gap-2">
-                <span className="rounded bg-indigo-500/10 border border-indigo-500/10 px-2 py-0.5 text-[8.5px] font-bold text-indigo-400 font-mono">
+                <span className="rounded-[4px] bg-[#FFC400] border border-[#111111] px-2 py-0.5 text-[10px] font-bold text-[#111111] font-mono uppercase">
                   {activeLecture.subject.toUpperCase()}
                 </span>
-                <span className="text-[10px] text-neutral-500 font-mono">
+                <span className="text-xs text-[#666666] font-mono font-bold">
                   {activeLecture.duration || '00:00:00'} Duration
                 </span>
               </div>
-              <h1 className="text-sm font-black tracking-tight font-sans mt-0.5 truncate max-w-[200px] sm:max-w-md">
+              <h1 className="text-base font-heading font-extrabold tracking-tight text-[#111111] uppercase mt-0.5 truncate max-w-[200px] sm:max-w-md">
                 {activeLecture.title.toUpperCase()}
               </h1>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-500 font-mono">
-              <CheckCircle className="h-3.5 w-3.5" />
+            <span className="inline-flex items-center gap-1.5 rounded-[4px] bg-[#19B56B]/15 border-2 border-[#111111] px-3 py-1 text-xs font-bold text-[#111111] font-mono uppercase shadow-paper-sm">
+              <CheckCircle className="h-3.5 w-3.5 text-[#19B56B]" />
               <span className="hidden sm:inline">WORKSPACE RESOLVED</span>
               <span className="inline sm:hidden">READY</span>
             </span>
@@ -2203,150 +2197,145 @@ export default function LectureCaptureView({
   // STANDBY RECORDING DASHBOARD
   // ----------------------------------------------------
   return (
-    <div className="max-w-6xl mx-auto space-y-6 md:space-y-8 pb-16">
+    <div className="max-w-6xl mx-auto space-y-6 md:space-y-8 pb-16 bg-grid-paper p-4 md:p-8 select-none">
       
       {/* Upper header section */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200/60 dark:border-neutral-800/65 pb-5">
+      <div className="rounded-[6px] border-2 border-[#111111] bg-white p-6 shadow-paper-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="font-sans font-extrabold text-2xl md:text-3.5xl tracking-tight text-gray-900 dark:text-neutral-50 flex items-center gap-2">
-            <Mic className="h-7 w-7 text-indigo-500" />
-            <span>Smart Lecture Capture</span>
+          <span className="section-label text-[10px] font-bold text-[#666666] uppercase tracking-[3px] block">
+            LIVE SYNTHESIS ENGINE
+          </span>
+          <h1 className="font-heading font-extrabold text-2xl md:text-4xl text-[#111111] uppercase tracking-tight flex items-center gap-2 mt-1">
+            <Mic className="h-7 w-7 text-[#111111]" />
+            <span>SMART LECTURE CAPTURE</span>
           </h1>
-          <p className="text-sm font-medium text-gray-500 dark:text-neutral-400 mt-1">
+          <p className="text-xs md:text-sm font-mono text-[#666666] mt-1 border-l-4 border-[#FFC400] pl-3 py-1">
             Unpack and index speech models effortlessly using Google's High-Intensity Synthesis Engine.
           </p>
         </div>
 
         {/* Sync AI Status indicator */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {aiStatus === 'idle' && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 dark:bg-neutral-800/50 px-3 py-1.5 text-xs font-semibold text-gray-500 font-mono">
-              <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />
+            <span className="inline-flex items-center gap-1.5 rounded-[4px] bg-[#F6F2EA] border-2 border-[#111111] px-3 py-1.5 text-xs font-bold text-[#111111] font-mono shadow-paper-sm">
+              <span className="h-2 w-2 rounded-full bg-[#666666]" />
               SYSTEM SLEEP
             </span>
           )}
           {aiStatus === 'recording_transcription' && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-red-500/10 dark:bg-red-500/10 px-3 py-1.5 text-xs font-bold text-red-500 font-mono animate-pulse">
-              <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+            <span className="inline-flex items-center gap-1.5 rounded-[4px] bg-[#FF4D4D]/20 border-2 border-[#111111] px-3 py-1.5 text-xs font-bold text-[#FF4D4D] font-mono shadow-paper-sm animate-pulse">
+              <span className="h-2 w-2 rounded-full bg-[#FF4D4D]" />
               LIVE DECODING
             </span>
           )}
           {aiStatus === 'synthesizing' && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-500/10 dark:bg-indigo-500/10 px-3 py-1.5 text-xs font-bold text-indigo-500 font-mono">
-              <Cpu className="h-3.5 w-3.5 animate-spin text-indigo-500" />
-              ALIGNING RESEARCH GRAPH...
+            <span className="inline-flex items-center gap-1.5 rounded-[4px] bg-[#FFC400] border-2 border-[#111111] px-3 py-1.5 text-xs font-bold text-[#111111] font-mono shadow-paper-sm">
+              <Cpu className="h-3.5 w-3.5 animate-spin text-[#111111]" />
+              ALIGNING GRAPH...
             </span>
           )}
           {aiStatus === 'completed' && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 dark:bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-500 font-mono">
+            <span className="inline-flex items-center gap-1.5 rounded-[4px] bg-[#19B56B]/20 border-2 border-[#111111] px-3 py-1.5 text-xs font-bold text-[#19B56B] font-mono shadow-paper-sm">
               <CheckCircle className="h-3.5 w-3.5" />
-              WORKSPACE RESOLVED!
+              RESOLVED!
             </span>
           )}
         </div>
       </div>
 
       {micError && (
-        <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-bold flex items-center gap-2">
+        <div className="p-4 rounded-[6px] bg-[#FF4D4D]/10 border-2 border-[#111111] text-[#FF4D4D] text-xs font-mono font-bold flex items-center gap-2 shadow-paper-sm">
           <MicOff className="h-4 w-4" />
           <span>{micError}</span>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6.5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* LEFT COLUMN: Large animated Mic & Control panels */}
         <div className="lg:col-span-1 space-y-6">
-          <div className={`rounded-2xl border p-6.5 text-center flex flex-col justify-center items-center min-h-[460px] relative overflow-hidden shadow-md ${
-            theme === 'dark' ? 'bg-[#121318] border-neutral-800' : 'bg-white border-gray-200'
-          }`}>
-            <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.01)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.01)_1px,transparent_1px)] bg-[size:16px_16px] opacity-20" />
+          
+          {/* Recoverable crash banner */}
+          {recoverableLecture && (
+            <div className="w-full rounded-[6px] border-2 border-[#111111] bg-[#FFC400] p-4 text-left space-y-3 text-[#111111] shadow-paper-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-[#111111]">
+                  ⚠️ CRASHED SESSION DISCOVERED
+                </span>
+                <button
+                  onClick={async () => {
+                    try {
+                      await deleteRecordingBackup(recoverableLecture.id);
+                      setRecoverableLecture(null);
+                    } catch (err) {
+                      console.error(err);
+                    }
+                  }}
+                  className="text-[#111111] hover:bg-white rounded p-0.5"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <p className="text-xs font-mono font-bold leading-normal">
+                Saved draft: <strong>"{recoverableLecture.title}"</strong>
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={async () => {
+                    try {
+                      const chunks = await getRecordingChunks(recoverableLecture.id);
+                      if (chunks && chunks.length > 0) {
+                        const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+                        setAiStatus('synthesizing');
+                        await onSaveCapture(
+                          recoverableLecture.title,
+                          recoverableLecture.subject,
+                          recoverableLecture.duration,
+                          audioBlob,
+                          recoverableLecture.id
+                        );
+                        await deleteRecordingBackup(recoverableLecture.id);
+                        setRecoverableLecture(null);
+                      } else {
+                        alert("No backup recording chunks found.");
+                        await deleteRecordingBackup(recoverableLecture.id);
+                        setRecoverableLecture(null);
+                      }
+                    } catch (err) {
+                      console.error('Failed to recover recording:', err);
+                      setAiStatus('idle');
+                    }
+                  }}
+                  className="flex-1 py-1.5 px-3 rounded-[4px] bg-[#111111] text-white font-mono text-[10px] font-bold uppercase cursor-pointer"
+                >
+                  Recover
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      await deleteRecordingBackup(recoverableLecture.id);
+                      setRecoverableLecture(null);
+                    } catch (err) {
+                      console.error(err);
+                    }
+                  }}
+                  className="py-1.5 px-3 rounded-[4px] bg-white border border-[#111111] text-[#111111] font-mono text-[10px] font-bold uppercase cursor-pointer"
+                >
+                  Discard
+                </button>
+              </div>
+            </div>
+          )}
 
-            <div className="space-y-6 relative z-10 w-full flex flex-col items-center">
-              {recoverableLecture && (
-                <div className={`w-full rounded-xl border p-4 text-left space-y-3 relative z-25 ${
-                  theme === 'dark'
-                    ? 'bg-amber-500/10 border-amber-500/20 text-amber-300'
-                    : 'bg-amber-50 border-amber-200 text-amber-800'
-                }`}>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black uppercase tracking-widest font-mono">
-                      ⚠️ Crashed Session Discovered
-                    </span>
-                    <button
-                      onClick={async () => {
-                        try {
-                          await deleteRecordingBackup(recoverableLecture.id);
-                          setRecoverableLecture(null);
-                        } catch (err) {
-                          console.error(err);
-                        }
-                      }}
-                      className="text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 text-xs focus:outline-none cursor-pointer"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <p className="text-xs font-semibold leading-normal">
-                    We saved your previous draft of <strong>"{recoverableLecture.title}"</strong>. Click Recover to process it now.
-                  </p>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={async () => {
-                        try {
-                          const chunks = await getRecordingChunks(recoverableLecture.id);
-                          if (chunks && chunks.length > 0) {
-                            const audioBlob = new Blob(chunks, { type: 'audio/webm' });
-                            setAiStatus('synthesizing');
-                            await onSaveCapture(
-                              recoverableLecture.title,
-                              recoverableLecture.subject,
-                              recoverableLecture.duration,
-                              audioBlob,
-                              recoverableLecture.id
-                            );
-                            await deleteRecordingBackup(recoverableLecture.id);
-                            setRecoverableLecture(null);
-                          } else {
-                            alert("No backup recording chunks found in database.");
-                            await deleteRecordingBackup(recoverableLecture.id);
-                            setRecoverableLecture(null);
-                          }
-                        } catch (err) {
-                          console.error('Failed to recover recording:', err);
-                          setAiStatus('idle');
-                        }
-                      }}
-                      className="flex-1 py-2 px-3 rounded-lg text-xs font-bold bg-amber-600 text-white hover:bg-amber-700 transition-all text-center focus:outline-none cursor-pointer"
-                    >
-                      Recover Recording
-                    </button>
-                    <button
-                      onClick={async () => {
-                        try {
-                          await deleteRecordingBackup(recoverableLecture.id);
-                          setRecoverableLecture(null);
-                        } catch (err) {
-                          console.error(err);
-                        }
-                      }}
-                      className={`py-2 px-3 rounded-lg text-xs font-bold border transition-all text-center focus:outline-none cursor-pointer ${
-                        theme === 'dark'
-                          ? 'border-neutral-800 text-neutral-400 hover:bg-neutral-900/40'
-                          : 'border-gray-200 text-gray-600 hover:bg-gray-100'
-                      }`}
-                    >
-                      Discard
-                    </button>
-                  </div>
-                </div>
-              )}
+          {/* Standby & Active Control Card */}
+          <div className="rounded-[6px] border-2 border-[#111111] bg-white p-6 space-y-6 shadow-paper-md text-[#111111]">
+            <div className="flex flex-col items-center text-center space-y-6">
               
               {/* Lecture Title & Subject Settings Inputs */}
-              <div className="w-full space-y-3 mb-2 text-left">
+              <div className="w-full space-y-4 text-left">
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 font-mono">
-                    Lecture Title
+                  <label className="block text-xs font-mono font-extrabold text-[#111111] uppercase tracking-wider mb-1">
+                    LECTURE TITLE
                   </label>
                   <input
                     type="text"
@@ -2354,26 +2343,18 @@ export default function LectureCaptureView({
                     value={lectureTitle}
                     onChange={(e) => setLectureTitle(e.target.value)}
                     placeholder="Enter lecture title..."
-                    className={`w-full rounded-xl border text-xs font-semibold p-3 focus:outline-none transition-all ${
-                      theme === 'dark'
-                        ? 'bg-neutral-900/40 border-neutral-800 text-neutral-200 focus:border-indigo-500'
-                        : 'bg-gray-50 border-gray-200 text-gray-800 focus:border-black'
-                    } ${isRecording ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    className="w-full rounded-[6px] border-2 border-[#111111] bg-white text-xs font-mono font-bold p-3 text-[#111111] outline-none shadow-paper-sm disabled:bg-[#F6F2EA] disabled:cursor-not-allowed"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 font-mono">
-                    Subject Field
+                  <label className="block text-xs font-mono font-extrabold text-[#111111] uppercase tracking-wider mb-1">
+                    SUBJECT FIELD
                   </label>
                   <select
                     disabled={isRecording}
                     value={lectureSubject}
                     onChange={(e) => setLectureSubject(e.target.value)}
-                    className={`w-full rounded-xl border text-xs font-semibold p-3 focus:outline-none transition-all ${
-                      theme === 'dark'
-                        ? 'bg-neutral-900/40 border-neutral-800 text-neutral-200 focus:border-indigo-500'
-                        : 'bg-gray-50 border-gray-200 text-gray-800 focus:border-black'
-                    } ${isRecording ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    className="w-full rounded-[6px] border-2 border-[#111111] bg-white text-xs font-mono font-bold p-3 text-[#111111] outline-none shadow-paper-sm disabled:bg-[#F6F2EA] disabled:cursor-not-allowed cursor-pointer"
                   >
                     <option value="Computer Science">Computer Science</option>
                     <option value="Physics">Physics</option>
@@ -2386,60 +2367,57 @@ export default function LectureCaptureView({
                 </div>
               </div>
 
-              {/* Dynamic glowing rotating microphone container */}
+              {/* Dynamic microphone container */}
               <div className="relative">
                 {isRecording && !isPaused && (
-                  <>
-                    <div className="absolute -inset-4 rounded-full bg-indigo-500/20 blur-md animate-ping" />
-                    <div className="absolute -inset-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 scale-102 animate-pulse" />
-                  </>
+                  <div className="absolute -inset-2 rounded-full bg-[#FF4D4D] animate-ping opacity-75" />
                 )}
                 <button
                   disabled={aiStatus === 'synthesizing'}
                   onClick={isRecording ? handleStopCapture : handleStartCapture}
-                  className={`h-24 w-24 rounded-full flex items-center justify-center transition-all shadow-xl focus:outline-none cursor-pointer ${
+                  className={`h-24 w-24 rounded-full flex items-center justify-center border-2 border-[#111111] shadow-paper-md transition-all cursor-pointer relative z-10 ${
                     isRecording 
-                      ? 'bg-red-500 text-white hover:bg-red-600' 
-                      : 'bg-black text-white dark:bg-white dark:text-black hover:scale-102'
+                      ? 'bg-[#FF4D4D] text-white hover:bg-[#ff3333]' 
+                      : 'bg-[#FFC400] text-[#111111] hover:bg-[#ffe066]'
                   }`}
                 >
-                  {isRecording ? <Mic className="h-10 w-10 animate-bounce" /> : <Mic className="h-10 w-10 text-current" />}
+                  {isRecording ? <Mic className="h-10 w-10 animate-bounce" /> : <Mic className="h-10 w-10 text-[#111111]" />}
                 </button>
               </div>
 
               {/* Status and Clock time ticker */}
               <div className="space-y-1">
-                <div className="text-xs font-bold uppercase tracking-widest text-gray-400 font-mono">
-                  {isRecording ? (isPaused ? 'Capture Paused' : 'Active Transmission') : 'Standby mode'}
+                <div className="text-xs font-mono font-extrabold uppercase tracking-widest text-[#111111]">
+                  {isRecording ? (isPaused ? 'CAPTURE PAUSED' : 'ACTIVE TRANSMISSION') : 'STANDBY MODE'}
                 </div>
-                <div className="text-4xl font-extrabold font-mono tracking-tight text-gray-900 dark:text-white flex items-center gap-1 justify-center">
-                  <Clock className="h-5 w-5 text-gray-400" />
+                <div className="text-3xl font-heading font-extrabold font-mono tracking-tight text-[#111111] flex items-center gap-2 justify-center">
+                  <Clock className="h-5 w-5 text-[#111111]" />
                   <span>{formatTime(seconds)}</span>
                 </div>
               </div>
 
               {/* Action buttons controls Row */}
-              <div className="flex gap-3 justify-center w-full">
+              <div className="flex gap-3 justify-center w-full pt-2">
                 {!isRecording ? (
                   <button
                     onClick={handleStartCapture}
-                    className="flex items-center gap-2 bg-indigo-500 text-white rounded-xl py-3 px-6 text-xs font-black hover:bg-indigo-600 transition-all shadow-md focus:outline-none cursor-pointer w-full justify-center"
+                    className="flex items-center gap-2 bg-[#2F6BFF] text-white rounded-[6px] border-2 border-[#111111] py-3.5 px-6 text-xs font-mono font-extrabold uppercase hover:bg-[#255cd9] transition-all shadow-paper-md cursor-pointer w-full justify-center"
                   >
-                    <Play className="h-4 w-4" />
+                    <Play className="h-4 w-4 fill-current text-white" />
                     <span>START CAPTURING COURSE</span>
                   </button>
                 ) : (
                   <>
                     <button
                       onClick={handlePauseCapture}
-                      className="flex-1 py-3 px-4 rounded-lg bg-gray-100 font-sans text-xs font-bold text-gray-700 hover:bg-gray-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700 transition-all flex items-center justify-center gap-1.5 focus:outline-none cursor-pointer"
+                      className="flex-1 py-3 px-4 rounded-[6px] bg-[#FFC400] border-2 border-[#111111] text-xs font-mono font-bold text-[#111111] hover:bg-[#ffe066] transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-paper-sm uppercase"
                     >
                       {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
                       <span>{isPaused ? 'Resume' : 'Pause'}</span>
                     </button>
                     <button
                       onClick={handleStopCapture}
-                      className="flex-1 py-3 px-4 rounded-lg bg-red-500 font-sans text-xs font-bold text-white hover:bg-red-600 transition-all flex items-center justify-center gap-1.5 focus:outline-none cursor-pointer"
+                      className="flex-1 py-3 px-4 rounded-[6px] bg-[#FF4D4D] border-2 border-[#111111] text-xs font-mono font-bold text-white hover:bg-[#ff3333] transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-paper-sm uppercase"
                     >
                       <Square className="h-3.5 w-3.5 fill-current" />
                       <span>Stop & Sync</span>
@@ -2452,15 +2430,13 @@ export default function LectureCaptureView({
           </div>
 
           {/* Past captured sessions list panel */}
-          <div className={`rounded-2xl border p-5 space-y-4 ${
-            theme === 'dark' ? 'bg-[#121318]/40 border-neutral-800' : 'bg-white border-gray-200'
-          }`}>
-            <div className="flex items-center justify-between pb-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 font-mono">
-                Capture Session history
+          <div className="rounded-[6px] border-2 border-[#111111] bg-white p-5 space-y-4 shadow-paper-md text-[#111111]">
+            <div className="flex items-center justify-between border-b-2 border-[#111111] pb-2">
+              <span className="text-[10px] font-mono font-extrabold uppercase tracking-wider text-[#111111]">
+                CAPTURE SESSION HISTORY
               </span>
-              <span className="text-[9px] font-bold text-indigo-400">
-                {pastLectures.length} total sessions
+              <span className="text-[10px] font-mono font-extrabold text-[#2F6BFF] uppercase">
+                {pastLectures.length} SESSIONS
               </span>
             </div>
 
@@ -2468,21 +2444,19 @@ export default function LectureCaptureView({
               {pastLectures.map((lec) => (
                 <div 
                   key={lec.id} 
-                  className={`flex items-center justify-between p-2.5 rounded-xl border border-dashed transition-all hover:bg-gray-50/5 cursor-pointer ${
-                    theme === 'dark' ? 'border-neutral-800 text-neutral-300' : 'border-gray-200 text-gray-700'
-                  }`}
+                  className="flex items-center justify-between p-3 rounded-[6px] border-2 border-[#111111] bg-[#F6F2EA] hover:bg-[#FFC400] transition-colors cursor-pointer text-[#111111]"
                   onClick={() => setActiveLectureId && setActiveLectureId(lec.id)}
                 >
                   <div className="flex items-start gap-2.5 min-w-0">
-                    <div className="rounded-lg bg-indigo-500/10 p-1.5 text-indigo-400 mt-0.5">
+                    <div className="rounded-[4px] bg-white p-1.5 border border-[#111111] text-[#111111] shrink-0">
                       <Bookmark className="h-3.5 w-3.5" />
                     </div>
                     <div className="min-w-0">
-                      <h4 className="text-[11px] font-sans font-black truncate">{lec.title}</h4>
-                      <p className="text-[9px] text-gray-500 mt-0.5">{lec.date} • {lec.duration}</p>
+                      <h4 className="text-xs font-heading font-extrabold uppercase truncate text-[#111111]">{lec.title}</h4>
+                      <p className="text-[10px] font-mono text-[#666666] font-bold mt-0.5">{lec.date} • {lec.duration}</p>
                     </div>
                   </div>
-                  <ArrowRight className="h-3.5 w-3.5 text-gray-500" />
+                  <ArrowRight className="h-4 w-4 text-[#111111] shrink-0" />
                 </div>
               ))}
             </div>
@@ -2492,28 +2466,26 @@ export default function LectureCaptureView({
 
         {/* RIGHT COLUMNS: Live Speech Decipher + AI Real-time Notes columns */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 h-[560px]">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-h-[460px]">
             
             {/* Audio Input Monitor */}
-            <div className={`rounded-2xl border p-5.5 flex flex-col justify-between h-full relative ${
-              theme === 'dark' ? 'bg-[#121318] border-neutral-800' : 'bg-white border-gray-200'
-            }`}>
+            <div className="rounded-[6px] border-2 border-[#111111] bg-white p-6 flex flex-col justify-between h-full relative shadow-paper-md text-[#111111]">
               <div className="space-y-4 flex-1 flex flex-col justify-between overflow-hidden">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <span className="relative flex h-2 w-2">
-                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isRecording && !isPaused ? 'bg-indigo-400' : 'bg-gray-400'}`} />
-                      <span className={`relative inline-flex rounded-full h-2 w-2 ${isRecording && !isPaused ? 'bg-indigo-500' : 'bg-gray-400'}`} />
+                <div className="flex items-center justify-between border-b-2 border-[#111111] pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isRecording && !isPaused ? 'bg-[#FF4D4D]' : 'bg-[#666666]'}`} />
+                      <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${isRecording && !isPaused ? 'bg-[#FF4D4D]' : 'bg-[#666666]'}`} />
                     </span>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 font-mono">
-                      Audio Input Monitor
+                    <span className="section-label text-xs font-bold uppercase tracking-[2px] text-[#111111]">
+                      AUDIO INPUT MONITOR
                     </span>
                   </div>
                   
                   {isRecording && !isPaused && (
-                    <div className="flex items-center gap-1 font-mono text-[9px] text-indigo-400 animate-pulse">
-                      <ListRestart className="h-3.5 w-3.5 text-indigo-400 animate-spin" />
-                      <span>CAPTURING LIVE...</span>
+                    <div className="flex items-center gap-1 font-mono text-[10px] font-bold text-[#FF4D4D] animate-pulse">
+                      <ListRestart className="h-3.5 w-3.5 text-[#FF4D4D] animate-spin" />
+                      <span>LIVE RECORDING</span>
                     </div>
                   )}
                 </div>
@@ -2521,189 +2493,162 @@ export default function LectureCaptureView({
                 {/* Real-time Audio Visualizer container */}
                 <div 
                   ref={visualizerRef}
-                  className="h-10 flex items-center justify-center gap-1.5 px-3 border-y border-gray-100 dark:border-neutral-800/50 my-1"
+                  className="h-12 flex items-center justify-center gap-1.5 px-3 border-2 border-[#111111] rounded-[6px] bg-[#F6F2EA] my-2"
                 >
                   {Array.from({ length: 25 }).map((_, i) => (
                     <div
                       key={i}
-                      style={{ height: '8px' }}
-                      className={`waveform-bar w-[3px] rounded-full transition-all duration-75 ${
+                      style={{ height: '10px' }}
+                      className={`waveform-bar w-1 rounded-[2px] transition-all duration-75 ${
                         isRecording && !isPaused
-                          ? 'bg-gradient-to-t from-indigo-500 via-indigo-400 to-purple-400'
-                          : 'bg-gray-200 dark:bg-neutral-800'
+                          ? 'bg-[#FFC400] border border-[#111111]'
+                          : 'bg-white border border-[#111111]'
                       }`}
                     />
                   ))}
                 </div>
 
                 {/* Live Input message box */}
-                <div 
-                  className="flex-1 flex items-center justify-center rounded-xl bg-gray-50 dark:bg-neutral-900/40 p-3"
-                >
+                <div className="flex-1 flex items-center justify-center rounded-[6px] bg-[#F6F2EA] border-2 border-[#111111] p-4 text-[#111111]">
                   {!isRecording ? (
-                    <div className="flex flex-col items-center justify-center text-center h-full text-gray-500 font-sans">
-                      <MicOff className="h-8 w-8 mb-2 opacity-50 text-gray-400 dark:text-neutral-500" />
-                      <p className="text-[11px] font-bold text-gray-700 dark:text-neutral-300">Microphone Standby</p>
-                      <p className="text-[10px] text-gray-400 dark:text-neutral-500 max-w-[180px] leading-normal font-semibold mt-1">
-                        Press 'Start Capturing' to begin capturing your lecture.
+                    <div className="flex flex-col items-center justify-center text-center h-full space-y-2">
+                      <MicOff className="h-8 w-8 text-[#666666]" />
+                      <p className="text-xs font-heading font-extrabold uppercase text-[#111111]">Microphone Standby</p>
+                      <p className="text-[11px] text-[#666666] font-mono max-w-[200px]">
+                        Press 'Start Capturing Course' to begin recording speech.
                       </p>
                     </div>
                   ) : isPaused ? (
-                    <div className="flex flex-col items-center justify-center text-center h-full text-gray-500 font-sans space-y-2 animate-fade-in">
-                      <Pause className="h-8 w-8 text-amber-500 animate-pulse" />
+                    <div className="flex flex-col items-center justify-center text-center h-full space-y-2 animate-fade-in">
+                      <Pause className="h-8 w-8 text-[#FFC400]" />
                       <div>
-                        <p className="text-[11px] font-bold text-amber-500">Capture Suspended</p>
-                        <p className="text-[10px] text-gray-400 dark:text-neutral-500 max-w-[180px] leading-normal font-semibold mt-1">
-                          Audio input is paused. Press 'Resume' to continue capturing.
+                        <p className="text-xs font-heading font-extrabold uppercase text-[#111111]">Capture Paused</p>
+                        <p className="text-[11px] text-[#666666] font-mono max-w-[200px]">
+                          Audio input suspended. Press 'Resume' to continue.
                         </p>
                       </div>
                     </div>
                   ) : aiStatus === 'synthesizing' ? (
-                    <div className="flex flex-col items-center justify-center text-center h-full text-gray-500 font-sans space-y-2">
-                      <Cpu className="h-8 w-8 text-purple-400 animate-spin" />
+                    <div className="flex flex-col items-center justify-center text-center h-full space-y-2">
+                      <Cpu className="h-8 w-8 text-[#111111] animate-spin" />
                       <div>
-                        <p className="text-[11px] font-bold text-purple-400 font-mono">Syncing Workspace...</p>
-                        <p className="text-[10px] text-gray-400 dark:text-neutral-500 max-w-[180px] leading-normal font-semibold mt-1">
-                          Uploading raw capture payload to Azure storage nodes.
+                        <p className="text-xs font-heading font-extrabold uppercase text-[#111111]">Processing Workspace...</p>
+                        <p className="text-[11px] text-[#666666] font-mono max-w-[200px]">
+                          Synthesizing lecture audio into study notes.
                         </p>
                       </div>
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center justify-center text-center h-full text-gray-500 font-sans space-y-3 animate-fade-in w-full h-full overflow-hidden">
+                    <div className="flex flex-col h-full w-full justify-between items-stretch text-left overflow-hidden">
                       {liveTranscript ? (
                         <div className="flex flex-col h-full w-full justify-between items-stretch text-left overflow-hidden">
-                          {/* Live Transcript Header */}
-                          <div className="flex items-center gap-2 mb-2 pb-2 border-b border-gray-100 dark:border-neutral-800/40 shrink-0">
-                            <span className="relative flex h-2 w-2">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                            </span>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 font-mono">
-                              Live Transcription (Decoded Real-time)
+                          <div className="flex items-center gap-2 mb-2 pb-2 border-b border-[#111111] shrink-0">
+                            <span className="h-2 w-2 rounded-full bg-[#FF4D4D] animate-ping" />
+                            <span className="text-[10px] font-mono font-bold uppercase text-[#111111]">
+                              Live Speech Transcription
                             </span>
                           </div>
                           
-                          {/* Scrollable transcript area */}
-                          <div className="flex-1 overflow-y-auto pr-1 text-[13px] leading-relaxed font-sans text-neutral-700 dark:text-neutral-300 scrollbar-thin">
+                          <div className="flex-1 overflow-y-auto pr-1 text-xs leading-relaxed font-mono text-[#111111] select-text">
                             <p className="whitespace-pre-wrap">{liveTranscript}</p>
                             <div ref={transcriptEndRef} />
                           </div>
                         </div>
                       ) : (
-                        <>
-                          <div className="relative flex items-center justify-center">
-                            <div className="absolute -inset-3 rounded-full bg-indigo-500/10 animate-ping" />
-                            <div className="h-10 w-10 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-                              <Mic className="h-5 w-5 animate-pulse" />
-                            </div>
+                        <div className="flex flex-col items-center justify-center text-center h-full space-y-2">
+                          <div className="h-10 w-10 rounded-full bg-[#FFC400] border-2 border-[#111111] flex items-center justify-center text-[#111111]">
+                            <Mic className="h-5 w-5 animate-pulse" />
                           </div>
                           <div className="space-y-1">
-                            <p className="text-[11px] font-bold text-indigo-400 animate-pulse font-mono uppercase tracking-wider">Listening...</p>
-                            <p className="text-[10px] text-gray-400 dark:text-neutral-400 leading-normal font-semibold max-w-[200px]">
-                              Waiting for audio input. Speak to see real-time transcription...
+                            <p className="text-xs font-heading font-extrabold uppercase text-[#111111]">Listening...</p>
+                            <p className="text-[11px] text-[#666666] font-mono max-w-[200px]">
+                              Speak now to see real-time speech-to-text decoding.
                             </p>
                           </div>
-                        </>
+                        </div>
                       )}
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Live Info wrapper */}
-              <div className="border-t border-neutral-800/10 dark:border-neutral-800/40 pt-4 mt-4 space-y-2">
-                <span className="text-[9px] font-bold uppercase tracking-wider text-gray-400 block font-mono">
-                  Audio Stream parameters
-                </span>
-                <div className="flex items-center justify-between text-[10px] text-gray-400 font-mono font-semibold">
-                  <span className="flex items-center gap-1">
-                    <span className={`h-1.5 w-1.5 rounded-full ${isRecording && !isPaused ? 'bg-indigo-400' : 'bg-gray-500'}`} />
-                    Codec: webm/audio
-                  </span>
-                  <span>
-                    Sample Rate: 48kHz
-                  </span>
-                </div>
+              {/* Live Info parameters */}
+              <div className="border-t-2 border-[#111111] pt-3 mt-3 flex items-center justify-between text-[10px] font-mono font-bold text-[#666666]">
+                <span>CODEC: WEBM/AUDIO</span>
+                <span>SAMPLE RATE: 48KHZ</span>
               </div>
-
             </div>
 
             {/* Cognitive Workspace Outline */}
-            <div className={`rounded-2xl border p-5.5 flex flex-col justify-between h-full overflow-hidden ${
-              theme === 'dark' ? 'bg-[#121318] border-neutral-800' : 'bg-white border-gray-200'
-            }`}>
+            <div className="rounded-[6px] border-2 border-[#111111] bg-white p-6 flex flex-col justify-between h-full overflow-hidden shadow-paper-md text-[#111111]">
               <div className="space-y-4 flex-1 flex flex-col justify-between overflow-hidden">
-                <div className="flex items-center gap-1.5">
-                  <Sparkles className="h-4.5 w-4.5 text-indigo-400" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 font-mono">
-                    Cognitive Workspace Outline
+                <div className="flex items-center gap-2 border-b-2 border-[#111111] pb-3">
+                  <Sparkles className="h-4 w-4 text-[#111111]" />
+                  <span className="section-label text-xs font-bold uppercase tracking-[2px] text-[#111111]">
+                    WORKSPACE OUTLINE
                   </span>
                 </div>
 
-                <div className="flex-1 overflow-y-auto space-y-3 pr-1 text-left mt-2">
-                  <p className="text-[10px] text-gray-400 leading-relaxed font-semibold">
-                    Once synced, NoteIT AI will automatically construct your course workspace using the complete audio recording:
+                <div className="flex-1 overflow-y-auto space-y-3 pr-1 text-left">
+                  <p className="text-[11px] text-[#666666] font-mono leading-relaxed">
+                    Upon capture, NoteIT AI automatically synthesizes your recording into 5 structured materials:
                   </p>
                   
                   <div className="space-y-2.5 pt-1">
                     <div className="flex items-start gap-2.5">
-                      <div className="h-4.5 w-4.5 rounded-md bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-[10px] font-bold flex-shrink-0 mt-0.5">1</div>
+                      <div className="h-5 w-5 rounded-[4px] bg-[#FFC400] border-2 border-[#111111] flex items-center justify-center text-[#111111] text-[10px] font-extrabold shrink-0 mt-0.5 font-mono">1</div>
                       <div className="min-w-0">
-                        <h5 className="text-[10px] font-bold text-gray-700 dark:text-neutral-300">Detailed Lecture Transcript</h5>
-                        <p className="text-[9px] text-gray-400 leading-normal font-semibold">Complete text translation with precise timeline bookmarking.</p>
+                        <h5 className="text-xs font-heading font-extrabold text-[#111111] uppercase">Detailed Transcript</h5>
+                        <p className="text-[10px] text-[#666666] font-mono">Timestamped text translation.</p>
                       </div>
                     </div>
 
                     <div className="flex items-start gap-2.5">
-                      <div className="h-4.5 w-4.5 rounded-md bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-[10px] font-bold flex-shrink-0 mt-0.5">2</div>
+                      <div className="h-5 w-5 rounded-[4px] bg-[#FFC400] border-2 border-[#111111] flex items-center justify-center text-[#111111] text-[10px] font-extrabold shrink-0 mt-0.5 font-mono">2</div>
                       <div className="min-w-0">
-                        <h5 className="text-[10px] font-bold text-gray-700 dark:text-neutral-300">Structured Study Notes</h5>
-                        <p className="text-[9px] text-gray-400 leading-normal font-semibold">Definitions, key topics, equations, and explanatory analogies.</p>
+                        <h5 className="text-xs font-heading font-extrabold text-[#111111] uppercase">Structured Notes</h5>
+                        <p className="text-[10px] text-[#666666] font-mono">Core concepts and key formulas.</p>
                       </div>
                     </div>
 
                     <div className="flex items-start gap-2.5">
-                      <div className="h-4.5 w-4.5 rounded-md bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-[10px] font-bold flex-shrink-0 mt-0.5">3</div>
+                      <div className="h-5 w-5 rounded-[4px] bg-[#FFC400] border-2 border-[#111111] flex items-center justify-center text-[#111111] text-[10px] font-extrabold shrink-0 mt-0.5 font-mono">3</div>
                       <div className="min-w-0">
-                        <h5 className="text-[10px] font-bold text-gray-700 dark:text-neutral-300">Active Recall Flashcards</h5>
-                        <p className="text-[9px] text-gray-400 leading-normal font-semibold">Self-testing card decks automatically generated from topics.</p>
+                        <h5 className="text-xs font-heading font-extrabold text-[#111111] uppercase">Active Recall Decks</h5>
+                        <p className="text-[10px] text-[#666666] font-mono">Self-testing active flashcards.</p>
                       </div>
                     </div>
 
                     <div className="flex items-start gap-2.5">
-                      <div className="h-4.5 w-4.5 rounded-md bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-[10px] font-bold flex-shrink-0 mt-0.5">4</div>
+                      <div className="h-5 w-5 rounded-[4px] bg-[#FFC400] border-2 border-[#111111] flex items-center justify-center text-[#111111] text-[10px] font-extrabold shrink-0 mt-0.5 font-mono">4</div>
                       <div className="min-w-0">
-                        <h5 className="text-[10px] font-bold text-gray-700 dark:text-neutral-300">MCQ Practice Quizzes</h5>
-                        <p className="text-[9px] text-gray-400 leading-normal font-semibold">Conceptual testing quizzes with in-depth explanations.</p>
+                        <h5 className="text-xs font-heading font-extrabold text-[#111111] uppercase">Practice Quizzes</h5>
+                        <p className="text-[10px] text-[#666666] font-mono">MCQ questions with explanations.</p>
                       </div>
                     </div>
 
                     <div className="flex items-start gap-2.5">
-                      <div className="h-4.5 w-4.5 rounded-md bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-[10px] font-bold flex-shrink-0 mt-0.5">5</div>
+                      <div className="h-5 w-5 rounded-[4px] bg-[#FFC400] border-2 border-[#111111] flex items-center justify-center text-[#111111] text-[10px] font-extrabold shrink-0 mt-0.5 font-mono">5</div>
                       <div className="min-w-0">
-                        <h5 className="text-[10px] font-bold text-gray-700 dark:text-neutral-300">Dynamic Relationship Mind Map</h5>
-                        <p className="text-[9px] text-gray-400 leading-normal font-semibold">A 2D graphical representation of topics and relationships.</p>
+                        <h5 className="text-xs font-heading font-extrabold text-[#111111] uppercase">Concept Mind Map</h5>
+                        <p className="text-[10px] text-[#666666] font-mono">Graphical topic relationship graph.</p>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Synthesis status box */}
-              <div className="border-t border-neutral-800/10 dark:border-neutral-800/40 pt-4 mt-4 space-y-2">
-                <span className="text-[9px] font-bold uppercase tracking-wider text-gray-400 block font-mono">
-                  Synthesis Gateway Status
-                </span>
-                <div className="text-[10px] text-gray-400 font-serif leading-relaxed bg-[#f9fafc]/40 dark:bg-neutral-950/20 p-3 rounded-xl flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-indigo-400 animate-pulse" />
-                  <span className="font-sans font-semibold">
-                    {isRecording ? "Queueing audio payload for high-intensity compilation..." : "Waiting for active audio feed capture to sync."}
+              {/* Status Box */}
+              <div className="border-t-2 border-[#111111] pt-3 mt-3">
+                <div className="text-[10px] font-mono text-[#111111] bg-[#F6F2EA] border-2 border-[#111111] p-2.5 rounded-[4px] flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-[#111111] shrink-0" />
+                  <span className="font-bold">
+                    {isRecording ? "Transcribing speech..." : "Ready for audio capture."}
                   </span>
                 </div>
               </div>
 
             </div>
-
           </div>
         </div>
 

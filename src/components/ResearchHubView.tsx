@@ -32,9 +32,13 @@ import {
   ArrowLeft,
   ShieldAlert,
   Search,
-  BookMarked
+  BookMarked,
+  AlertCircle,
+  RotateCw,
+  RefreshCw
 } from 'lucide-react';
 import { Source, Note, Lecture, PageId } from '../types';
+import { generateResourcesFromTranscript, generateNotesFromTranscript } from '../services/gemini';
 
 interface ResearchHubViewProps {
   sources: Source[];
@@ -95,6 +99,63 @@ export default function ResearchHubView({
       setSelectedLecture(null);
     }
   }, [lectures]);
+
+  // Hub Resource Generation States
+  const [isGeneratingHubResources, setIsGeneratingHubResources] = useState(false);
+  const [hubResourceError, setHubResourceError] = useState<string | null>(null);
+
+  const handleHubGenerateResources = async (modeType: 'missing' | 'all' = 'missing') => {
+    if (!selectedLecture) return;
+    setIsGeneratingHubResources(true);
+    setHubResourceError(null);
+
+    try {
+      await generateResourcesFromTranscript(selectedLecture.id, undefined, { mode: 'academic', modeType });
+      setIsGeneratingHubResources(false);
+    } catch (err: any) {
+      console.error("Failed to generate resources in ResearchHub:", err);
+      setHubResourceError(err.message || "Resource generation failed. Please check your AI provider key in Settings.");
+      setIsGeneratingHubResources(false);
+    }
+  };
+
+  // Dedicated Notes Generation State & Handler
+  const [isGeneratingNotes, setIsGeneratingNotes] = useState(false);
+  const [notesError, setNotesError] = useState<string | null>(null);
+
+  const handleGenerateNotesFromTranscript = async () => {
+    if (!selectedLecture) return;
+    const transcriptText = selectedLecture.transcript || selectedLecture.cleanTranscript || selectedLecture.text;
+
+    if (!transcriptText || transcriptText.trim().length === 0) {
+      alert("A valid transcript is required to generate notes. Please record or transcribe a lecture first.");
+      return;
+    }
+
+    setIsGeneratingNotes(true);
+    setNotesError(null);
+
+    try {
+      const generated = await generateNotesFromTranscript(transcriptText);
+      const notesContent = generated.markdownNotes || generated;
+
+      if (updateLecture) {
+        await updateLecture(selectedLecture.id, {
+          notes: notesContent,
+          status: 'generated',
+          resourceGenerationStatus: 'completed',
+          updatedAt: new Date()
+        });
+      }
+
+      setIsGeneratingNotes(false);
+      setActiveTab('Notes');
+    } catch (err: any) {
+      console.error("Notes generation failed:", err);
+      setNotesError(err.message || "Failed to generate notes from transcript.");
+      setIsGeneratingNotes(false);
+    }
+  };
 
   // Notes UI active/expanded note states
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -428,27 +489,23 @@ export default function ResearchHubView({
 
   if (!selectedLecture) {
     return (
-      <div className="min-h-screen text-slate-100 bg-[#07080c] relative flex flex-col items-center justify-center p-8 text-center select-none">
-        <div className="absolute top-10 left-10 w-[450px] h-[450px] rounded-full bg-indigo-900/10 blur-[130px] pointer-events-none" />
-        <div className="absolute bottom-20 right-10 w-[400px] h-[400px] rounded-full bg-purple-900/10 blur-[120px] pointer-events-none" />
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.005)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.005)_1px,transparent_1px)] bg-[size:32px_32px] opacity-30 pointer-events-none" />
-        
-        <div className="space-y-4 max-w-md">
-          <BookMarked className="h-16 w-16 text-indigo-400 mx-auto animate-pulse" />
-          <h2 className="font-sans font-black text-2xl tracking-tight text-white">No Lecture Materials</h2>
-          <p className="text-xs text-neutral-400 leading-relaxed">
-            Your Research Hub is currently empty. Please go to the **Academic Library** or **Smart Lecture Capture** to upload or record your first lecture!
+      <div className="min-h-screen text-[#111111] bg-[#F6F2EA] relative flex flex-col items-center justify-center p-8 text-center select-none">
+        <div className="rounded-[6px] border-2 border-[#111111] bg-white p-8 max-w-md space-y-4 shadow-paper-lg">
+          <BookMarked className="h-16 w-16 text-[#111111] mx-auto" />
+          <h2 className="font-heading font-extrabold text-2xl tracking-tight text-[#111111] uppercase">No Lecture Materials</h2>
+          <p className="text-xs font-mono font-bold text-[#666666] leading-relaxed">
+            Your Research Hub is currently empty. Please go to the Academic Library or Smart Lecture Capture to upload or record your first lecture!
           </p>
           <div className="flex gap-3 justify-center pt-2">
             <button
               onClick={() => setActivePage && setActivePage('academic-library')}
-              className="rounded-xl bg-white text-black px-4 py-2.5 text-xs font-black hover:bg-neutral-100 transition-all cursor-pointer focus:outline-none"
+              className="rounded-[6px] border-2 border-[#111111] bg-[#FFC400] text-[#111111] px-5 py-3 text-xs font-mono font-extrabold uppercase hover:bg-[#ffe066] transition-all shadow-paper-sm cursor-pointer"
             >
               Academic Library
             </button>
             <button
               onClick={() => setActivePage && setActivePage('lecture-capture')}
-              className="rounded-xl bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 px-4 py-2.5 text-xs font-black text-white transition-all cursor-pointer focus:outline-none"
+              className="rounded-[6px] border-2 border-[#111111] bg-[#2F6BFF] text-white px-5 py-3 text-xs font-mono font-extrabold uppercase hover:bg-[#255cd9] transition-all shadow-paper-sm cursor-pointer"
             >
               Record Lecture
             </button>
@@ -459,21 +516,13 @@ export default function ResearchHubView({
   }
 
   return (
-    <div className="min-h-screen text-slate-100 bg-[#07080c] relative overflow-x-hidden pb-16">
+    <div className="min-h-screen text-[#111111] bg-[#F6F2EA] relative overflow-x-hidden pb-16">
       
-      {/* GLOWING AMBIENT INTELLECTUAL BACKGROUNDS */}
-      <div className="absolute top-10 left-10 w-[450px] h-[450px] rounded-full bg-indigo-900/10 blur-[130px] pointer-events-none" />
-      <div className="absolute bottom-20 right-10 w-[400px] h-[400px] rounded-full bg-purple-900/10 blur-[120px] pointer-events-none" />
-      <div className="absolute top-[40%] left-[50%] -translate-x-1/2 w-[600px] h-[300px] rounded-full bg-cyan-950/10 blur-[140px] pointer-events-none" />
-      
-      {/* COGNITIVE STAR SYSTEM: NOISE PATTERNS */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.005)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.005)_1px,transparent_1px)] bg-[size:32px_32px] opacity-30 pointer-events-none" />
-
       {/* TOAST SYSTEM */}
       {showToast && (
-        <div className="fixed top-6 right-6 z-50 bg-[#0c0d12]/95 border border-indigo-500/20 shadow-2xl rounded-2xl p-4 flex items-center gap-3 animate-slide-in backdrop-blur-md">
-          <div className="h-2 w-2 rounded-full bg-indigo-500 animate-ping" />
-          <p className="text-xs font-black font-sans tracking-wide">{toastMessage}</p>
+        <div className="fixed top-6 right-6 z-50 bg-[#FFC400] border-2 border-[#111111] shadow-paper-md rounded-[6px] p-4 flex items-center gap-3 font-mono font-bold text-xs text-[#111111]">
+          <div className="h-2.5 w-2.5 rounded-full bg-[#111111] animate-ping" />
+          <p>{toastMessage}</p>
         </div>
       )}
 
@@ -528,6 +577,54 @@ export default function ResearchHubView({
       {activeTab && (
         <div className="max-w-6xl mx-auto px-4 md:px-8 pt-8 pb-16 relative z-10 animate-fade-in space-y-8">
           
+          {/* Missing / Failed Resource Recovery Banner */}
+          {selectedLecture && (selectedLecture.resourceGenerationStatus === 'failed' || !selectedLecture.summary || !selectedLecture.notes) && (
+            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-in">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0 animate-pulse" />
+                <div>
+                  <div className="text-xs font-bold text-white">Some study resources are unavailable</div>
+                  <div className="text-[11px] text-gray-400 mt-0.5">
+                    {hubResourceError || selectedLecture.resourceGenerationError?.message || "Your transcript is safe. You can generate missing resources using your active AI provider."}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  disabled={isGeneratingHubResources}
+                  onClick={() => handleHubGenerateResources('missing')}
+                  className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold transition-all cursor-pointer shadow-md flex items-center gap-1.5"
+                >
+                  {isGeneratingHubResources ? (
+                    <>
+                      <RotateCw className="h-3.5 w-3.5 animate-spin" />
+                      <span>Generating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-3.5 w-3.5" />
+                      <span>Generate Missing Resources</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  disabled={isGeneratingHubResources}
+                  onClick={() => {
+                    if (window.confirm("Regenerate all study resources for this lecture? This will overwrite existing content.")) {
+                      handleHubGenerateResources('all');
+                    }
+                  }}
+                  className="px-3 py-2 rounded-xl border border-neutral-800 text-neutral-400 hover:text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  <span>Regenerate All</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Breadcrumbs Action bar */}
           <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center pb-5 border-b border-neutral-900/60">
             <button
@@ -562,6 +659,7 @@ export default function ResearchHubView({
               { id: null, label: 'Studio', icon: BookMarked },
               { id: 'Summary', label: 'Summary', icon: FileText },
               { id: 'Transcript', label: 'Transcript', icon: Volume2 },
+              { id: 'Notes', label: 'Notes', icon: Edit },
               { id: 'Flashcards', label: 'Flashcards', icon: Bookmark },
               { id: 'Quiz', label: 'Quiz', icon: GraduationCap },
               { id: 'Mind Map', label: 'Mind Map', icon: Brain },
@@ -630,123 +728,231 @@ export default function ResearchHubView({
             </div>
           )}
 
-          {activeTab === 'Transcript' && (
-            <div className="bg-[#0b0c10]/90 border border-neutral-900/80 rounded-3xl p-6 md:p-10 shadow-2xl space-y-8 select-text animate-fade-in">
-              <div className="flex flex-col md:flex-row justify-between gap-6 border-b border-neutral-900 pb-6">
-                <div className="space-y-2">
-                  <span className="rounded-full bg-pink-500/10 px-3 py-1 text-[10px] font-black text-pink-400 font-mono tracking-widest uppercase">
-                    LECTURE TRANSCRIPTION
-                  </span>
-                  <h2 className="font-sans font-black text-2xl md:text-3xl tracking-tight text-white">
-                    {selectedLecture.title}
-                  </h2>
-                  <p className="text-xs text-neutral-400 font-mono">Word-for-Word Audio Decipher</p>
-                </div>
-                <button
-                  onClick={() => handleCopyText(selectedLecture.transcript || '', 'Transcript')}
-                  className="self-start flex items-center gap-1.5 bg-neutral-900 hover:bg-neutral-800 py-2.5 px-4 rounded-xl border border-neutral-800 text-xs font-semibold focus:outline-none"
-                >
-                  <Copy className="h-4 w-4 text-neutral-400" />
-                  <span>Copy Full Transcript</span>
-                </button>
-              </div>
+          {activeTab === 'Transcript' && (() => {
+            const actualTranscript = selectedLecture.transcript || selectedLecture.cleanTranscript || selectedLecture.text || '';
+            const hasValidTranscript = actualTranscript && actualTranscript.trim().length > 0;
 
-              {/* Real Lecture Audio Player */}
-              {selectedLecture.audioUrl && (
-                <div className="mb-6 bg-neutral-950/70 border border-neutral-900 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 select-none">
-                  <audio
-                    ref={audioRef}
-                    src={resolvedAudioUrl}
-                    onTimeUpdate={() => {
-                      if (audioRef.current) {
-                        setRealAudioTime(audioRef.current.currentTime);
-                      }
-                    }}
-                    onDurationChange={() => {
-                      if (audioRef.current) {
-                        setRealAudioDuration(audioRef.current.duration);
-                      }
-                    }}
-                    onEnded={() => setRealAudioPlaying(false)}
-                  />
-                  
-                  <div className="flex items-center gap-3.5">
-                    <button
-                      onClick={() => {
-                        if (!audioRef.current) return;
-                        if (realAudioPlaying) {
-                          audioRef.current.pause();
-                        } else {
-                          audioRef.current.play();
-                        }
-                        setRealAudioPlaying(!realAudioPlaying);
-                      }}
-                      className="h-10 w-10 rounded-full bg-pink-500/10 border border-pink-500/20 text-pink-400 flex items-center justify-center cursor-pointer hover:bg-pink-500/20 transition-all focus:outline-none"
-                    >
-                      {realAudioPlaying ? <Pause className="h-4 w-4 fill-current text-pink-400" /> : <Play className="h-4 w-4 fill-current text-pink-400 ml-0.5" />}
-                    </button>
-                    
-                    <div>
-                      <span className="text-[10px] font-black uppercase tracking-wider text-pink-400 font-mono block">Lecture Audio</span>
-                      <span className="text-xs font-bold text-neutral-300 font-mono">
-                        {formatAudioTime(realAudioTime)} / {formatAudioTime(realAudioDuration || 0)}
-                      </span>
-                    </div>
+            return (
+              <div className="bg-[#0b0c10]/90 border border-neutral-900/80 rounded-3xl p-6 md:p-10 shadow-2xl space-y-8 select-text animate-fade-in">
+                <div className="flex flex-col md:flex-row justify-between gap-6 border-b border-neutral-900 pb-6">
+                  <div className="space-y-2">
+                    <span className="rounded-full bg-pink-500/10 px-3 py-1 text-[10px] font-black text-pink-400 font-mono tracking-widest uppercase">
+                      LECTURE TRANSCRIPTION
+                    </span>
+                    <h2 className="font-sans font-black text-2xl md:text-3xl tracking-tight text-white">
+                      {selectedLecture.title}
+                    </h2>
+                    <p className="text-xs text-neutral-400 font-mono">Word-for-Word Audio Decipher</p>
                   </div>
 
-                  {/* Progress Slider */}
-                  <div className="flex-1 w-full flex items-center gap-2">
-                    <input
-                      type="range"
-                      min={0}
-                      max={realAudioDuration || 100}
-                      value={realAudioTime}
-                      onChange={(e) => {
-                        const time = parseFloat(e.target.value);
-                        setRealAudioTime(time);
-                        if (audioRef.current) {
-                          audioRef.current.currentTime = time;
-                        }
-                      }}
-                      className="w-full accent-pink-500 bg-neutral-900 h-1 rounded-lg cursor-pointer"
-                    />
-                  </div>
-
-                  {/* Speed Controls */}
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[9px] font-bold text-neutral-500 font-mono uppercase">Speed:</span>
-                    {['1.0x', '1.25x', '1.5x', '2.0x'].map((spd) => (
+                  <div className="flex items-center gap-3 self-start flex-wrap">
+                    {hasValidTranscript && (
                       <button
-                        key={spd}
+                        disabled={isGeneratingNotes}
+                        onClick={handleGenerateNotesFromTranscript}
+                        className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white py-2.5 px-4 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer focus:outline-none"
+                      >
+                        {isGeneratingNotes ? (
+                          <>
+                            <RotateCw className="h-4 w-4 animate-spin text-white" />
+                            <span>Generating Notes...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="h-4 w-4" />
+                            <span>{selectedLecture.notes ? 'Regenerate Notes' : 'Generate Notes'}</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+
+                    {hasValidTranscript && (
+                      <button
+                        onClick={() => handleCopyText(actualTranscript, 'Transcript')}
+                        className="flex items-center gap-1.5 bg-neutral-900 hover:bg-neutral-800 py-2.5 px-4 rounded-xl border border-neutral-800 text-xs font-semibold focus:outline-none"
+                      >
+                        <Copy className="h-4 w-4 text-neutral-400" />
+                        <span>Copy Full Transcript</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Real Lecture Audio Player */}
+                {selectedLecture.audioUrl && (
+                  <div className="mb-6 bg-neutral-950/70 border border-neutral-900 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 select-none">
+                    <audio
+                      ref={audioRef}
+                      src={resolvedAudioUrl}
+                      onTimeUpdate={() => {
+                        if (audioRef.current) {
+                          setRealAudioTime(audioRef.current.currentTime);
+                        }
+                      }}
+                      onDurationChange={() => {
+                        if (audioRef.current) {
+                          setRealAudioDuration(audioRef.current.duration);
+                        }
+                      }}
+                      onEnded={() => setRealAudioPlaying(false)}
+                    />
+                    
+                    <div className="flex items-center gap-3.5">
+                      <button
                         onClick={() => {
+                          if (!audioRef.current) return;
+                          if (realAudioPlaying) {
+                            audioRef.current.pause();
+                          } else {
+                            audioRef.current.play();
+                          }
+                          setRealAudioPlaying(!realAudioPlaying);
+                        }}
+                        className="h-10 w-10 rounded-full bg-pink-500/10 border border-pink-500/20 text-pink-400 flex items-center justify-center cursor-pointer hover:bg-pink-500/20 transition-all focus:outline-none"
+                      >
+                        {realAudioPlaying ? <Pause className="h-4 w-4 fill-current text-pink-400" /> : <Play className="h-4 w-4 fill-current text-pink-400 ml-0.5" />}
+                      </button>
+                      
+                      <div>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-pink-400 font-mono block">Lecture Audio</span>
+                        <span className="text-xs font-bold text-neutral-300 font-mono">
+                          {formatAudioTime(realAudioTime)} / {formatAudioTime(realAudioDuration || 0)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Progress Slider */}
+                    <div className="flex-1 w-full flex items-center gap-2">
+                      <input
+                        type="range"
+                        min={0}
+                        max={realAudioDuration || 100}
+                        value={realAudioTime}
+                        onChange={(e) => {
+                          const time = parseFloat(e.target.value);
+                          setRealAudioTime(time);
                           if (audioRef.current) {
-                            audioRef.current.playbackRate = parseFloat(spd);
+                            audioRef.current.currentTime = time;
                           }
                         }}
-                        className="px-2 py-1 rounded bg-neutral-900 border border-neutral-800 hover:border-pink-500/30 text-[10px] font-mono font-bold text-neutral-400 hover:text-white transition-all focus:outline-none cursor-pointer"
-                      >
-                        {spd}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+                        className="w-full accent-pink-500 bg-neutral-900 h-1 rounded-lg cursor-pointer"
+                      />
+                    </div>
 
-              <div className="space-y-4 font-serif text-xs md:text-sm text-neutral-300 leading-relaxed whitespace-pre-wrap p-4 bg-neutral-950/45 rounded-2xl border border-neutral-900/60 max-h-[500px] overflow-y-auto">
-                {selectedLecture.transcript ? (
-                  renderTranscriptWithTimestamps(selectedLecture.transcript)
+                    {/* Speed Controls */}
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] font-bold text-neutral-500 font-mono uppercase">Speed:</span>
+                      {['1.0x', '1.25x', '1.5x', '2.0x'].map((spd) => (
+                        <button
+                          key={spd}
+                          onClick={() => {
+                            if (audioRef.current) {
+                              audioRef.current.playbackRate = parseFloat(spd);
+                            }
+                          }}
+                          className="px-2 py-1 rounded bg-neutral-900 border border-neutral-800 hover:border-pink-500/30 text-[10px] font-mono font-bold text-neutral-400 hover:text-white transition-all focus:outline-none cursor-pointer"
+                        >
+                          {spd}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-4 font-serif text-xs md:text-sm text-neutral-300 leading-relaxed whitespace-pre-wrap p-4 bg-neutral-950/45 rounded-2xl border border-neutral-900/60 max-h-[500px] overflow-y-auto">
+                  {hasValidTranscript ? (
+                    renderTranscriptWithTimestamps(actualTranscript)
+                  ) : (
+                    <div className="text-center py-12 text-neutral-500 font-sans">
+                      <Volume2 className="h-10 w-10 mx-auto opacity-35 mb-3 text-indigo-400" />
+                      <p className="font-bold text-xs">No Transcript Available</p>
+                      <p className="text-[10px] text-neutral-500 mt-1 max-w-xs mx-auto">
+                        A transcript is not yet available for this lecture. Record or upload a lecture to generate its transcript.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
+          {activeTab === 'Notes' && (() => {
+            const actualTranscript = selectedLecture.transcript || selectedLecture.cleanTranscript || selectedLecture.text || '';
+            const hasValidTranscript = actualTranscript && actualTranscript.trim().length > 0;
+            const hasNotes = selectedLecture.notes && (typeof selectedLecture.notes === 'string' ? selectedLecture.notes.trim().length > 0 : Object.keys(selectedLecture.notes).length > 0);
+
+            return (
+              <div className="bg-[#0b0c10]/90 border border-neutral-900/80 rounded-3xl p-6 md:p-10 shadow-2xl space-y-8 select-text animate-fade-in">
+                <div className="flex flex-col md:flex-row justify-between gap-6 border-b border-neutral-900 pb-6">
+                  <div className="space-y-2">
+                    <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-[10px] font-black text-emerald-400 font-mono tracking-widest uppercase">
+                      ACADEMIC STUDY NOTES
+                    </span>
+                    <h2 className="font-sans font-black text-2xl md:text-3xl tracking-tight text-white">
+                      {selectedLecture.title}
+                    </h2>
+                    <p className="text-xs text-neutral-400 font-mono">Generated strictly from saved lecture transcript</p>
+                  </div>
+
+                  {hasValidTranscript && (
+                    <button
+                      disabled={isGeneratingNotes}
+                      onClick={handleGenerateNotesFromTranscript}
+                      className="self-start flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white py-2.5 px-4 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer focus:outline-none"
+                    >
+                      {isGeneratingNotes ? (
+                        <>
+                          <RotateCw className="h-4 w-4 animate-spin text-white" />
+                          <span>Generating Notes...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-4 w-4" />
+                          <span>{hasNotes ? 'Regenerate Notes' : 'Generate Notes from Transcript'}</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+
+                {notesError && (
+                  <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>{notesError}</span>
+                  </div>
+                )}
+
+                {hasNotes ? (
+                  <div className="text-xs md:text-sm text-neutral-300 leading-relaxed font-serif whitespace-pre-wrap p-6 bg-neutral-950/45 rounded-2xl border border-neutral-900/60 max-h-[600px] overflow-y-auto">
+                    {typeof selectedLecture.notes === 'string' ? selectedLecture.notes : JSON.stringify(selectedLecture.notes, null, 2)}
+                  </div>
                 ) : (
-                  <div className="text-center py-12 text-neutral-500 font-sans">
-                    <Volume2 className="h-10 w-10 mx-auto opacity-35 mb-3 text-indigo-400" />
-                    <p className="font-bold text-xs">No Transcript Available</p>
-                    <p className="text-[10px] text-neutral-500 mt-1 max-w-xs mx-auto">
-                      This is a mock lecture without a real audio source. Try recording a real lecture to view its transcript!
-                    </p>
+                  <div className="text-center py-16 text-neutral-500 font-sans border border-dashed border-neutral-900/60 rounded-2xl bg-[#0c0d12]/50 space-y-4">
+                    <FileText className="h-10 w-10 mx-auto opacity-35 text-indigo-400" />
+                    <div>
+                      <p className="font-bold text-sm text-neutral-300">No Notes Generated Yet</p>
+                      <p className="text-xs text-neutral-500 mt-1 max-w-sm mx-auto">
+                        {hasValidTranscript 
+                          ? "Generate structured academic study notes derived exclusively from your lecture transcript." 
+                          : "No transcript is available for this lecture yet."}
+                      </p>
+                    </div>
+
+                    {hasValidTranscript && (
+                      <button
+                        disabled={isGeneratingNotes}
+                        onClick={handleGenerateNotesFromTranscript}
+                        className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold transition-all shadow-md cursor-pointer inline-flex items-center gap-2"
+                      >
+                        {isGeneratingNotes ? <RotateCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                        <span>Generate Notes from Transcript</span>
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {activeTab === 'Flashcards' && (
             <div className="max-w-xl mx-auto space-y-8 animate-fade-in">
@@ -1613,296 +1819,198 @@ export default function ResearchHubView({
             <div className="lg:col-span-2 space-y-10">
               
               {/* Premium Core Headline block */}
-              <div className="text-center max-w-2xl mx-auto space-y-3 pt-6 pb-2">
-                <div className="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500 relative">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <div className="text-center max-w-2xl mx-auto space-y-3 pt-4 pb-2">
+                <div className="inline-flex h-3 w-3 rounded-full bg-[#19B56B] relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#19B56B] opacity-75" />
                 </div>
-                <h2 className={`font-sans font-black text-3.5xl sm:text-5xl tracking-tight leading-none ${
-                  theme === 'dark' ? 'text-white' : 'text-gray-900'
-                }`}>
+                <h2 className="font-heading font-extrabold text-3xl sm:text-4xl text-[#111111] uppercase tracking-tight">
                   Your Lecture Is Ready
                 </h2>
-                <p className={`text-sm md:text-base font-medium leading-relaxed max-w-lg mx-auto ${
-                  theme === 'dark' ? 'text-neutral-400' : 'text-gray-600'
-                }`}>
+                <p className="text-xs sm:text-sm font-mono font-bold text-[#666666] leading-relaxed max-w-lg mx-auto">
                   Choose how you want AI to transform your lecture. Convert speech structures into customized academic products.
                 </p>
-                          {/* Bento-grid of Knowledge transform cards */}
+              </div>
+
+              {/* Bento-grid of Knowledge transform cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-5">
                 
                 {/* Card 1: Summary */}
                 <div 
                   onClick={() => setActiveTab('Summary')}
-                  className={`xl:col-span-3 group relative rounded-3xl overflow-hidden p-6 flex flex-col justify-between h-[230px] cursor-pointer shadow-xl transition-all duration-300 select-none hover:border-indigo-500/20 hover:scale-101 hover:-translate-y-1 transform border ${
-                    theme === 'dark'
-                      ? 'bg-gradient-to-br from-[#0c0d12] via-[#0c0d12]/95 to-[#12131c] border-neutral-900/70'
-                      : 'bg-gradient-to-br from-white via-white to-indigo-50/20 border-gray-200'
-                  }`}
+                  className="xl:col-span-3 group relative rounded-[6px] border-2 border-[#111111] bg-white p-6 flex flex-col justify-between h-[210px] cursor-pointer shadow-paper-md transition-all hover:bg-[#FFC400] text-[#111111]"
                 >
-                  <div className="absolute top-0 right-0 p-4 opacity-5 bg-gradient-to-bl from-indigo-500 to-transparent w-24 h-24 rounded-bl-full" />
-                  
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white transition-all">
-                    <FileText className="h-5.5 w-5.5" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-[4px] border-2 border-[#111111] bg-[#2F6BFF] text-white">
+                    <FileText className="h-5 w-5" />
                   </div>
 
                   <div className="space-y-1">
-                    <h3 className={`font-sans font-black text-lg transition-colors ${
-                      theme === 'dark' ? 'text-white group-hover:text-indigo-400' : 'text-gray-900 group-hover:text-indigo-600'
-                    }`}>Detailed Summary</h3>
-                    <p className={`text-xs leading-normal max-w-[240px] ${
-                      theme === 'dark' ? 'text-neutral-400' : 'text-gray-600'
-                    }`}>
+                    <h3 className="font-heading font-extrabold text-base uppercase text-[#111111]">Detailed Summary</h3>
+                    <p className="text-xs font-mono font-bold text-[#666666] leading-normal max-w-[260px]">
                       Creates a core structured academic brief, indexing primary themes and derivations.
                     </p>
                   </div>
 
-                  <span className={`text-[9.5px] font-black font-mono tracking-widest flex items-center gap-1 uppercase ${
-                    theme === 'dark' ? 'text-indigo-400' : 'text-indigo-600'
-                  }`}>
+                  <span className="text-[10px] font-mono font-extrabold tracking-widest flex items-center gap-1 uppercase text-[#111111]">
                     <span>View Summary</span>
-                    <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
+                    <ChevronRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
                   </span>
                 </div>
 
                 {/* Card 2: Transcript */}
                 <div 
                   onClick={() => setActiveTab('Transcript')}
-                  className={`xl:col-span-3 group relative rounded-3xl overflow-hidden p-6 flex flex-col justify-between h-[230px] cursor-pointer shadow-xl transition-all duration-300 select-none hover:border-pink-500/20 hover:scale-101 hover:-translate-y-1 transform border ${
-                    theme === 'dark'
-                      ? 'bg-gradient-to-br from-[#0c0d12] via-[#0c0d12]/95 to-[#1c0c1b] border-neutral-900/70'
-                      : 'bg-gradient-to-br from-white via-white to-pink-50/20 border-gray-200'
-                  }`}
+                  className="xl:col-span-3 group relative rounded-[6px] border-2 border-[#111111] bg-white p-6 flex flex-col justify-between h-[210px] cursor-pointer shadow-paper-md transition-all hover:bg-[#FFC400] text-[#111111]"
                 >
-                  <div className="absolute top-0 right-0 p-4 opacity-5 bg-gradient-to-bl from-pink-500 to-transparent w-24 h-24 rounded-bl-full" />
-                  
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-pink-500/10 text-pink-400 group-hover:bg-pink-600 group-hover:text-white transition-all">
-                    <Volume2 className="h-5.5 w-5.5" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-[4px] border-2 border-[#111111] bg-[#FF4D4D] text-white">
+                    <Volume2 className="h-5 w-5" />
                   </div>
 
                   <div className="space-y-1">
-                    <h3 className={`font-sans font-black text-lg transition-colors ${
-                      theme === 'dark' ? 'text-white group-hover:text-pink-400' : 'text-gray-900 group-hover:text-pink-600'
-                    }`}>Lecture Transcript</h3>
-                    <p className={`text-xs leading-normal max-w-[240px] ${
-                      theme === 'dark' ? 'text-neutral-400' : 'text-gray-600'
-                    }`}>
+                    <h3 className="font-heading font-extrabold text-base uppercase text-[#111111]">Lecture Transcript</h3>
+                    <p className="text-xs font-mono font-bold text-[#666666] leading-normal max-w-[260px]">
                       View the complete word-for-word text transcription generated from the audio recording.
                     </p>
                   </div>
 
-                  <span className={`text-[9.5px] font-black font-mono tracking-widest flex items-center gap-1 uppercase ${
-                    theme === 'dark' ? 'text-pink-400' : 'text-pink-600'
-                  }`}>
+                  <span className="text-[10px] font-mono font-extrabold tracking-widest flex items-center gap-1 uppercase text-[#111111]">
                     <span>Open Transcript</span>
-                    <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
+                    <ChevronRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
                   </span>
                 </div>
 
                 {/* Card 3: Flashcards */}
                 <div 
                   onClick={() => setActiveTab('Flashcards')}
-                  className={`xl:col-span-2 group relative rounded-3xl overflow-hidden p-6 flex flex-col justify-between h-[230px] cursor-pointer shadow-xl transition-all duration-300 select-none hover:border-orange-500/20 hover:scale-101 hover:-translate-y-1 transform border ${
-                    theme === 'dark'
-                      ? 'bg-gradient-to-br from-[#0c0d12] via-[#0c0d12]/95 to-[#1c140c] border-neutral-900/70'
-                      : 'bg-gradient-to-br from-white via-white to-orange-50/20 border-gray-200'
-                  }`}
+                  className="xl:col-span-2 group relative rounded-[6px] border-2 border-[#111111] bg-white p-6 flex flex-col justify-between h-[210px] cursor-pointer shadow-paper-md transition-all hover:bg-[#FFC400] text-[#111111]"
                 >
-                  <div className="absolute top-0 right-0 p-4 opacity-5 bg-gradient-to-bl from-orange-500 to-transparent w-24 h-24 rounded-bl-full" />
-
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-500/10 text-orange-400 group-hover:bg-orange-600 group-hover:text-white transition-all">
-                    <Bookmark className="h-5.5 w-5.5" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-[4px] border-2 border-[#111111] bg-[#FFC400] text-[#111111]">
+                    <Bookmark className="h-5 w-5 text-[#111111]" />
                   </div>
 
                   <div className="space-y-1">
-                    <h3 className={`font-sans font-black text-lg transition-colors ${
-                      theme === 'dark' ? 'text-white group-hover:text-orange-400' : 'text-gray-900 group-hover:text-orange-600'
-                    }`}>Study Flashcards</h3>
-                    <p className={`text-xs leading-normal ${
-                      theme === 'dark' ? 'text-neutral-400' : 'text-gray-600'
-                    }`}>
+                    <h3 className="font-heading font-extrabold text-base uppercase text-[#111111]">Study Flashcards</h3>
+                    <p className="text-xs font-mono font-bold text-[#666666] leading-normal">
                       Generates an interactive active recall card deck.
                     </p>
                   </div>
 
-                  <span className={`text-[9.5px] font-black font-mono tracking-widest flex items-center gap-1 uppercase ${
-                    theme === 'dark' ? 'text-orange-400' : 'text-orange-600'
-                  }`}>
+                  <span className="text-[10px] font-mono font-extrabold tracking-widest flex items-center gap-1 uppercase text-[#111111]">
                     <span>Practice Deck</span>
-                    <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
+                    <ChevronRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
                   </span>
                 </div>
 
                 {/* Card 4: Quiz */}
                 <div 
                   onClick={() => setActiveTab('Quiz')}
-                  className={`xl:col-span-2 group relative rounded-3xl overflow-hidden p-6 flex flex-col justify-between h-[230px] cursor-pointer shadow-xl transition-all duration-300 select-none hover:border-emerald-500/20 hover:scale-101 hover:-translate-y-1 transform border ${
-                    theme === 'dark'
-                      ? 'bg-gradient-to-br from-[#0c0d12] via-[#0c0d12]/95 to-[#0c1c14] border-neutral-900/70'
-                      : 'bg-gradient-to-br from-white via-white to-emerald-50/20 border-gray-200'
-                  }`}
+                  className="xl:col-span-2 group relative rounded-[6px] border-2 border-[#111111] bg-white p-6 flex flex-col justify-between h-[210px] cursor-pointer shadow-paper-md transition-all hover:bg-[#FFC400] text-[#111111]"
                 >
-                  <div className="absolute top-0 right-0 p-4 opacity-5 bg-gradient-to-bl from-emerald-500 to-transparent w-24 h-24 rounded-bl-full" />
-
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white transition-all">
-                    <GraduationCap className="h-5.5 w-5.5" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-[4px] border-2 border-[#111111] bg-[#19B56B] text-white">
+                    <GraduationCap className="h-5 w-5" />
                   </div>
 
                   <div className="space-y-1">
-                    <h3 className={`font-sans font-black text-lg transition-colors ${
-                      theme === 'dark' ? 'text-white group-hover:text-emerald-400' : 'text-gray-900 group-hover:text-emerald-600'
-                    }`}>Interactive Quiz</h3>
-                    <p className={`text-xs leading-normal ${
-                      theme === 'dark' ? 'text-neutral-400' : 'text-gray-600'
-                    }`}>
+                    <h3 className="font-heading font-extrabold text-base uppercase text-[#111111]">Interactive Quiz</h3>
+                    <p className="text-xs font-mono font-bold text-[#666666] leading-normal">
                       Stitches problem sets with correct explainers.
                     </p>
                   </div>
 
-                  <span className={`text-[9.5px] font-black font-mono tracking-widest flex items-center gap-1 uppercase ${
-                    theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'
-                  }`}>
+                  <span className="text-[10px] font-mono font-extrabold tracking-widest flex items-center gap-1 uppercase text-[#111111]">
                     <span>Test Recall</span>
-                    <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
+                    <ChevronRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
                   </span>
                 </div>
 
                 {/* Card 5: Mind Map */}
                 <div 
                   onClick={() => setActiveTab('Mind Map')}
-                  className={`xl:col-span-2 group relative rounded-3xl overflow-hidden p-6 flex flex-col justify-between h-[230px] cursor-pointer shadow-xl transition-all duration-300 select-none hover:border-cyan-500/20 hover:scale-101 hover:-translate-y-1 transform border ${
-                    theme === 'dark'
-                      ? 'bg-gradient-to-br from-[#0c0d12] via-[#0c0d12]/95 to-[#0c181c] border-neutral-900/70'
-                      : 'bg-gradient-to-br from-white via-white to-cyan-50/20 border-gray-200'
-                  }`}
+                  className="xl:col-span-2 group relative rounded-[6px] border-2 border-[#111111] bg-white p-6 flex flex-col justify-between h-[210px] cursor-pointer shadow-paper-md transition-all hover:bg-[#FFC400] text-[#111111]"
                 >
-                  <div className="absolute top-0 right-0 p-4 opacity-5 bg-gradient-to-bl from-cyan-500 to-transparent w-24 h-24 rounded-bl-full" />
-
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-400 group-hover:bg-cyan-600 group-hover:text-white transition-all">
-                    <Brain className="h-5.5 w-5.5" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-[4px] border-2 border-[#111111] bg-[#2F6BFF] text-white">
+                    <Brain className="h-5 w-5" />
                   </div>
 
                   <div className="space-y-1">
-                    <h3 className={`font-sans font-black text-lg transition-colors ${
-                      theme === 'dark' ? 'text-white group-hover:text-cyan-400' : 'text-gray-900 group-hover:text-cyan-600'
-                    }`}>Concept Mind Map</h3>
-                    <p className={`text-xs leading-normal ${
-                      theme === 'dark' ? 'text-neutral-400' : 'text-gray-600'
-                    }`}>
+                    <h3 className="font-heading font-extrabold text-base uppercase text-[#111111]">Concept Mind Map</h3>
+                    <p className="text-xs font-mono font-bold text-[#666666] leading-normal">
                       Plots a beautiful relational map tree with branches.
                     </p>
                   </div>
 
-                  <span className={`text-[9.5px] font-black font-mono tracking-widest flex items-center gap-1 uppercase ${
-                    theme === 'dark' ? 'text-cyan-400' : 'text-cyan-600'
-                  }`}>
+                  <span className="text-[10px] font-mono font-extrabold tracking-widest flex items-center gap-1 uppercase text-[#111111]">
                     <span>View Graph</span>
-                    <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
+                    <ChevronRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
                   </span>
                 </div>
 
                 {/* Card 6: Slide Deck */}
                 <div 
                   onClick={() => setActiveTab('Slide Deck')}
-                  className={`xl:col-span-2 group relative rounded-3xl overflow-hidden p-6 flex flex-col justify-between h-[230px] cursor-pointer shadow-xl transition-all duration-300 select-none hover:border-rose-500/20 hover:scale-101 hover:-translate-y-1 transform border ${
-                    theme === 'dark'
-                      ? 'bg-gradient-to-br from-[#0c0d12] via-[#0c0d12]/95 to-[#1e1014] border-neutral-900/70'
-                      : 'bg-gradient-to-br from-white via-white to-rose-50/20 border-gray-200'
-                  }`}
+                  className="xl:col-span-2 group relative rounded-[6px] border-2 border-[#111111] bg-white p-6 flex flex-col justify-between h-[210px] cursor-pointer shadow-paper-md transition-all hover:bg-[#FFC400] text-[#111111]"
                 >
-                  <div className="absolute top-0 right-0 p-4 opacity-5 bg-gradient-to-bl from-rose-500 to-transparent w-24 h-24 rounded-bl-full" />
-
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-500/10 text-rose-400 group-hover:bg-rose-600 group-hover:text-white transition-all">
-                    <Layout className="h-5.5 w-5.5" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-[4px] border-2 border-[#111111] bg-[#FF4D4D] text-white">
+                    <Layout className="h-5 w-5" />
                   </div>
 
                   <div className="space-y-1">
-                    <h3 className={`font-sans font-black text-lg transition-colors ${
-                      theme === 'dark' ? 'text-white group-hover:text-rose-400' : 'text-gray-900 group-hover:text-rose-600'
-                    }`}>Presentation Slides</h3>
-                    <p className={`text-xs leading-normal ${
-                      theme === 'dark' ? 'text-neutral-400' : 'text-gray-600'
-                    }`}>
+                    <h3 className="font-heading font-extrabold text-base uppercase text-[#111111]">Presentation Slides</h3>
+                    <p className="text-xs font-mono font-bold text-[#666666] leading-normal">
                       Reduces materials into widescreen slides.
                     </p>
                   </div>
 
-                  <span className={`text-[9.5px] font-black font-mono tracking-widest flex items-center gap-1 uppercase ${
-                    theme === 'dark' ? 'text-rose-400' : 'text-rose-600'
-                  }`}>
+                  <span className="text-[10px] font-mono font-extrabold tracking-widest flex items-center gap-1 uppercase text-[#111111]">
                     <span>Launch Slide Carousel</span>
-                    <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
+                    <ChevronRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
                   </span>
                 </div>
 
                 {/* Card 7: Video Overview */}
                 <div 
                   onClick={() => setActiveTab('Video Overview')}
-                  className={`xl:col-span-2 group relative rounded-3xl overflow-hidden p-6 flex flex-col justify-between h-[230px] cursor-pointer shadow-xl transition-all duration-300 select-none hover:border-blue-500/20 hover:scale-101 hover:-translate-y-1 transform border ${
-                    theme === 'dark'
-                      ? 'bg-gradient-to-br from-[#0c0d12] via-[#0c0d12]/95 to-[#10141c] border-neutral-900/70'
-                      : 'bg-gradient-to-br from-white via-white to-blue-50/20 border-gray-200'
-                  }`}
+                  className="xl:col-span-2 group relative rounded-[6px] border-2 border-[#111111] bg-white p-6 flex flex-col justify-between h-[210px] cursor-pointer shadow-paper-md transition-all hover:bg-[#FFC400] text-[#111111]"
                 >
-                  <div className="absolute top-0 right-0 p-4 opacity-5 bg-gradient-to-bl from-blue-500 to-transparent w-24 h-24 rounded-bl-full" />
-
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-all">
-                    <Volume2 className="h-5.5 w-5.5" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-[4px] border-2 border-[#111111] bg-[#2F6BFF] text-white">
+                    <Volume2 className="h-5 w-5" />
                   </div>
 
                   <div className="space-y-1">
-                    <h3 className={`font-sans font-black text-lg transition-colors ${
-                      theme === 'dark' ? 'text-white group-hover:text-blue-400' : 'text-gray-900 group-hover:text-blue-600'
-                    }`}>Podcast Video Overview</h3>
-                    <p className={`text-xs leading-normal ${
-                      theme === 'dark' ? 'text-neutral-400' : 'text-gray-600'
-                    }`}>
+                    <h3 className="font-heading font-extrabold text-base uppercase text-[#111111]">Podcast Video Overview</h3>
+                    <p className="text-xs font-mono font-bold text-[#666666] leading-normal">
                       Generates conversational podcast summaries.
                     </p>
                   </div>
 
-                  <span className={`text-[9.5px] font-black font-mono tracking-widest flex items-center gap-1 uppercase ${
-                    theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
-                  }`}>
+                  <span className="text-[10px] font-mono font-extrabold tracking-widest flex items-center gap-1 uppercase text-[#111111]">
                     <span>Listen Live</span>
-                    <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
+                    <ChevronRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
                   </span>
                 </div>
 
                 {/* Card 8: Study Guide */}
                 <div 
                   onClick={() => setActiveTab('Study Guide')}
-                  className={`xl:col-span-2 group relative rounded-3xl overflow-hidden p-6 flex flex-col justify-between h-[230px] cursor-pointer shadow-xl transition-all duration-300 select-none hover:border-purple-500/20 hover:scale-101 hover:-translate-y-1 transform border ${
-                    theme === 'dark'
-                      ? 'bg-gradient-to-br from-[#0c0d12] via-[#0c0d12]/95 to-[#140c1a] border-neutral-900/70'
-                      : 'bg-gradient-to-br from-white via-white to-purple-50/20 border-gray-200'
-                  }`}
+                  className="xl:col-span-2 group relative rounded-[6px] border-2 border-[#111111] bg-white p-6 flex flex-col justify-between h-[210px] cursor-pointer shadow-paper-md transition-all hover:bg-[#FFC400] text-[#111111]"
                 >
-                  <div className="absolute top-0 right-0 p-4 opacity-5 bg-gradient-to-bl from-purple-500 to-transparent w-24 h-24 rounded-bl-full" />
-
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-purple-500/10 text-purple-400 group-hover:bg-purple-600 group-hover:text-white transition-all">
-                    <BookOpen className="h-5.5 w-5.5" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-[4px] border-2 border-[#111111] bg-[#FFC400] text-[#111111]">
+                    <BookOpen className="h-5 w-5 text-[#111111]" />
                   </div>
 
                   <div className="space-y-1">
-                    <h3 className={`font-sans font-black text-lg transition-colors ${
-                      theme === 'dark' ? 'text-white group-hover:text-purple-400' : 'text-gray-900 group-hover:text-purple-600'
-                    }`}>Study Guide</h3>
-                    <p className={`text-xs leading-normal max-w-[200px] ${
-                      theme === 'dark' ? 'text-neutral-400' : 'text-gray-600'
-                    }`}>
+                    <h3 className="font-heading font-extrabold text-base uppercase text-[#111111]">Study Guide</h3>
+                    <p className="text-xs font-mono font-bold text-[#666666] leading-normal">
                       Detailed textbook syllabus index mapping.
                     </p>
                   </div>
 
-                  <span className={`text-[9.5px] font-black font-mono tracking-widest flex items-center gap-1.5 uppercase ${
-                    theme === 'dark' ? 'text-purple-400' : 'text-purple-600'
-                  }`}>
+                  <span className="text-[10px] font-mono font-extrabold tracking-widest flex items-center gap-1.5 uppercase text-[#111111]">
                     <span>Unlock Syllabus</span>
                     <ChevronRight className="h-4 w-4 group-hover:translate-x-1.5 transition-transform" />
                   </span>
                 </div>
 
-              </div>      </div>
+              </div>
 
               {/* Quick Sandbox Warning info row */}
               <div className={`rounded-2xl p-4 border flex items-center gap-3 select-none ${
@@ -1916,19 +2024,15 @@ export default function ResearchHubView({
 
             </div>
 
-            {/* Right Column: Premium Notes Workspace (takes 1 col on lg) */}
-            <div className={`lg:col-span-1 flex flex-col h-full border rounded-3xl p-6.5 relative backdrop-blur-md shadow-2xl min-h-[500px] ${
-              theme === 'dark' ? 'bg-[#0c0d12]/60 border-neutral-900' : 'bg-white border-gray-200'
-            }`}>
+            {/* Right Column: Premium Notes Workspace */}
+            <div className="lg:col-span-1 flex flex-col h-full rounded-[6px] border-2 border-[#111111] bg-white p-6 relative shadow-paper-lg min-h-[500px] text-[#111111]">
               
-              <div className="flex items-center justify-between pb-3.5 border-b border-neutral-900/60">
+              <div className="flex items-center justify-between pb-3.5 border-b-2 border-[#111111]">
                 <div className="space-y-0.5">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-[#2563EB] dark:text-indigo-400 font-mono block">Notes Workspace</span>
-                  <h3 className={`text-sm font-sans font-black flex items-center gap-1.5 ${
-                    theme === 'dark' ? 'text-white' : 'text-gray-900'
-                  }`}>
-                    <span>Active Notes</span>
-                    <span className="rounded-full bg-indigo-500/10 px-2 py-0.5 text-[10px] font-bold text-indigo-400 font-mono">
+                  <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-[#111111] block">NOTES WORKSPACE</span>
+                  <h3 className="text-sm font-heading font-extrabold flex items-center gap-2 text-[#111111] uppercase">
+                    <span>ACTIVE NOTES</span>
+                    <span className="rounded-[4px] bg-[#FFC400] border border-[#111111] px-2 py-0.5 text-[10px] font-mono font-bold text-[#111111]">
                       {notes.length}
                     </span>
                   </h3>
@@ -1941,7 +2045,7 @@ export default function ResearchHubView({
                       setNoteTitle('');
                       setNoteContent('');
                     }}
-                    className="flex items-center gap-1 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-[11px] font-black px-3.5 py-2 text-white transition-all active:scale-95 shadow-lg focus:outline-none cursor-pointer"
+                    className="flex items-center gap-1 rounded-[6px] border-2 border-[#111111] bg-[#2F6BFF] text-white text-xs font-mono font-extrabold px-3.5 py-2 uppercase hover:bg-[#255cd9] transition-all shadow-paper-sm cursor-pointer"
                   >
                     <Plus className="h-3.5 w-3.5" />
                     <span>NEW NOTE</span>
@@ -1953,58 +2057,48 @@ export default function ResearchHubView({
               {isCreatingNote || editingNoteId ? (
                 <form 
                   onSubmit={isCreatingNote ? handleCreateNote : (e) => { e.preventDefault(); handleUpdateNote(editingNoteId!); }}
-                  className="space-y-4 pt-4 animate-fade-in"
+                  className="space-y-4 pt-4 text-left"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest font-mono">
-                      {isCreatingNote ? 'Create Note Document' : 'Edit Note Document'}
+                    <span className="text-[10px] font-mono font-extrabold text-[#111111] uppercase tracking-widest">
+                      {isCreatingNote ? 'CREATE NOTE DOCUMENT' : 'EDIT NOTE DOCUMENT'}
                     </span>
                     <button
                       type="button"
                       onClick={handleCancelEdit}
-                      className={`text-[10px] font-bold transition-colors cursor-pointer ${
-                        theme === 'dark' ? 'text-neutral-400 hover:text-white' : 'text-gray-500 hover:text-gray-800'
-                      }`}
+                      className="text-xs font-mono font-bold text-[#666666] hover:text-[#111111] cursor-pointer uppercase"
                     >
                       Cancel
                     </button>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className={`text-[9px] font-bold uppercase font-mono ${
-                      theme === 'dark' ? 'text-neutral-500' : 'text-gray-500'
-                    }`}>NOTE TITLE</label>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-mono font-extrabold uppercase text-[#111111] block">NOTE TITLE</label>
                     <input
                       type="text"
                       required
                       value={noteTitle}
                       onChange={(e) => setNoteTitle(e.target.value)}
                       placeholder="e.g. Backpropagation Formulas"
-                      className={`w-full rounded-xl border text-xs font-semibold placeholder-neutral-500 outline-none p-3.5 transition-all focus:border-indigo-500 ${
-                        theme === 'dark' ? 'border-neutral-900 bg-neutral-950 text-white' : 'border-gray-200 bg-gray-50 text-gray-800'
-                      }`}
+                      className="w-full rounded-[6px] border-2 border-[#111111] bg-white text-xs font-mono font-bold p-3 text-[#111111] outline-none shadow-paper-sm"
                     />
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className={`text-[9px] font-bold uppercase font-mono ${
-                      theme === 'dark' ? 'text-neutral-500' : 'text-gray-500'
-                    }`}>NOTE CONTENT</label>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-mono font-extrabold uppercase text-[#111111] block">NOTE CONTENT</label>
                     <textarea
                       required
                       rows={6}
                       value={noteContent}
                       onChange={(e) => setNoteContent(e.target.value)}
                       placeholder="Write your research notes, insights, or lecture concepts here..."
-                      className={`w-full rounded-xl border text-xs font-medium placeholder-neutral-500 outline-none p-3.5 transition-all focus:border-indigo-500 resize-none font-serif leading-relaxed ${
-                        theme === 'dark' ? 'border-neutral-900 bg-neutral-950 text-neutral-300' : 'border-gray-200 bg-gray-50 text-gray-700'
-                      }`}
+                      className="w-full rounded-[6px] border-2 border-[#111111] bg-white text-xs font-mono font-bold p-3 text-[#111111] outline-none shadow-paper-sm resize-none"
                     />
                   </div>
 
                   <button
                     type="submit"
-                    className="w-full py-3 rounded-xl font-sans text-xs font-black tracking-wide text-center bg-indigo-600 hover:bg-indigo-700 text-white transition-all focus:outline-none cursor-pointer"
+                    className="w-full py-3 rounded-[6px] border-2 border-[#111111] bg-[#FFC400] text-[#111111] font-mono text-xs font-extrabold uppercase hover:bg-[#ffe066] transition-all shadow-paper-sm cursor-pointer"
                   >
                     {isCreatingNote ? 'SAVE NOTE TO FIRESTORE' : 'UPDATE NOTE IN FIRESTORE'}
                   </button>
@@ -2014,38 +2108,35 @@ export default function ResearchHubView({
                   
                   {/* Search Notes widget */}
                   {notes.length > 0 && (
-                    <div className="relative w-full mb-4.5">
-                      <Search className="absolute top-1/2 left-3.5 h-3.5 w-3.5 -translate-y-1/2 text-neutral-500" />
+                    <div className="relative w-full mb-4">
+                      <Search className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-[#111111]" />
                       <input
                         type="text"
                         value={noteSearchQuery}
                         onChange={(e) => setNoteSearchQuery(e.target.value)}
                         placeholder="Search active notes..."
-                        className={`w-full rounded-xl pl-9 pr-4 py-2.5 text-[11px] font-semibold border placeholder-neutral-500 outline-none focus:border-indigo-500 ${
-                          theme === 'dark' ? 'bg-[#121318] text-white border-neutral-900/60' : 'bg-gray-50 text-gray-800 border-gray-200'
-                        }`}
+                        className="w-full rounded-[6px] border-2 border-[#111111] bg-[#F6F2EA] pl-9 pr-4 py-2.5 text-xs font-mono font-bold text-[#111111] outline-none shadow-paper-sm"
                       />
                     </div>
                   )}
 
                   {/* Real-time Loading Shimmer State */}
                   {notesLoading ? (
-                    <div className="space-y-3.5 py-4 opacity-40">
-                      <div className="h-16 bg-[#121318] rounded-xl animate-pulse" />
-                      <div className="h-16 bg-[#121318] rounded-xl animate-pulse" />
-                      <div className="h-16 bg-[#121318] rounded-xl animate-pulse" />
+                    <div className="space-y-3 py-4">
+                      <div className="h-16 bg-[#F6F2EA] border-2 border-[#111111] rounded-[6px] animate-pulse" />
+                      <div className="h-16 bg-[#F6F2EA] border-2 border-[#111111] rounded-[6px] animate-pulse" />
                     </div>
                   ) : filteredNotes.length === 0 ? (
-                    <div className="flex-1 flex flex-col items-center justify-center text-center text-neutral-500 p-6">
-                      <FileText className="h-9 w-9 mb-2 opacity-30 text-indigo-400" />
-                      <p className="text-xs font-black font-sans">No Notes Found</p>
-                      <p className="text-[10px] text-neutral-500 leading-normal font-medium mt-1.5 max-w-[200px]">
+                    <div className="flex-1 flex flex-col items-center justify-center text-center text-[#111111] p-6 space-y-2">
+                      <FileText className="h-9 w-9 opacity-40 text-[#111111]" />
+                      <p className="text-xs font-heading font-extrabold uppercase">No Notes Found</p>
+                      <p className="text-[11px] font-mono text-[#666666] font-bold max-w-[200px]">
                         {noteSearchQuery ? 'Try matching alternative terms.' : 'Create notes to store core concepts from this lecture.'}
                       </p>
                       {!noteSearchQuery && (
                         <button
                           onClick={() => setIsCreatingNote(true)}
-                          className="mt-4 px-4 py-2 rounded-xl border border-dashed border-indigo-500/30 hover:border-indigo-500 text-indigo-400 font-bold text-xs transition-colors cursor-pointer"
+                          className="mt-3 px-4 py-2 rounded-[6px] border-2 border-[#111111] bg-[#FFC400] text-[#111111] font-mono font-extrabold text-xs uppercase shadow-paper-sm cursor-pointer"
                         >
                           Create Note
                         </button>
@@ -2056,56 +2147,44 @@ export default function ResearchHubView({
                       {filteredNotes.map((note) => (
                         <div 
                           key={note.id}
-                          className={`group p-4 rounded-2xl transition-all flex flex-col justify-between space-y-3 relative border ${
-                            theme === 'dark'
-                              ? 'bg-[#121318]/60 border-neutral-900/80 hover:border-indigo-500/20 hover:bg-[#0c0d12]/45'
-                              : 'bg-gray-50/50 border-gray-200/60 hover:border-indigo-400/50 hover:bg-gray-50'
-                          }`}
+                          className="group p-4 rounded-[6px] border-2 border-[#111111] bg-[#F6F2EA] hover:bg-[#FFC400] transition-colors flex flex-col justify-between space-y-2 text-[#111111]"
                         >
                           <div className="space-y-1">
                             <div className="flex justify-between items-start gap-4">
-                              <h4 className={`text-xs font-black truncate max-w-[150px] transition-colors cursor-pointer ${
-                                theme === 'dark' ? 'text-white group-hover:text-indigo-400' : 'text-gray-900 group-hover:text-indigo-600'
-                              }`} onClick={() => handleStartEditNote(note)}>
+                              <h4 className="text-xs font-heading font-extrabold uppercase truncate max-w-[150px] cursor-pointer text-[#111111]" onClick={() => handleStartEditNote(note)}>
                                 {note.title}
                               </h4>
                               
                               {/* Edit / Trash Actions */}
-                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="flex items-center gap-1">
                                 <button
                                   onClick={() => handleStartEditNote(note)}
-                                  className="p-1 rounded hover:bg-neutral-800 text-neutral-400 hover:text-white focus:outline-none cursor-pointer"
+                                  className="p-1 rounded border border-[#111111] bg-white text-[#111111] hover:bg-[#111111] hover:text-white transition-colors cursor-pointer"
                                   title="Edit Note"
                                 >
                                   <Sparkles className="h-3 w-3" />
                                 </button>
                                 <button
                                   onClick={() => deleteNote(note.id)}
-                                  className="p-1 rounded hover:bg-red-500/10 text-neutral-400 hover:text-red-500 focus:outline-none cursor-pointer"
+                                  className="p-1 rounded border border-[#111111] bg-[#FF4D4D] text-white hover:bg-red-700 transition-colors cursor-pointer"
                                   title="Delete Note"
                                 >
                                   <Trash2 className="h-3 w-3" />
                                 </button>
                               </div>
                             </div>
-                            <p className={`text-[11px] font-serif leading-relaxed line-clamp-3 leading-tighter ${
-                              theme === 'dark' ? 'text-neutral-400' : 'text-gray-600'
-                            }`}>
+                            <p className="text-[11px] font-mono text-[#666666] font-bold line-clamp-3">
                               {note.content}
                             </p>
                           </div>
 
-                          <div className={`text-[9px] font-mono font-medium flex items-center justify-between border-t pt-2 ${
-                            theme === 'dark' ? 'text-neutral-500 border-neutral-900/50' : 'text-gray-400 border-gray-200'
-                          }`}>
+                          <div className="text-[9px] font-mono font-bold text-[#666666] border-t border-[#111111]/20 pt-2 flex items-center justify-between">
                             <span>Firestore Synced</span>
                             <span>
                               {note.updatedAt?.seconds 
                                 ? new Date(note.updatedAt.seconds * 1000).toLocaleDateString(undefined, {
                                     month: 'short',
-                                    day: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
+                                    day: 'numeric'
                                   })
                                 : 'Just now'}
                             </span>

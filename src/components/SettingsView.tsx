@@ -149,13 +149,15 @@ interface SettingsViewProps {
   onUpdateSettings: (newSettings: UserSettings) => void;
   setActivePage: (page: PageId) => void;
   theme?: 'light' | 'dark';
+  onLogOut?: () => void;
 }
 
 export default function SettingsView({
   settings,
   onUpdateSettings,
   setActivePage,
-  theme = 'dark'
+  theme = 'dark',
+  onLogOut
 }: SettingsViewProps) {
   
   // Local state
@@ -460,47 +462,58 @@ export default function SettingsView({
   };
 
   return (
-    <div className={`grid grid-cols-1 md:grid-cols-4 gap-6 max-w-5xl mx-auto pb-12 transition-colors duration-300 ${
-      theme === 'dark' ? 'text-neutral-100' : 'text-gray-900'
-    }`}>
+    <div className="space-y-6 max-w-7xl mx-auto pb-16 bg-grid-paper p-4 md:p-8 select-none">
       
-      {/* Settings Navigation Menu Sidebar (1 Column) */}
-      <div className={`rounded-2xl border p-4 flex md:flex-col overflow-x-auto whitespace-nowrap scrollbar-none gap-1.5 md:space-y-1.5 h-fit ${
-        theme === 'dark' ? 'bg-[#0e0f14] border-neutral-900' : 'bg-white border-gray-200'
-      }`}>
-        {[
-          { id: 'profile', label: 'User Profile', icon: User },
-          { id: 'ai', label: 'AI Parameters', icon: Sparkles },
-          { id: 'lms', label: 'Canvas/LMS portal', icon: Link2 },
-          { id: 'billing', label: 'Billing & Plan', icon: CreditCard }
-        ].map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-3 rounded-xl px-4 py-3 font-sans text-xs font-semibold tracking-tight transition-all focus:outline-none flex-shrink-0 md:w-full cursor-pointer ${
-                isActive
-                  ? theme === 'dark'
-                    ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'bg-black text-white shadow-xs'
-                  : theme === 'dark'
-                    ? 'text-neutral-400 hover:bg-[#1a1b24]/40 hover:text-white'
-                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-              }`}
-            >
-              <Icon className="h-4.5 w-4.5 flex-shrink-0" />
-              <span>{tab.label}</span>
-            </button>
-          );
-        })}
+      {/* Settings Header */}
+      <div className="rounded-[6px] border-2 border-[#111111] bg-white p-6 shadow-paper-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <span className="section-label text-[10px] font-bold text-[#666666] uppercase tracking-[3px] block">
+            PREFERENCES & CONFIGURATION
+          </span>
+          <h1 className="font-heading font-extrabold text-2xl md:text-3xl text-[#111111] uppercase tracking-tight mt-1">
+            ACCOUNT & SYSTEM SETTINGS
+          </h1>
+          <p className="text-xs font-mono text-[#666666] mt-1">
+            Manage your academic identity, AI providers, API keys, and cognitive parameters.
+          </p>
+        </div>
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        
+        {/* Left Navigation Sidebar */}
+        <div className="md:col-span-1 rounded-[6px] border-2 border-[#111111] bg-white p-3 shadow-paper-md flex flex-col gap-1.5 h-fit">
+          <span className="section-label text-[10px] font-bold text-[#666666] uppercase tracking-[3px] px-2 py-1">
+            NAVIGATION
+          </span>
+
+          {[
+            { id: 'profile', label: 'User Profile', icon: User },
+            { id: 'ai', label: 'AI Provider Keys', icon: Sparkles },
+            { id: 'usage', label: 'Usage & Costs', icon: Activity },
+            { id: 'security', label: 'Security & Auth', icon: ShieldCheck }
+          ].map(tab => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[4px] border-2 font-mono text-xs font-bold uppercase transition-all ${
+                  isActive
+                    ? 'bg-[#FFC400] text-[#111111] border-[#111111] shadow-paper-sm font-extrabold translate-x-1'
+                    : 'bg-white text-[#111111] border-transparent hover:border-[#111111] hover:bg-[#FFF8D6]'
+                }`}
+              >
+                <Icon className="w-4 h-4 shrink-0" />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
       {/* Main Settings Form Block (3 Columns) */}
-      <div className={`md:col-span-3 rounded-2xl border p-6 shadow-xs relative ${
-        theme === 'dark' ? 'bg-[#0d0e12]/60 border-neutral-900' : 'bg-white border-gray-200'
-      }`}>
+      <div className="md:col-span-3 rounded-[6px] border-2 border-[#111111] bg-white p-6 shadow-paper-md relative">
         
         {saveSuccess && (
           <div className={`absolute top-4 right-6 rounded-lg border px-3.5 py-1.5 text-xs font-semibold flex items-center gap-1.5 animate-bounce z-50 ${
@@ -1291,11 +1304,38 @@ export default function SettingsView({
                 <span>Compare All SaaS Plans</span>
               </button>
             </div>
+
+            {/* DANGER ZONE: DATA PURGE AND LOGOUT */}
+            <div className="pt-6 border-t-2 border-[#111111] space-y-3">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-[#FF4D4D]" />
+                <h3 className="font-heading font-extrabold text-sm uppercase text-[#111111]">
+                  DANGER ZONE: PURGE DATA & LOGOUT
+                </h3>
+              </div>
+              <p className="text-xs font-mono text-[#666666]">
+                Instantly wipe all local cached data, clear session tokens, and sign out of all user accounts across Firebase Auth.
+              </p>
+              <div className="flex flex-wrap gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm("Are you sure you want to purge all stored data and log out of all accounts? This action cannot be undone.")) {
+                      if (onLogOut) onLogOut();
+                    }
+                  }}
+                  className="px-5 py-2.5 rounded-[6px] bg-[#FF4D4D] text-white border-2 border-[#111111] font-mono text-xs font-extrabold uppercase shadow-paper-sm hover:bg-[#ff3333] transition-colors cursor-pointer flex items-center gap-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span>PURGE ALL DATA & LOGOUT ALL ACCOUNTS</span>
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
       </div>
-
     </div>
+  </div>
   );
 }
