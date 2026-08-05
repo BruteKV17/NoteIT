@@ -843,9 +843,7 @@ export default function App() {
 
   return (
     <ErrorBoundary theme={theme}>
-      <div className={`flex h-screen w-screen overflow-hidden transition-all duration-300 ${
-        theme === 'dark' ? 'bg-[#0a0a0c] text-neutral-100' : 'bg-[#FAF9F5] text-gray-900'
-      }`}>
+      <div className="flex h-screen w-screen overflow-hidden transition-all duration-300 bg-[#F6F2EA] text-[#111111]">
         
         {/* Sidebar - hides completely on landing page layout */}
         {!isLanding && (
@@ -862,7 +860,7 @@ export default function App() {
         )}
 
         {/* Main core layout frame container */}
-        <div className="flex flex-1 flex-col overflow-hidden h-full">
+        <div className="flex flex-1 flex-col overflow-hidden h-full bg-[#F6F2EA]">
           {/* Navbar - hides on landing page layout */}
           {!isLanding && (
             <Navbar
@@ -880,12 +878,8 @@ export default function App() {
           )}
 
           {/* Dynamic page contents viewer */}
-          <main className={`flex-1 overflow-y-auto ${
-            isLanding 
-              ? 'p-0 text-gray-900 bg-[#FAF9F5]' 
-              : theme === 'dark' 
-                ? 'p-4 md:p-6 bg-[#0a0a0c]' 
-                : 'p-4 md:p-6 bg-[#FAF9F5]'
+          <main className={`flex-1 overflow-y-auto bg-[#F6F2EA] text-[#111111] ${
+            isLanding ? 'p-0' : 'p-2 md:p-3'
           }`}>
             {renderActiveView()}
           </main>

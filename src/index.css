@@ -53,31 +53,31 @@
 
 /* Hard Solid Offset Shadows */
 .shadow-paper-sm {
-  box-shadow: 2px 2px 0px #111111;
+  box-shadow: 1.5px 1.5px 0px #111111;
 }
 
 .shadow-paper {
-  box-shadow: 3px 3px 0px #111111;
+  box-shadow: 2px 2px 0px #111111;
 }
 
 .shadow-paper-md {
-  box-shadow: 4px 4px 0px #111111;
+  box-shadow: 3px 3px 0px #111111;
 }
 
 .shadow-paper-lg {
-  box-shadow: 6px 6px 0px #111111;
+  box-shadow: 4px 4px 0px #111111;
 }
 
 .shadow-paper-yellow {
-  box-shadow: 4px 4px 0px #FFC400;
+  box-shadow: 3px 3px 0px #FFC400;
 }
 
 .shadow-paper-red {
-  box-shadow: 4px 4px 0px #FF4D4D;
+  box-shadow: 3px 3px 0px #FF4D4D;
 }
 
 .shadow-paper-blue {
-  box-shadow: 4px 4px 0px #2F6BFF;
+  box-shadow: 3px 3px 0px #2F6BFF;
 }
 
 /* Hover Translate and Active State */

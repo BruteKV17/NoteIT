@@ -70,12 +70,12 @@ export default function Sidebar({
   const isPro = settings.subscription.planName !== 'BYOK';
 
   const sidebarContent = (
-    <div className={`flex h-full flex-col select-none transition-all duration-200 bg-[#F6F2EA] text-[#111111] border-r-2 border-[#111111] ${
+    <div className={`flex h-full flex-col select-none transition-all duration-200 bg-[#F6F2EA] text-[#111111] border-r border-[#111111] ${
       isCollapsed ? 'w-20' : 'w-[260px] lg:w-[280px]'
     }`}>
       
       {/* Brand area */}
-      <div className={`flex h-16 items-center border-b-2 border-[#111111] bg-white ${
+      <div className={`flex h-16 items-center border-b border-[#111111] bg-white ${
         isCollapsed ? 'justify-center px-1 gap-1' : 'justify-between px-4'
       }`}>
         <div 

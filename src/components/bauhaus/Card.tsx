@@ -39,7 +39,7 @@ export const Card: React.FC<CardProps> = ({
 
   return (
     <div
-      className={`rounded-[6px] border-2 ${accentStyles[accentBorder]} ${shadowStyles[shadow]} ${activeStyles} ${interactiveStyles} ${className}`}
+      className={`rounded-[6px] border ${accentStyles[accentBorder]} ${shadowStyles[shadow]} ${activeStyles} ${interactiveStyles} ${className}`}
       {...props}
     >
       {children}
