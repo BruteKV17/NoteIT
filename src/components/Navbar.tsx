@@ -105,15 +105,15 @@ export default function Navbar({
           <Menu className="h-4 w-4" />
         </button>
         
-        <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#666666]">
+        <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-[#666666]">
           <span 
-            className="bg-[#111111] text-white px-2 py-0.5 rounded-[4px] cursor-pointer hover:bg-[#FFC400] hover:text-[#111111] transition-colors"
+            className="hidden sm:inline-block bg-[#111111] text-white px-2 py-0.5 rounded-[4px] cursor-pointer hover:bg-[#FFC400] hover:text-[#111111] transition-colors"
             onClick={() => setActivePage('dashboard')}
           >
             NOTEIT
           </span>
-          <ChevronRight className="h-3.5 w-3.5 text-[#111111]" />
-          <span className="bg-[#FFC400] text-[#111111] px-2.5 py-0.5 rounded-[4px] font-bold border-2 border-[#111111] shadow-paper-sm uppercase tracking-wider">
+          <ChevronRight className="hidden sm:inline-block h-3.5 w-3.5 text-[#111111]" />
+          <span className="bg-[#FFC400] text-[#111111] px-2 py-0.5 sm:px-2.5 rounded-[4px] font-bold border border-[#111111] shadow-paper-sm uppercase tracking-wider text-[11px] sm:text-xs">
             {getPageTitle()}
           </span>
         </div>
@@ -128,7 +128,7 @@ export default function Navbar({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search notes, summaries, transcripts..."
-            className="w-full rounded-[6px] border-2 border-[#111111] bg-white pl-9 pr-14 py-1.5 text-xs font-medium text-[#111111] shadow-paper-sm placeholder:text-[#888888] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FFC400]"
+            className="w-full rounded-[6px] border border-[#111111] bg-white pl-9 pr-14 py-1.5 text-xs font-medium text-[#111111] shadow-paper-sm placeholder:text-[#888888] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FFC400]"
           />
           <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 bg-[#F6F2EA] px-1.5 py-0.5 rounded-[3px] border border-[#111111] text-[10px] font-mono font-bold text-[#666666]">
             <span>⌘</span>
@@ -138,9 +138,9 @@ export default function Navbar({
       </div>
 
       {/* Right widgets: Quick triggers, actions, profiles */}
-      <div className="flex items-center gap-2.5 relative">
+      <div className="flex items-center gap-2 relative">
         
-        {/* Pro Badge / Trigger */}
+        {/* Pro Badge / Trigger - Hidden on mobile/tablet to preserve clean layout */}
         {settings.subscription.planName === 'BYOK' ? (
           <Button
             variant="primary"
@@ -152,9 +152,11 @@ export default function Navbar({
             Unleash Pro
           </Button>
         ) : (
-          <Badge variant="yellow" size="md" icon={<Sparkles className="h-3.5 w-3.5" />}>
-            Pro Active
-          </Badge>
+          <div className="hidden lg:inline-flex">
+            <Badge variant="yellow" size="md" icon={<Sparkles className="h-3.5 w-3.5" />}>
+              Pro Active
+            </Badge>
+          </div>
         )}
 
         {/* Short-path Actions */}
@@ -173,7 +175,7 @@ export default function Navbar({
         {/* Activity Center indicator */}
         <button
           onClick={() => handleDropdownOption('notifications')}
-          className="relative flex h-9 w-9 items-center justify-center rounded-[6px] border-2 border-[#111111] bg-white shadow-paper-sm text-[#111111] hover:bg-[#FFF8D6] focus:outline-none"
+          className="relative flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-[6px] border border-[#111111] bg-white shadow-paper-sm text-[#111111] hover:bg-[#FFF8D6] focus:outline-none cursor-pointer"
           title="Activity Center"
         >
           <Bell className="h-4 w-4" />
