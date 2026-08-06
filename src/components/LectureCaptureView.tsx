@@ -659,7 +659,7 @@ export default function LectureCaptureView({
   };
 
   const renderTranscriptContent = (text: string) => {
-    if (!text) return <p className="text-neutral-500 italic">No transcript content available.</p>;
+    if (!text) return <p className="text-[#666666] font-mono text-xs italic">No transcript content available.</p>;
     const timestampRegex = /(\[\d{1,2}:\d{2}\])/g;
     const parts = text.split(timestampRegex);
     return parts.map((part, index) => {
@@ -671,13 +671,13 @@ export default function LectureCaptureView({
             key={index}
             id={`transcript-time-${cleanTimeId}`}
             onClick={() => handleTimestampClick(timeVal)}
-            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 cursor-pointer hover:bg-indigo-600 hover:text-white transition-all mr-1"
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] text-[10px] font-mono font-bold bg-[#FFC400] text-[#111111] border border-[#111111] shadow-paper-sm cursor-pointer hover:bg-[#ffe066] transition-all mr-1.5 select-none"
           >
             {part}
           </span>
         );
       }
-      return <span key={index}>{part}</span>;
+      return <span key={index} className="text-[#111111] font-medium leading-relaxed">{part}</span>;
     });
   };
 
@@ -1255,17 +1255,17 @@ export default function LectureCaptureView({
           
           {/* PANE 1: LEFT - TRANSCRIPT COLUMN */}
           <div 
-            className={`w-full md:flex-shrink-0 flex flex-col border-r overflow-hidden ${
-              theme === 'dark' ? 'bg-[#08090c] border-neutral-900' : 'bg-gray-50/50 border-gray-200'
-            } ${isMobile && mobileWorkspaceTab !== 'transcript' ? 'hidden' : 'flex'}`}
+            className={`w-full md:flex-shrink-0 flex flex-col border-r border-[#111111] overflow-hidden bg-[#F6F2EA] ${
+              isMobile && mobileWorkspaceTab !== 'transcript' ? 'hidden' : 'flex'
+            }`}
             style={!isMobile ? { width: `${transcriptWidth}%` } : {}}
           >
-            <div className="p-4 border-b border-neutral-900/10 dark:border-neutral-900/50">
-              <h2 className="text-xs font-black text-indigo-400 uppercase tracking-widest font-mono">Lecture Transcript</h2>
-              <p className="text-[10px] text-neutral-400 mt-0.5">Click timestamps to sync milestone highlights.</p>
+            <div className="p-4 border-b border-[#111111] bg-white">
+              <h2 className="text-xs font-heading font-extrabold text-[#111111] uppercase tracking-wider font-mono">Lecture Transcript</h2>
+              <p className="text-[10px] text-[#666666] font-mono mt-0.5">Click timestamps to sync milestone highlights.</p>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 font-sans text-xs leading-relaxed select-text">
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 font-sans text-xs text-[#111111] leading-relaxed select-text bg-white m-3 rounded-[6px] border border-[#111111] shadow-paper-sm">
               {renderTranscriptContent(activeLecture.cleanTranscript || activeLecture.transcript || '')}
             </div>
           </div>
@@ -1273,15 +1273,9 @@ export default function LectureCaptureView({
           {/* Drag Handle Divider */}
           <div 
             onMouseDown={startResizing}
-            className={`hidden md:block w-1.5 hover:w-2 transition-all cursor-col-resize self-stretch flex-shrink-0 relative group ${
-              isResizing 
-                ? 'bg-indigo-600' 
-                : theme === 'dark' ? 'bg-neutral-900 hover:bg-indigo-500/50' : 'bg-gray-200 hover:bg-indigo-500/50'
-            }`}
+            className="hidden md:block w-2 hover:w-2.5 transition-all cursor-col-resize self-stretch flex-shrink-0 relative group bg-[#111111]"
           >
-            <div className={`absolute inset-y-0 left-1/2 -translate-x-1/2 w-[2px] transition-colors ${
-              isResizing ? 'bg-indigo-400' : 'bg-transparent group-hover:bg-indigo-400'
-            }`} />
+            <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-[2px] bg-[#FFC400]" />
           </div>
 
           {/* PANE 2: RIGHT - STUDY TABS COLUMN */}
@@ -1293,7 +1287,7 @@ export default function LectureCaptureView({
           >
             
             {/* MINI TAB ROW SELECTOR */}
-            <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none whitespace-nowrap bg-[#F6F2EA] p-1.5 rounded-[6px] border border-[#111111] shadow-paper-sm">
+            <div className="flex gap-1.5 overflow-x-auto pb-1.5 scrollbar-none whitespace-nowrap bg-[#F6F2EA] p-2 rounded-[6px] border border-[#111111] shadow-paper-sm">
               {(['notes', 'summary', 'flashcards', 'quiz', 'mindmap', 'timeline', 'slides', 'chat'] as const).map(tab => (
                 <button
                   key={tab}
@@ -1304,7 +1298,7 @@ export default function LectureCaptureView({
                   className={`px-3 py-1.5 rounded-[4px] text-xs font-mono font-extrabold uppercase transition-all cursor-pointer ${
                     activeOutputTab === tab 
                       ? 'bg-[#FFC400] text-[#111111] border border-[#111111] shadow-paper-sm' 
-                      : 'bg-white text-[#666666] border border-transparent hover:bg-[#FFF8D6] hover:text-[#111111]'
+                      : 'bg-white text-[#111111] border border-[#111111] shadow-paper-sm hover:bg-[#FFF8D6]'
                   }`}
                 >
                   {tab === 'mindmap' ? 'Mind Map' : tab === 'chat' ? 'Ask Lecture AI' : tab}

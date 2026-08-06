@@ -2412,7 +2412,7 @@ ${queryText}`;
   };
 
   const renderTranscriptContent = (text: string) => {
-    if (!text) return <p className="text-neutral-500 italic">No transcript content available.</p>;
+    if (!text) return <p className="text-[#666666] font-mono text-xs italic">No transcript content available.</p>;
     const timestampRegex = /(\[\d{2}:\d{2}\])/g;
     const parts = text.split(timestampRegex);
     return parts.map((part, index) => {
@@ -2424,13 +2424,13 @@ ${queryText}`;
             key={index}
             id={`transcript-time-${cleanTimeId}`}
             onClick={() => handleTimestampClick(timeVal)}
-            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 cursor-pointer hover:bg-indigo-600 hover:text-white transition-all mr-1"
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] text-[10px] font-mono font-bold bg-[#FFC400] text-[#111111] border border-[#111111] shadow-paper-sm cursor-pointer hover:bg-[#ffe066] transition-all mr-1.5 select-none"
           >
             {part}
           </span>
         );
       }
-      return <span key={index}>{part}</span>;
+      return <span key={index} className="text-[#111111] font-medium leading-relaxed">{part}</span>;
     });
   };
 
