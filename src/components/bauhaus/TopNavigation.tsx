@@ -66,17 +66,6 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
 
       {/* Right: Quick Action Industrial Buttons */}
       <div className="flex items-center gap-2.5">
-        {onProClick && (
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={onProClick}
-            className="hidden lg:inline-flex bg-[#111111] text-white"
-          >
-            Unleash Pro
-          </Button>
-        )}
-
         {onCaptureClick && (
           <Button
             variant="secondary"

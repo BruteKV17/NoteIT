@@ -140,25 +140,6 @@ export default function Navbar({
       {/* Right widgets: Quick triggers, actions, profiles */}
       <div className="flex items-center gap-2 relative">
         
-        {/* Pro Badge / Trigger - Hidden on mobile/tablet to preserve clean layout */}
-        {settings.subscription.planName === 'BYOK' ? (
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => setActivePage('pricing')}
-            className="hidden lg:inline-flex"
-            icon={<Sparkles className="h-3.5 w-3.5 text-[#FFC400]" />}
-          >
-            Unleash Pro
-          </Button>
-        ) : (
-          <div className="hidden lg:inline-flex">
-            <Badge variant="yellow" size="md" icon={<Sparkles className="h-3.5 w-3.5" />}>
-              Pro Active
-            </Badge>
-          </div>
-        )}
-
         {/* Short-path Actions */}
         {onNewAnalysis && (
           <Button
