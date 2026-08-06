@@ -413,6 +413,41 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
     }
   };
 
+  const getEffectiveMindmapNodes = (keyConcepts: any[] = [], title: string = 'Document') => {
+    if (Array.isArray(keyConcepts) && keyConcepts.length >= 2) {
+      const hasRoot = keyConcepts.some(n => n.id === 'root');
+      if (!hasRoot) {
+        return [
+          { id: 'root', label: title || 'Core Topic', desc: 'Central concept net of this source.', x: 50, y: 50, group: 'center' },
+          ...keyConcepts.map((n, i) => ({
+            ...n,
+            parent: n.parent || 'root',
+            x: n.x || (20 + (i * 18) % 65),
+            y: n.y || (20 + Math.floor(i / 3) * 25)
+          }))
+        ];
+      }
+      return keyConcepts;
+    }
+
+    const rootNode = {
+      id: 'root',
+      label: title || 'Source Overview',
+      desc: 'Central knowledge net of this source.',
+      x: 50,
+      y: 50,
+      group: 'center'
+    };
+
+    return [
+      rootNode,
+      { id: 'c1', label: 'Core Principles', desc: 'Fundamental concepts and key terminology.', parent: 'root', x: 25, y: 30, group: 'concepts' },
+      { id: 'c2', label: 'Key Formulas & Rules', desc: 'Mathematical models and governing laws.', parent: 'root', x: 75, y: 30, group: 'math' },
+      { id: 'c3', label: 'Real-world Applications', desc: 'Practical implementations and domain cases.', parent: 'root', x: 25, y: 70, group: 'applications' },
+      { id: 'c4', label: 'Exam Focus Points', desc: 'High-frequency question patterns.', parent: 'root', x: 75, y: 70, group: 'exam' }
+    ];
+  };
+
   // Automatic on-demand assets generation and caching
   useEffect(() => {
     if (!activeSourceId || !activeSource) return;
@@ -3274,108 +3309,119 @@ ${queryText}`;
 
                 {/* 5. MIND MAP TAB */}
                 {activeOutputTab === 'mindmap' && (
-                  <div className="space-y-3 text-center animate-fade-in">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[10px] font-bold text-indigo-400 font-mono uppercase">Interactive Concept Net</span>
-                      <button
-                        onClick={() => {
-                          setPdfExportData({ title: `${activeSource.title} - Concept Map`, data: activeSource.keyConcepts });
-                          setShowPdfModal(true);
-                        }}
-                        disabled={!activeSource.keyConcepts || activeSource.keyConcepts.length === 0}
-                        className="flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:underline cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <Download className="h-3 w-3" />
-                        <span>Export PDF</span>
-                      </button>
-                    </div>
+                  <div className="space-y-4 text-left animate-fade-in">
+                    {(() => {
+                      const mindmapNodes = getEffectiveMindmapNodes(activeSource.keyConcepts, activeSource.title);
 
-                    <div className="h-72 rounded-[6px] border border-[#111111] bg-[#F6F2EA] shadow-paper-sm overflow-hidden relative">
-                      {activeSource.keyConcepts && activeSource.keyConcepts.length > 0 ? (
-                        <>
-                          <svg className="w-full h-full">
-                            {activeSource.keyConcepts.map((node: any, idx: number) => {
-                              if (node.parent) {
-                                const parentNode = activeSource.keyConcepts.find((n: any) => n.id === node.parent);
-                                if (parentNode) {
-                                  const px1 = parseFloat(String(parentNode.x || 50));
-                                  const py1 = parseFloat(String(parentNode.y || 50));
-                                  const px2 = parseFloat(String(node.x || 50));
-                                  const py2 = parseFloat(String(node.y || 50));
-                                  const x1 = isNaN(px1) ? 50 : px1;
-                                  const y1 = isNaN(py1) ? 50 : py1;
-                                  const x2 = isNaN(px2) ? 50 : px2;
-                                  const y2 = isNaN(py2) ? 50 : py2;
-                                  return (
-                                    <line
-                                      key={idx}
-                                      x1={`${x1}%`}
-                                      y1={`${y1}%`}
-                                      x2={`${x2}%`}
-                                      y2={`${y2}%`}
+                      return (
+                        <div className="space-y-4">
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-mono font-extrabold text-[#111111] uppercase">Interactive Concept Net</span>
+                              <span className="text-[10px] font-mono font-bold bg-[#FFC400] text-[#111111] px-2 py-0.5 rounded-[4px] border border-[#111111]">
+                                {mindmapNodes.length} NODES
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={triggerGenerateMindmap}
+                                disabled={isGeneratingMindmap}
+                                className="flex items-center gap-1 text-[10px] font-mono font-bold text-[#111111] bg-[#FFC400] px-2.5 py-1 rounded-[4px] border border-[#111111] shadow-paper-sm hover:bg-[#ffe066] cursor-pointer uppercase disabled:opacity-50"
+                              >
+                                <RotateCcw className={`h-3 w-3 ${isGeneratingMindmap ? 'animate-spin' : ''}`} />
+                                <span>Re-synthesize AI Net</span>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setPdfExportData({ title: `${activeSource.title} - Concept Map`, data: mindmapNodes });
+                                  setShowPdfModal(true);
+                                }}
+                                className="flex items-center gap-1 text-[10px] font-mono font-bold text-[#111111] bg-white px-2.5 py-1 rounded-[4px] border border-[#111111] shadow-paper-sm hover:bg-[#FFF8D6] cursor-pointer"
+                              >
+                                <Download className="h-3 w-3" />
+                                <span>Export PDF</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="h-72 rounded-[6px] border border-[#111111] bg-[#F6F2EA] shadow-paper-sm overflow-hidden relative">
+                            <svg className="w-full h-full">
+                              <defs>
+                                <marker id="arrow" viewBox="0 0 10 10" refX="18" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#111111" />
+                                </marker>
+                              </defs>
+
+                              {mindmapNodes.map((node: any, idx: number) => {
+                                if (node.parent) {
+                                  const parentNode = mindmapNodes.find((n: any) => n.id === node.parent) || mindmapNodes[0];
+                                  if (parentNode) {
+                                    const px1 = parseFloat(String(parentNode.x || 50));
+                                    const py1 = parseFloat(String(parentNode.y || 50));
+                                    const px2 = parseFloat(String(node.x || 50));
+                                    const py2 = parseFloat(String(node.y || 50));
+                                    const x1 = isNaN(px1) ? 50 : px1;
+                                    const y1 = isNaN(py1) ? 50 : py1;
+                                    const x2 = isNaN(px2) ? 50 : px2;
+                                    const y2 = isNaN(py2) ? 50 : py2;
+                                    return (
+                                      <line
+                                        key={idx}
+                                        x1={`${x1}%`}
+                                        y1={`${y1}%`}
+                                        x2={`${x2}%`}
+                                        y2={`${y2}%`}
+                                        stroke="#111111"
+                                        strokeWidth="2"
+                                        strokeDasharray="4 2"
+                                      />
+                                    );
+                                  }
+                                }
+                                return null;
+                              })}
+
+                              {mindmapNodes.map((node: any, idx: number) => {
+                                const rawX = parseFloat(String(node.x || 50));
+                                const rawY = parseFloat(String(node.y || 50));
+                                const nx = isNaN(rawX) ? 50 : rawX;
+                                const ny = isNaN(rawY) ? 50 : rawY;
+                                const isSelected = selectedMindmapNode?.id === node.id;
+                                const isRoot = node.id === 'root';
+
+                                return (
+                                  <g key={idx} onClick={() => setSelectedMindmapNode(node)} className="cursor-pointer group">
+                                    <circle
+                                      cx={`${nx}%`}
+                                      cy={`${ny}%`}
+                                      r={isRoot ? 14 : 9}
+                                      fill={isRoot ? '#FFC400' : isSelected ? '#2F6BFF' : '#FFFFFF'}
                                       stroke="#111111"
                                       strokeWidth="2"
-                                      strokeDasharray="4 2"
+                                      className="transition-all hover:scale-125"
                                     />
-                                  );
-                                }
-                              }
-                              return null;
-                            })}
-
-                            {activeSource.keyConcepts.map((node: any, idx: number) => {
-                              const rawX = parseFloat(String(node.x || 50));
-                              const rawY = parseFloat(String(node.y || 50));
-                              const nx = isNaN(rawX) ? 50 : rawX;
-                              const ny = isNaN(rawY) ? 50 : rawY;
-
-                              return (
-                                <g key={idx} onClick={() => setSelectedMindmapNode(node)} className="cursor-pointer group">
-                                  <circle
-                                    cx={`${nx}%`}
-                                    cy={`${ny}%`}
-                                    r={node.id === 'root' ? 14 : 9}
-                                    fill={node.id === 'root' ? '#FFC400' : selectedMindmapNode?.id === node.id ? '#2F6BFF' : '#FFFFFF'}
-                                    stroke="#111111"
-                                    strokeWidth="2"
-                                    className="transition-all hover:scale-115"
-                                  />
-                                  <text
-                                    x={`${nx}%`}
-                                    y={`${Math.max(5, ny - 4)}%`}
-                                    textAnchor="middle"
-                                    fill="#111111"
-                                    fontSize="9px"
-                                    fontWeight="bold"
-                                    className="font-mono select-none"
-                                  >
-                                    {node.label}
-                                  </text>
-                                </g>
-                              );
-                            })}
-                          </svg>
-                          <div className="absolute bottom-2 left-2 text-[9px] font-mono text-[#111111] bg-white border border-[#111111] px-2 py-0.5 rounded-[4px] shadow-paper-sm font-bold">
-                            Click nodes to view details
+                                    <text
+                                      x={`${nx}%`}
+                                      y={`${Math.max(5, ny - 4)}%`}
+                                      textAnchor="middle"
+                                      fill="#111111"
+                                      fontSize="10px"
+                                      fontWeight="bold"
+                                      className="font-mono select-none"
+                                    >
+                                      {node.label}
+                                    </text>
+                                  </g>
+                                );
+                              })}
+                            </svg>
+                            <div className="absolute bottom-2 left-2 text-[9px] font-mono text-[#111111] bg-white border border-[#111111] px-2 py-0.5 rounded-[4px] shadow-paper-sm font-bold">
+                              Click nodes to view details
+                            </div>
                           </div>
-                        </>
-                      ) : isGeneratingMindmap ? (
-                        <div className="h-full flex flex-col items-center justify-center border border-dashed border-[#111111] rounded-[6px] bg-white">
-                          <BruteLoader size="md" message="Synthesizing Concept Mind Map..." />
                         </div>
-                      ) : (
-                        <div className="h-full flex flex-col items-center justify-center p-6 space-y-3 bg-white border border-dashed border-[#111111] rounded-[6px]">
-                          <Brain className="h-10 w-10 text-[#666666] mx-auto animate-pulse" />
-                          <p className="text-xs text-[#111111] font-mono font-bold">Concept Net has not been generated yet.</p>
-                          <button
-                            onClick={triggerGenerateMindmap}
-                            className="px-5 py-2.5 bg-[#FFC400] hover:bg-[#ffe066] text-[#111111] rounded-[4px] border border-[#111111] text-xs font-mono font-extrabold shadow-paper-sm transition-all cursor-pointer uppercase"
-                          >
-                            Generate Concept Net
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                      );
+                    })()}
 
                     {/* Expandable Mind Map Details Panel */}
                     {selectedMindmapNode && (
