@@ -3098,12 +3098,17 @@ ${queryText}`;
                         </div>
                       ) : activeSource.flashcards && activeSource.flashcards.length > 0 ? (
                         activeSource.flashcards.map((f: any, i: number) => (
-                          <div key={i} className={`p-4.5 rounded-xl border font-sans space-y-2 ${
-                            theme === 'dark' ? 'bg-[#121318] border-neutral-900' : 'bg-white border-gray-200'
-                          }`}>
-                            <div className="text-[10px] font-bold text-indigo-400 font-mono">Q. CARD {i + 1}</div>
-                            <div className="text-xs font-black">{renderTextWithCitations(cleanMarkdownText(f.q))}</div>
-                            <div className={`text-[11.5px] pt-2 border-t border-neutral-900/20 ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-600'}`}>
+                          <div key={i} className="p-5 rounded-[6px] border border-[#111111] bg-white text-[#111111] shadow-paper-sm font-sans space-y-3">
+                            <div className="flex items-center justify-between text-xs font-bold font-mono border-b border-[#111111] pb-2">
+                              <span className="bg-[#FFC400] text-[#111111] px-2 py-0.5 rounded-[4px] border border-[#111111]">CARD #{i + 1}</span>
+                              <span className="text-[#666666] uppercase tracking-widest text-[10px]">FLASHCARD</span>
+                            </div>
+                            <div className="text-xs font-extrabold text-[#111111] leading-relaxed">
+                              <span className="text-[#2F6BFF] font-mono mr-1.5 font-extrabold">Q:</span>
+                              {renderTextWithCitations(cleanMarkdownText(f.q))}
+                            </div>
+                            <div className="text-xs text-[#111111] leading-relaxed pt-2.5 border-t border-dashed border-[#111111]">
+                              <span className="text-[#19B56B] font-mono mr-1.5 font-bold">A:</span>
                               {renderTextWithCitations(cleanMarkdownText(f.a))}
                             </div>
                           </div>
@@ -3160,13 +3165,18 @@ ${queryText}`;
                       </div>
                     ) : activeSource.quiz && activeSource.quiz.length > 0 ? (
                       <div className="space-y-4">
-                        <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#121318] border-neutral-900' : 'bg-white border-gray-200'}`}>
-                          <div className="text-[10px] font-black text-indigo-400 font-mono">QUESTION {activeQuizQuestionIdx + 1} of {activeSource.quiz.length}</div>
-                          <h4 className="text-xs font-bold font-sans mt-2 leading-relaxed">
+                        <div className="p-5 rounded-[6px] border border-[#111111] bg-white text-[#111111] shadow-paper-sm font-sans space-y-4">
+                          <div className="flex items-center justify-between text-xs font-mono font-bold border-b border-[#111111] pb-2">
+                            <span className="bg-[#FFC400] text-[#111111] px-2 py-0.5 rounded-[4px] border border-[#111111]">
+                              QUESTION {activeQuizQuestionIdx + 1} OF {activeSource.quiz.length}
+                            </span>
+                            <span className="text-[#666666] uppercase font-mono">{quizFormat}</span>
+                          </div>
+                          <h4 className="text-xs font-extrabold font-heading text-[#111111] leading-relaxed">
                             {renderTextWithCitations(cleanMarkdownText(activeSource.quiz[activeQuizQuestionIdx].question))}
                           </h4>
                           
-                          <div className="grid grid-cols-1 gap-2 mt-4">
+                          <div className="grid grid-cols-1 gap-2.5 mt-4">
                             {activeSource.quiz[activeQuizQuestionIdx].options.map((opt: string, optIdx: number) => {
                               const isSelected = selectedQuizAnswerIdx === optIdx;
                               const isCorrect = optIdx === activeSource.quiz[activeQuizQuestionIdx].correctAnswer;
@@ -3174,27 +3184,17 @@ ${queryText}`;
                               let btnClass = "";
                               if (isQuizRevealed) {
                                   if (isCorrect) {
-                                    btnClass = theme === 'dark' 
-                                      ? "border-emerald-500 bg-emerald-500/10 text-emerald-400" 
-                                      : "border-green-500 bg-green-50 text-green-700";
+                                    btnClass = "border-[#111111] bg-[#19B56B] text-white shadow-paper-sm font-bold";
                                   } else if (isSelected) {
-                                    btnClass = theme === 'dark' 
-                                      ? "border-red-500 bg-red-500/10 text-red-400" 
-                                      : "border-red-400 bg-red-50 text-red-700";
+                                    btnClass = "border-[#111111] bg-[#FF4D4D] text-white shadow-paper-sm font-bold";
                                   } else {
-                                    btnClass = theme === 'dark' 
-                                      ? "border-neutral-900 bg-neutral-950/20 text-neutral-500" 
-                                      : "border-gray-200 bg-gray-50 text-gray-400";
+                                    btnClass = "border-[#111111] bg-[#F6F2EA] text-[#888888] opacity-60";
                                   }
                               } else {
                                   if (isSelected) {
-                                    btnClass = theme === 'dark' 
-                                      ? "border-indigo-500 bg-indigo-500/10 text-white" 
-                                      : "border-indigo-600 bg-indigo-50 text-indigo-700";
+                                    btnClass = "border-[#111111] bg-[#FFC400] text-[#111111] shadow-paper-sm font-bold";
                                   } else {
-                                    btnClass = theme === 'dark' 
-                                      ? "border-neutral-800 bg-neutral-950/40 text-neutral-300 hover:bg-neutral-900 hover:text-white" 
-                                      : "border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 hover:text-gray-900";
+                                    btnClass = "border-[#111111] bg-white text-[#111111] hover:bg-[#FFF8D6] shadow-paper-sm";
                                   }
                               }
 
@@ -3202,7 +3202,7 @@ ${queryText}`;
                                 <button
                                   key={optIdx}
                                   onClick={() => !isQuizRevealed && setSelectedQuizAnswerIdx(optIdx)}
-                                  className={`rounded-lg py-2.5 px-3.5 text-left text-xs font-semibold border outline-none transition-all cursor-pointer ${btnClass}`}
+                                  className={`rounded-[4px] py-2.5 px-3.5 text-left text-xs font-mono font-bold border outline-none transition-all cursor-pointer ${btnClass}`}
                                 >
                                   {opt}
                                 </button>
@@ -3211,23 +3211,23 @@ ${queryText}`;
                           </div>
 
                           {isQuizRevealed && (
-                            <div className="mt-4 pt-3 border-t border-dashed border-neutral-900 text-[11px] text-neutral-400">
-                              <span className="font-mono text-[9px] font-bold text-indigo-400 block mb-1">COGNITIVE ANALYSIS:</span>
+                            <div className="mt-4 pt-3 border-t border-dashed border-[#111111] text-xs text-[#111111] bg-[#F6F2EA] p-3 rounded-[4px] border border-[#111111]">
+                              <span className="font-mono text-[10px] font-extrabold text-[#111111] block mb-1 uppercase">EXPLANATION:</span>
                               {renderTextWithCitations(cleanMarkdownText(activeSource.quiz[activeQuizQuestionIdx].explanation))}
                               {activeSource.quiz[activeQuizQuestionIdx].sourceCitation && (
-                                <div className="mt-2 text-[10px] font-bold text-indigo-300 font-mono">
+                                <div className="mt-2 text-[10px] font-bold text-[#111111] font-mono">
                                   Citation: {activeSource.quiz[activeQuizQuestionIdx].sourceCitation}
                                 </div>
                               )}
                             </div>
                           )}
 
-                          <div className="flex justify-between items-center mt-5 pt-3 border-t border-neutral-900/30">
+                          <div className="flex justify-between items-center mt-5 pt-3 border-t border-[#111111]">
                             {!isQuizRevealed ? (
                               <button
                                 disabled={selectedQuizAnswerIdx === null}
                                 onClick={() => setIsQuizRevealed(true)}
-                                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[11px] font-bold disabled:opacity-30 cursor-pointer"
+                                className="px-5 py-2.5 bg-[#FFC400] hover:bg-[#ffe066] text-[#111111] rounded-[4px] border border-[#111111] text-xs font-mono font-extrabold shadow-paper-sm disabled:opacity-30 cursor-pointer uppercase"
                               >
                                 Verify Choice
                               </button>
@@ -3238,9 +3238,9 @@ ${queryText}`;
                                   setSelectedQuizAnswerIdx(null);
                                   setActiveQuizQuestionIdx(prev => (prev + 1) % activeSource.quiz.length);
                                 }}
-                                className="px-4 py-2 bg-white text-black hover:bg-neutral-100 rounded-lg text-[11px] font-bold cursor-pointer"
+                                className="px-5 py-2.5 bg-[#111111] hover:bg-[#222222] text-white rounded-[4px] border border-[#111111] text-xs font-mono font-extrabold shadow-paper-sm cursor-pointer uppercase"
                               >
-                                Next question
+                                Next Question
                               </button>
                             )}
                           </div>

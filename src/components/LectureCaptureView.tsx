@@ -1520,15 +1520,17 @@ export default function LectureCaptureView({
                           }
 
                           return filteredCards.map((f: any, i: number) => (
-                            <div key={i} className={`p-4.5 rounded-xl border font-sans space-y-2 ${
-                              theme === 'dark' ? 'bg-[#121318] border-neutral-900' : 'bg-white border-gray-200'
-                            }`}>
-                              <div className="flex items-center justify-between text-[10px] font-bold font-mono">
-                                <span className="text-indigo-400">Q. CARD {i + 1}</span>
-                                <span className="text-neutral-500 uppercase tracking-widest">{f.category || 'Concept'}</span>
+                            <div key={i} className="p-5 rounded-[6px] border border-[#111111] bg-white text-[#111111] shadow-paper-sm font-sans space-y-3">
+                              <div className="flex items-center justify-between text-xs font-bold font-mono border-b border-[#111111] pb-2">
+                                <span className="bg-[#FFC400] text-[#111111] px-2 py-0.5 rounded-[4px] border border-[#111111]">CARD #{i + 1}</span>
+                                <span className="text-[#666666] uppercase tracking-widest text-[10px]">{f.category || 'Concept'}</span>
                               </div>
-                              <div className="text-xs font-black">{renderTextWithCitations(cleanMarkdownText(f.q))}</div>
-                              <div className={`text-[11.5px] pt-2 border-t border-neutral-900/20 ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-600'}`}>
+                              <div className="text-xs font-extrabold text-[#111111] leading-relaxed">
+                                <span className="text-[#2F6BFF] font-mono mr-1.5 font-extrabold">Q:</span>
+                                {renderTextWithCitations(cleanMarkdownText(f.q))}
+                              </div>
+                              <div className="text-xs text-[#111111] leading-relaxed pt-2.5 border-t border-dashed border-[#111111]">
+                                <span className="text-[#19B56B] font-mono mr-1.5 font-bold">A:</span>
                                 {renderTextWithCitations(cleanMarkdownText(f.a))}
                               </div>
                             </div>
@@ -1542,7 +1544,7 @@ export default function LectureCaptureView({
                           ) : (
                             <button
                               onClick={triggerGenerateMoreFlashcards}
-                              className="px-5 py-2.5 rounded-lg border border-indigo-500/25 bg-indigo-500/5 hover:bg-indigo-500/10 text-indigo-400 text-xs font-bold transition-all focus:outline-none cursor-pointer"
+                              className="px-5 py-2.5 rounded-[4px] border border-[#111111] bg-[#FFC400] text-[#111111] text-xs font-mono font-extrabold shadow-paper-sm hover:bg-[#ffe066] transition-all cursor-pointer uppercase"
                             >
                               Generate 10 More Flashcards
                             </button>
@@ -1635,15 +1637,18 @@ export default function LectureCaptureView({
 
                         return (
                           <div className="space-y-4 animate-fade-in">
-                            <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#121318] border-neutral-900' : 'bg-white border-gray-200'}`}>
-                              <div className="text-[10px] font-black text-indigo-400 font-mono uppercase">
-                                QUESTION {activeQuizQuestionIdx + 1} of {filteredQuestions.length} ({selectedQuizDifficulty})
+                            <div className="p-5 rounded-[6px] border border-[#111111] bg-white text-[#111111] shadow-paper-sm font-sans space-y-4">
+                              <div className="flex items-center justify-between text-xs font-mono font-bold border-b border-[#111111] pb-2">
+                                <span className="bg-[#FFC400] text-[#111111] px-2 py-0.5 rounded-[4px] border border-[#111111]">
+                                  QUESTION {activeQuizQuestionIdx + 1} OF {filteredQuestions.length}
+                                </span>
+                                <span className="text-[#666666] uppercase font-mono">{selectedQuizDifficulty} LEVEL</span>
                               </div>
-                              <h4 className="text-xs font-bold font-sans mt-2 leading-relaxed">
+                              <h4 className="text-xs font-extrabold font-heading text-[#111111] leading-relaxed">
                                 {renderTextWithCitations(cleanMarkdownText(activeQuestion.question))}
                               </h4>
                               
-                              <div className="grid grid-cols-1 gap-2 mt-4">
+                              <div className="grid grid-cols-1 gap-2.5 mt-4">
                                 {activeQuestion.options.map((opt: string, optIdx: number) => {
                                   const isSelected = selectedQuizAnswerIdx === optIdx;
                                   const isCorrect = optIdx === activeQuestion.correctAnswer;
@@ -1651,27 +1656,17 @@ export default function LectureCaptureView({
                                   let btnClass = "";
                                   if (isQuizRevealed) {
                                       if (isCorrect) {
-                                        btnClass = theme === 'dark' 
-                                          ? "border-emerald-500 bg-emerald-500/10 text-emerald-400" 
-                                          : "border-green-500 bg-green-50 text-green-700";
+                                        btnClass = "border-[#111111] bg-[#19B56B] text-white shadow-paper-sm font-bold";
                                       } else if (isSelected) {
-                                        btnClass = theme === 'dark' 
-                                          ? "border-red-500 bg-red-500/10 text-red-400" 
-                                          : "border-red-400 bg-red-50 text-red-700";
+                                        btnClass = "border-[#111111] bg-[#FF4D4D] text-white shadow-paper-sm font-bold";
                                       } else {
-                                        btnClass = theme === 'dark' 
-                                          ? "border-neutral-900 bg-neutral-950/20 text-neutral-500" 
-                                          : "border-gray-200 bg-gray-50 text-gray-400";
+                                        btnClass = "border-[#111111] bg-[#F6F2EA] text-[#888888] opacity-60";
                                       }
                                   } else {
                                       if (isSelected) {
-                                        btnClass = theme === 'dark' 
-                                          ? "border-indigo-500 bg-indigo-500/10 text-white" 
-                                          : "border-indigo-600 bg-indigo-50 text-indigo-700";
+                                        btnClass = "border-[#111111] bg-[#FFC400] text-[#111111] shadow-paper-sm font-bold";
                                       } else {
-                                        btnClass = theme === 'dark' 
-                                          ? "border-neutral-800 bg-neutral-950/40 text-neutral-300 hover:bg-neutral-900 hover:text-white" 
-                                          : "border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 hover:text-gray-900";
+                                        btnClass = "border-[#111111] bg-white text-[#111111] hover:bg-[#FFF8D6] shadow-paper-sm";
                                       }
                                   }
 
@@ -1679,7 +1674,7 @@ export default function LectureCaptureView({
                                     <button
                                       key={optIdx}
                                       onClick={() => !isQuizRevealed && setSelectedQuizAnswerIdx(optIdx)}
-                                      className={`rounded-lg py-2.5 px-3.5 text-left text-xs font-semibold border outline-none transition-all cursor-pointer ${btnClass}`}
+                                      className={`rounded-[4px] py-2.5 px-3.5 text-left text-xs font-mono font-bold border outline-none transition-all cursor-pointer ${btnClass}`}
                                     >
                                       {opt}
                                     </button>
@@ -1688,23 +1683,23 @@ export default function LectureCaptureView({
                               </div>
 
                               {isQuizRevealed && (
-                                <div className="mt-4 pt-3 border-t border-dashed border-neutral-900 text-[11px] text-neutral-400">
-                                  <span className="font-mono text-[9px] font-bold text-indigo-400 block mb-1">COGNITIVE ANALYSIS:</span>
+                                <div className="mt-4 pt-3 border-t border-dashed border-[#111111] text-xs text-[#111111] bg-[#F6F2EA] p-3 rounded-[4px] border border-[#111111]">
+                                  <span className="font-mono text-[10px] font-extrabold text-[#111111] block mb-1 uppercase">EXPLANATION:</span>
                                   {renderTextWithCitations(cleanMarkdownText(activeQuestion.explanation))}
                                   {activeQuestion.sourceCitation && (
-                                    <div className="mt-2 text-[10px] font-bold text-indigo-300 font-mono">
+                                    <div className="mt-2 text-[10px] font-bold text-[#111111] font-mono">
                                       Citation: {activeQuestion.sourceCitation}
                                     </div>
                                   )}
                                 </div>
                               )}
 
-                              <div className="flex justify-between items-center mt-5 pt-3 border-t border-neutral-900/30">
+                              <div className="flex justify-between items-center mt-5 pt-3 border-t border-[#111111]">
                                 {!isQuizRevealed ? (
                                   <button
                                     disabled={selectedQuizAnswerIdx === null}
                                     onClick={() => setIsQuizRevealed(true)}
-                                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[11px] font-bold disabled:opacity-30 cursor-pointer"
+                                    className="px-5 py-2.5 bg-[#FFC400] hover:bg-[#ffe066] text-[#111111] rounded-[4px] border border-[#111111] text-xs font-mono font-extrabold shadow-paper-sm disabled:opacity-30 cursor-pointer uppercase"
                                   >
                                     Verify Choice
                                   </button>
@@ -1715,9 +1710,9 @@ export default function LectureCaptureView({
                                       setSelectedQuizAnswerIdx(null);
                                       setActiveQuizQuestionIdx(prev => (prev + 1) % filteredQuestions.length);
                                     }}
-                                    className="px-4 py-2 bg-white text-black hover:bg-neutral-100 rounded-lg text-[11px] font-bold cursor-pointer"
+                                    className="px-5 py-2.5 bg-[#111111] hover:bg-[#222222] text-white rounded-[4px] border border-[#111111] text-xs font-mono font-extrabold shadow-paper-sm cursor-pointer uppercase"
                                   >
-                                    Next question
+                                    Next Question
                                   </button>
                                 )}
                               </div>
@@ -1730,7 +1725,7 @@ export default function LectureCaptureView({
                               ) : (
                                 <button
                                   onClick={triggerGenerateMoreQuiz}
-                                  className="px-5 py-2.5 rounded-lg border border-indigo-500/25 bg-indigo-500/5 hover:bg-indigo-500/10 text-indigo-400 text-xs font-bold transition-all focus:outline-none cursor-pointer"
+                                  className="px-5 py-2.5 rounded-[4px] border border-[#111111] bg-[#FFC400] text-[#111111] text-xs font-mono font-extrabold shadow-paper-sm hover:bg-[#ffe066] transition-all cursor-pointer uppercase"
                                 >
                                   Generate 10 More {selectedQuizDifficulty} Questions
                                 </button>
@@ -1776,15 +1771,13 @@ export default function LectureCaptureView({
                     </button>
                   </div>
 
-                  <div className={`h-64 rounded-xl border overflow-hidden relative ${
-                    theme === 'dark' ? 'bg-[#0d0e12] border-neutral-900' : 'bg-white border-gray-200'
-                  }`}>
+                  <div className="h-72 rounded-[6px] border border-[#111111] bg-[#F6F2EA] shadow-paper-sm overflow-hidden relative">
                     {activeLecture.keyConcepts && activeLecture.keyConcepts.length > 0 ? (
                       <>
                         <svg className="w-full h-full">
                           <defs>
                             <marker id="arrow" viewBox="0 0 10 10" refX="18" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-                              <path d="M 0 0 L 10 5 L 0 10 z" fill={theme === 'dark' ? '#818cf8' : '#4f46e5'} />
+                              <path d="M 0 0 L 10 5 L 0 10 z" fill="#111111" />
                             </marker>
                           </defs>
 
@@ -1815,19 +1808,19 @@ export default function LectureCaptureView({
                                       y1={`${parentNode.y}%`}
                                       x2={`${node.x}%`}
                                       y2={`${node.y}%`}
-                                      stroke={theme === 'dark' ? '#4f46e5' : '#818cf8'}
-                                      strokeWidth="1.5"
+                                      stroke="#111111"
+                                      strokeWidth="2"
                                       markerEnd="url(#arrow)"
                                     />
                                     <text
                                       x={`${midX}%`}
                                       y={`${midY}%`}
-                                      fill="#818cf8"
-                                      fontSize="7px"
+                                      fill="#111111"
+                                      fontSize="8px"
                                       textAnchor="middle"
-                                      className="font-mono bg-[#0d0e12] select-none"
+                                      className="font-mono font-bold uppercase select-none"
                                     >
-                                      {rel.toUpperCase()}
+                                      {rel}
                                     </text>
                                   </g>
                                 );
@@ -1842,14 +1835,16 @@ export default function LectureCaptureView({
                                 cx={`${node.x}%`}
                                 cy={`${node.y}%`}
                                 r={node.id === 'root' ? 14 : 9}
-                                fill={getNodeColor(node, selectedMindmapNode?.id === node.id)}
+                                fill={node.id === 'root' ? '#FFC400' : selectedMindmapNode?.id === node.id ? '#2F6BFF' : '#FFFFFF'}
+                                stroke="#111111"
+                                strokeWidth="2"
                                 className="transition-all hover:scale-115"
                               />
                               <text
                                 x={`${node.x}%`}
                                 y={`${node.y - 4}%`}
                                 textAnchor="middle"
-                                fill={theme === 'dark' ? '#d1d5db' : '#1e293b'}
+                                fill="#111111"
                                 fontSize="9px"
                                 fontWeight="bold"
                                 className="font-mono select-none"
@@ -1859,87 +1854,71 @@ export default function LectureCaptureView({
                             </g>
                           ))}
                         </svg>
-                        <div className="absolute bottom-2 left-2 text-[8px] font-mono text-neutral-500 bg-neutral-950/45 p-1 rounded">
-                          Click nodes to view detail drawers.
+                        <div className="absolute bottom-2 left-2 text-[9px] font-mono text-[#111111] bg-white border border-[#111111] px-2 py-0.5 rounded-[4px] shadow-paper-sm font-bold">
+                          Click nodes to view details
                         </div>
                       </>
                     ) : isGeneratingMindmap ? (
-                      <div className="h-full min-h-[160px] flex flex-col items-center justify-center border border-dashed border-gray-200 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5">
+                      <div className="h-full min-h-[160px] flex flex-col items-center justify-center border border-dashed border-[#111111] rounded-[6px] bg-white">
                         <BruteLoader size="md" message="Synthesizing Concept Mind Map..." />
                       </div>
                     ) : (
-                      <div className="h-full min-h-[160px] flex items-center justify-center text-[11px] text-neutral-500 font-mono border border-dashed border-gray-200 dark:border-neutral-800 rounded-2xl p-6 bg-gray-50/10 dark:bg-neutral-900/5">
+                      <div className="h-full min-h-[160px] flex items-center justify-center text-xs text-[#111111] font-mono font-bold border border-dashed border-[#111111] rounded-[6px] p-6 bg-white">
                         Concept Map has not been generated yet.
                       </div>
                     )}
                   </div>
 
                   {selectedMindmapNode && (
-                    <div className={`p-4 rounded-xl border text-left space-y-3.5 animate-fade-in ${
-                      theme === 'dark' ? 'bg-[#121318] border-neutral-900' : 'bg-white border-gray-200'
-                    }`}>
-                      <div className="flex items-center justify-between border-b border-neutral-800 pb-2">
-                        <h4 className="text-xs font-black text-indigo-400 uppercase tracking-widest font-mono">
+                    <div className="p-5 rounded-[6px] border border-[#111111] bg-white text-[#111111] shadow-paper-sm text-left space-y-3 animate-fade-in font-sans">
+                      <div className="flex items-center justify-between border-b border-[#111111] pb-2">
+                        <h4 className="text-xs font-mono font-extrabold text-[#111111] uppercase tracking-wider">
                           {selectedMindmapNode.label}
                         </h4>
                         <button 
                           onClick={() => setSelectedMindmapNode(null)}
-                          className={`text-xs font-bold cursor-pointer ${
-                            theme === 'dark' ? 'text-neutral-500 hover:text-white' : 'text-neutral-400 hover:text-neutral-900'
-                          }`}
+                          className="text-xs font-bold text-[#111111] hover:bg-[#FFC400] px-2 py-0.5 rounded border border-[#111111] cursor-pointer"
                         >
-                          &times;
+                          ✕
                         </button>
                       </div>
                       
-                      <div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-600'}`}>
-                        <strong className="text-indigo-400 block text-[9.5px] uppercase font-mono tracking-wider">Definition & Explanation</strong>
+                      <div className="text-xs text-[#111111] leading-relaxed">
+                        <strong className="text-[#111111] block text-[10px] uppercase font-mono tracking-wider font-extrabold">Definition & Explanation</strong>
                         {renderTextWithCitations(cleanMarkdownText(selectedMindmapNode.desc || selectedMindmapNode.explanation || 'Provides logical synthesis for this section.'))}
                       </div>
                       
                       {selectedMindmapNode.examples && (
-                        <div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-600'}`}>
-                          <strong className="text-indigo-400 block text-[9.5px] uppercase font-mono tracking-wider">Examples & Analogies</strong>
+                        <div className="text-xs text-[#111111] leading-relaxed">
+                          <strong className="text-[#111111] block text-[10px] uppercase font-mono tracking-wider font-extrabold">Examples & Analogies</strong>
                           {renderTextWithCitations(cleanMarkdownText(selectedMindmapNode.examples))}
                         </div>
                       )}
 
                       {selectedMindmapNode.formula && (
-                        <div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-600'}`}>
-                          <strong className="text-indigo-400 block text-[9.5px] uppercase font-mono tracking-wider">Equations or Theories</strong>
-                          <code className={`block p-2 rounded text-[10px] font-mono mt-1 text-orange-400 border ${
-                            theme === 'dark' ? 'bg-neutral-950/50 border-neutral-900' : 'bg-gray-50 border-gray-200'
-                          }`}>
+                        <div className="text-xs text-[#111111] leading-relaxed">
+                          <strong className="text-[#111111] block text-[10px] uppercase font-mono tracking-wider font-extrabold">Equations or Theories</strong>
+                          <code className="block p-2 rounded-[4px] text-xs font-mono mt-1 text-[#111111] bg-[#FFF8D6] border border-[#111111] font-bold">
                             {selectedMindmapNode.formula}
                           </code>
                         </div>
                       )}
 
                       {selectedMindmapNode.applications && (
-                        <div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-600'}`}>
-                          <strong className="text-indigo-400 block text-[9.5px] uppercase font-mono tracking-wider">Applications & Use Cases</strong>
+                        <div className="text-xs text-[#111111] leading-relaxed">
+                          <strong className="text-[#111111] block text-[10px] uppercase font-mono tracking-wider font-extrabold">Applications & Use Cases</strong>
                           {renderTextWithCitations(cleanMarkdownText(selectedMindmapNode.applications))}
                         </div>
                       )}
 
                       {selectedMindmapNode.examImportance && (
-                        <div className={`text-[11.5px] leading-relaxed ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-600'}`}>
-                          <strong className="text-indigo-400 block text-[9.5px] uppercase font-mono tracking-wider">Exam Importance</strong>
-                          <span className={`inline-block px-2.5 py-0.5 rounded text-[10px] font-mono font-bold mt-1 ${
-                            selectedMindmapNode.examImportance.toLowerCase().includes('high')
-                              ? 'bg-red-500/15 text-red-400 border border-red-500/25'
-                              : selectedMindmapNode.examImportance.toLowerCase().includes('medium')
-                                ? 'bg-amber-500/15 text-amber-400 border border-amber-500/25'
-                                : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25'
-                          }`}>
+                        <div className="text-xs text-[#111111] leading-relaxed">
+                          <strong className="text-[#111111] block text-[10px] uppercase font-mono tracking-wider font-extrabold">Exam Importance</strong>
+                          <span className="inline-block px-2.5 py-0.5 rounded-[4px] text-[10px] font-mono font-bold mt-1 bg-[#FFC400] text-[#111111] border border-[#111111]">
                             🎯 {selectedMindmapNode.examImportance}
                           </span>
                         </div>
                       )}
-
-                      <div className="text-[9px] font-mono text-neutral-500 pt-1.5 border-t border-neutral-900/30">
-                        Reference: {selectedMindmapNode.sourceCitation || `[Source: ${activeLecture.title}, Concept Net]`}
-                      </div>
                     </div>
                   )}
                 </div>
@@ -1949,13 +1928,13 @@ export default function LectureCaptureView({
               {activeOutputTab === 'timeline' && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-indigo-400 font-mono uppercase">Chronological milestones</span>
+                    <span className="text-xs font-mono font-extrabold text-[#111111] uppercase">Chronological Milestones</span>
                     <button
                       onClick={() => {
                         setPdfExportData({ title: `${activeLecture.title} - Timeline`, data: activeLecture.timeline });
                         setShowPdfModal(true);
                       }}
-                      className="flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:underline cursor-pointer"
+                      className="flex items-center gap-1 text-xs font-mono font-bold text-[#111111] bg-[#FFC400] px-2.5 py-1 rounded-[4px] border border-[#111111] shadow-paper-sm hover:bg-[#ffe066] cursor-pointer"
                     >
                       <Download className="h-3 w-3" />
                       <span>Export PDF</span>
@@ -1964,30 +1943,24 @@ export default function LectureCaptureView({
 
                   <div className="space-y-4">
                     {activeLecture.timeline && activeLecture.timeline.length > 0 ? (
-                      <div className={`relative ml-4 py-2 space-y-5 border-l ${
-                        theme === 'dark' ? 'border-neutral-800' : 'border-gray-200'
-                      }`}>
+                      <div className="relative ml-4 py-2 space-y-4 border-l-2 border-[#111111]">
                         {activeLecture.timeline.map((event: any, idx: number) => (
                           <div key={idx} className="relative pl-6">
                             <span 
                               onClick={() => handleTimelineTimestampClick(event.time)}
-                              className={`absolute -left-2.5 top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 border-2 text-[8.5px] font-mono font-bold text-indigo-300 cursor-pointer hover:bg-indigo-500 hover:text-white transition-all shadow-md ${
-                                theme === 'dark' ? 'border-[#0a0b0e]' : 'border-[#FAF9F5]'
-                              }`}
+                              className="absolute -left-3.5 top-1 flex h-7 px-2 items-center justify-center rounded-[4px] bg-[#FFC400] border border-[#111111] text-[10px] font-mono font-bold text-[#111111] cursor-pointer hover:bg-[#ffe066] transition-all shadow-paper-sm"
                             >
                               {event.time}
                             </span>
-                            <div className="space-y-1">
-                              <h4 className="text-xs font-black text-indigo-400">{event.title}</h4>
-                              <p className={`text-[11px] leading-relaxed ${
-                                theme === 'dark' ? 'text-neutral-300' : 'text-neutral-600'
-                              }`}>{event.description}</p>
+                            <div className="p-4 rounded-[6px] border border-[#111111] bg-white text-[#111111] shadow-paper-sm space-y-1 ml-4">
+                              <h4 className="text-xs font-heading font-extrabold text-[#111111] border-b border-[#111111] pb-1 mb-1.5">{event.title}</h4>
+                              <p className="text-xs text-[#111111] leading-relaxed">{event.description}</p>
                             </div>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-12 text-neutral-500 font-mono text-[10.5px]">No timeline segments parsed.</div>
+                      <div className="text-center py-12 text-[#666666] font-mono text-xs border border-dashed border-[#111111] rounded-[6px] bg-white">No timeline segments parsed.</div>
                     )}
                   </div>
                 </div>
