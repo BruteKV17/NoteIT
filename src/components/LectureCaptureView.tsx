@@ -1785,17 +1785,21 @@ export default function LectureCaptureView({
                             if (node.parent) {
                               const parentNode = activeLecture.keyConcepts.find((n: any) => n.id === node.parent);
                               if (parentNode) {
-                                const x1 = parseFloat(parentNode.x);
-                                const y1 = parseFloat(parentNode.y);
-                                const x2 = parseFloat(node.x);
-                                const y2 = parseFloat(node.y);
+                                const px1 = parseFloat(String(parentNode.x || 50));
+                                const py1 = parseFloat(String(parentNode.y || 50));
+                                const px2 = parseFloat(String(node.x || 50));
+                                const py2 = parseFloat(String(node.y || 50));
+                                const x1 = isNaN(px1) ? 50 : px1;
+                                const y1 = isNaN(py1) ? 50 : py1;
+                                const x2 = isNaN(px2) ? 50 : px2;
+                                const y2 = isNaN(py2) ? 50 : py2;
                                 const midX = (x1 + x2) / 2;
                                 const midY = (y1 + y2) / 2;
                                 
                                 const getRelationshipType = (n: any) => {
                                   if (n.parent === 'root') return 'hierarchy';
                                   if (n.group === 'math' || n.formula) return 'dependency';
-                                  if (n.group === 'applications' || n.label.toLowerCase().includes('effect') || n.label.toLowerCase().includes('result')) return 'cause_effect';
+                                  if (n.group === 'applications' || n.label?.toLowerCase().includes('effect') || n.label?.toLowerCase().includes('result')) return 'cause_effect';
                                   if (n.group === 'concepts') return 'comparison';
                                   return 'workflow';
                                 };
@@ -1804,10 +1808,10 @@ export default function LectureCaptureView({
                                 return (
                                   <g key={idx}>
                                     <line
-                                      x1={`${parentNode.x}%`}
-                                      y1={`${parentNode.y}%`}
-                                      x2={`${node.x}%`}
-                                      y2={`${node.y}%`}
+                                      x1={`${x1}%`}
+                                      y1={`${y1}%`}
+                                      x2={`${x2}%`}
+                                      y2={`${y2}%`}
                                       stroke="#111111"
                                       strokeWidth="2"
                                       markerEnd="url(#arrow)"
@@ -1829,42 +1833,56 @@ export default function LectureCaptureView({
                             return null;
                           })}
 
-                          {activeLecture.keyConcepts.map((node: any, idx: number) => (
-                            <g key={idx} onClick={() => setSelectedMindmapNode(node)} className="cursor-pointer group">
-                              <circle
-                                cx={`${node.x}%`}
-                                cy={`${node.y}%`}
-                                r={node.id === 'root' ? 14 : 9}
-                                fill={node.id === 'root' ? '#FFC400' : selectedMindmapNode?.id === node.id ? '#2F6BFF' : '#FFFFFF'}
-                                stroke="#111111"
-                                strokeWidth="2"
-                                className="transition-all hover:scale-115"
-                              />
-                              <text
-                                x={`${node.x}%`}
-                                y={`${node.y - 4}%`}
-                                textAnchor="middle"
-                                fill="#111111"
-                                fontSize="9px"
-                                fontWeight="bold"
-                                className="font-mono select-none"
-                              >
-                                {node.label}
-                              </text>
-                            </g>
-                          ))}
+                          {activeLecture.keyConcepts.map((node: any, idx: number) => {
+                            const rawX = parseFloat(String(node.x || 50));
+                            const rawY = parseFloat(String(node.y || 50));
+                            const nx = isNaN(rawX) ? 50 : rawX;
+                            const ny = isNaN(rawY) ? 50 : rawY;
+
+                            return (
+                              <g key={idx} onClick={() => setSelectedMindmapNode(node)} className="cursor-pointer group">
+                                <circle
+                                  cx={`${nx}%`}
+                                  cy={`${ny}%`}
+                                  r={node.id === 'root' ? 14 : 9}
+                                  fill={node.id === 'root' ? '#FFC400' : selectedMindmapNode?.id === node.id ? '#2F6BFF' : '#FFFFFF'}
+                                  stroke="#111111"
+                                  strokeWidth="2"
+                                  className="transition-all hover:scale-115"
+                                />
+                                <text
+                                  x={`${nx}%`}
+                                  y={`${Math.max(5, ny - 4)}%`}
+                                  textAnchor="middle"
+                                  fill="#111111"
+                                  fontSize="9px"
+                                  fontWeight="bold"
+                                  className="font-mono select-none"
+                                >
+                                  {node.label}
+                                </text>
+                              </g>
+                            );
+                          })}
                         </svg>
                         <div className="absolute bottom-2 left-2 text-[9px] font-mono text-[#111111] bg-white border border-[#111111] px-2 py-0.5 rounded-[4px] shadow-paper-sm font-bold">
                           Click nodes to view details
                         </div>
                       </>
                     ) : isGeneratingMindmap ? (
-                      <div className="h-full min-h-[160px] flex flex-col items-center justify-center border border-dashed border-[#111111] rounded-[6px] bg-white">
+                      <div className="h-full min-h-[180px] flex flex-col items-center justify-center border border-dashed border-[#111111] rounded-[6px] bg-white">
                         <BruteLoader size="md" message="Synthesizing Concept Mind Map..." />
                       </div>
                     ) : (
-                      <div className="h-full min-h-[160px] flex items-center justify-center text-xs text-[#111111] font-mono font-bold border border-dashed border-[#111111] rounded-[6px] p-6 bg-white">
-                        Concept Map has not been generated yet.
+                      <div className="h-full min-h-[180px] flex flex-col items-center justify-center p-6 space-y-3 bg-white border border-dashed border-[#111111] rounded-[6px]">
+                        <Brain className="h-10 w-10 text-[#666666] mx-auto animate-pulse" />
+                        <h4 className="text-xs font-mono font-bold text-[#111111]">Concept Map has not been generated yet.</h4>
+                        <button
+                          onClick={triggerGenerateMindmap}
+                          className="px-5 py-2.5 bg-[#FFC400] hover:bg-[#ffe066] text-[#111111] rounded-[4px] border border-[#111111] text-xs font-mono font-extrabold shadow-paper-sm transition-all cursor-pointer uppercase"
+                        >
+                          Generate Concept Map
+                        </button>
                       </div>
                     )}
                   </div>

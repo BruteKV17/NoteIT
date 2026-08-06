@@ -3289,9 +3289,7 @@ ${queryText}`;
                       </button>
                     </div>
 
-                    <div className={`h-64 rounded-xl border overflow-hidden relative ${
-                      theme === 'dark' ? 'bg-[#0d0e12] border-neutral-900' : 'bg-white border-gray-200'
-                    }`}>
+                    <div className="h-72 rounded-[6px] border border-[#111111] bg-[#F6F2EA] shadow-paper-sm overflow-hidden relative">
                       {activeSource.keyConcepts && activeSource.keyConcepts.length > 0 ? (
                         <>
                           <svg className="w-full h-full">
@@ -3299,16 +3297,24 @@ ${queryText}`;
                               if (node.parent) {
                                 const parentNode = activeSource.keyConcepts.find((n: any) => n.id === node.parent);
                                 if (parentNode) {
+                                  const px1 = parseFloat(String(parentNode.x || 50));
+                                  const py1 = parseFloat(String(parentNode.y || 50));
+                                  const px2 = parseFloat(String(node.x || 50));
+                                  const py2 = parseFloat(String(node.y || 50));
+                                  const x1 = isNaN(px1) ? 50 : px1;
+                                  const y1 = isNaN(py1) ? 50 : py1;
+                                  const x2 = isNaN(px2) ? 50 : px2;
+                                  const y2 = isNaN(py2) ? 50 : py2;
                                   return (
                                     <line
                                       key={idx}
-                                      x1={`${parentNode.x}%`}
-                                      y1={`${parentNode.y}%`}
-                                      x2={`${node.x}%`}
-                                      y2={`${node.y}%`}
-                                      stroke={theme === 'dark' ? '#312e81' : '#e2e8f0'}
-                                      strokeWidth="1.5"
-                                      strokeDasharray="4"
+                                      x1={`${x1}%`}
+                                      y1={`${y1}%`}
+                                      x2={`${x2}%`}
+                                      y2={`${y2}%`}
+                                      stroke="#111111"
+                                      strokeWidth="2"
+                                      strokeDasharray="4 2"
                                     />
                                   );
                                 }
@@ -3316,43 +3322,53 @@ ${queryText}`;
                               return null;
                             })}
 
-                            {activeSource.keyConcepts.map((node: any, idx: number) => (
-                              <g key={idx} onClick={() => setSelectedMindmapNode(node)} className="cursor-pointer group">
-                                <circle
-                                  cx={`${node.x}%`}
-                                  cy={`${node.y}%`}
-                                  r={node.id === 'root' ? 14 : 9}
-                                  fill={getNodeColor(node, selectedMindmapNode?.id === node.id)}
-                                  className="transition-all hover:scale-115"
-                                />
-                                <text
-                                  x={`${node.x}%`}
-                                  y={`${node.y - 4}%`}
-                                  textAnchor="middle"
-                                  fill={theme === 'dark' ? '#d1d5db' : '#1e293b'}
-                                  fontSize="9px"
-                                  fontWeight="bold"
-                                  className="font-mono select-none"
-                                >
-                                  {node.label}
-                                </text>
-                              </g>
-                            ))}
+                            {activeSource.keyConcepts.map((node: any, idx: number) => {
+                              const rawX = parseFloat(String(node.x || 50));
+                              const rawY = parseFloat(String(node.y || 50));
+                              const nx = isNaN(rawX) ? 50 : rawX;
+                              const ny = isNaN(rawY) ? 50 : rawY;
+
+                              return (
+                                <g key={idx} onClick={() => setSelectedMindmapNode(node)} className="cursor-pointer group">
+                                  <circle
+                                    cx={`${nx}%`}
+                                    cy={`${ny}%`}
+                                    r={node.id === 'root' ? 14 : 9}
+                                    fill={node.id === 'root' ? '#FFC400' : selectedMindmapNode?.id === node.id ? '#2F6BFF' : '#FFFFFF'}
+                                    stroke="#111111"
+                                    strokeWidth="2"
+                                    className="transition-all hover:scale-115"
+                                  />
+                                  <text
+                                    x={`${nx}%`}
+                                    y={`${Math.max(5, ny - 4)}%`}
+                                    textAnchor="middle"
+                                    fill="#111111"
+                                    fontSize="9px"
+                                    fontWeight="bold"
+                                    className="font-mono select-none"
+                                  >
+                                    {node.label}
+                                  </text>
+                                </g>
+                              );
+                            })}
                           </svg>
-                          <div className="absolute bottom-2 left-2 text-[8px] font-mono text-neutral-500 bg-neutral-950/45 p-1 rounded">
-                            Click on nodes to show conceptual details drawer.
+                          <div className="absolute bottom-2 left-2 text-[9px] font-mono text-[#111111] bg-white border border-[#111111] px-2 py-0.5 rounded-[4px] shadow-paper-sm font-bold">
+                            Click nodes to view details
                           </div>
                         </>
                       ) : isGeneratingMindmap ? (
-                        <div className="h-full flex flex-col items-center justify-center bg-neutral-950/5">
+                        <div className="h-full flex flex-col items-center justify-center border border-dashed border-[#111111] rounded-[6px] bg-white">
                           <BruteLoader size="md" message="Synthesizing Concept Mind Map..." />
                         </div>
                       ) : (
-                        <div className="h-full flex flex-col items-center justify-center p-6 space-y-4">
-                          <p className="text-[10px] text-neutral-500 font-mono">Concept Net has not been generated yet.</p>
+                        <div className="h-full flex flex-col items-center justify-center p-6 space-y-3 bg-white border border-dashed border-[#111111] rounded-[6px]">
+                          <Brain className="h-10 w-10 text-[#666666] mx-auto animate-pulse" />
+                          <p className="text-xs text-[#111111] font-mono font-bold">Concept Net has not been generated yet.</p>
                           <button
                             onClick={triggerGenerateMindmap}
-                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
+                            className="px-5 py-2.5 bg-[#FFC400] hover:bg-[#ffe066] text-[#111111] rounded-[4px] border border-[#111111] text-xs font-mono font-extrabold shadow-paper-sm transition-all cursor-pointer uppercase"
                           >
                             Generate Concept Net
                           </button>
