@@ -138,3 +138,47 @@
 .animate-studio-pulse {
   animation: studio-pulse 1.5s ease-in-out infinite;
 }
+
+/* ==========================================================================
+   Bauhaus Kinetic 7-Square Loader Animation (Uiverse.io by ZacharyCrespin)
+   ========================================================================== */
+@keyframes square-animation {
+ 0%, 10.5% { left: 0; top: 0; }
+ 12.5%, 23% { left: 32px; top: 0; }
+ 25%, 35.5% { left: 64px; top: 0; }
+ 37.5%, 48% { left: 64px; top: 32px; }
+ 50%, 60.5% { left: 32px; top: 32px; }
+ 62.5%, 73% { left: 32px; top: 64px; }
+ 75%, 85.5% { left: 0; top: 64px; }
+ 87.5%, 98% { left: 0; top: 32px; }
+ 100% { left: 0; top: 0; }
+}
+
+.bauhaus-loader {
+ position: relative;
+ width: 96px;
+ height: 96px;
+ transform: rotate(45deg);
+}
+
+.bauhaus-loader-square {
+ position: absolute;
+ top: 0;
+ left: 0;
+ width: 28px;
+ height: 28px;
+ margin: 2px;
+ border-radius: 2px;
+ border: 2px solid #111111;
+ box-shadow: 1.5px 1.5px 0px #111111;
+ animation: square-animation 10s ease-in-out infinite both;
+}
+
+.bauhaus-loader-square:nth-of-type(1) { animation-delay: 0s; background: #FFC400; }
+.bauhaus-loader-square:nth-of-type(2) { animation-delay: -1.4285714286s; background: #2F6BFF; }
+.bauhaus-loader-square:nth-of-type(3) { animation-delay: -2.8571428571s; background: #FF4D4D; }
+.bauhaus-loader-square:nth-of-type(4) { animation-delay: -4.2857142857s; background: #19B56B; }
+.bauhaus-loader-square:nth-of-type(5) { animation-delay: -5.7142857143s; background: #111111; }
+.bauhaus-loader-square:nth-of-type(6) { animation-delay: -7.1428571429s; background: #FFFFFF; }
+.bauhaus-loader-square:nth-of-type(7) { animation-delay: -8.5714285714s; background: #FFC400; }
+
