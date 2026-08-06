@@ -21,6 +21,7 @@ import {
   Download,
   BookOpen,
   HelpCircle,
+  Brain,
   Clock,
   ArrowRight,
   ChevronRight,
