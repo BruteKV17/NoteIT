@@ -559,10 +559,10 @@ export default function LectureCaptureView({
           <span 
             key={index} 
             onClick={handleClick}
-            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/15 text-indigo-400 border border-indigo-500/25 cursor-pointer hover:bg-indigo-600 hover:text-white transition-all ml-1 select-none"
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] text-[10px] font-mono font-bold bg-[#FFC400] text-[#111111] border border-[#111111] shadow-paper-sm cursor-pointer hover:bg-[#ffe066] transition-all ml-1 select-none"
             title="Jump to source in transcript"
           >
-            🔖 {part}
+            📌 {part}
           </span>
         );
       }
@@ -1293,7 +1293,7 @@ export default function LectureCaptureView({
           >
             
             {/* MINI TAB ROW SELECTOR */}
-            <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none whitespace-nowrap bg-neutral-950/20 p-1 rounded-xl border border-neutral-900/10 dark:border-neutral-900/40">
+            <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none whitespace-nowrap bg-[#F6F2EA] p-1.5 rounded-[6px] border border-[#111111] shadow-paper-sm">
               {(['notes', 'summary', 'flashcards', 'quiz', 'mindmap', 'timeline', 'slides', 'chat'] as const).map(tab => (
                 <button
                   key={tab}
@@ -1301,10 +1301,10 @@ export default function LectureCaptureView({
                     setActiveOutputTab(tab);
                     setSelectedMindmapNode(null);
                   }}
-                  className={`px-4 py-1.5 rounded-lg text-[10px] font-black capitalize transition-all cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-[4px] text-xs font-mono font-extrabold uppercase transition-all cursor-pointer ${
                     activeOutputTab === tab 
-                      ? theme === 'dark' ? 'bg-indigo-600 text-white' : 'bg-white text-black shadow-xs' 
-                      : theme === 'dark' ? 'text-neutral-400 hover:text-white' : 'text-neutral-500 hover:text-neutral-900'
+                      ? 'bg-[#FFC400] text-[#111111] border border-[#111111] shadow-paper-sm' 
+                      : 'bg-white text-[#666666] border border-transparent hover:bg-[#FFF8D6] hover:text-[#111111]'
                   }`}
                 >
                   {tab === 'mindmap' ? 'Mind Map' : tab === 'chat' ? 'Ask Lecture AI' : tab}
@@ -1353,9 +1353,7 @@ export default function LectureCaptureView({
 
                   <div className="space-y-3">
                     {activeLecture.notes?.[selectedNotesMode] ? (
-                      <div className={`p-4 rounded-xl border font-sans leading-relaxed whitespace-pre-wrap text-[11.5px] ${
-                        theme === 'dark' ? 'bg-[#121318] border-neutral-900 text-neutral-300' : 'bg-white border-gray-200 text-gray-700'
-                      }`}>
+                      <div className="p-5 rounded-[6px] border border-[#111111] bg-white text-[#111111] shadow-paper-sm font-sans leading-relaxed whitespace-pre-wrap text-xs">
                         {renderTextWithCitations(cleanMarkdownText(activeLecture.notes[selectedNotesMode]))}
                       </div>
                     ) : isGeneratingNotes ? (
@@ -1452,11 +1450,9 @@ export default function LectureCaptureView({
                           });
 
                           return filteredSections.map((sec, idx) => (
-                            <div key={idx} className={`p-4 rounded-xl border ${
-                              theme === 'dark' ? 'bg-[#121318] border-neutral-900' : 'bg-white border-gray-200'
-                            }`}>
-                              <h4 className="text-xs font-black text-indigo-400 uppercase tracking-widest font-mono">{sec.label}</h4>
-                              <p className="text-[11.5px] mt-2 text-neutral-300 leading-relaxed whitespace-pre-wrap">
+                            <div key={idx} className="p-5 rounded-[6px] border border-[#111111] bg-white text-[#111111] shadow-paper-sm font-sans">
+                              <h4 className="text-xs font-heading font-extrabold text-[#111111] uppercase tracking-wider font-mono border-b border-[#111111] pb-1.5 mb-2.5">{sec.label}</h4>
+                              <p className="text-xs text-[#111111] leading-relaxed whitespace-pre-wrap">
                                 {renderTextWithCitations(cleanMarkdownText(sec.content))}
                               </p>
                             </div>

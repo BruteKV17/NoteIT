@@ -2960,11 +2960,11 @@ ${queryText}`;
                         </div>
                       ) : getActiveNotes().length > 0 ? (
                         getActiveNotes().map((n: any, i: number) => (
-                          <div key={i} className={`p-4 rounded-xl border font-sans ${theme === 'dark' ? 'bg-[#121318] border-neutral-900' : 'bg-white border-gray-200'}`}>
-                            <h4 className="text-xs font-black text-indigo-400">{n.title}</h4>
-                            <p className={`text-[11.5px] mt-2 leading-relaxed whitespace-pre-wrap ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-700'}`}>
+                          <div key={i} className="p-5 rounded-[6px] border border-[#111111] bg-white text-[#111111] shadow-paper-sm font-sans">
+                            <h4 className="text-xs font-heading font-extrabold text-[#111111] uppercase tracking-wider font-mono border-b border-[#111111] pb-1.5 mb-2">{n.title}</h4>
+                            <div className="text-xs text-[#111111] leading-relaxed whitespace-pre-wrap mt-2">
                               {renderTextWithCitations(cleanMarkdownText(n.content))}
-                            </p>
+                            </div>
                           </div>
                         ))
                       ) : (
@@ -3038,11 +3038,9 @@ ${queryText}`;
                           ];
 
                           return allSections.map((sec, idx) => (
-                            <div key={idx} className={`p-4 rounded-xl border ${
-                              theme === 'dark' ? 'bg-[#121318] border-neutral-900' : 'bg-white border-gray-200'
-                            }`}>
-                              <h4 className="text-xs font-black text-indigo-400 uppercase tracking-widest font-mono">{sec.label}</h4>
-                              <p className={`text-[11.5px] mt-2 leading-relaxed whitespace-pre-wrap ${theme === 'dark' ? 'text-neutral-300' : 'text-neutral-700'}`}>
+                            <div key={idx} className="p-5 rounded-[6px] border border-[#111111] bg-white text-[#111111] shadow-paper-sm font-sans">
+                              <h4 className="text-xs font-heading font-extrabold text-[#111111] uppercase tracking-wider font-mono border-b border-[#111111] pb-1.5 mb-2.5">{sec.label}</h4>
+                              <p className="text-xs text-[#111111] leading-relaxed whitespace-pre-wrap mt-2">
                                 {renderTextWithCitations(sec.content)}
                               </p>
                             </div>
