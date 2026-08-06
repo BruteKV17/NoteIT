@@ -2924,19 +2924,21 @@ ${queryText}`;
                 {/* 1. NOTES TAB */}
                 {activeOutputTab === 'notes' && (
                   <div className="space-y-3 animate-fade-in">
-                    <div className="flex items-center justify-between">
-                      <div className="flex gap-1">
-                        {(['academic', 'executive', 'revision', 'bhailang'] as const).map(f => (
-                          <button
-                            key={f}
-                            onClick={() => setNotesFormat(f)}
-                            className={`px-2.5 py-1 rounded-lg text-[9px] font-extrabold uppercase ${
-                              notesFormat === f ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-400'
-                            }`}
+                    <div className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-[6px] border border-[#111111] bg-[#F6F2EA] shadow-paper-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#666666]">Format:</span>
+                        <div className="relative">
+                          <select
+                            value={notesFormat}
+                            onChange={(e) => setNotesFormat(e.target.value as any)}
+                            className="bg-white text-[#111111] text-xs font-mono font-bold uppercase px-3 py-1.5 rounded-[4px] border border-[#111111] shadow-paper-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#FFC400] appearance-auto"
                           >
-                            {f === 'bhailang' ? 'BhaiLang' : f}
-                          </button>
-                        ))}
+                            <option value="academic">🎓 Academic Notes</option>
+                            <option value="executive">💼 Executive Notes</option>
+                            <option value="revision">⚡ Revision Notes</option>
+                            <option value="bhailang">🔥 BhaiLang Notes</option>
+                          </select>
+                        </div>
                       </div>
                       <button
                         onClick={() => {
@@ -2944,9 +2946,9 @@ ${queryText}`;
                           setShowPdfModal(true);
                         }}
                         disabled={getActiveNotes().length === 0}
-                        className="flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:underline cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center gap-1.5 px-3 py-1 bg-[#FFC400] text-[#111111] text-xs font-mono font-extrabold uppercase rounded-[4px] border border-[#111111] shadow-paper-sm hover:bg-[#ffe066] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <Download className="h-3 w-3" />
+                        <Download className="h-3.5 w-3.5" />
                         <span>Export PDF</span>
                       </button>
                     </div>
@@ -2984,19 +2986,22 @@ ${queryText}`;
                 {/* 2. SUMMARY TAB */}
                 {activeOutputTab === 'summary' && (
                   <div className="space-y-3 animate-fade-in">
-                    <div className="flex items-center justify-between">
-                      <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none max-w-full">
-                        {(['academic', 'revision', 'executive', 'beginner', 'bhailang'] as const).map(f => (
-                          <button
-                            key={f}
-                            onClick={() => setSummaryFormat(f)}
-                            className={`px-2.5 py-1 rounded-lg text-[9px] font-extrabold uppercase whitespace-nowrap ${
-                              summaryFormat === f ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-400'
-                            }`}
+                    <div className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-[6px] border border-[#111111] bg-[#F6F2EA] shadow-paper-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#666666]">Format:</span>
+                        <div className="relative">
+                          <select
+                            value={summaryFormat}
+                            onChange={(e) => setSummaryFormat(e.target.value as any)}
+                            className="bg-white text-[#111111] text-xs font-mono font-bold uppercase px-3 py-1.5 rounded-[4px] border border-[#111111] shadow-paper-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#FFC400] appearance-auto"
                           >
-                            {f === 'bhailang' ? 'BhaiLang' : f}
-                          </button>
-                        ))}
+                            <option value="academic">🎓 Academic Format</option>
+                            <option value="revision">⚡ Quick Revision</option>
+                            <option value="executive">💼 Executive Summary</option>
+                            <option value="beginner">🌱 Beginner Friendly</option>
+                            <option value="bhailang">🔥 BhaiLang Summary</option>
+                          </select>
+                        </div>
                       </div>
                       <button
                         onClick={() => {
@@ -3004,9 +3009,9 @@ ${queryText}`;
                           setShowPdfModal(true);
                         }}
                         disabled={getActiveSummary().trim().length === 0}
-                        className="flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:underline cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                        className="flex items-center gap-1.5 px-3 py-1 bg-[#FFC400] text-[#111111] text-xs font-mono font-extrabold uppercase rounded-[4px] border border-[#111111] shadow-paper-sm hover:bg-[#ffe066] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <Download className="h-3 w-3" />
+                        <Download className="h-3.5 w-3.5" />
                         <span>Export PDF</span>
                       </button>
                     </div>

@@ -1318,25 +1318,22 @@ export default function LectureCaptureView({
               {/* 1. NOTES TAB */}
               {activeOutputTab === 'notes' && (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex gap-1">
-                      {([
-                        { mode: 'quick', label: 'Quick Notes' },
-                        { mode: 'detailed', label: 'Detailed Notes' },
-                        { mode: 'academic', label: 'Academic Notes' },
-                        { mode: 'exam', label: 'Exam Notes' },
-                        { mode: 'bhailang', label: 'BhaiLang' }
-                      ] as const).map(nOpt => (
-                        <button
-                          key={nOpt.mode}
-                          onClick={() => setSelectedNotesMode(nOpt.mode)}
-                          className={`px-2.5 py-1 rounded-lg text-[9px] font-extrabold uppercase ${
-                            selectedNotesMode === nOpt.mode ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-400'
-                          }`}
+                  <div className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-[6px] border border-[#111111] bg-[#F6F2EA] shadow-paper-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#666666]">Format:</span>
+                      <div className="relative">
+                        <select
+                          value={selectedNotesMode}
+                          onChange={(e) => setSelectedNotesMode(e.target.value as any)}
+                          className="bg-white text-[#111111] text-xs font-mono font-bold uppercase px-3 py-1.5 rounded-[4px] border border-[#111111] shadow-paper-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#FFC400] appearance-auto"
                         >
-                          {nOpt.label}
-                        </button>
-                      ))}
+                          <option value="quick">⚡ Quick Notes</option>
+                          <option value="detailed">📜 Detailed Notes</option>
+                          <option value="academic">🎓 Academic Notes</option>
+                          <option value="exam">🎯 Exam Notes</option>
+                          <option value="bhailang">🔥 BhaiLang Notes</option>
+                        </select>
+                      </div>
                     </div>
                     <button
                       onClick={() => {
@@ -1347,9 +1344,9 @@ export default function LectureCaptureView({
                         setShowPdfModal(true);
                       }}
                       disabled={!activeLecture.notes?.[selectedNotesMode]}
-                      className="flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:underline cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center gap-1.5 px-3 py-1 bg-[#FFC400] text-[#111111] text-xs font-mono font-extrabold uppercase rounded-[4px] border border-[#111111] shadow-paper-sm hover:bg-[#ffe066] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <Download className="h-3 w-3" />
+                      <Download className="h-3.5 w-3.5" />
                       <span>Export PDF</span>
                     </button>
                   </div>
@@ -1384,26 +1381,23 @@ export default function LectureCaptureView({
               {/* 2. SUMMARY TAB */}
               {activeOutputTab === 'summary' && (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none max-w-full">
-                      {([
-                        { mode: 'quick_revision', label: 'Quick Revision' },
-                        { mode: 'detailed_notes', label: 'Detailed Notes' },
-                        { mode: 'executive_summary', label: 'Executive Summary' },
-                        { mode: 'beginner_friendly', label: 'Beginner Friendly' },
-                        { mode: 'academic_format', label: 'Academic Format' },
-                        { mode: 'bhailang', label: 'BhaiLang' }
-                      ] as const).map(sf => (
-                        <button
-                          key={sf.mode}
-                          onClick={() => setSelectedSummaryMode(sf.mode)}
-                          className={`px-2.5 py-1 rounded-lg text-[9px] font-extrabold uppercase whitespace-nowrap ${
-                            selectedSummaryMode === sf.mode ? 'bg-indigo-500/10 text-indigo-400' : 'text-neutral-400'
-                          }`}
+                  <div className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-[6px] border border-[#111111] bg-[#F6F2EA] shadow-paper-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#666666]">Format:</span>
+                      <div className="relative">
+                        <select
+                          value={selectedSummaryMode}
+                          onChange={(e) => setSelectedSummaryMode(e.target.value as any)}
+                          className="bg-white text-[#111111] text-xs font-mono font-bold uppercase px-3 py-1.5 rounded-[4px] border border-[#111111] shadow-paper-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#FFC400] appearance-auto"
                         >
-                          {sf.label}
-                        </button>
-                      ))}
+                          <option value="quick_revision">⚡ Quick Revision</option>
+                          <option value="detailed_notes">📜 Detailed Notes</option>
+                          <option value="executive_summary">💼 Executive Summary</option>
+                          <option value="beginner_friendly">🌱 Beginner Friendly</option>
+                          <option value="academic_format">🎓 Academic Format</option>
+                          <option value="bhailang">🔥 BhaiLang</option>
+                        </select>
+                      </div>
                     </div>
                     <button
                       onClick={() => {
@@ -1414,9 +1408,9 @@ export default function LectureCaptureView({
                         setShowPdfModal(true);
                       }}
                       disabled={!activeLecture.summaries?.[selectedSummaryMode]}
-                      className="flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:underline cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                      className="flex items-center gap-1.5 px-3 py-1 bg-[#FFC400] text-[#111111] text-xs font-mono font-extrabold uppercase rounded-[4px] border border-[#111111] shadow-paper-sm hover:bg-[#ffe066] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <Download className="h-3 w-3" />
+                      <Download className="h-3.5 w-3.5" />
                       <span>Export PDF</span>
                     </button>
                   </div>
