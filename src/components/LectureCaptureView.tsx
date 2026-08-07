@@ -2272,10 +2272,10 @@ export default function LectureCaptureView({
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
         
         {/* LEFT COLUMN: Large animated Mic & Control panels */}
-        <div className="lg:col-span-1 space-y-6">
+        <div className="lg:col-span-1 flex flex-col gap-6">
           
           {/* Recoverable crash banner */}
           {recoverableLecture && (
@@ -2350,13 +2350,13 @@ export default function LectureCaptureView({
           )}
 
           {/* Standby & Active Control Card */}
-          <div className="rounded-[6px] border-2 border-[#111111] bg-white p-6 space-y-6 shadow-paper-md text-[#111111]">
-            <div className="flex flex-col items-center text-center space-y-6">
+          <div className="rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] p-6 flex-1 flex flex-col justify-between shadow-paper-md text-[var(--text-primary)]">
+            <div className="flex flex-col items-center text-center space-y-6 flex-1 justify-between">
               
               {/* Lecture Title & Subject Settings Inputs */}
               <div className="w-full space-y-4 text-left">
                 <div>
-                  <label className="block text-xs font-mono font-extrabold text-[#111111] uppercase tracking-wider mb-1">
+                  <label className="block text-xs font-mono font-extrabold text-[var(--text-primary)] uppercase tracking-wider mb-1">
                     LECTURE TITLE
                   </label>
                   <input
@@ -2365,39 +2365,41 @@ export default function LectureCaptureView({
                     value={lectureTitle}
                     onChange={(e) => setLectureTitle(e.target.value)}
                     placeholder="Enter lecture title..."
-                    className="w-full rounded-[6px] border-2 border-[#111111] bg-white text-xs font-mono font-bold p-3 text-[#111111] outline-none shadow-paper-sm disabled:bg-[#F6F2EA] disabled:cursor-not-allowed"
+                    style={{ color: 'var(--text-primary)' }}
+                    className="w-full rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] text-xs font-mono font-bold p-3 outline-none shadow-paper-sm disabled:bg-[var(--panel-bg)] disabled:cursor-not-allowed"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-mono font-extrabold text-[#111111] uppercase tracking-wider mb-1">
+                  <label className="block text-xs font-mono font-extrabold text-[var(--text-primary)] uppercase tracking-wider mb-1">
                     SUBJECT FIELD
                   </label>
                   <select
                     disabled={isRecording}
                     value={lectureSubject}
                     onChange={(e) => setLectureSubject(e.target.value)}
-                    className="w-full rounded-[6px] border-2 border-[#111111] bg-white text-xs font-mono font-bold p-3 text-[#111111] outline-none shadow-paper-sm disabled:bg-[#F6F2EA] disabled:cursor-not-allowed cursor-pointer"
+                    style={{ color: 'var(--text-primary)' }}
+                    className="w-full rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] text-xs font-mono font-bold p-3 outline-none shadow-paper-sm disabled:bg-[var(--panel-bg)] disabled:cursor-not-allowed cursor-pointer"
                   >
-                    <option value="Computer Science">Computer Science</option>
-                    <option value="Physics">Physics</option>
-                    <option value="Chemistry">Chemistry</option>
-                    <option value="Mathematics">Mathematics</option>
-                    <option value="Philosophy">Philosophy</option>
-                    <option value="Economics">Economics</option>
-                    <option value="General Science">General Science</option>
+                    <option value="Computer Science" className="bg-[var(--card-bg)] text-[var(--text-primary)]">Computer Science</option>
+                    <option value="Physics" className="bg-[var(--card-bg)] text-[var(--text-primary)]">Physics</option>
+                    <option value="Chemistry" className="bg-[var(--card-bg)] text-[var(--text-primary)]">Chemistry</option>
+                    <option value="Mathematics" className="bg-[var(--card-bg)] text-[var(--text-primary)]">Mathematics</option>
+                    <option value="Philosophy" className="bg-[var(--card-bg)] text-[var(--text-primary)]">Philosophy</option>
+                    <option value="Economics" className="bg-[var(--card-bg)] text-[var(--text-primary)]">Economics</option>
+                    <option value="General Science" className="bg-[var(--card-bg)] text-[var(--text-primary)]">General Science</option>
                   </select>
                 </div>
               </div>
 
               {/* Dynamic microphone container */}
-              <div className="relative">
+              <div className="relative my-2">
                 {isRecording && !isPaused && (
                   <div className="absolute -inset-2 rounded-full bg-[#FF4D4D] animate-ping opacity-75" />
                 )}
                 <button
                   disabled={aiStatus === 'synthesizing'}
                   onClick={isRecording ? handleStopCapture : handleStartCapture}
-                  className={`h-24 w-24 rounded-full flex items-center justify-center border-2 border-[#111111] shadow-paper-md transition-all cursor-pointer relative z-10 ${
+                  className={`h-24 w-24 rounded-full flex items-center justify-center border-2 border-[var(--border-main)] shadow-paper-md transition-all cursor-pointer relative z-10 ${
                     isRecording 
                       ? 'bg-[#FF4D4D] text-white hover:bg-[#ff3333]' 
                       : 'bg-[#FFC400] text-[#111111] hover:bg-[#ffe066]'
@@ -2409,11 +2411,11 @@ export default function LectureCaptureView({
 
               {/* Status and Clock time ticker */}
               <div className="space-y-1">
-                <div className="text-xs font-mono font-extrabold uppercase tracking-widest text-[#111111]">
+                <div className="text-xs font-mono font-extrabold uppercase tracking-widest text-[var(--text-primary)]">
                   {isRecording ? (isPaused ? 'CAPTURE PAUSED' : 'ACTIVE TRANSMISSION') : 'STANDBY MODE'}
                 </div>
-                <div className="text-3xl font-heading font-extrabold font-mono tracking-tight text-[#111111] flex items-center gap-2 justify-center">
-                  <Clock className="h-5 w-5 text-[#111111]" />
+                <div className="text-3xl font-heading font-extrabold font-mono tracking-tight text-[var(--text-primary)] flex items-center gap-2 justify-center">
+                  <Clock className="h-5 w-5 text-[var(--text-primary)]" />
                   <span>{formatTime(seconds)}</span>
                 </div>
               </div>
@@ -2423,7 +2425,7 @@ export default function LectureCaptureView({
                 {!isRecording ? (
                   <button
                     onClick={handleStartCapture}
-                    className="flex items-center gap-2 bg-[#2F6BFF] text-white rounded-[6px] border-2 border-[#111111] py-3.5 px-6 text-xs font-mono font-extrabold uppercase hover:bg-[#255cd9] transition-all shadow-paper-md cursor-pointer w-full justify-center"
+                    className="flex items-center gap-2 bg-[#2F6BFF] text-white rounded-[6px] border-2 border-[var(--border-main)] py-3.5 px-6 text-xs font-mono font-extrabold uppercase hover:bg-[#255cd9] transition-all shadow-paper-md cursor-pointer w-full justify-center"
                   >
                     <Play className="h-4 w-4 fill-current text-white" />
                     <span>START CAPTURING COURSE</span>
@@ -2432,14 +2434,14 @@ export default function LectureCaptureView({
                   <>
                     <button
                       onClick={handlePauseCapture}
-                      className="flex-1 py-3 px-4 rounded-[6px] bg-[#FFC400] border-2 border-[#111111] text-xs font-mono font-bold text-[#111111] hover:bg-[#ffe066] transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-paper-sm uppercase"
+                      className="flex-1 py-3 px-4 rounded-[6px] bg-[#FFC400] border-2 border-[var(--border-main)] text-xs font-mono font-bold text-[#111111] hover:bg-[#ffe066] transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-paper-sm uppercase"
                     >
                       {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
                       <span>{isPaused ? 'Resume' : 'Pause'}</span>
                     </button>
                     <button
                       onClick={handleStopCapture}
-                      className="flex-1 py-3 px-4 rounded-[6px] bg-[#FF4D4D] border-2 border-[#111111] text-xs font-mono font-bold text-white hover:bg-[#ff3333] transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-paper-sm uppercase"
+                      className="flex-1 py-3 px-4 rounded-[6px] bg-[#FF4D4D] border-2 border-[var(--border-main)] text-xs font-mono font-bold text-white hover:bg-[#ff3333] transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-paper-sm uppercase"
                     >
                       <Square className="h-3.5 w-3.5 fill-current" />
                       <span>Stop & Sync</span>
@@ -2487,11 +2489,11 @@ export default function LectureCaptureView({
         </div>
 
         {/* RIGHT COLUMNS: Live Speech Decipher column */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="min-h-[460px]">
+        <div className="lg:col-span-2 flex flex-col">
+          <div className="flex-1 flex flex-col min-h-[460px]">
             
             {/* Audio Input Monitor */}
-            <div className="rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] p-6 flex flex-col justify-between h-full relative shadow-paper-md text-[var(--text-primary)]">
+            <div className="rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] p-6 flex-1 flex flex-col justify-between relative shadow-paper-md text-[var(--text-primary)]">
               <div className="space-y-4 flex-1 flex flex-col justify-between overflow-hidden">
                 <div className="flex items-center justify-between border-b-2 border-[var(--border-main)] pb-3">
                   <div className="flex items-center gap-2">
