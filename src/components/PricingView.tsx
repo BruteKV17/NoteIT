@@ -118,21 +118,21 @@ export default function PricingView({
             <Card 
               key={plan.name}
               shadow="lg"
-              className={`p-6 flex flex-col justify-between border-2 border-[#111111] relative transition-all ${
+              className={`p-6 flex flex-col justify-between border-2 relative transition-all ${
                 isProPopular 
-                  ? 'bg-[#FFC400] text-[#111111] shadow-paper-lg md:-translate-y-2' 
-                  : 'bg-white text-[#111111]'
+                  ? 'bg-[var(--card-bg)] text-[var(--text-primary)] border-[#FFC400] shadow-paper-yellow md:-translate-y-2' 
+                  : 'bg-[var(--card-bg)] text-[var(--text-primary)] border-[var(--border-main)] shadow-paper-md'
               }`}
             >
               {isProPopular && (
-                <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-[4px] bg-[#111111] text-white text-[9px] font-mono font-bold px-3 py-1 uppercase tracking-widest border border-[#111111] shadow-paper-sm">
+                <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-[4px] bg-[#FFC400] text-[#111111] text-[9px] font-mono font-bold px-3 py-1 uppercase tracking-widest border border-[#FFC400] shadow-paper-sm">
                   MOST POPULAR WORKSPACE
                 </span>
               )}
 
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold tracking-widest font-mono uppercase text-[#666666]">
+                  <span className="text-[10px] font-bold tracking-widest font-mono uppercase text-[var(--text-secondary)]">
                     {plan.tierLabel}
                   </span>
                   {isActive && (
@@ -143,16 +143,16 @@ export default function PricingView({
                 </div>
 
                 <div>
-                  <h3 className="font-heading font-extrabold text-xl uppercase text-[#111111]">{plan.name} Plan</h3>
-                  <p className="text-xs font-mono text-[#666666] mt-1">
+                  <h3 className="font-heading font-extrabold text-xl uppercase text-[var(--text-primary)]">{plan.name} Plan</h3>
+                  <p className="text-xs font-mono text-[var(--text-secondary)] mt-1">
                     {plan.tagline}
                   </p>
                 </div>
 
                 <div className="flex items-baseline gap-1 pt-2">
-                  <span className="text-4xl font-extrabold font-mono text-[#111111]">{displayPrice}</span>
+                  <span className="text-4xl font-extrabold font-mono text-[var(--text-primary)]">{displayPrice}</span>
                   {plan.period !== 'forever' && plan.period !== 'enterprise' && (
-                    <span className="text-xs font-mono font-bold text-[#666666]">
+                    <span className="text-xs font-mono font-bold text-[var(--text-secondary)]">
                       / {billingCycle === 'yearly' ? 'month (billed yearly)' : 'month'}
                     </span>
                   )}
@@ -162,15 +162,15 @@ export default function PricingView({
                   <button
                     onClick={() => handleUpgradeSimulated(plan.name, displayPrice)}
                     disabled={plan.name === 'Institution' || isActive}
-                    className={`w-full py-3 px-4 font-mono text-xs font-bold uppercase rounded-[6px] border-2 border-[#111111] shadow-paper-sm transition-all ${
+                    className={`w-full py-3 px-4 font-mono text-xs font-bold uppercase rounded-[6px] border-2 border-[var(--border-main)] shadow-paper-sm transition-all ${
                       plan.name === 'Institution'
-                        ? 'bg-gray-200 text-[#666666] cursor-not-allowed border-dashed'
+                        ? 'bg-[var(--panel-bg)] text-[var(--text-secondary)] cursor-not-allowed border-dashed'
                         : isProPopular
                           ? isActive 
-                            ? 'bg-white text-[#111111] cursor-default' 
-                            : 'bg-[#111111] text-white hover:bg-[#222222] cursor-pointer'
+                            ? 'bg-[var(--panel-bg)] text-[var(--text-secondary)] cursor-default' 
+                            : 'bg-[#FFC400] text-[#111111] hover:bg-[#ffe066] cursor-pointer'
                           : isActive
-                            ? 'bg-[#F6F2EA] text-[#666666] cursor-default'
+                            ? 'bg-[var(--panel-bg)] text-[var(--text-secondary)] cursor-default'
                             : 'bg-[#FFC400] text-[#111111] hover:bg-[#ffe066] cursor-pointer'
                     }`}
                   >
@@ -184,14 +184,14 @@ export default function PricingView({
               </div>
 
               {/* Feature list */}
-              <div className="border-t-2 border-[#111111] pt-6 mt-6 space-y-3 flex-1">
-                <span className="section-label text-[10px] font-bold uppercase tracking-[2px] text-[#666666] block">
+              <div className="border-t-2 border-[var(--border-main)] pt-6 mt-6 space-y-3 flex-1">
+                <span className="section-label text-[10px] font-bold uppercase tracking-[2px] text-[var(--text-secondary)] block">
                   CORE BENEFITS INCLUDED:
                 </span>
                 <div className="grid gap-3">
                   {plan.features.map((feature, idx) => (
-                    <div key={idx} className="flex items-start gap-2 text-xs font-mono text-[#111111]">
-                      <div className="rounded-[3px] bg-[#19B56B] text-white h-4 w-4 flex items-center justify-center shrink-0 mt-0.5 border border-[#111111]">
+                    <div key={idx} className="flex items-start gap-2 text-xs font-mono text-[var(--text-primary)]">
+                      <div className="rounded-[3px] bg-[#19B56B] text-white h-4 w-4 flex items-center justify-center shrink-0 mt-0.5 border border-[var(--border-main)]">
                         <Check className="h-3 w-3 stroke-[3]" />
                       </div>
                       <span>{feature}</span>

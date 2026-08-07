@@ -168,22 +168,22 @@ export default function AuthView({
   };
 
   return (
-    <div className="min-h-screen w-screen flex flex-col md:flex-row overflow-hidden font-sans bg-grid-paper select-none text-[#111111]">
+    <div className="min-h-screen w-screen flex flex-col md:flex-row overflow-hidden font-sans bg-grid-paper select-none text-[var(--text-primary)]">
       
       {/* LEFT COLUMN: Product Branding & Showcase */}
-      <div className="hidden md:flex md:w-1/2 flex-col justify-between p-12 relative border-r-2 border-[#111111] bg-white">
+      <div className="hidden md:flex md:w-1/2 flex-col justify-between p-12 relative border-r-2 border-[var(--border-main)] bg-[var(--sidebar-bg)]">
         
         {/* Brand Header */}
         <div 
           className="flex items-center gap-3 cursor-pointer"
           onClick={onNavigateToLanding}
         >
-          <div className="p-1 rounded-[6px] bg-[#FFC400] border-2 border-[#111111] shadow-paper-sm">
+          <div className="p-1 rounded-[6px] bg-[#FFC400] border-2 border-[var(--border-main)] shadow-paper-sm">
             <AILogo size={32} theme="light" />
           </div>
           <div>
-            <div className="font-heading font-extrabold text-lg text-[#111111] tracking-tight">NOTEIT AI</div>
-            <div className="text-[10px] font-mono font-bold text-[#666666] uppercase tracking-[2px]">SCHOLAR WORKSPACE</div>
+            <div className="font-heading font-extrabold text-lg text-[var(--text-primary)] tracking-tight">NOTEIT AI</div>
+            <div className="text-[10px] font-mono font-bold text-[var(--text-secondary)] uppercase tracking-[2px]">SCHOLAR WORKSPACE</div>
           </div>
         </div>
 
@@ -192,20 +192,20 @@ export default function AuthView({
           <Badge variant="yellow" size="md">
             COGNITIVE AI PLATFORM
           </Badge>
-          <h1 className="text-4xl font-heading font-extrabold tracking-tight uppercase leading-tight text-[#111111]">
+          <h1 className="text-4xl font-heading font-extrabold tracking-tight uppercase leading-tight text-[var(--text-primary)]">
             AI THAT THINKS <br />
-            <span className="bg-[#FFC400] px-2 py-0.5 border-2 border-[#111111] inline-block shadow-paper-sm mt-1">
+            <span className="bg-[#FFC400] text-[#111111] px-2 py-0.5 border-2 border-[var(--border-main)] inline-block shadow-paper-sm mt-1">
               WHILE YOU LEARN
             </span>
           </h1>
-          <p className="text-sm font-mono text-[#666666] leading-relaxed border-l-4 border-[#111111] pl-3 py-1">
+          <p className="text-sm font-mono text-[var(--text-secondary)] leading-relaxed border-l-4 border-[#FFC400] pl-3 py-1">
             NoteIT AI captures lectures, extracts structural text, generates dynamic notes, flashcards, interactive quizzes, and designs beautiful presentation decks in one unified workspace.
           </p>
 
           {/* Premium Preview Card */}
-          <Card shadow="md" className="p-5 bg-[#F6F2EA] border-2 border-[#111111] space-y-3">
+          <Card shadow="md" className="p-5 bg-[var(--panel-bg)] border-2 border-[var(--border-main)] space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono font-extrabold uppercase tracking-wider text-[#666666]">
+              <span className="text-[10px] font-mono font-extrabold uppercase tracking-wider text-[var(--text-secondary)]">
                 SPEAKER 1 • ACTIVE SYNTHESIS
               </span>
               <Badge variant="green" size="sm">
@@ -213,15 +213,15 @@ export default function AuthView({
               </Badge>
             </div>
             
-            <p className="text-xs font-mono text-[#111111] leading-relaxed italic">
+            <p className="text-xs font-mono text-[var(--text-primary)] leading-relaxed italic">
               "Gradient descent scaling parameters decrease exponentially when optimization adaptive weights are scaled with moving averages of gradients..."
             </p>
 
             <div className="flex flex-wrap gap-2 pt-1 font-mono text-[10px] font-bold">
-              <span className="rounded-[4px] bg-[#FFC400] px-2 py-0.5 border border-[#111111]">
+              <span className="rounded-[4px] bg-[#FFC400] text-[#111111] px-2 py-0.5 border border-[var(--border-main)]">
                 Adam Optimizer
               </span>
-              <span className="rounded-[4px] bg-white px-2 py-0.5 border border-[#111111]">
+              <span className="rounded-[4px] bg-[var(--card-bg)] text-[var(--text-primary)] px-2 py-0.5 border border-[var(--border-main)]">
                 Gradient Descent
               </span>
             </div>
@@ -229,34 +229,34 @@ export default function AuthView({
         </div>
 
         {/* Footer info */}
-        <div className="text-xs font-mono text-[#666666]">
+        <div className="text-xs font-mono text-[var(--text-secondary)]">
           © 2026 NoteIT AI Labs. Powered by BRUTE.
         </div>
       </div>
 
       {/* RIGHT COLUMN: Bauhaus Login / Signup Panel */}
-      <div className="flex-1 flex items-center justify-center p-6 relative overflow-y-auto">
+      <div className="flex-1 flex items-center justify-center p-6 relative overflow-y-auto bg-[var(--bg-paper)]">
         
         <div className="w-full max-w-md space-y-6">
           {/* Back Navigation trigger */}
           {onNavigateToLanding && (
             <button
               onClick={onNavigateToLanding}
-              className="text-xs font-mono font-bold text-[#666666] hover:text-[#111111] transition-colors flex items-center gap-1 cursor-pointer"
+              className="text-xs font-mono font-bold text-[var(--text-secondary)] hover:text-[#FFC400] transition-colors flex items-center gap-1 cursor-pointer"
             >
               <ArrowLeft className="h-4 w-4" />
               <span>Back to Landing</span>
             </button>
           )}
 
-          <Card shadow="lg" className="p-8 bg-white border-2 border-[#111111] space-y-6">
+          <Card shadow="lg" className="p-8 bg-[var(--card-bg)] border-2 border-[var(--border-main)] space-y-6">
             <header className="space-y-1">
-              <h2 className="text-2xl font-heading font-extrabold uppercase text-[#111111] tracking-tight">
+              <h2 className="text-2xl font-heading font-extrabold uppercase text-[var(--text-primary)] tracking-tight">
                 {mode === 'login' && 'ACCESS AI WORKSPACE'}
                 {mode === 'signup' && 'CREATE ACADEMIC IDENTITY'}
                 {mode === 'forgot' && 'DISCHARGE RESET TOKEN'}
               </h2>
-              <p className="text-xs font-mono text-[#666666]">
+              <p className="text-xs font-mono text-[var(--text-secondary)]">
                 {mode === 'login' && 'Authenticate to enter your research workspace.'}
                 {mode === 'signup' && 'Register your scholar account to begin.'}
                 {mode === 'forgot' && 'Enter your email to receive a password reset link.'}
@@ -271,7 +271,7 @@ export default function AuthView({
             )}
 
             {successMsg && (
-              <div className="p-3 rounded-[4px] bg-[#19B56B]/15 border-2 border-[#19B56B] text-[#111111] text-xs font-mono font-bold flex items-center gap-2">
+              <div className="p-3 rounded-[4px] bg-[#19B56B]/15 border-2 border-[#19B56B] text-[var(--text-primary)] text-xs font-mono font-bold flex items-center gap-2">
                 <CheckCircle className="h-4 w-4 text-[#19B56B] shrink-0" />
                 <span>{successMsg}</span>
               </div>
@@ -301,14 +301,14 @@ export default function AuthView({
               {mode !== 'forgot' && (
                 <div className="space-y-1.5">
                   <div className="flex justify-between items-center">
-                    <label className="section-label text-[10px] font-bold text-[#666666] uppercase tracking-[2px]">
+                    <label className="section-label text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-[2px]">
                       SECURITY PASSWORD
                     </label>
                     {mode === 'login' && (
                       <button
                         type="button"
                         onClick={() => setMode('forgot')}
-                        className="text-[10px] font-mono font-bold text-[#2F6BFF] hover:underline cursor-pointer"
+                        className="text-[10px] font-mono font-bold text-[#38BDF8] hover:underline cursor-pointer"
                       >
                         Forgot password?
                       </button>
@@ -321,12 +321,12 @@ export default function AuthView({
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full rounded-[6px] border-2 border-[#111111] bg-white p-3 text-xs font-mono font-bold text-[#111111] outline-none shadow-paper-sm"
+                      className="w-full rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--input-bg)] p-3 text-xs font-mono font-bold text-[var(--text-primary)] outline-none shadow-paper-sm focus:border-[#FFC400]"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#666666] hover:text-[#111111]"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
@@ -339,61 +339,63 @@ export default function AuthView({
                 size="md"
                 type="submit"
                 disabled={loading}
-                className="w-full justify-center"
+                className="w-full justify-center bg-[#FFC400] text-[#111111] hover:bg-[#ffe066] font-extrabold border-2 border-[var(--border-main)] shadow-paper-sm"
               >
                 {loading ? 'AUTHENTICATING...' : mode === 'login' ? 'AUTHENTICATE & ENTER →' : mode === 'signup' ? 'CREATE IDENTITY →' : 'SEND RESET LINK'}
               </Button>
             </form>
 
-            <div className="relative border-t-2 border-[#111111] pt-4 text-center">
-              <span className="bg-white px-3 text-[10px] font-mono font-bold uppercase text-[#666666] absolute -top-2.5 left-1/2 -translate-x-1/2">
+            <div className="relative border-t-2 border-[var(--border-main)] pt-4 text-center">
+              <span className="bg-[var(--card-bg)] px-3 text-[10px] font-mono font-bold uppercase text-[var(--text-secondary)] absolute -top-2.5 left-1/2 -translate-x-1/2 border border-[var(--border-main)] rounded-[3px]">
                 OR CONNECT WITH
               </span>
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <button
                   type="button"
                   onClick={handleGoogleSignIn}
-                  className="flex items-center justify-center gap-2 p-2.5 rounded-[6px] border-2 border-[#111111] bg-white text-[#111111] font-mono text-xs font-bold uppercase shadow-paper-sm hover:bg-[#FFC400] transition-colors cursor-pointer"
+                  style={{ color: 'var(--text-primary)' }}
+                  className="social-auth-btn flex items-center justify-center gap-2 p-2.5 rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] font-mono text-xs font-bold uppercase shadow-paper-sm transition-colors cursor-pointer"
                 >
-                  <svg className="h-4 w-4" viewBox="0 0 24 24">
+                  <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
                     <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.2 9 5 12 5z"/>
                     <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/>
                     <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 10.8 0 12s.7 2.3 1.9 4.7l3.7-2.9z"/>
                     <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.2-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z"/>
                   </svg>
-                  <span>Google</span>
+                  <span style={{ color: 'var(--text-primary)' }} className="font-bold">Google</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={handleGithubSignIn}
-                  className="flex items-center justify-center gap-2 p-2.5 rounded-[6px] border-2 border-[#111111] bg-white text-[#111111] font-mono text-xs font-bold uppercase shadow-paper-sm hover:bg-[#FFC400] transition-colors cursor-pointer"
+                  style={{ color: 'var(--text-primary)' }}
+                  className="social-auth-btn flex items-center justify-center gap-2 p-2.5 rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] font-mono text-xs font-bold uppercase shadow-paper-sm transition-colors cursor-pointer"
                 >
-                  <Github className="h-4 w-4 text-[#111111]" />
-                  <span>GitHub</span>
+                  <Github className="h-4 w-4 shrink-0" style={{ color: 'var(--text-primary)' }} />
+                  <span style={{ color: 'var(--text-primary)' }} className="font-bold">GitHub</span>
                 </button>
               </div>
             </div>
 
-            <div className="text-center pt-2 border-t border-gray-200">
+            <div className="text-center pt-2 border-t border-[var(--border-main)]">
               {mode === 'login' ? (
-                <p className="text-xs font-mono text-[#666666]">
+                <p className="text-xs font-mono text-[var(--text-secondary)]">
                   New to the platform?{' '}
                   <button
                     type="button"
                     onClick={() => setMode('signup')}
-                    className="font-bold text-[#111111] underline hover:text-[#2F6BFF] cursor-pointer"
+                    className="font-bold text-[var(--text-primary)] underline hover:text-[#38BDF8] cursor-pointer"
                   >
                     Create academic identity
                   </button>
                 </p>
               ) : (
-                <p className="text-xs font-mono text-[#666666]">
+                <p className="text-xs font-mono text-[var(--text-secondary)]">
                   Already registered?{' '}
                   <button
                     type="button"
                     onClick={() => setMode('login')}
-                    className="font-bold text-[#111111] underline hover:text-[#2F6BFF] cursor-pointer"
+                    className="font-bold text-[var(--text-primary)] underline hover:text-[#38BDF8] cursor-pointer"
                   >
                     Sign in to workspace
                   </button>
@@ -402,7 +404,7 @@ export default function AuthView({
             </div>
           </Card>
 
-          <p className="text-center text-[10px] font-mono text-[#666666]">
+          <p className="text-center text-[10px] font-mono text-[var(--text-secondary)]">
             Private academic workspace protected by decentralized key signatures.<br />Powered by NoteIT AI Labs.
           </p>
         </div>

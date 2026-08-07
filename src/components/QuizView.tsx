@@ -191,29 +191,29 @@ export default function QuizView({
       {!selectedQuizId || !activeQuiz ? (
         <div className="space-y-6">
           {/* Header Banner */}
-          <div className="rounded-[6px] border-2 border-[#111111] bg-white p-6 shadow-paper-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="hero-banner rounded-[6px] border-2 border-[var(--border-main)] p-6 shadow-paper-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <span className="section-label text-[10px] font-bold text-[#666666] uppercase tracking-[3px] block">
+              <span className="section-label text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-[3px] block">
                 ACTIVE RETRIEVAL SYSTEM
               </span>
-              <h1 className="font-heading font-extrabold text-2xl md:text-4xl text-[#111111] uppercase tracking-tight mt-1">
+              <h1 className="font-heading font-extrabold text-2xl md:text-4xl text-[var(--text-primary)] uppercase tracking-tight mt-1">
                 INTERACTIVE QUIZ MODE
               </h1>
-              <p className="text-xs font-mono text-[#666666] mt-1 border-l-4 border-[#FFC400] pl-3 py-1">
+              <p className="text-xs font-mono text-[var(--text-secondary)] mt-1 border-l-4 border-[#FFC400] pl-3 py-1">
                 Reinforce semantic core concepts mapped by AI from your uploaded files. Complete quizzes to raise your Topic Mastery scores.
               </p>
             </div>
 
             {/* Difficulty Tabs */}
-            <div className="flex gap-1 p-1 bg-[#F6F2EA] rounded-[6px] border-2 border-[#111111] shrink-0">
+            <div className="flex gap-1 p-1 bg-[var(--panel-bg)] rounded-[6px] border-2 border-[var(--border-main)] shrink-0">
               {(['easy', 'medium', 'hard'] as const).map(diff => (
                 <button
                   key={diff}
                   onClick={() => setActiveDifficulty(diff)}
-                  className={`px-3 py-1.5 rounded-[4px] border-2 font-mono text-xs font-bold uppercase transition-all ${
+                  className={`px-3 py-1.5 rounded-[4px] border-2 font-mono text-xs font-bold uppercase transition-all cursor-pointer ${
                     activeDifficulty === diff
-                      ? 'bg-[#FFC400] text-[#111111] border-[#111111] shadow-paper-sm font-extrabold'
-                      : 'bg-white text-[#111111] border-transparent hover:bg-[#FFF8D6]'
+                      ? 'bg-[#FFC400] text-[#111111] border-[var(--border-main)] shadow-paper-sm font-extrabold'
+                      : 'bg-[var(--card-bg)] text-[var(--text-primary)] border-transparent hover:bg-[var(--hover-bg)]'
                   }`}
                 >
                   {diff}

@@ -21,7 +21,10 @@ import {
   Search,
   Activity,
   TrendingUp,
-  AlertTriangle
+  AlertTriangle,
+  Sun,
+  Moon,
+  Palette
 } from 'lucide-react';
 import { PageId, UserSettings } from '../types';
 import { auth } from '../firebaseConfig';
@@ -149,6 +152,7 @@ interface SettingsViewProps {
   onUpdateSettings: (newSettings: UserSettings) => void;
   setActivePage: (page: PageId) => void;
   theme?: 'light' | 'dark';
+  setTheme?: (theme: 'light' | 'dark') => void;
   onLogOut?: () => void;
 }
 
@@ -157,11 +161,12 @@ export default function SettingsView({
   onUpdateSettings,
   setActivePage,
   theme = 'dark',
+  setTheme,
   onLogOut
 }: SettingsViewProps) {
   
   // Local state
-  const [activeTab, setActiveTab] = useState<'profile' | 'ai' | 'usage' | 'security' | 'billing'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'ai' | 'usage' | 'security' | 'billing'>('profile');
   
   // Profile edits
   const [firstName, setFirstName] = useState(settings.profile.firstName || '');
@@ -443,19 +448,19 @@ export default function SettingsView({
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-16 bg-[#F6F2EA] p-4 md:p-8 select-none text-[#111111]">
+    <div className="space-y-6 max-w-7xl mx-auto pb-16 bg-[var(--bg-paper)] p-4 md:p-8 select-none text-[var(--text-primary)]">
       
       {/* Settings Header */}
-      <div className="rounded-[6px] border-2 border-[#111111] bg-white p-6 shadow-paper-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] p-6 shadow-paper-md flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <span className="text-[10px] font-mono font-extrabold text-[#666666] uppercase tracking-[3px] block">
+          <span className="text-[10px] font-mono font-extrabold text-[var(--text-secondary)] uppercase tracking-[3px] block">
             PREFERENCES & CONFIGURATION
           </span>
-          <h1 className="font-heading font-extrabold text-2xl md:text-3xl text-[#111111] uppercase tracking-tight mt-1">
+          <h1 className="font-heading font-extrabold text-2xl md:text-3xl text-[var(--text-primary)] uppercase tracking-tight mt-1">
             ACCOUNT & SYSTEM SETTINGS
           </h1>
-          <p className="text-xs font-mono font-bold text-[#666666] mt-1">
-            Manage your academic identity, AI providers, API keys, and cognitive parameters.
+          <p className="text-xs font-mono font-bold text-[var(--text-secondary)] mt-1">
+            Manage your academic identity, visual themes, AI providers, API keys, and cognitive parameters.
           </p>
         </div>
       </div>
@@ -463,13 +468,14 @@ export default function SettingsView({
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         
         {/* Left Navigation Sidebar */}
-        <div className="md:col-span-1 rounded-[6px] border-2 border-[#111111] bg-white p-3 shadow-paper-md flex flex-col gap-2 h-fit">
-          <span className="text-[10px] font-mono font-extrabold text-[#666666] uppercase tracking-[3px] px-2 py-1">
+        <div className="md:col-span-1 rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] p-3 shadow-paper-md flex flex-col gap-2 h-fit">
+          <span className="text-[10px] font-mono font-extrabold text-[var(--text-secondary)] uppercase tracking-[3px] px-2 py-1">
             NAVIGATION
           </span>
 
           {[
             { id: 'profile', label: 'User Profile', icon: User },
+            { id: 'appearance', label: 'Theme & Appearance', icon: Sun },
             { id: 'ai', label: 'AI Provider Keys', icon: Sparkles },
             { id: 'usage', label: 'Usage & Costs', icon: Activity },
             { id: 'security', label: 'Security & Auth', icon: ShieldCheck },
@@ -483,8 +489,8 @@ export default function SettingsView({
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[4px] border-2 font-mono text-xs font-bold uppercase transition-all cursor-pointer ${
                   isActive
-                    ? 'bg-[#FFC400] text-[#111111] border-[#111111] shadow-paper-sm font-extrabold translate-x-1'
-                    : 'bg-white text-[#111111] border-transparent hover:border-[#111111] hover:bg-[#FFF8D6]'
+                    ? 'bg-[#FFC400] text-[#111111] border-[var(--border-main)] shadow-paper-sm font-extrabold translate-x-1'
+                    : 'bg-[var(--card-bg)] text-[var(--text-primary)] border-transparent hover:border-[var(--border-main)] hover:bg-[var(--hover-bg)]'
                 }`}
               >
                 <Icon className="w-4 h-4 shrink-0" />
@@ -495,12 +501,140 @@ export default function SettingsView({
         </div>
 
       {/* Main Settings Form Block (3 Columns) */}
-      <div className="md:col-span-3 rounded-[6px] border-2 border-[#111111] bg-white p-6 shadow-paper-md relative text-[#111111]">
+      <div className="md:col-span-3 rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] p-6 shadow-paper-md relative text-[var(--text-primary)]">
         
         {saveSuccess && (
-          <div className="absolute top-4 right-6 rounded-[4px] border-2 border-[#111111] bg-[#19B56B] text-white px-3.5 py-1.5 text-xs font-mono font-extrabold flex items-center gap-1.5 shadow-paper-sm z-50">
+          <div className="absolute top-4 right-6 rounded-[4px] border-2 border-[var(--border-main)] bg-[#19B56B] text-white px-3.5 py-1.5 text-xs font-mono font-extrabold flex items-center gap-1.5 shadow-paper-sm z-50">
             <Check className="h-4 w-4" />
             <span>SETTINGS SAVED SUCCESSFULLY</span>
+          </div>
+        )}
+
+        {/* Tab: Theme & Appearance */}
+        {activeTab === 'appearance' && (
+          <div className="space-y-6 text-left">
+            <div>
+              <h3 className="font-heading font-extrabold text-lg uppercase text-[var(--text-primary)] flex items-center gap-2">
+                <Sun className="h-5 w-5 text-[#FFC400]" />
+                Theme & Visual Appearance
+              </h3>
+              <p className="text-xs font-mono font-bold text-[var(--text-secondary)] mt-1">
+                Customize the color palette and interface format for NoteIT AI. Choose between our Dark Navy Blue Bauhaus theme and Classic Light Bauhaus theme.
+              </p>
+            </div>
+
+            {/* Theme Selection Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+              
+              {/* Option 1: Dark Navy Blue Theme */}
+              <div 
+                onClick={() => {
+                  if (setTheme) setTheme('dark');
+                  onUpdateSettings({
+                    ...settings,
+                    profile: { ...settings.profile, theme: 'dark' }
+                  });
+                  triggerSaveNotification();
+                }}
+                className={`rounded-[8px] border-2 p-5 flex flex-col justify-between space-y-4 cursor-pointer transition-all duration-200 shadow-paper-md ${
+                  theme === 'dark'
+                    ? 'border-[#FFC400] bg-[#0A1124] ring-2 ring-[#FFC400]'
+                    : 'border-[var(--border-main)] bg-[#0A1124] opacity-85 hover:opacity-100 hover:-translate-y-1'
+                }`}
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-heading font-bold text-sm text-[#F1F5F9] uppercase tracking-wider flex items-center gap-2">
+                      <Moon className="h-4 w-4 text-[#FFC400]" />
+                      Dark Navy Blue (Bauhaus)
+                    </span>
+                    {theme === 'dark' && (
+                      <span className="rounded-[4px] bg-[#FFC400] text-[#0A1124] px-2 py-0.5 text-[10px] font-extrabold font-mono border border-[#FFC400]">
+                        ACTIVE
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs font-mono text-[#94A3B8] leading-relaxed">
+                    Deep slate navy blue palette (`#0A1124`) engineered for night research sessions and zero eye fatigue. Crisp high-contrast slate-white typography with yellow & electric blue Bauhaus accents.
+                  </p>
+
+                  {/* Color Swatch Preview */}
+                  <div className="flex items-center gap-2 pt-2">
+                    <div className="h-6 w-6 rounded border border-[#2A3B5C] bg-[#0A1124]" title="Base Navy (#0A1124)" />
+                    <div className="h-6 w-6 rounded border border-[#2A3B5C] bg-[#152238]" title="Card Panel (#152238)" />
+                    <div className="h-6 w-6 rounded border border-[#2A3B5C] bg-[#FFC400]" title="Bauhaus Yellow (#FFC400)" />
+                    <div className="h-6 w-6 rounded border border-[#2A3B5C] bg-[#38BDF8]" title="Electric Blue (#38BDF8)" />
+                    <div className="h-6 w-6 rounded border border-[#2A3B5C] bg-[#FF5353]" title="Coral Red (#FF5353)" />
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className={`w-full py-2 text-xs font-mono font-extrabold uppercase rounded-[4px] border-2 transition-all cursor-pointer ${
+                    theme === 'dark'
+                      ? 'bg-[#FFC400] text-[#0A1124] border-[#FFC400]'
+                      : 'bg-transparent text-[#F1F5F9] border-[#2A3B5C] hover:bg-[#152238]'
+                  }`}
+                >
+                  {theme === 'dark' ? 'Theme Selected' : 'Apply Dark Blue Theme'}
+                </button>
+              </div>
+
+              {/* Option 2: Classic Light Theme */}
+              <div 
+                onClick={() => {
+                  if (setTheme) setTheme('light');
+                  onUpdateSettings({
+                    ...settings,
+                    profile: { ...settings.profile, theme: 'light' }
+                  });
+                  triggerSaveNotification();
+                }}
+                className={`rounded-[8px] border-2 p-5 flex flex-col justify-between space-y-4 cursor-pointer transition-all duration-200 shadow-paper-md ${
+                  theme === 'light'
+                    ? 'border-[#FFC400] bg-[#F6F2EA] ring-2 ring-[#FFC400]'
+                    : 'border-[var(--border-main)] bg-[#F6F2EA] opacity-85 hover:opacity-100 hover:-translate-y-1'
+                }`}
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-heading font-bold text-sm text-[#111111] uppercase tracking-wider flex items-center gap-2">
+                      <Sun className="h-4 w-4 text-[#111111]" />
+                      Classic Light (Bauhaus)
+                    </span>
+                    {theme === 'light' && (
+                      <span className="rounded-[4px] bg-[#FFC400] text-[#111111] px-2 py-0.5 text-[10px] font-extrabold font-mono border border-[#111111]">
+                        ACTIVE
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs font-mono text-[#666666] leading-relaxed">
+                    Classic cream paper canvas (`#F6F2EA`) inspired by physical academic notebooks and industrial print typography. Stark black geometric outlines and rich yellow callout blocks.
+                  </p>
+
+                  {/* Color Swatch Preview */}
+                  <div className="flex items-center gap-2 pt-2">
+                    <div className="h-6 w-6 rounded border border-[#111111] bg-[#F6F2EA]" title="Paper Cream (#F6F2EA)" />
+                    <div className="h-6 w-6 rounded border border-[#111111] bg-[#FFFFFF]" title="White Surface (#FFFFFF)" />
+                    <div className="h-6 w-6 rounded border border-[#111111] bg-[#111111]" title="Industrial Black (#111111)" />
+                    <div className="h-6 w-6 rounded border border-[#111111] bg-[#FFC400]" title="Bauhaus Yellow (#FFC400)" />
+                    <div className="h-6 w-6 rounded border border-[#111111] bg-[#FF4D4D]" title="Bauhaus Red (#FF4D4D)" />
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className={`w-full py-2 text-xs font-mono font-extrabold uppercase rounded-[4px] border-2 transition-all cursor-pointer ${
+                    theme === 'light'
+                      ? 'bg-[#FFC400] text-[#111111] border-[#111111]'
+                      : 'bg-white text-[#111111] border-[#111111] hover:bg-[#FFF8D6]'
+                  }`}
+                >
+                  {theme === 'light' ? 'Theme Selected' : 'Apply Light Theme'}
+                </button>
+              </div>
+
+            </div>
           </div>
         )}
 
@@ -508,8 +642,8 @@ export default function SettingsView({
         {activeTab === 'profile' && (
           <form onSubmit={handleSaveProfile} className="space-y-5 text-left">
             <div>
-              <h3 className="font-heading font-extrabold text-lg uppercase text-[#111111]">User Profile</h3>
-              <p className="text-xs font-mono font-bold text-[#666666] mt-1">Configure your primary academic researcher identification and institutional information.</p>
+              <h3 className="font-heading font-extrabold text-lg uppercase text-[var(--text-primary)]">User Profile</h3>
+              <p className="text-xs font-mono font-bold text-[var(--text-secondary)] mt-1">Configure your primary academic researcher identification and institutional information.</p>
             </div>
 
             {error && (

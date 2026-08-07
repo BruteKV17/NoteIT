@@ -28,8 +28,8 @@ export const TimelineItem: React.FC<TimelineItemProps> = ({
   } as const;
 
   return (
-    <div className="flex gap-4 p-4 bg-white rounded-[6px] border-2 border-[#111111] shadow-paper-sm relative">
-      <div className="w-10 h-10 rounded-[6px] bg-[#FFC400] border-2 border-[#111111] shadow-paper-sm flex items-center justify-center text-[#111111] shrink-0">
+    <div className="flex gap-4 p-4 bg-[var(--card-bg)] rounded-[6px] border-2 border-[var(--border-main)] shadow-paper-sm relative">
+      <div className="w-10 h-10 rounded-[6px] bg-[#FFC400] border-2 border-[var(--border-main)] shadow-paper-sm flex items-center justify-center text-[#111111] shrink-0">
         {icon}
       </div>
 
@@ -39,16 +39,16 @@ export const TimelineItem: React.FC<TimelineItemProps> = ({
             <Badge variant={typeBadgeVariant[type]} size="sm">
               {category}
             </Badge>
-            <h4 className="font-heading text-sm font-bold text-[#111111] uppercase tracking-tight">
+            <h4 className="font-heading text-sm font-bold text-[var(--text-primary)] uppercase tracking-tight">
               {title}
             </h4>
           </div>
-          <span className="font-mono text-[11px] font-bold text-[#666666]">
+          <span className="font-mono text-[11px] font-bold text-[var(--text-secondary)]">
             {timestamp}
           </span>
         </div>
 
-        <p className="text-xs text-[#666666] font-medium leading-relaxed mt-1">
+        <p className="text-xs text-[var(--text-secondary)] font-medium leading-relaxed mt-1">
           {description}
         </p>
 

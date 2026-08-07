@@ -63,8 +63,25 @@ import { generateAdditionalQuizQuestions } from './services/gemini';
 
 export default function App() {
   
-  // Theme state defaulting to dark for premium academic vibes
-  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+  // Theme state defaulting to dark for premium dark blue academic vibes
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('noteit_theme') as 'light' | 'dark';
+      if (saved) return saved;
+    }
+    return 'dark';
+  });
+
+  // Sync theme attribute on <html> element & persist in localStorage
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('noteit_theme', theme);
+  }, [theme]);
 
   // Authenticated user session state (gates with custom AuthView screen)
   const [sessionUser, setSessionUser] = useState<{ uid: string; fullName: string; emailAddress: string } | null>(null);
@@ -841,9 +858,13 @@ export default function App() {
     );
   }
 
+  if (notesLoading && lecturesLoading) {
+    return <BruteLoader message="Initializing Note-IT Cognitive Workspace..." />;
+  }
+
   return (
     <ErrorBoundary theme={theme}>
-      <div className="flex h-screen w-screen overflow-hidden transition-all duration-300 bg-[#F6F2EA] text-[#111111]">
+      <div className="flex h-screen w-screen overflow-hidden transition-all duration-300 bg-[var(--bg-paper)] text-[var(--text-primary)]">
         
         {/* Sidebar - hides completely on landing page layout */}
         {!isLanding && (
@@ -860,7 +881,7 @@ export default function App() {
         )}
 
         {/* Main core layout frame container */}
-        <div className="flex flex-1 flex-col overflow-hidden h-full bg-[#F6F2EA]">
+        <div className="flex flex-1 flex-col overflow-hidden h-full bg-[var(--bg-paper)]">
           {/* Navbar - hides on landing page layout */}
           {!isLanding && (
             <Navbar
@@ -878,7 +899,7 @@ export default function App() {
           )}
 
           {/* Dynamic page contents viewer */}
-          <main className={`flex-1 overflow-y-auto bg-[#F6F2EA] text-[#111111] ${
+          <main className={`flex-1 overflow-y-auto bg-[var(--bg-paper)] text-[var(--text-primary)] ${
             isLanding ? 'p-0' : 'p-2 md:p-3'
           }`}>
             {renderActiveView()}

@@ -3,6 +3,9 @@
 @layer base {
   :root {
     --bg-paper: #F6F2EA;
+    --bg-main: #F6F2EA;
+    --card-bg: #FFFFFF;
+    --panel-bg: #F6F2EA;
     --text-primary: #111111;
     --text-secondary: #666666;
     --border-main: #111111;
@@ -11,17 +14,52 @@
     --accent-red: #FF4D4D;
     --accent-blue: #2F6BFF;
     --accent-green: #19B56B;
-    --card-bg: #FFFFFF;
     --hover-bg: #FFF8D6;
+    --shadow-color: #111111;
+    --input-bg: #FFFFFF;
+    --sidebar-bg: #F6F2EA;
+    --navbar-bg: #F6F2EA;
+    --brand-header-bg: #FFFFFF;
+    --hero-banner-bg: #FFF8D6; /* Soft Light Yellow for Light Mode */
+    --hero-banner-text: #111111;
+    --hero-banner-subtext: #444444;
+    --hero-banner-border: #111111;
+  }
+
+  [data-theme="dark"],
+  .dark {
+    --bg-paper: #0A1124;       /* Deep Slate Navy Blue */
+    --bg-main: #0A1124;
+    --card-bg: #152238;        /* Slate Navy Card Surface */
+    --panel-bg: #111B2E;       /* Darker Navy Panel */
+    --text-primary: #F1F5F9;   /* Crisp Slate-White Text for 100% legibility */
+    --text-secondary: #94A3B8; /* Bright Silver Subtext */
+    --border-main: #2A3B5C;    /* Bauhaus Geometric Blue Border */
+    --border-subtle: #1E2D4A;  /* Subtle Dark Navy Border */
+    --accent-yellow: #FFC400;  /* Bright Bauhaus Yellow */
+    --accent-red: #FF5353;     /* Bright Coral Red */
+    --accent-blue: #38BDF8;    /* Electric Cyan Blue */
+    --accent-green: #34D399;   /* Mint Emerald Green */
+    --hover-bg: #1E2E4A;       /* Deep Blue Hover State */
+    --shadow-color: #030712;   /* Deep solid Bauhaus shadow offset */
+    --input-bg: #152238;       /* Input Box Background */
+    --sidebar-bg: #0E172C;     /* Sidebar Navy Background */
+    --navbar-bg: #0E172C;      /* Navbar Navy Background */
+    --brand-header-bg: #152238;/* Brand Header Navy */
+    --hero-banner-bg: var(--card-bg);        /* Deep Slate Navy for Dark Mode */
+    --hero-banner-text: var(--text-primary); /* Slate-White Text */
+    --hero-banner-subtext: var(--text-secondary); /* Silver Subtext */
+    --hero-banner-border: var(--border-main);
   }
 
   body {
-    background-color: #F6F2EA;
-    color: #111111;
+    background-color: var(--bg-paper);
+    color: var(--text-primary);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     margin: 0;
     padding: 0;
     -webkit-font-smoothing: antialiased;
+    transition: background-color 200ms ease, color 200ms ease;
   }
 
   h1, h2, h3, h4, h5, h6, .font-heading {
@@ -29,43 +67,111 @@
     letter-spacing: -0.02em;
   }
 
+  a {
+    color: var(--text-primary);
+    text-decoration: none;
+  }
+
   code, kbd, samp, pre, .font-mono {
     font-family: 'IBM Plex Mono', monospace;
   }
 }
 
+.landing-nav-link {
+  color: var(--text-primary) !important;
+}
+
+.landing-nav-link:hover {
+  background-color: #FFC400 !important;
+  color: #111111 !important;
+  border-color: var(--border-main) !important;
+}
+
+.social-auth-btn {
+  color: var(--text-primary) !important;
+  background-color: var(--card-bg) !important;
+}
+
+.social-auth-btn span,
+.social-auth-btn svg {
+  color: var(--text-primary) !important;
+}
+
+.social-auth-btn:hover {
+  background-color: #FFC400 !important;
+  color: #111111 !important;
+}
+
+.social-auth-btn:hover span,
+.social-auth-btn:hover svg {
+  color: #111111 !important;
+}
+
+/* Topic Hero Banner Theme Adaptation (Pastel Yellow in Light Mode, Slate Navy in Dark Mode) */
+.hero-banner {
+  background-color: var(--hero-banner-bg) !important;
+  color: var(--hero-banner-text) !important;
+  border-color: var(--hero-banner-border) !important;
+}
+
+.hero-banner h1,
+.hero-banner h2,
+.hero-banner h3 {
+  color: var(--hero-banner-text) !important;
+}
+
+.hero-banner p {
+  color: var(--hero-banner-subtext) !important;
+}
+
 /* Bauhaus Grid Paper Background Pattern */
 .bg-grid-paper {
-  background-color: #F6F2EA;
+  background-color: var(--bg-paper);
   background-image: 
     linear-gradient(to right, rgba(17, 17, 17, 0.05) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(17, 17, 17, 0.05) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
+[data-theme="dark"] .bg-grid-paper,
+.dark .bg-grid-paper {
+  background-color: var(--bg-paper);
+  background-image: 
+    linear-gradient(to right, rgba(56, 189, 248, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(56, 189, 248, 0.08) 1px, transparent 1px);
+}
+
 .bg-grid-paper-dense {
-  background-color: #F6F2EA;
+  background-color: var(--bg-paper);
   background-image: 
     linear-gradient(to right, rgba(17, 17, 17, 0.06) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(17, 17, 17, 0.06) 1px, transparent 1px);
   background-size: 16px 16px;
 }
 
+[data-theme="dark"] .bg-grid-paper-dense,
+.dark .bg-grid-paper-dense {
+  background-color: var(--bg-paper);
+  background-image: 
+    linear-gradient(to right, rgba(56, 189, 248, 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(56, 189, 248, 0.1) 1px, transparent 1px);
+}
+
 /* Hard Solid Offset Shadows */
 .shadow-paper-sm {
-  box-shadow: 1.5px 1.5px 0px #111111;
+  box-shadow: 1.5px 1.5px 0px var(--shadow-color);
 }
 
 .shadow-paper {
-  box-shadow: 2px 2px 0px #111111;
+  box-shadow: 2px 2px 0px var(--shadow-color);
 }
 
 .shadow-paper-md {
-  box-shadow: 3px 3px 0px #111111;
+  box-shadow: 3px 3px 0px var(--shadow-color);
 }
 
 .shadow-paper-lg {
-  box-shadow: 4px 4px 0px #111111;
+  box-shadow: 4px 4px 0px var(--shadow-color);
 }
 
 .shadow-paper-yellow {
@@ -86,11 +192,11 @@
 }
 .interactive-hover:hover {
   transform: translateY(-2px);
-  box-shadow: 5px 5px 0px #111111;
+  box-shadow: 5px 5px 0px var(--shadow-color);
 }
 .interactive-hover:active {
   transform: translateY(0px);
-  box-shadow: 2px 2px 0px #111111;
+  box-shadow: 2px 2px 0px var(--shadow-color);
 }
 
 /* Focus outline for accessibility */
@@ -100,7 +206,7 @@
 .focus-paper:focus-visible {
   outline: 2px solid #FFC400;
   outline-offset: 2px;
-  box-shadow: 0 0 0 3px #111111;
+  box-shadow: 0 0 0 3px var(--shadow-color);
 }
 
 /* Custom Bauhaus Industrial Scrollbars */
@@ -109,15 +215,15 @@
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #F6F2EA;
-  border-left: 1px solid #111111;
+  background: var(--bg-paper);
+  border-left: 1px solid var(--border-main);
 }
 ::-webkit-scrollbar-thumb {
-  background: #111111;
+  background: var(--border-main);
   border-radius: 0px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #FFC400;
+  background: var(--accent-yellow);
 }
 
 /* Section label tracking */
@@ -169,8 +275,8 @@
  height: 28px;
  margin: 2px;
  border-radius: 2px;
- border: 2px solid #111111;
- box-shadow: 1.5px 1.5px 0px #111111;
+ border: 2px solid var(--border-main);
+ box-shadow: 1.5px 1.5px 0px var(--shadow-color);
  animation: square-animation 10s ease-in-out infinite both;
 }
 
@@ -178,7 +284,132 @@
 .bauhaus-loader-square:nth-of-type(2) { animation-delay: -1.4285714286s; background: #2F6BFF; }
 .bauhaus-loader-square:nth-of-type(3) { animation-delay: -2.8571428571s; background: #FF4D4D; }
 .bauhaus-loader-square:nth-of-type(4) { animation-delay: -4.2857142857s; background: #19B56B; }
-.bauhaus-loader-square:nth-of-type(5) { animation-delay: -5.7142857143s; background: #111111; }
-.bauhaus-loader-square:nth-of-type(6) { animation-delay: -7.1428571429s; background: #FFFFFF; }
+.bauhaus-loader-square:nth-of-type(5) { animation-delay: -5.7142857143s; background: var(--border-main); }
+.bauhaus-loader-square:nth-of-type(6) { animation-delay: -7.1428571429s; background: var(--card-bg); }
 .bauhaus-loader-square:nth-of-type(7) { animation-delay: -8.5714285714s; background: #FFC400; }
 
+/* ==========================================================================
+   Comprehensive Dark Theme Utility Overrides for NoteIT AI Inner Sections
+   ========================================================================== */
+[data-theme="dark"],
+.dark {
+  /* Catch all hardcoded white background classes */
+  [class*="bg-white"],
+  [class*="bg-[#FFFFFF]"],
+  [class*="bg-[#ffffff]"],
+  .bg-white,
+  .bg-slate-50,
+  .bg-gray-50,
+  .bg-gray-100,
+  .bg-neutral-50,
+  .bg-neutral-100,
+  .bg-neutral-900,
+  .bg-neutral-950 {
+    background-color: var(--card-bg) !important;
+  }
+
+  /* Catch all paper cream panel backgrounds */
+  [class*="bg-[#F6F2EA]"],
+  [class*="bg-[#f6f2ea]"],
+  .bg-gray-200,
+  .bg-neutral-800 {
+    background-color: var(--panel-bg) !important;
+  }
+
+  /* Catch all light hover backgrounds */
+  [class*="bg-[#FFF8D6]"],
+  [class*="bg-[#fff8d6]"],
+  .hover\:bg-gray-50:hover,
+  .hover\:bg-gray-100:hover,
+  .hover\:bg-gray-200:hover {
+    background-color: var(--hover-bg) !important;
+  }
+
+  /* Catch all hardcoded black/dark text */
+  [class*="text-[#111111]"],
+  .text-gray-900,
+  .text-gray-800,
+  .text-gray-700,
+  .text-black,
+  .text-neutral-900,
+  .text-neutral-800 {
+    color: var(--text-primary) !important;
+  }
+
+  /* Guarantee active sidebar item and yellow button text contrast */
+  .sidebar-item-active {
+    background-color: #FFC400 !important;
+    color: #111111 !important;
+  }
+
+  .sidebar-item-active .sidebar-label,
+  .sidebar-item-active svg {
+    color: #111111 !important;
+  }
+
+  .sidebar-item-active .sidebar-badge {
+    background-color: #111111 !important;
+    color: #FFC400 !important;
+    border-color: #111111 !important;
+  }
+
+  /* Catch all hardcoded grey subtext */
+  [class*="text-[#666666]"],
+  [class*="text-[#888888]"],
+  .text-gray-600,
+  .text-gray-500,
+  .text-gray-400,
+  .text-neutral-400,
+  .text-neutral-500 {
+    color: var(--text-secondary) !important;
+  }
+
+  /* Catch all hardcoded dark borders */
+  [class*="border-[#111111]"],
+  .border-gray-200,
+  .border-gray-300,
+  .border-gray-400,
+  .border-neutral-200,
+  .border-neutral-300,
+  .border-neutral-800,
+  .border-neutral-900 {
+    border-color: var(--border-main) !important;
+  }
+
+  [class*="border-[#1D1D1D]"],
+  .border-gray-100,
+  .border-neutral-100 {
+    border-color: var(--border-subtle) !important;
+  }
+
+  /* Form Inputs, Textareas, Selects */
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea,
+  select {
+    background-color: var(--input-bg) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-main) !important;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--text-secondary) !important;
+    opacity: 0.7;
+  }
+
+  /* Yellow badges and buttons keep crisp black text for contrast */
+  .bg-\[\#FFC400\],
+  .bg-\[\#FFC400\] > *:not(.sidebar-badge) {
+    color: #111111 !important;
+  }
+
+  /* Red/Blue fill elements keep crisp white text */
+  [class*="bg-[#FF4D4D]"],
+  [class*="bg-[#FF4D4D]"] *,
+  [class*="bg-[#FF5353]"],
+  [class*="bg-[#FF5353]"] *,
+  [class*="bg-[#2F6BFF]"],
+  [class*="bg-[#2F6BFF]"] * {
+    color: #FFFFFF !important;
+  }
+}

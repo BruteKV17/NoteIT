@@ -160,19 +160,19 @@ export default function LibraryView({
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16 bg-grid-paper p-4 md:p-8 select-none">
       
-      {/* 1. ACADEMIC LIBRARY BAUHAUS HERO BANNER (Matching Stitch Mockup 1) */}
-      <div className="relative rounded-[6px] border-2 border-[#111111] bg-[#FFC400] p-6 md:p-8 shadow-paper-lg flex flex-col justify-between overflow-hidden">
+      {/* 1. ACADEMIC LIBRARY BAUHAUS HERO BANNER */}
+      <div className="hero-banner relative rounded-[6px] border-2 border-[var(--border-main)] p-6 md:p-8 shadow-paper-lg flex flex-col justify-between overflow-hidden">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
           <div className="space-y-2 max-w-2xl">
             <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded-[4px] bg-[#111111] text-white font-mono text-[10px] font-bold uppercase">
+              <span className="px-2.5 py-1 rounded-[4px] bg-[#FFC400] text-[#111111] font-mono text-[10px] font-extrabold uppercase border border-[#FFC400] shadow-paper-sm">
                 NOTEIT COGNITIVE HUB
               </span>
             </div>
-            <h1 className="font-heading font-extrabold text-3xl md:text-5xl tracking-tight text-[#111111] uppercase leading-tight">
+            <h1 className="font-heading font-extrabold text-3xl md:text-5xl tracking-tight text-[var(--text-primary)] uppercase leading-tight">
               ACADEMIC LIBRARY
             </h1>
-            <p className="text-xs md:text-sm text-[#111111] font-mono font-bold border-l-4 border-[#111111] pl-3 py-1">
+            <p className="text-xs md:text-sm text-[var(--text-secondary)] font-mono font-bold border-l-4 border-[#FFC400] pl-3 py-1">
               CENTRAL HUB FOR SYNTHESIZED OUTLINES, TEXT REFERENCES, AND PROCESSED AUDIO NODES.
             </p>
           </div>
@@ -181,9 +181,9 @@ export default function LibraryView({
           <div className="flex flex-wrap items-center gap-2 shrink-0">
             <button
               onClick={() => setActivePage('knowledge-studio')}
-              className="px-4 py-2.5 rounded-[6px] border-2 border-[#111111] bg-white text-[#111111] font-bold uppercase text-xs shadow-paper-sm hover:bg-[#FFF8D6] transition-all cursor-pointer flex items-center gap-2"
+              className="px-4 py-2.5 rounded-[6px] border-2 border-[var(--border-main)] bg-[#FFC400] text-[#111111] font-extrabold uppercase text-xs shadow-paper-sm hover:bg-[#ffe066] transition-all cursor-pointer flex items-center gap-2"
             >
-              <Plus className="h-4 w-4 text-[#111111]" />
+              <Plus className="h-4 w-4 text-[#111111] stroke-[3]" />
               <span>Sync Document</span>
             </button>
           </div>
@@ -196,10 +196,10 @@ export default function LibraryView({
           <button
             key={subject}
             onClick={() => setActiveSubject(subject)}
-            className={`px-4 py-2 rounded-[6px] font-mono text-xs font-bold uppercase tracking-tight transition-all cursor-pointer border-2 border-[#111111] ${
+            className={`px-4 py-2 rounded-[6px] font-mono text-xs font-bold uppercase tracking-tight transition-all cursor-pointer border-2 border-[var(--border-main)] ${
               activeSubject === subject
                 ? 'bg-[#FFC400] text-[#111111] shadow-paper-sm font-extrabold'
-                : 'bg-white text-[#111111] hover:bg-[#FFF8D6]'
+                : 'bg-[var(--card-bg)] text-[var(--text-primary)] hover:bg-[var(--hover-bg)]'
             }`}
           >
             {subject}
@@ -209,7 +209,7 @@ export default function LibraryView({
 
       {/* Grid or List list output */}
       {filteredLectures.length === 0 ? (
-        <div className="rounded-[6px] border-2 border-[#111111] bg-white p-12 text-center max-w-xl mx-auto space-y-4 shadow-paper-lg">
+        <div className="rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] p-12 text-center max-w-xl mx-auto space-y-4 shadow-paper-lg text-[var(--text-primary)]">
           <div className="flex h-12 w-12 items-center justify-center rounded-[6px] mx-auto border-2 border-[#111111] bg-[#FFC400] text-[#111111] shadow-paper-sm">
             <Filter className="h-6 w-6 text-[#111111]" />
           </div>

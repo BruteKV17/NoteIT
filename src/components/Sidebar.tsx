@@ -70,31 +70,31 @@ export default function Sidebar({
   const isPro = settings.subscription.planName !== 'BYOK';
 
   const sidebarContent = (
-    <div className={`flex h-full flex-col select-none transition-all duration-200 bg-[#F6F2EA] text-[#111111] border-r border-[#111111] ${
+    <div className={`flex h-full flex-col select-none transition-all duration-200 bg-[var(--sidebar-bg)] text-[var(--text-primary)] border-r border-[var(--border-main)] ${
       isCollapsed ? 'w-20' : 'w-[260px] lg:w-[280px]'
     }`}>
       
       {/* Brand area */}
-      <div className={`flex h-16 items-center border-b border-[#111111] bg-white ${
+      <div className={`flex h-16 items-center border-b border-[var(--border-main)] bg-[var(--card-bg)] ${
         isCollapsed ? 'justify-center px-1 gap-1' : 'justify-between px-4'
       }`}>
         <div 
           className="flex items-center gap-2 cursor-pointer overflow-hidden truncate"
           onClick={() => handleNavClick('landing')}
         >
-          <div className="p-1 rounded-[6px] bg-[#FFC400] border-2 border-[#111111] shadow-paper-sm shrink-0">
+          <div className="p-1 rounded-[6px] bg-[#FFC400] border-2 border-[var(--border-main)] shadow-paper-sm shrink-0">
             <AILogo size={26} theme="light" />
           </div>
           
           {!isCollapsed && (
             <div className="flex flex-col">
-              <div className="font-heading font-bold text-base tracking-tight text-[#111111] flex items-center gap-1.5">
+              <div className="font-heading font-bold text-base tracking-tight text-[var(--text-primary)] flex items-center gap-1.5">
                 NOTEIT
-                <span className="rounded-[3px] bg-[#FFC400] px-1 py-0.2 text-[9px] font-bold text-[#111111] border border-[#111111] font-mono">
+                <span className="rounded-[3px] bg-[#FFC400] px-1 py-0.2 text-[9px] font-bold text-[#111111] border border-[var(--border-main)] font-mono">
                   v2.0
                 </span>
               </div>
-              <div className="text-[9px] font-bold uppercase tracking-[2px] text-[#666666] font-mono">
+              <div className="text-[9px] font-bold uppercase tracking-[2px] text-[var(--text-secondary)] font-mono">
                 COGNITIVE LAB
               </div>
             </div>
@@ -104,7 +104,7 @@ export default function Sidebar({
         {/* Mobile close trigger */}
         <button 
           onClick={() => setIsOpenMobile(false)}
-          className="md:hidden flex h-8 w-8 items-center justify-center rounded-[6px] border-2 border-[#111111] bg-white text-[#111111] shadow-paper-sm hover:bg-[#FFC400]"
+          className="md:hidden flex h-8 w-8 items-center justify-center rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] text-[var(--text-primary)] shadow-paper-sm hover:bg-[#FFC400] hover:text-[#111111]"
           aria-label="Close menu"
         >
           <X className="h-4 w-4" />
@@ -113,7 +113,7 @@ export default function Sidebar({
         {/* Desktop Collapse Trigger */}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="hidden md:flex h-7 w-7 items-center justify-center rounded-[6px] border-2 border-[#111111] bg-white text-[#111111] shadow-paper-sm hover:bg-[#FFC400] focus:outline-none shrink-0"
+          className="hidden md:flex h-7 w-7 items-center justify-center rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] text-[var(--text-primary)] shadow-paper-sm hover:bg-[#FFC400] hover:text-[#111111] focus:outline-none shrink-0"
           title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
         >
           {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
@@ -122,7 +122,7 @@ export default function Sidebar({
 
       {/* Primary Capture Live Trigger */}
       {!isCollapsed && onNewAnalysis && (
-        <div className="px-4 py-3 border-b-2 border-[#111111]">
+        <div className="px-4 py-3 border-b-2 border-[var(--border-main)]">
           <Button
             variant="secondary"
             size="md"
@@ -137,67 +137,62 @@ export default function Sidebar({
 
       {/* Navigation Groups */}
       <div className="flex-1 overflow-y-auto py-4 px-3 space-y-6">
-        
-        {/* GROUP 1: WORKSPACE */}
-        <div className="space-y-1.5">
+        {/* Workspace section */}
+        <div className="space-y-1">
           {!isCollapsed && (
-            <div className="px-3 mb-1.5 section-label text-[10px] font-bold uppercase tracking-[3px] text-[#666666]">
-              WORKSPACE
+            <div className="px-3 pb-1 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider font-mono">
+              MAIN WORKSPACE
             </div>
           )}
-          {workspaceItems.map((item) => {
-            const IconComponent = item.icon;
-            const isActive = activePage === item.id;
-            return (
-              <SidebarItem
-                key={item.id}
-                icon={<IconComponent className="w-4 h-4" />}
-                label={item.label}
-                badge={item.badge}
-                active={isActive}
-                collapsed={isCollapsed}
-                onClick={() => handleNavClick(item.id as PageId)}
-              />
-            );
-          })}
+
+          {workspaceItems.map((item) => (
+            <SidebarItem
+              key={item.id}
+              icon={<item.icon className="h-4 w-4" />}
+              label={item.label}
+              badge={item.badge}
+              active={activePage === item.id}
+              onClick={() => handleNavClick(item.id as PageId)}
+              collapsed={isCollapsed}
+            />
+          ))}
         </div>
 
-        {/* GROUP 2: ACCOUNT */}
-        <div className="space-y-1.5">
+        {/* Account section */}
+        <div className="space-y-1">
           {!isCollapsed && (
-            <div className="px-3 mb-1.5 section-label text-[10px] font-bold uppercase tracking-[3px] text-[#666666]">
-              ACCOUNT
+            <div className="px-3 pb-1 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider font-mono">
+              SYSTEM & CONTROL
             </div>
           )}
-          {accountItems.map((item) => {
-            const IconComponent = item.icon;
-            const isActive = activePage === item.id;
-            return (
-              <SidebarItem
-                key={item.id}
-                icon={<IconComponent className="w-4 h-4" />}
-                label={item.label}
-                hasNotificationDot={item.indicator}
-                active={isActive}
-                collapsed={isCollapsed}
-                onClick={() => handleNavClick(item.id as PageId)}
-              />
-            );
-          })}
-        </div>
 
+          {accountItems.map((item) => (
+            <SidebarItem
+              key={item.id}
+              icon={<item.icon className="h-4 w-4" />}
+              label={item.label}
+              active={activePage === item.id}
+              hasNotificationDot={item.indicator}
+              notificationColor="yellow"
+              onClick={() => handleNavClick(item.id as PageId)}
+              collapsed={isCollapsed}
+            />
+          ))}
+        </div>
       </div>
 
-      {/* Subscription premium Tier banner */}
+      {/* Subscription callout banner */}
       {!isCollapsed && (
-        <div className="px-3 py-3 border-t-2 border-[#111111] bg-white m-3 rounded-[6px] shadow-paper-sm">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="w-2 h-2 rounded-full bg-[#FFC400] border border-[#111111]" />
-            <span className="font-heading text-xs font-bold text-[#111111] uppercase tracking-tight truncate">
-              Note-IT {settings.subscription.planName} Plan
+        <div className="m-3 p-3.5 rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] shadow-paper-sm">
+          <div className="flex items-center justify-between gap-2 mb-1.5">
+            <span className="font-heading text-xs font-bold uppercase text-[var(--text-primary)]">
+              {settings.subscription.planName} MEMBER
             </span>
+            <Badge variant={isPro ? "yellow" : "red"} size="sm">
+              {isPro ? "ACTIVE" : "FREE"}
+            </Badge>
           </div>
-          <p className="text-[10px] text-[#666666] font-mono mb-2">
+          <p className="text-[10px] text-[var(--text-secondary)] font-mono mb-2">
             {isPro ? 'Direct API Key Mode' : 'Bring Your Own Key Mode'}
           </p>
           <Button
@@ -214,7 +209,7 @@ export default function Sidebar({
       )}
 
       {/* Bottom Profile Identity card */}
-      <div className="border-t-2 border-[#111111] p-3 bg-white">
+      <div className="border-t-2 border-[var(--border-main)] p-3 bg-[var(--card-bg)]">
         <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
           <div 
             className="flex items-center gap-2 cursor-pointer min-w-0"
@@ -225,20 +220,20 @@ export default function Sidebar({
               <img
                 src={settings.profile.avatarUrl}
                 alt={settings.profile.fullName}
-                className="h-8 w-8 rounded-[4px] border-2 border-[#111111] object-cover shrink-0"
+                className="h-8 w-8 rounded-[4px] border-2 border-[var(--border-main)] object-cover shrink-0"
               />
             ) : (
-              <div className="h-8 w-8 rounded-[4px] border-2 border-[#111111] bg-[#FFC400] flex items-center justify-center font-bold text-xs text-[#111111] shrink-0">
+              <div className="h-8 w-8 rounded-[4px] border-2 border-[var(--border-main)] bg-[#FFC400] flex items-center justify-center font-bold text-xs text-[#111111] shrink-0">
                 {settings.profile.fullName ? settings.profile.fullName.charAt(0).toUpperCase() : 'U'}
               </div>
             )}
 
             {!isCollapsed && (
               <div className="min-w-0 flex-1">
-                <div className="text-xs font-bold text-[#111111] truncate font-heading uppercase">
+                <div className="text-xs font-bold text-[var(--text-primary)] truncate font-heading uppercase">
                   {settings.profile.fullName || 'Academic Scholar'}
                 </div>
-                <div className="text-[10px] font-mono text-[#666666] truncate" title={settings.profile.emailAddress}>
+                <div className="text-[10px] font-mono text-[var(--text-secondary)] truncate" title={settings.profile.emailAddress}>
                   {settings.profile.emailAddress}
                 </div>
               </div>
@@ -249,7 +244,7 @@ export default function Sidebar({
             <button
               onClick={onLogOut}
               title="Secure Logout"
-              className="p-1.5 rounded-[4px] border-2 border-[#111111] bg-[#F6F2EA] text-[#111111] hover:bg-[#FF4D4D] hover:text-white transition-colors"
+              className="p-1.5 rounded-[4px] border-2 border-[var(--border-main)] bg-[var(--panel-bg)] text-[var(--text-primary)] hover:bg-[#FF4D4D] hover:text-white transition-colors"
             >
               <LogOut className="h-3.5 w-3.5" />
             </button>

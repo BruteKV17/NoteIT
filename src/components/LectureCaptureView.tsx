@@ -2222,16 +2222,16 @@ export default function LectureCaptureView({
     <div className="max-w-6xl mx-auto space-y-6 md:space-y-8 pb-16 bg-grid-paper p-4 md:p-8 select-none">
       
       {/* Upper header section */}
-      <div className="rounded-[6px] border-2 border-[#111111] bg-white p-6 shadow-paper-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="hero-banner rounded-[6px] border-2 border-[var(--border-main)] p-6 shadow-paper-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <span className="section-label text-[10px] font-bold text-[#666666] uppercase tracking-[3px] block">
+          <span className="section-label text-[10px] font-bold uppercase tracking-[3px] block">
             LIVE SYNTHESIS ENGINE
           </span>
-          <h1 className="font-heading font-extrabold text-2xl md:text-4xl text-[#111111] uppercase tracking-tight flex items-center gap-2 mt-1">
-            <Mic className="h-7 w-7 text-[#111111]" />
+          <h1 className="font-heading font-extrabold text-2xl md:text-4xl uppercase tracking-tight flex items-center gap-2 mt-1">
+            <Mic className="h-7 w-7" />
             <span>SMART LECTURE CAPTURE</span>
           </h1>
-          <p className="text-xs md:text-sm font-mono text-[#666666] mt-1 border-l-4 border-[#FFC400] pl-3 py-1">
+          <p className="text-xs md:text-sm font-mono mt-1 border-l-4 border-[#FFC400] pl-3 py-1">
             Unpack and index speech models effortlessly using Google's High-Intensity Synthesis Engine.
           </p>
         </div>
@@ -2452,12 +2452,12 @@ export default function LectureCaptureView({
           </div>
 
           {/* Past captured sessions list panel */}
-          <div className="rounded-[6px] border-2 border-[#111111] bg-white p-5 space-y-4 shadow-paper-md text-[#111111]">
-            <div className="flex items-center justify-between border-b-2 border-[#111111] pb-2">
-              <span className="text-[10px] font-mono font-extrabold uppercase tracking-wider text-[#111111]">
+          <div className="rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] p-5 space-y-4 shadow-paper-md text-[var(--text-primary)]">
+            <div className="flex items-center justify-between border-b-2 border-[var(--border-main)] pb-2">
+              <span className="text-[10px] font-mono font-extrabold uppercase tracking-wider text-[var(--text-primary)]">
                 CAPTURE SESSION HISTORY
               </span>
-              <span className="text-[10px] font-mono font-extrabold text-[#2F6BFF] uppercase">
+              <span className="text-[10px] font-mono font-extrabold text-[#38BDF8] uppercase">
                 {pastLectures.length} SESSIONS
               </span>
             </div>
@@ -2466,19 +2466,19 @@ export default function LectureCaptureView({
               {pastLectures.map((lec) => (
                 <div 
                   key={lec.id} 
-                  className="flex items-center justify-between p-3 rounded-[6px] border-2 border-[#111111] bg-[#F6F2EA] hover:bg-[#FFC400] transition-colors cursor-pointer text-[#111111]"
+                  className="flex items-center justify-between p-3 rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--panel-bg)] hover:bg-[#FFC400] transition-colors cursor-pointer"
                   onClick={() => setActiveLectureId && setActiveLectureId(lec.id)}
                 >
                   <div className="flex items-start gap-2.5 min-w-0">
-                    <div className="rounded-[4px] bg-white p-1.5 border border-[#111111] text-[#111111] shrink-0">
-                      <Bookmark className="h-3.5 w-3.5" />
+                    <div className="rounded-[4px] bg-[var(--card-bg)] p-1.5 border border-[var(--border-main)] shrink-0">
+                      <Bookmark className="h-3.5 w-3.5" style={{ color: 'var(--text-primary)' }} />
                     </div>
                     <div className="min-w-0">
-                      <h4 className="text-xs font-heading font-extrabold uppercase truncate text-[#111111]">{lec.title}</h4>
-                      <p className="text-[10px] font-mono text-[#666666] font-bold mt-0.5">{lec.date} • {lec.duration}</p>
+                      <h4 className="text-xs font-heading font-extrabold uppercase truncate" style={{ color: 'var(--text-primary)' }}>{lec.title}</h4>
+                      <p className="text-[10px] font-mono font-bold mt-0.5" style={{ color: 'var(--text-secondary)' }}>{lec.date} • {lec.duration}</p>
                     </div>
                   </div>
-                  <ArrowRight className="h-4 w-4 text-[#111111] shrink-0" />
+                  <ArrowRight className="h-4 w-4 shrink-0" style={{ color: 'var(--text-primary)' }} />
                 </div>
               ))}
             </div>
@@ -2486,20 +2486,20 @@ export default function LectureCaptureView({
 
         </div>
 
-        {/* RIGHT COLUMNS: Live Speech Decipher + AI Real-time Notes columns */}
+        {/* RIGHT COLUMNS: Live Speech Decipher column */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-h-[460px]">
+          <div className="min-h-[460px]">
             
             {/* Audio Input Monitor */}
-            <div className="rounded-[6px] border-2 border-[#111111] bg-white p-6 flex flex-col justify-between h-full relative shadow-paper-md text-[#111111]">
+            <div className="rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] p-6 flex flex-col justify-between h-full relative shadow-paper-md text-[var(--text-primary)]">
               <div className="space-y-4 flex-1 flex flex-col justify-between overflow-hidden">
-                <div className="flex items-center justify-between border-b-2 border-[#111111] pb-3">
+                <div className="flex items-center justify-between border-b-2 border-[var(--border-main)] pb-3">
                   <div className="flex items-center gap-2">
                     <span className="relative flex h-2.5 w-2.5">
-                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isRecording && !isPaused ? 'bg-[#FF4D4D]' : 'bg-[#666666]'}`} />
-                      <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${isRecording && !isPaused ? 'bg-[#FF4D4D]' : 'bg-[#666666]'}`} />
+                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isRecording && !isPaused ? 'bg-[#FF4D4D]' : 'bg-[var(--text-secondary)]'}`} />
+                      <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${isRecording && !isPaused ? 'bg-[#FF4D4D]' : 'bg-[var(--text-secondary)]'}`} />
                     </span>
-                    <span className="section-label text-xs font-bold uppercase tracking-[2px] text-[#111111]">
+                    <span className="section-label text-xs font-bold uppercase tracking-[2px] text-[var(--text-primary)]">
                       AUDIO INPUT MONITOR
                     </span>
                   </div>
@@ -2515,7 +2515,7 @@ export default function LectureCaptureView({
                 {/* Real-time Audio Visualizer container */}
                 <div 
                   ref={visualizerRef}
-                  className="h-12 flex items-center justify-center gap-1.5 px-3 border-2 border-[#111111] rounded-[6px] bg-[#F6F2EA] my-2"
+                  className="h-12 flex items-center justify-center gap-1.5 px-3 border-2 border-[var(--border-main)] rounded-[6px] bg-[var(--panel-bg)] my-2"
                 >
                   {Array.from({ length: 25 }).map((_, i) => (
                     <div
@@ -2523,20 +2523,20 @@ export default function LectureCaptureView({
                       style={{ height: '10px' }}
                       className={`waveform-bar w-1 rounded-[2px] transition-all duration-75 ${
                         isRecording && !isPaused
-                          ? 'bg-[#FFC400] border border-[#111111]'
-                          : 'bg-white border border-[#111111]'
+                          ? 'bg-[#FFC400] border border-[var(--border-main)]'
+                          : 'bg-[var(--card-bg)] border border-[var(--border-main)]'
                       }`}
                     />
                   ))}
                 </div>
 
                 {/* Live Input message box */}
-                <div className="flex-1 flex items-center justify-center rounded-[6px] bg-[#F6F2EA] border-2 border-[#111111] p-4 text-[#111111]">
+                <div className="flex-1 flex items-center justify-center rounded-[6px] bg-[var(--panel-bg)] border-2 border-[var(--border-main)] p-4 text-[var(--text-primary)]">
                   {!isRecording ? (
                     <div className="flex flex-col items-center justify-center text-center h-full space-y-2">
-                      <MicOff className="h-8 w-8 text-[#666666]" />
-                      <p className="text-xs font-heading font-extrabold uppercase text-[#111111]">Microphone Standby</p>
-                      <p className="text-[11px] text-[#666666] font-mono max-w-[200px]">
+                      <MicOff className="h-8 w-8 text-[var(--text-secondary)]" />
+                      <p className="text-xs font-heading font-extrabold uppercase text-[var(--text-primary)]">Microphone Standby</p>
+                      <p className="text-[11px] text-[var(--text-secondary)] font-mono max-w-[200px]">
                         Press 'Start Capturing Course' to begin recording speech.
                       </p>
                     </div>
@@ -2544,18 +2544,18 @@ export default function LectureCaptureView({
                     <div className="flex flex-col items-center justify-center text-center h-full space-y-2 animate-fade-in">
                       <Pause className="h-8 w-8 text-[#FFC400]" />
                       <div>
-                        <p className="text-xs font-heading font-extrabold uppercase text-[#111111]">Capture Paused</p>
-                        <p className="text-[11px] text-[#666666] font-mono max-w-[200px]">
+                        <p className="text-xs font-heading font-extrabold uppercase text-[var(--text-primary)]">Capture Paused</p>
+                        <p className="text-[11px] text-[var(--text-secondary)] font-mono max-w-[200px]">
                           Audio input suspended. Press 'Resume' to continue.
                         </p>
                       </div>
                     </div>
                   ) : aiStatus === 'synthesizing' ? (
                     <div className="flex flex-col items-center justify-center text-center h-full space-y-2">
-                      <Cpu className="h-8 w-8 text-[#111111] animate-spin" />
+                      <Cpu className="h-8 w-8 text-[var(--text-primary)] animate-spin" />
                       <div>
-                        <p className="text-xs font-heading font-extrabold uppercase text-[#111111]">Processing Workspace...</p>
-                        <p className="text-[11px] text-[#666666] font-mono max-w-[200px]">
+                        <p className="text-xs font-heading font-extrabold uppercase text-[var(--text-primary)]">Processing Workspace...</p>
+                        <p className="text-[11px] text-[var(--text-secondary)] font-mono max-w-[200px]">
                           Synthesizing lecture audio into study notes.
                         </p>
                       </div>
@@ -2564,26 +2564,26 @@ export default function LectureCaptureView({
                     <div className="flex flex-col h-full w-full justify-between items-stretch text-left overflow-hidden">
                       {liveTranscript ? (
                         <div className="flex flex-col h-full w-full justify-between items-stretch text-left overflow-hidden">
-                          <div className="flex items-center gap-2 mb-2 pb-2 border-b border-[#111111] shrink-0">
+                          <div className="flex items-center gap-2 mb-2 pb-2 border-b border-[var(--border-main)] shrink-0">
                             <span className="h-2 w-2 rounded-full bg-[#FF4D4D] animate-ping" />
-                            <span className="text-[10px] font-mono font-bold uppercase text-[#111111]">
+                            <span className="text-[10px] font-mono font-bold uppercase text-[var(--text-primary)]">
                               Live Speech Transcription
                             </span>
                           </div>
                           
-                          <div className="flex-1 overflow-y-auto pr-1 text-xs leading-relaxed font-mono text-[#111111] select-text">
+                          <div className="flex-1 overflow-y-auto pr-1 text-xs leading-relaxed font-mono text-[var(--text-primary)] select-text">
                             <p className="whitespace-pre-wrap">{liveTranscript}</p>
                             <div ref={transcriptEndRef} />
                           </div>
                         </div>
                       ) : (
                         <div className="flex flex-col items-center justify-center text-center h-full space-y-2">
-                          <div className="h-10 w-10 rounded-full bg-[#FFC400] border-2 border-[#111111] flex items-center justify-center text-[#111111]">
+                          <div className="h-10 w-10 rounded-full bg-[#FFC400] border-2 border-[var(--border-main)] flex items-center justify-center text-[#111111]">
                             <Mic className="h-5 w-5 animate-pulse" />
                           </div>
                           <div className="space-y-1">
-                            <p className="text-xs font-heading font-extrabold uppercase text-[#111111]">Listening...</p>
-                            <p className="text-[11px] text-[#666666] font-mono max-w-[200px]">
+                            <p className="text-xs font-heading font-extrabold uppercase text-[var(--text-primary)]">Listening...</p>
+                            <p className="text-[11px] text-[var(--text-secondary)] font-mono max-w-[200px]">
                               Speak now to see real-time speech-to-text decoding.
                             </p>
                           </div>
@@ -2595,81 +2595,10 @@ export default function LectureCaptureView({
               </div>
 
               {/* Live Info parameters */}
-              <div className="border-t-2 border-[#111111] pt-3 mt-3 flex items-center justify-between text-[10px] font-mono font-bold text-[#666666]">
+              <div className="border-t-2 border-[var(--border-main)] pt-3 mt-3 flex items-center justify-between text-[10px] font-mono font-bold text-[var(--text-secondary)]">
                 <span>CODEC: WEBM/AUDIO</span>
                 <span>SAMPLE RATE: 48KHZ</span>
               </div>
-            </div>
-
-            {/* Cognitive Workspace Outline */}
-            <div className="rounded-[6px] border-2 border-[#111111] bg-white p-6 flex flex-col justify-between h-full overflow-hidden shadow-paper-md text-[#111111]">
-              <div className="space-y-4 flex-1 flex flex-col justify-between overflow-hidden">
-                <div className="flex items-center gap-2 border-b-2 border-[#111111] pb-3">
-                  <Sparkles className="h-4 w-4 text-[#111111]" />
-                  <span className="section-label text-xs font-bold uppercase tracking-[2px] text-[#111111]">
-                    WORKSPACE OUTLINE
-                  </span>
-                </div>
-
-                <div className="flex-1 overflow-y-auto space-y-3 pr-1 text-left">
-                  <p className="text-[11px] text-[#666666] font-mono leading-relaxed">
-                    Upon capture, NoteIT AI automatically synthesizes your recording into 5 structured materials:
-                  </p>
-                  
-                  <div className="space-y-2.5 pt-1">
-                    <div className="flex items-start gap-2.5">
-                      <div className="h-5 w-5 rounded-[4px] bg-[#FFC400] border-2 border-[#111111] flex items-center justify-center text-[#111111] text-[10px] font-extrabold shrink-0 mt-0.5 font-mono">1</div>
-                      <div className="min-w-0">
-                        <h5 className="text-xs font-heading font-extrabold text-[#111111] uppercase">Detailed Transcript</h5>
-                        <p className="text-[10px] text-[#666666] font-mono">Timestamped text translation.</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-2.5">
-                      <div className="h-5 w-5 rounded-[4px] bg-[#FFC400] border-2 border-[#111111] flex items-center justify-center text-[#111111] text-[10px] font-extrabold shrink-0 mt-0.5 font-mono">2</div>
-                      <div className="min-w-0">
-                        <h5 className="text-xs font-heading font-extrabold text-[#111111] uppercase">Structured Notes</h5>
-                        <p className="text-[10px] text-[#666666] font-mono">Core concepts and key formulas.</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-2.5">
-                      <div className="h-5 w-5 rounded-[4px] bg-[#FFC400] border-2 border-[#111111] flex items-center justify-center text-[#111111] text-[10px] font-extrabold shrink-0 mt-0.5 font-mono">3</div>
-                      <div className="min-w-0">
-                        <h5 className="text-xs font-heading font-extrabold text-[#111111] uppercase">Active Recall Decks</h5>
-                        <p className="text-[10px] text-[#666666] font-mono">Self-testing active flashcards.</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-2.5">
-                      <div className="h-5 w-5 rounded-[4px] bg-[#FFC400] border-2 border-[#111111] flex items-center justify-center text-[#111111] text-[10px] font-extrabold shrink-0 mt-0.5 font-mono">4</div>
-                      <div className="min-w-0">
-                        <h5 className="text-xs font-heading font-extrabold text-[#111111] uppercase">Practice Quizzes</h5>
-                        <p className="text-[10px] text-[#666666] font-mono">MCQ questions with explanations.</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-2.5">
-                      <div className="h-5 w-5 rounded-[4px] bg-[#FFC400] border-2 border-[#111111] flex items-center justify-center text-[#111111] text-[10px] font-extrabold shrink-0 mt-0.5 font-mono">5</div>
-                      <div className="min-w-0">
-                        <h5 className="text-xs font-heading font-extrabold text-[#111111] uppercase">Concept Mind Map</h5>
-                        <p className="text-[10px] text-[#666666] font-mono">Graphical topic relationship graph.</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Status Box */}
-              <div className="border-t-2 border-[#111111] pt-3 mt-3">
-                <div className="text-[10px] font-mono text-[#111111] bg-[#F6F2EA] border-2 border-[#111111] p-2.5 rounded-[4px] flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-[#111111] shrink-0" />
-                  <span className="font-bold">
-                    {isRecording ? "Transcribing speech..." : "Ready for audio capture."}
-                  </span>
-                </div>
-              </div>
-
             </div>
           </div>
         </div>

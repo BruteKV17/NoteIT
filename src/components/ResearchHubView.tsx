@@ -489,23 +489,23 @@ export default function ResearchHubView({
 
   if (!selectedLecture) {
     return (
-      <div className="min-h-screen text-[#111111] bg-[#F6F2EA] relative flex flex-col items-center justify-center p-8 text-center select-none">
-        <div className="rounded-[6px] border-2 border-[#111111] bg-white p-8 max-w-md space-y-4 shadow-paper-lg">
-          <BookMarked className="h-16 w-16 text-[#111111] mx-auto" />
-          <h2 className="font-heading font-extrabold text-2xl tracking-tight text-[#111111] uppercase">No Lecture Materials</h2>
-          <p className="text-xs font-mono font-bold text-[#666666] leading-relaxed">
+      <div className="min-h-screen text-[var(--text-primary)] bg-[var(--bg-paper)] relative flex flex-col items-center justify-center p-8 text-center select-none">
+        <div className="rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] p-8 max-w-md space-y-4 shadow-paper-lg">
+          <BookMarked className="h-16 w-16 text-[var(--text-primary)] mx-auto" />
+          <h2 className="font-heading font-extrabold text-2xl tracking-tight text-[var(--text-primary)] uppercase">No Lecture Materials</h2>
+          <p className="text-xs font-mono font-bold text-[var(--text-secondary)] leading-relaxed">
             Your Research Hub is currently empty. Please go to the Academic Library or Smart Lecture Capture to upload or record your first lecture!
           </p>
           <div className="flex gap-3 justify-center pt-2">
             <button
               onClick={() => setActivePage && setActivePage('academic-library')}
-              className="rounded-[6px] border-2 border-[#111111] bg-[#FFC400] text-[#111111] px-5 py-3 text-xs font-mono font-extrabold uppercase hover:bg-[#ffe066] transition-all shadow-paper-sm cursor-pointer"
+              className="rounded-[6px] border-2 border-[var(--border-main)] bg-[#FFC400] text-[#111111] px-5 py-3 text-xs font-mono font-extrabold uppercase hover:bg-[#ffe066] transition-all shadow-paper-sm cursor-pointer"
             >
               Academic Library
             </button>
             <button
               onClick={() => setActivePage && setActivePage('lecture-capture')}
-              className="rounded-[6px] border-2 border-[#111111] bg-[#2F6BFF] text-white px-5 py-3 text-xs font-mono font-extrabold uppercase hover:bg-[#255cd9] transition-all shadow-paper-sm cursor-pointer"
+              className="rounded-[6px] border-2 border-[var(--border-main)] bg-[#2F6BFF] text-white px-5 py-3 text-xs font-mono font-extrabold uppercase hover:bg-[#255cd9] transition-all shadow-paper-sm cursor-pointer"
             >
               Record Lecture
             </button>
@@ -516,7 +516,7 @@ export default function ResearchHubView({
   }
 
   return (
-    <div className="min-h-screen text-[#111111] bg-[#F6F2EA] relative overflow-x-hidden pb-16">
+    <div className="min-h-screen text-[var(--text-primary)] bg-[var(--bg-paper)] relative overflow-x-hidden pb-16">
       
       {/* TOAST SYSTEM */}
       {showToast && (

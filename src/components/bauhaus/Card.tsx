@@ -27,14 +27,16 @@ export const Card: React.FC<CardProps> = ({
   };
 
   const accentStyles = {
-    black: 'border-[#111111]',
+    black: 'border-[var(--border-main)]',
     yellow: 'border-[#FFC400]',
     red: 'border-[#FF4D4D]',
     blue: 'border-[#2F6BFF]',
     green: 'border-[#19B56B]',
   };
 
-  const activeStyles = active ? 'bg-[#FFF8D6] ring-2 ring-[#FFC400]' : 'bg-white';
+  const activeStyles = active 
+    ? 'bg-[var(--hover-bg)] ring-2 ring-[#FFC400] text-[var(--text-primary)]' 
+    : 'bg-[var(--card-bg)] text-[var(--text-primary)]';
   const interactiveStyles = interactive ? 'transition-all duration-150 hover:-translate-y-0.5 hover:shadow-paper-lg cursor-pointer' : '';
 
   return (

@@ -2491,14 +2491,14 @@ ${queryText}`;
     <div className="flex flex-col h-full bg-grid-paper rounded-[6px] border-2 border-[#111111] shadow-paper-lg overflow-hidden select-none">
       
       {/* HEADER BANNER */}
-      <div className="p-4 border-b-2 border-[#111111] bg-white flex items-center justify-between">
+      <div className="p-4 border-b-2 border-[var(--border-main)] bg-[var(--card-bg)] flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-1 rounded-[4px] bg-[#FFC400] border-2 border-[#111111] shadow-paper-sm">
             <Sparkles className="h-5 w-5 text-[#111111]" />
           </div>
           <div>
-            <h1 className="text-base font-heading font-extrabold tracking-tight text-[#111111] uppercase">KNOWLEDGE STUDIO</h1>
-            <p className="text-xs text-[#666666] font-mono">NotebookLM Ingestions • Premium AI Workspace</p>
+            <h1 className="text-base font-heading font-extrabold tracking-tight text-[var(--text-primary)] uppercase">KNOWLEDGE STUDIO</h1>
+            <p className="text-xs text-[var(--text-secondary)] font-mono">NotebookLM Ingestions • Premium AI Workspace</p>
           </div>
         </div>
 
@@ -2513,9 +2513,7 @@ ${queryText}`;
 
       {/* MOBILE WORKSPACE NAVIGATION */}
       {isMobile && (
-        <div className={`px-4 py-2 border-b flex gap-1 ${
-          theme === 'dark' ? 'bg-[#08090c] border-neutral-900' : 'bg-gray-50 border-gray-200'
-        }`}>
+        <div className="px-4 py-2 border-b flex gap-1 bg-[var(--panel-bg)] border-[var(--border-main)]">
           {(['sources', 'chat', 'outputs'] as const).map((tab) => {
             const label = tab === 'sources' ? `Sources (${sources.length})` : tab === 'chat' ? 'AI Chat' : 'Output Studio';
             const isActive = mobilePanelTab === tab;
@@ -2525,12 +2523,8 @@ ${queryText}`;
                 onClick={() => setMobilePanelTab(tab)}
                 className={`flex-1 py-2 text-center text-xs font-black rounded-xl transition-all cursor-pointer ${
                   isActive
-                    ? theme === 'dark'
-                      ? 'bg-indigo-600 text-white shadow-md'
-                      : 'bg-black text-white shadow-md'
-                    : theme === 'dark'
-                      ? 'text-neutral-400 hover:text-white hover:bg-neutral-900/50'
-                      : 'text-gray-500 hover:text-black hover:bg-gray-200'
+                    ? 'bg-[#FFC400] text-[#111111] shadow-md font-extrabold'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-bg)]'
                 }`}
               >
                 {label}
@@ -2544,12 +2538,12 @@ ${queryText}`;
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         
         {/* PANEL 1: LEFT - SOURCE HUB (Knowledge Sources) */}
-        <div className={`w-full md:w-80 shrink-0 flex-col border-r-2 border-[#111111] overflow-y-auto p-4 space-y-4 bg-white text-[#111111] ${
+        <div className={`w-full md:w-80 shrink-0 flex-col border-r-2 border-[var(--border-main)] overflow-y-auto p-4 space-y-4 bg-[var(--card-bg)] text-[var(--text-primary)] ${
           isMobile && mobilePanelTab !== 'sources' ? 'hidden' : 'flex'
         }`}>
           <div>
-            <h2 className="section-label text-xs font-bold text-[#111111] uppercase tracking-[3px]">Knowledge Sources</h2>
-            <p className="text-[11px] text-[#666666] font-mono mt-0.5">Attach documents, URLs, or Drive files to start.</p>
+            <h2 className="section-label text-xs font-bold text-[var(--text-primary)] uppercase tracking-[3px]">Knowledge Sources</h2>
+            <p className="text-[11px] text-[var(--text-secondary)] font-mono mt-0.5">Attach documents, URLs, or Drive files to start.</p>
           </div>
 
           {importError && (
@@ -2769,12 +2763,12 @@ ${queryText}`;
         </div>
 
           {/* PANEL 2: CENTER - AI WORKSPACE */}
-        <div className={`flex-1 flex flex-col overflow-hidden p-4 space-y-4 bg-[#F6F2EA] text-[#111111] ${
+        <div className={`flex-1 flex flex-col overflow-hidden p-4 space-y-4 bg-[var(--panel-bg)] text-[var(--text-primary)] ${
           isMobile && mobilePanelTab !== 'chat' ? 'hidden' : 'flex'
         }`}>
           <div>
-            <h2 className="section-label text-xs font-bold text-[#111111] uppercase tracking-[3px]">AI Workspace</h2>
-            <p className="text-[11px] text-[#666666] font-mono mt-0.5">Synthesize outlines, check contradictions, or query sources.</p>
+            <h2 className="section-label text-xs font-bold text-[var(--text-primary)] uppercase tracking-[3px]">AI Workspace</h2>
+            <p className="text-[11px] text-[var(--text-secondary)] font-mono mt-0.5">Synthesize outlines, check contradictions, or query sources.</p>
           </div>
 
           {/* Quick Prompts Pills */}
@@ -2789,7 +2783,8 @@ ${queryText}`;
               <button
                 key={idx}
                 onClick={() => handleQuickPrompt(prompt)}
-                className="px-2.5 py-1 rounded-[4px] border-2 border-[#111111] bg-white font-mono text-[10px] font-bold uppercase text-[#111111] shadow-paper-sm hover:bg-[#FFC400] transition-colors cursor-pointer"
+                style={{ color: 'var(--text-primary)' }}
+                className="px-2.5 py-1 rounded-[4px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] font-mono text-[10px] font-bold uppercase shadow-paper-sm hover:bg-[#FFC400] transition-colors cursor-pointer"
               >
                 {prompt}
               </button>
@@ -2797,24 +2792,24 @@ ${queryText}`;
           </div>
 
           {/* Chat Messages Log */}
-          <div className="flex-1 rounded-[6px] border-2 border-[#111111] bg-white p-4 overflow-y-auto space-y-4 font-sans text-[#111111] shadow-paper-sm">
+          <div className="flex-1 rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] p-4 overflow-y-auto space-y-4 font-sans text-[var(--text-primary)] shadow-paper-sm">
             {chatMessages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-2">
-                <Sparkles className="h-8 w-8 text-[#111111] animate-pulse" />
-                <h3 className="text-xs font-bold text-[#111111] uppercase">Search Workspace Active</h3>
-                <p className="text-[11px] font-mono text-[#666666] max-w-xs leading-relaxed">
+                <Sparkles className="h-8 w-8 text-[#FFC400] animate-pulse" />
+                <h3 className="text-xs font-bold text-[var(--text-primary)] uppercase">Search Workspace Active</h3>
+                <p className="text-[11px] font-mono text-[var(--text-secondary)] max-w-xs leading-relaxed">
                   Enter a query below. AI will reference all selected sources ({selectedSourceIds.length} active) to answer.
                 </p>
               </div>
             ) : (
               chatMessages.map((msg, i) => (
                 <div key={i} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] rounded-[6px] border-2 border-[#111111] p-3 text-xs leading-relaxed select-text font-mono ${
+                  <div className={`max-w-[85%] rounded-[6px] border-2 border-[var(--border-main)] p-3 text-xs leading-relaxed select-text font-mono ${
                     msg.sender === 'user'
                       ? 'bg-[#FFC400] text-[#111111] shadow-paper-sm font-bold'
-                      : 'bg-[#F6F2EA] text-[#111111]'
+                      : 'bg-[var(--panel-bg)] text-[var(--text-primary)]'
                   }`}>
-                    <span className="text-[9px] font-bold uppercase tracking-wider block text-[#666666] mb-1">
+                    <span className="text-[9px] font-bold uppercase tracking-wider block text-[var(--text-secondary)] mb-1">
                       {msg.sender === 'user' ? 'STUDENT QUERY' : 'NOTEIT INTELLIGENCE'}
                     </span>
                     {(() => {
@@ -2825,13 +2820,13 @@ ${queryText}`;
                         <div>
                           <p className="whitespace-pre-wrap">{answerText.trim()}</p>
                           {sourcesBlock && (
-                            <div className="mt-3 pt-2 border-t-2 border-[#111111]">
-                              <span className="text-[9px] font-bold uppercase text-[#111111] block mb-1">Sources:</span>
+                            <div className="mt-3 pt-2 border-t-2 border-[var(--border-main)]">
+                              <span className="text-[9px] font-bold uppercase text-[var(--text-primary)] block mb-1">Sources:</span>
                               <div className="flex flex-wrap gap-1 mt-1">
                                 {sourcesBlock.split('\n').map(l => l.trim()).filter(l => l.length > 0).map((line, idx) => {
                                   const cleanLine = line.replace(/^-\s*/, '').trim();
                                   return (
-                                    <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded-[3px] text-[9px] font-bold bg-white text-[#111111] border-2 border-[#111111]">
+                                    <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded-[3px] text-[9px] font-bold bg-[var(--card-bg)] text-[var(--text-primary)] border-2 border-[var(--border-main)]">
                                       {cleanLine}
                                     </span>
                                   );
@@ -2848,7 +2843,7 @@ ${queryText}`;
             )}
             {isChatLoading && (
               <div className="flex justify-start">
-                <div className="rounded-[6px] border-2 border-[#111111] bg-white p-3 flex items-center gap-3 text-[#111111]">
+                <div className="rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] p-3 flex items-center gap-3 text-[var(--text-primary)]">
                   <BruteLoader size="xs" message="" />
                   <span className="text-xs font-mono font-bold tracking-wider animate-pulse">Synthesizing logical layers...</span>
                 </div>
@@ -2864,12 +2859,12 @@ ${queryText}`;
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
               placeholder="Ask anything about your selected sources..."
-              className="flex-grow rounded-[6px] border-2 border-[#111111] bg-white text-[#111111] placeholder-[#888888] text-xs font-mono font-bold outline-none p-3 focus:bg-[#FFF8D6] transition-all"
+              className="flex-grow rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] text-[var(--text-primary)] placeholder-[var(--text-secondary)] text-xs font-mono font-bold outline-none p-3 focus:bg-[var(--panel-bg)] transition-all"
             />
             <button
               type="submit"
               disabled={isChatLoading || selectedSourceIds.length === 0}
-              className="rounded-[6px] border-2 border-[#111111] bg-[#FFC400] text-[#111111] px-5 py-3 text-xs font-mono font-extrabold uppercase shadow-paper-sm hover:bg-[#ffe066] transition-all cursor-pointer disabled:opacity-30 disabled:pointer-events-none"
+              className="rounded-[6px] border-2 border-[var(--border-main)] bg-[#FFC400] text-[#111111] px-5 py-3 text-xs font-mono font-extrabold uppercase shadow-paper-sm hover:bg-[#ffe066] transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Ask
             </button>
@@ -2890,25 +2885,25 @@ ${queryText}`;
         {/* PANEL 3: RIGHT - OUTPUT STUDIO */}
         <div 
           style={activeSourceId && !isMobile ? { width: `${outputStudioWidth}px` } : undefined}
-          className={`flex-col overflow-y-auto p-4 space-y-4 bg-white border-l-2 border-[#111111] text-[#111111] ${
+          className={`flex-col overflow-y-auto p-4 space-y-4 bg-[var(--card-bg)] border-l-2 border-[var(--border-main)] text-[var(--text-primary)] ${
             isMobile && mobilePanelTab !== 'outputs' ? 'hidden' : 'flex'
           } ${
             activeSourceId ? '' : 'w-full md:w-[420px] shrink-0'
           }`}
         >
           <div>
-            <h2 className="section-label text-xs font-bold text-[#111111] uppercase tracking-[3px]">Output Studio</h2>
-            <p className="text-[11px] text-[#666666] font-mono mt-0.5">Generate, display, and export materials.</p>
+            <h2 className="section-label text-xs font-bold text-[var(--text-primary)] uppercase tracking-[3px]">Output Studio</h2>
+            <p className="text-[11px] text-[var(--text-secondary)] font-mono mt-0.5">Generate, display, and export materials.</p>
           </div>
 
           {/* Multi-language selector */}
           {activeSourceId && (
-            <div className="flex items-center justify-between p-2.5 rounded-[6px] border-2 border-[#111111] bg-[#F6F2EA]">
-              <span className="text-[10px] font-mono font-bold uppercase text-[#111111] tracking-wider">Output Language</span>
+            <div className="flex items-center justify-between p-2.5 rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--panel-bg)]">
+              <span className="text-[10px] font-mono font-bold uppercase text-[var(--text-primary)] tracking-wider">Output Language</span>
               <select
                 value={outputLanguage}
                 onChange={(e) => handleLanguageChange(e.target.value)}
-                className="rounded-[4px] px-2 py-1 text-xs font-mono font-bold border-2 border-[#111111] bg-white text-[#111111] outline-none cursor-pointer"
+                className="rounded-[4px] px-2 py-1 text-xs font-mono font-bold border-2 border-[var(--border-main)] bg-[var(--card-bg)] text-[var(--text-primary)] outline-none cursor-pointer"
               >
                 {['English', 'Hindi', 'Hinglish', 'Marathi', 'Tamil', 'Gujarati', 'Bengali'].map(lang => (
                   <option key={lang} value={lang}>{lang}</option>
@@ -2919,7 +2914,7 @@ ${queryText}`;
 
           {/* Minimalist Output Material Select Dropdown */}
           <div className="space-y-1">
-            <label className="section-label text-[10px] font-bold text-[#666666] uppercase tracking-[2px] block">
+            <label className="section-label text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-[2px] block">
               SELECT OUTPUT MATERIAL
             </label>
             <div className="relative">
@@ -2929,29 +2924,30 @@ ${queryText}`;
                   setActiveOutputTab(e.target.value as any);
                   setSelectedMindmapNode(null);
                 }}
-                className="w-full rounded-[6px] border-2 border-[#111111] bg-white p-3 font-mono text-xs font-extrabold uppercase text-[#111111] outline-none shadow-paper-sm cursor-pointer appearance-none pr-8 hover:bg-[#FFF8D6] transition-colors"
+                style={{ color: 'var(--text-primary)' }}
+                className="w-full rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] p-3 font-mono text-xs font-extrabold uppercase outline-none shadow-paper-sm cursor-pointer appearance-none pr-8 hover:bg-[#FFC400] transition-colors"
               >
-                <option value="notes">📄 Structured Study Notes</option>
-                <option value="summary">📝 Executive Summary</option>
-                <option value="flashcards">⚡ Active Recall Flashcards</option>
-                <option value="quiz">🎯 Practice Quiz Deck</option>
-                <option value="mindmap">🧠 Dynamic Relationship Mind Map</option>
-                <option value="slides">📊 Presentation Slides Deck</option>
-                <option value="podcast">🎙️ Audio Podcast Overview</option>
-                <option value="infographics">📈 Visual Infographics</option>
+                <option value="notes" className="bg-[var(--card-bg)] text-[var(--text-primary)]">📄 Structured Study Notes</option>
+                <option value="summary" className="bg-[var(--card-bg)] text-[var(--text-primary)]">📝 Executive Summary</option>
+                <option value="flashcards" className="bg-[var(--card-bg)] text-[var(--text-primary)]">⚡ Active Recall Flashcards</option>
+                <option value="quiz" className="bg-[var(--card-bg)] text-[var(--text-primary)]">🎯 Practice Quiz Deck</option>
+                <option value="mindmap" className="bg-[var(--card-bg)] text-[var(--text-primary)]">🧠 Dynamic Relationship Mind Map</option>
+                <option value="slides" className="bg-[var(--card-bg)] text-[var(--text-primary)]">📊 Presentation Slides Deck</option>
+                <option value="podcast" className="bg-[var(--card-bg)] text-[var(--text-primary)]">🎙️ Audio Podcast Overview</option>
+                <option value="infographics" className="bg-[var(--card-bg)] text-[var(--text-primary)]">📈 Visual Infographics</option>
               </select>
-              <ChevronDown className="h-4 w-4 text-[#111111] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <ChevronDown className="h-4 w-4 text-[var(--text-primary)] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
 
           {/* Tab contents block */}
           <div className="flex-1 overflow-y-auto">
             {!activeSourceId ? (
-              <div className="text-center py-16 text-neutral-500 font-mono text-[10.5px]">
+              <div className="text-center py-16 text-[var(--text-secondary)] font-mono text-[10.5px]">
                 Please select/index a source to view outputs.
               </div>
             ) : !activeSource ? (
-              <div className="text-center py-16 text-neutral-500 font-mono text-[10.5px]">
+              <div className="text-center py-16 text-[var(--text-secondary)] font-mono text-[10.5px]">
                 Loading source details...
               </div>
             ) : (

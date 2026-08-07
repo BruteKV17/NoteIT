@@ -53,13 +53,13 @@ export const Modal: React.FC<ModalProps> = ({
         aria-hidden="true" 
       />
       <div 
-        className={`relative w-full ${maxWidthClasses[maxWidth]} bg-white rounded-[8px] border-2 border-[#111111] shadow-paper-lg flex flex-col max-h-[90vh] overflow-hidden z-10`}
+        className={`relative w-full ${maxWidthClasses[maxWidth]} bg-[var(--card-bg)] rounded-[8px] border-2 border-[var(--border-main)] shadow-paper-lg flex flex-col max-h-[90vh] overflow-hidden z-10`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
       >
         {/* Header */}
-        <div className="px-5 py-4 bg-[#FFC400] border-b-2 border-[#111111] flex items-center justify-between gap-4">
+        <div className="px-5 py-4 bg-[#FFC400] border-b-2 border-[var(--border-main)] flex items-center justify-between gap-4">
           <div>
             <h2 id="modal-title" className="font-heading text-lg font-bold uppercase tracking-tight text-[#111111]">
               {title}
@@ -80,13 +80,13 @@ export const Modal: React.FC<ModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto flex-1 text-[#111111]">
+        <div className="p-6 overflow-y-auto flex-1 text-[var(--text-primary)]">
           {children}
         </div>
 
         {/* Footer */}
         {footer && (
-          <div className="px-5 py-3 bg-[#F6F2EA] border-t-2 border-[#111111] flex justify-end gap-3">
+          <div className="px-5 py-3 bg-[var(--panel-bg)] border-t-2 border-[var(--border-main)] flex justify-end gap-3">
             {footer}
           </div>
         )}

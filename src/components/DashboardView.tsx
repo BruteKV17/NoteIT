@@ -55,24 +55,24 @@ export default function DashboardView({
     <div className="space-y-8 max-w-7xl mx-auto pb-16 bg-grid-paper p-4 md:p-8 select-none">
       
       {/* 1. BAUHAUS EDITORIAL HERO CALLOUT BANNER (Matching Stitch Mockup 3) */}
-      <div className="relative rounded-[6px] border-2 border-[#111111] bg-white p-6 md:p-10 shadow-paper-lg flex flex-col justify-between overflow-hidden">
+      <div className="relative rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] p-6 md:p-10 shadow-paper-lg flex flex-col justify-between overflow-hidden">
         
         {/* Yellow Decorative Callout Accent Box */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-[#FFC400] opacity-15 rotate-12 -translate-y-8 translate-x-8 border-2 border-[#111111] pointer-events-none" />
+        <div className="absolute top-0 right-0 w-32 h-32 bg-[#FFC400] opacity-15 rotate-12 -translate-y-8 translate-x-8 border-2 border-[var(--border-main)] pointer-events-none" />
 
         <div className="relative z-10 max-w-3xl space-y-4">
           <Badge variant="yellow" size="md" icon={<Sparkles className="h-3.5 w-3.5" />}>
             NOTE-IT AI SUITE • CORE
           </Badge>
 
-          <h1 className="font-heading font-extrabold text-3xl sm:text-5xl lg:text-6xl tracking-tight text-[#111111] leading-none uppercase">
+          <h1 className="font-heading font-extrabold text-3xl sm:text-5xl lg:text-6xl tracking-tight text-[var(--text-primary)] leading-none uppercase">
             AI THAT THINKS <br />
-            <span className="bg-[#FFC400] px-2 py-0.5 border-2 border-[#111111] shadow-paper-sm inline-block mt-1">
+            <span className="bg-[#FFC400] text-[#111111] px-2 py-0.5 border-2 border-[var(--border-main)] shadow-paper-sm inline-block mt-1">
               WHILE YOU LEARN.
             </span>
           </h1>
 
-          <p className="text-sm md:text-base font-medium text-[#666666] leading-relaxed max-w-2xl border-l-4 border-[#FFC400] pl-3 py-1">
+          <p className="text-sm md:text-base font-medium text-[var(--text-secondary)] leading-relaxed max-w-2xl border-l-4 border-[#FFC400] pl-3 py-1">
             Record classroom lectures and instantly generate notes, summaries, quizzes, flashcards, and personalized revision plans with persistent AI memory.
           </p>
 
@@ -81,7 +81,7 @@ export default function DashboardView({
               variant="secondary"
               size="lg"
               onClick={handleStartRecording}
-              className="w-full sm:w-auto bg-[#2F6BFF] text-white hover:bg-[#255cd9] border-2 border-[#111111] shadow-paper-md"
+              className="w-full sm:w-auto bg-[#2F6BFF] text-white hover:bg-[#255cd9] border-2 border-[var(--border-main)] shadow-paper-md"
               icon={<Mic className="h-4.5 w-4.5 text-white animate-pulse" />}
             >
               Start Recording Lecture
@@ -91,8 +91,8 @@ export default function DashboardView({
               variant="tertiary"
               size="lg"
               onClick={handleOpenLibrary}
-              className="w-full sm:w-auto border-2 border-[#111111] shadow-paper-md"
-              icon={<BookOpen className="h-4 w-4 text-[#111111]" />}
+              className="w-full sm:w-auto border-2 border-[var(--border-main)] shadow-paper-md"
+              icon={<BookOpen className="h-4 w-4 text-[var(--text-primary)]" />}
             >
               Open Academic Library
             </Button>
@@ -102,7 +102,7 @@ export default function DashboardView({
 
       {/* 2. LEARNING PIPELINE STAGES (12-Column Swiss Grid) */}
       <div className="space-y-3">
-        <div className="section-label text-xs font-bold uppercase tracking-[3px] text-[#2563EB]">
+        <div className="section-label text-xs font-bold uppercase tracking-[3px] text-[#38BDF8]">
           LEARNING PIPELINE STAGES
         </div>
         
@@ -118,18 +118,18 @@ export default function DashboardView({
             <Card
               key={idx}
               shadow="sm"
-              className={`p-3 flex flex-col justify-between h-[100px] border-2 border-[#111111] transition-transform hover:-translate-y-0.5 ${
-                item.active ? 'bg-[#FFF8D6] border-2 border-[#111111]' : 'bg-white'
+              className={`p-3 flex flex-col justify-between h-[100px] border-2 border-[var(--border-main)] transition-transform hover:-translate-y-0.5 ${
+                item.active ? 'bg-[var(--hover-bg)] border-2 border-[var(--border-main)]' : 'bg-[var(--card-bg)]'
               }`}
             >
-              <span className="font-mono text-base font-bold text-[#FFC400] text-stroke-black block">
+              <span className="font-mono text-base font-bold text-[#FFC400] block">
                 {item.step}
               </span>
               <div>
-                <h4 className="font-heading text-xs font-bold uppercase text-[#111111] leading-tight">
+                <h4 className="font-heading text-xs font-bold uppercase text-[var(--text-primary)] leading-tight">
                   {item.tag}
                 </h4>
-                <p className="text-[10px] text-[#666666] font-mono mt-0.5 truncate">
+                <p className="text-[10px] text-[var(--text-secondary)] font-mono mt-0.5 truncate">
                   {item.desc}
                 </p>
               </div>
@@ -142,22 +142,22 @@ export default function DashboardView({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         
         {/* CARD A: Today's Lectures */}
-        <Card shadow="md" className="p-5 flex flex-col justify-between h-[300px] bg-white border-2 border-[#111111]">
+        <Card shadow="md" className="p-5 flex flex-col justify-between h-[300px] bg-[var(--card-bg)] border-2 border-[var(--border-main)]">
           <div className="space-y-2">
-            <div className="flex items-center justify-between border-b-2 border-[#111111] pb-2">
-              <span className="section-label text-[10px] font-bold uppercase tracking-wider text-[#666666]">
+            <div className="flex items-center justify-between border-b-2 border-[var(--border-main)] pb-2">
+              <span className="section-label text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">
                 TODAY'S LECTURES
               </span>
               <Badge variant="red" size="sm" icon={<Radio className="w-3 h-3 animate-pulse" />}>
                 LIVE NOW
               </Badge>
             </div>
-            <h3 className="font-heading text-base font-bold text-[#111111] uppercase tracking-tight">
+            <h3 className="font-heading text-base font-bold text-[var(--text-primary)] uppercase tracking-tight">
               AI & Neural Optimizations
             </h3>
-            <div className="p-3 bg-[#F6F2EA] rounded-[4px] border-2 border-[#111111] text-xs text-[#111111] font-mono">
-              <span className="font-bold block text-[#2F6BFF]">Advanced Computer Science</span>
-              <p className="text-[11px] text-[#666666] mt-1 line-clamp-3 leading-snug">
+            <div className="p-3 bg-[var(--panel-bg)] rounded-[4px] border-2 border-[var(--border-main)] text-xs text-[var(--text-primary)] font-mono">
+              <span className="font-bold block text-[#38BDF8]">Advanced Computer Science</span>
+              <p className="text-[11px] text-[var(--text-secondary)] mt-1 line-clamp-3 leading-snug">
                 Adaptive Momentum (Adam) derivations, matrix jacobians, and loss surface optimization.
               </p>
             </div>
@@ -176,27 +176,27 @@ export default function DashboardView({
         </Card>
 
         {/* CARD B: Recent Recordings */}
-        <Card shadow="md" className="p-5 flex flex-col justify-between h-[300px] bg-white border-2 border-[#111111]">
+        <Card shadow="md" className="p-5 flex flex-col justify-between h-[300px] bg-[var(--card-bg)] border-2 border-[var(--border-main)]">
           <div className="space-y-2">
-            <div className="border-b-2 border-[#111111] pb-2">
-              <span className="section-label text-[10px] font-bold uppercase tracking-wider text-[#666666] block">
+            <div className="border-b-2 border-[var(--border-main)] pb-2">
+              <span className="section-label text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)] block">
                 RECENT RECORDINGS
               </span>
             </div>
-            <h3 className="font-heading text-base font-bold text-[#111111] uppercase tracking-tight">
+            <h3 className="font-heading text-base font-bold text-[var(--text-primary)] uppercase tracking-tight">
               BioGenetics Lecture L04
             </h3>
-            <p className="text-[11px] font-mono text-[#666666]">
+            <p className="text-[11px] font-mono text-[var(--text-secondary)]">
               Synced: 2 hours ago • 42 mins
             </p>
 
             {/* Industrial Audio Waveform visualization */}
-            <div className="h-12 flex items-center gap-1 justify-center bg-[#F6F2EA] rounded-[4px] px-3 border-2 border-[#111111]">
+            <div className="h-12 flex items-center gap-1 justify-center bg-[var(--panel-bg)] rounded-[4px] px-3 border-2 border-[var(--border-main)]">
               {[24, 12, 32, 16, 8, 36, 14, 28, 10, 34, 12, 24, 18, 32, 14].map((h, i) => (
                 <div
                   key={i}
                   style={{ height: `${h}px` }}
-                  className="w-[4px] bg-[#111111] rounded-none"
+                  className="w-[4px] bg-[var(--text-primary)] rounded-none"
                 />
               ))}
             </div>
@@ -214,22 +214,22 @@ export default function DashboardView({
         </Card>
 
         {/* CARD C: Continue Session */}
-        <Card shadow="md" className="p-5 flex flex-col justify-between h-[300px] bg-white border-2 border-[#111111]">
+        <Card shadow="md" className="p-5 flex flex-col justify-between h-[300px] bg-[var(--card-bg)] border-2 border-[var(--border-main)]">
           <div className="space-y-2">
-            <div className="border-b-2 border-[#111111] pb-2">
-              <span className="section-label text-[10px] font-bold uppercase tracking-wider text-[#666666] block">
+            <div className="border-b-2 border-[var(--border-main)] pb-2">
+              <span className="section-label text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)] block">
                 CONTINUE SESSION
               </span>
             </div>
-            <h3 className="font-heading text-base font-bold text-[#111111] uppercase tracking-tight">
+            <h3 className="font-heading text-base font-bold text-[var(--text-primary)] uppercase tracking-tight">
               Quantum Mechanics
             </h3>
-            <p className="text-[11px] font-mono text-[#666666]">
+            <p className="text-[11px] font-mono text-[var(--text-secondary)]">
               Weak Topic Focus: Wavefunctions
             </p>
 
-            <div className="p-2.5 rounded-[4px] bg-[#FFF8D6] border-2 border-[#111111] text-xs font-mono font-bold text-[#111111] flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-[#111111] shrink-0" />
+            <div className="p-2.5 rounded-[4px] bg-[var(--hover-bg)] border-2 border-[var(--border-main)] text-xs font-mono font-bold text-[var(--text-primary)] flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-[#FFC400] shrink-0" />
               <span>Target 75%+ retention in Quiz Mode.</span>
             </div>
           </div>
