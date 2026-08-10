@@ -41,6 +41,7 @@ import { Source, Note, Lecture, PageId } from '../types';
 import { generateResourcesFromTranscript, generateNotesFromTranscript } from '../services/gemini';
 import { auth } from '../firebaseConfig';
 import { useNoteReviewTimer } from '../hooks/useNoteReviewTimer';
+import { renderTranscriptWithDots } from './bauhaus/TimestampDot';
 
 interface ResearchHubViewProps {
   sources: Source[];
@@ -464,34 +465,7 @@ export default function ResearchHubView({
 
   const renderTranscriptWithTimestamps = (transcriptText: string) => {
     if (!transcriptText) return null;
-    const lines = transcriptText.split('\n');
-    return lines.map((line, idx) => {
-      const tsMatch = line.match(/^\[(\d{2}):(\d{2})\]/);
-      if (tsMatch) {
-        const timeStr = `${tsMatch[1]}:${tsMatch[2]}`;
-        const content = line.replace(/^\[\d{2}:\d{2}\]\s*/, '');
-        return (
-          <div key={idx} className="flex gap-4 items-start py-2 border-b border-neutral-900/20 group">
-            <button
-              onClick={() => handleSeek(timeStr)}
-              className="flex-shrink-0 flex items-center gap-1 rounded-lg bg-pink-500/10 px-2 py-1 text-[10px] font-bold text-pink-400 border border-pink-500/20 hover:bg-pink-500/20 transition-all cursor-pointer focus:outline-none"
-              title="Seek audio to this point"
-            >
-              <Play className="h-2.5 w-2.5 fill-current" />
-              <span>{timeStr}</span>
-            </button>
-            <p className="text-xs md:text-sm text-neutral-300 leading-relaxed font-sans select-text">
-              {content}
-            </p>
-          </div>
-        );
-      }
-      return (
-        <p key={idx} className="text-xs md:text-sm text-neutral-300 leading-relaxed font-sans py-1.5 select-text">
-          {line}
-        </p>
-      );
-    });
+    return renderTranscriptWithDots(transcriptText, handleSeek);
   };
 
   if (!selectedLecture) {

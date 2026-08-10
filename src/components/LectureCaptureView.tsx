@@ -39,6 +39,7 @@ import { db, auth } from '../firebaseConfig';
 import { doc, updateDoc } from 'firebase/firestore';
 import { saveRecordingChunks, getRecordingChunks, deleteRecordingBackup, getAllBackupKeys } from '../services/dbBackup';
 import { awardXP, processActivityEvent } from '../services/activityTracker';
+import { renderTranscriptWithDots } from './bauhaus/TimestampDot';
 
 interface LectureCaptureViewProps {
   onSaveCapture: (title: string, subject: string, duration: string, audioBlob: Blob, existingLectureId?: string) => Promise<void>;
@@ -674,26 +675,7 @@ export default function LectureCaptureView({
   };
 
   const renderTranscriptContent = (text: string) => {
-    if (!text) return <p className="text-[#666666] font-mono text-xs italic">No transcript content available.</p>;
-    const timestampRegex = /(\[\d{1,2}:\d{2}\])/g;
-    const parts = text.split(timestampRegex);
-    return parts.map((part, index) => {
-      if (timestampRegex.test(part)) {
-        const timeVal = part.replace(/[\[\]]/g, '');
-        const cleanTimeId = timeVal.replace(':', '_');
-        return (
-          <span
-            key={index}
-            id={`transcript-time-${cleanTimeId}`}
-            onClick={() => handleTimestampClick(timeVal)}
-            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] text-[10px] font-mono font-bold bg-[#FFC400] text-[#111111] border border-[#111111] shadow-paper-sm cursor-pointer hover:bg-[#ffe066] transition-all mr-1.5 select-none"
-          >
-            {part}
-          </span>
-        );
-      }
-      return <span key={index} className="text-[#111111] font-medium leading-relaxed">{part}</span>;
-    });
+    return renderTranscriptWithDots(text, handleTimestampClick);
   };
 
   const getNodeColor = (node: any, isSelected: boolean) => {

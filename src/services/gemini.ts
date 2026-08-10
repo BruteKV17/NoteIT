@@ -390,7 +390,7 @@ export const transcribeAudio = async (
   apiKey: string,
   onBusy?: (isBusy: boolean) => void
 ): Promise<string> => {
-  const prompt = `You are an expert transcriber. Transcribe the provided audio lecture word-for-word. Format the transcript text by prepending bracketed timestamps (e.g. [00:00], [01:15]) at the beginning of each major statement or logical paragraph based on the audio timeline.`;
+  const prompt = `You are an expert transcriber. Transcribe the provided audio lecture word-for-word. Format the transcript text by prepending bracketed timestamps at fixed 2-minute interval checkpoints (e.g. [00:00], [02:00], [04:00], [06:00]) at the beginning of each major statement or logical paragraph based on the audio timeline.`;
   return executeGeminiCall(prompt, apiKey, { mimeType, data: base64Audio }, undefined, onBusy);
 };
 
@@ -402,7 +402,7 @@ export const cleanTranscriptText = async (
   const prompt = `You are an expert academic editor. Take the following raw lecture transcript and clean it up.
 Remove all stutters, filler words (such as 'uh', 'um', 'so basically', 'like', 'you know', 'right', 'actually', 'sort of', 'now', 'okay'), and speech disfluencies.
 Convert the spoken language into professional, clean, written academic prose.
-IMPORTANT: You MUST preserve the bracketed timestamps (e.g. [00:00], [01:15]) at their approximate correct locations in the text. Do not omit them!
+IMPORTANT: You MUST preserve the 2-minute bracketed interval timestamps (e.g. [00:00], [02:00], [04:00]) at their correct 2-minute checkpoints in the text. Do not omit them!
 Do not summarize or delete important lecture content; just clean the language.
 Return ONLY the cleaned transcript with timestamps.
 
