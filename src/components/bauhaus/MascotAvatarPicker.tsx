@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Camera, Trash2, Sparkles, Upload, Check, X, Shield, ArrowRight } from 'lucide-react';
+import { Camera, Trash2, Sparkles, Upload, Check, X } from 'lucide-react';
 
 export interface MascotOption {
   id: string;
@@ -65,63 +65,66 @@ export function MascotAvatarPicker({
   const activeMascot = OFFICIAL_MASCOTS.find(m => m.url === currentAvatarUrl);
 
   return (
-    <div className="space-y-4 rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--panel-bg)] p-5 shadow-paper-sm text-[var(--text-primary)] text-left">
-      {/* Header & Preview Card */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-2 border-[var(--border-main)] pb-4">
-        <div className="flex items-center gap-3">
-          {currentAvatarUrl ? (
-            <img
-              src={currentAvatarUrl}
-              alt="Current Avatar"
-              className="h-16 w-16 rounded-[8px] border-2 border-[var(--border-main)] object-cover shadow-paper-sm shrink-0"
-            />
-          ) : (
-            <div className="h-16 w-16 rounded-[8px] border-2 border-[var(--border-main)] bg-[#FFC400] flex items-center justify-center font-bold text-2xl text-[#111111] uppercase shadow-paper-sm shrink-0">
-              {userInitial}
+    <div>
+      {/* Sleek, Non-Cluttered Compact Inline Avatar Row */}
+      <div className="flex items-center justify-between gap-3 p-3 rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--panel-bg)] shadow-paper-sm text-[var(--text-primary)] text-left">
+        {/* Left: Avatar Thumbnail & Name */}
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="relative group cursor-pointer" onClick={handleOpenModal} title="Click to Change Avatar">
+            {currentAvatarUrl ? (
+              <img
+                src={currentAvatarUrl}
+                alt="Current Avatar"
+                className="h-11 w-11 rounded-[6px] border-2 border-[var(--border-main)] object-cover shadow-paper-xs group-hover:scale-105 transition-all shrink-0"
+              />
+            ) : (
+              <div className="h-11 w-11 rounded-[6px] border-2 border-[var(--border-main)] bg-[#FFC400] flex items-center justify-center font-bold text-base text-[#111111] uppercase shadow-paper-xs group-hover:scale-105 transition-all shrink-0">
+                {userInitial}
+              </div>
+            )}
+            <div className="absolute -bottom-1 -right-1 h-4.5 w-4.5 rounded-[3px] bg-[#FFC400] text-[#111111] border border-[#111111] flex items-center justify-center text-[9px] font-bold shadow-paper-xs">
+              ✏️
             </div>
-          )}
+          </div>
 
-          <div>
-            <span className="text-[10px] font-mono font-extrabold text-[#38BDF8] uppercase tracking-[2px] block">
-              ACADEMIC IDENTITY AVATAR
-            </span>
-            <h4 className="font-heading font-extrabold text-base text-[var(--text-primary)] uppercase tracking-tight mt-0.5 flex items-center gap-1.5">
-              {activeMascot ? activeMascot.name : (currentAvatarUrl ? 'Custom Photo Avatar' : 'Default Initial')}
-            </h4>
-            <p className="text-xs font-mono text-[var(--text-secondary)] mt-0.5">
-              {activeMascot ? `Official Mascot • ${activeMascot.role}` : (currentAvatarUrl ? 'User Uploaded Photo' : 'No custom avatar selected')}
-            </p>
+          <div className="min-w-0">
+            <div className="font-heading font-extrabold text-sm text-[var(--text-primary)] uppercase truncate">
+              {activeMascot ? activeMascot.name : (currentAvatarUrl ? 'Custom Avatar' : 'Default Avatar')}
+            </div>
+            <div className="text-[10px] font-mono font-bold text-[var(--text-secondary)] truncate">
+              {activeMascot ? activeMascot.role : (currentAvatarUrl ? 'User Uploaded Photo' : 'Academic Profile Image')}
+            </div>
           </div>
         </div>
 
-        {/* Action Trigger Buttons */}
-        <div className="flex items-center gap-2">
+        {/* Right: Small Compact Buttons */}
+        <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"
             onClick={handleOpenModal}
-            className="px-4 py-2.5 rounded-[4px] border-2 border-[var(--border-main)] bg-[#FFC400] text-[#111111] font-mono text-xs font-extrabold uppercase hover:bg-[#ffe066] transition-all shadow-paper-sm flex items-center gap-2 cursor-pointer"
+            className="px-3 py-1.5 rounded-[4px] border-2 border-[var(--border-main)] bg-[#FFC400] text-[#111111] font-mono text-xs font-extrabold uppercase hover:bg-[#ffe066] transition-all shadow-paper-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
           >
-            <Sparkles className="h-4 w-4" />
-            <span>CHOOSE MASCOT OR PHOTO</span>
+            <Sparkles className="h-3.5 w-3.5" />
+            <span>Choose Avatar</span>
           </button>
 
           {currentAvatarUrl && (
             <button
               type="button"
               onClick={() => onSelectAvatar('')}
-              className="p-2.5 rounded-[4px] border-2 border-[#FF4D4D] text-[#FF4D4D] font-mono text-xs font-bold uppercase hover:bg-[#FF4D4D] hover:text-white transition-all cursor-pointer shadow-paper-sm"
-              title="Reset Avatar to Default Initial"
+              className="p-1.5 rounded-[4px] border-2 border-[#FF4D4D]/60 text-[#FF4D4D] font-mono text-xs font-bold hover:bg-[#FF4D4D] hover:text-white transition-all cursor-pointer shadow-paper-xs"
+              title="Reset Avatar"
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-3.5 w-3.5" />
             </button>
           )}
         </div>
       </div>
 
-      {/* MODAL POPUP OVERLAY */}
+      {/* FULL MASCOT STUDIO MODAL OVERLAY */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-[#111111]/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
-          <div className="relative w-full max-w-5xl rounded-[10px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] p-6 shadow-paper-lg space-y-6 text-[var(--text-primary)] my-8">
+          <div className="relative w-full max-w-4xl rounded-[10px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] p-6 shadow-paper-lg space-y-6 text-[var(--text-primary)] my-8">
             
             {/* Modal Top Bar */}
             <div className="flex items-center justify-between border-b-2 border-[var(--border-main)] pb-4">
@@ -129,21 +132,21 @@ export function MascotAvatarPicker({
                 <span className="text-[10px] font-mono font-extrabold text-[#38BDF8] uppercase tracking-[3px] block">
                   MASCOT GALLERY & AVATAR STUDIO
                 </span>
-                <h2 className="font-heading font-extrabold text-2xl text-[var(--text-primary)] uppercase tracking-tight mt-1 flex items-center gap-2">
-                  <Sparkles className="h-6 w-6 text-[#FFC400]" />
+                <h2 className="font-heading font-extrabold text-xl md:text-2xl text-[var(--text-primary)] uppercase tracking-tight mt-0.5 flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-[#FFC400]" />
                   SELECT YOUR ACADEMIC AVATAR
                 </h2>
-                <p className="text-xs font-mono text-[var(--text-secondary)] mt-1">
-                  Choose from our official NoteIT 3D mascot characters or upload your own high-resolution photo.
+                <p className="text-xs font-mono text-[var(--text-secondary)] mt-0.5">
+                  Choose an official NoteIT 3D mascot character or upload your custom photo.
                 </p>
               </div>
 
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="flex h-9 w-9 items-center justify-center rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--panel-bg)] hover:bg-[#FF4D4D] hover:text-white transition-all cursor-pointer"
+                className="flex h-8 w-8 items-center justify-center rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--panel-bg)] hover:bg-[#FF4D4D] hover:text-white transition-all cursor-pointer"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
               </button>
             </div>
 
@@ -158,39 +161,39 @@ export function MascotAvatarPicker({
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
                 {OFFICIAL_MASCOTS.map((mascot) => {
                   const isSelected = tempSelectedUrl === mascot.url;
                   return (
                     <div
                       key={mascot.id}
                       onClick={() => setTempSelectedUrl(mascot.url)}
-                      className={`relative group rounded-[8px] border-2 p-3 flex flex-col justify-between transition-all cursor-pointer shadow-paper-sm ${
+                      className={`relative group rounded-[8px] border-2 p-2.5 flex flex-col justify-between transition-all cursor-pointer shadow-paper-sm ${
                         isSelected
                           ? 'border-[#FFC400] bg-[#FFC400]/15 ring-2 ring-[#FFC400] -translate-y-1'
                           : 'border-[var(--border-main)] bg-[var(--panel-bg)] hover:border-[#FFC400] hover:-translate-y-1'
                       }`}
                     >
                       {/* Full Mascot Image Container */}
-                      <div className="relative w-full aspect-square overflow-hidden rounded-[6px] bg-[var(--card-bg)] border border-[var(--border-main)] mb-3">
+                      <div className="relative w-full aspect-square overflow-hidden rounded-[6px] bg-[var(--card-bg)] border border-[var(--border-main)] mb-2">
                         <img
                           src={mascot.url}
                           alt={mascot.name}
                           className="w-full h-full object-contain p-1 group-hover:scale-105 transition-transform duration-300"
                         />
                         {isSelected && (
-                          <div className="absolute top-2 right-2 rounded-[4px] bg-[#FFC400] text-[#111111] p-1 border border-[#111111] shadow-paper-xs">
-                            <Check className="h-4 w-4 stroke-[3]" />
+                          <div className="absolute top-1.5 right-1.5 rounded-[4px] bg-[#FFC400] text-[#111111] p-0.5 border border-[#111111] shadow-paper-xs">
+                            <Check className="h-3.5 w-3.5 stroke-[3]" />
                           </div>
                         )}
                       </div>
 
                       {/* Character Details */}
-                      <div className="space-y-1 text-center">
-                        <h4 className="font-heading font-extrabold text-sm text-[var(--text-primary)] uppercase truncate">
+                      <div className="space-y-0.5 text-center">
+                        <h4 className="font-heading font-extrabold text-xs text-[var(--text-primary)] uppercase truncate">
                           {mascot.name}
                         </h4>
-                        <span className="inline-block px-2 py-0.5 rounded-[4px] bg-[#38BDF8]/15 text-[#38BDF8] border border-[#38BDF8]/30 font-mono text-[9px] font-bold uppercase truncate max-w-full">
+                        <span className="inline-block px-1.5 py-0.5 rounded-[3px] bg-[#38BDF8]/15 text-[#38BDF8] border border-[#38BDF8]/30 font-mono text-[8px] font-bold uppercase truncate max-w-full">
                           {mascot.role}
                         </span>
                       </div>
@@ -201,15 +204,15 @@ export function MascotAvatarPicker({
             </div>
 
             {/* 2. Custom Photo Upload Section */}
-            <div className="space-y-3 pt-4 border-t-2 border-[var(--border-main)] text-left">
+            <div className="space-y-2 pt-3 border-t-2 border-[var(--border-main)] text-left">
               <span className="text-xs font-mono font-extrabold text-[var(--text-primary)] uppercase tracking-wider block">
                 OR UPLOAD YOUR OWN CUSTOM PHOTO
               </span>
 
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-[8px] border-2 border-dashed border-[var(--border-main)] bg-[var(--panel-bg)]">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 rounded-[8px] border-2 border-dashed border-[var(--border-main)] bg-[var(--panel-bg)]">
                 <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-[6px] border-2 border-[var(--border-main)] bg-[#FFC400]/20 flex items-center justify-center shrink-0">
-                    <Camera className="h-6 w-6 text-[#FFC400]" />
+                  <div className="h-10 w-10 rounded-[6px] border-2 border-[var(--border-main)] bg-[#FFC400]/20 flex items-center justify-center shrink-0">
+                    <Camera className="h-5 w-5 text-[#FFC400]" />
                   </div>
                   <div>
                     <h5 className="font-mono text-xs font-extrabold uppercase text-[var(--text-primary)]">
@@ -221,9 +224,9 @@ export function MascotAvatarPicker({
                   </div>
                 </div>
 
-                <label className="px-5 py-3 rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] text-[var(--text-primary)] font-mono text-xs font-extrabold uppercase hover:bg-[#FFC400] hover:text-[#111111] transition-all cursor-pointer shadow-paper-sm flex items-center gap-2 shrink-0">
-                  <Upload className="h-4 w-4" />
-                  <span>{uploadLoading ? 'Processing Image...' : 'Browse Image File'}</span>
+                <label className="px-4 py-2 rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] text-[var(--text-primary)] font-mono text-xs font-extrabold uppercase hover:bg-[#FFC400] hover:text-[#111111] transition-all cursor-pointer shadow-paper-sm flex items-center gap-1.5 shrink-0">
+                  <Upload className="h-3.5 w-3.5" />
+                  <span>{uploadLoading ? 'Processing Image...' : 'Browse File'}</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -235,11 +238,11 @@ export function MascotAvatarPicker({
             </div>
 
             {/* Modal Bottom Action Footer */}
-            <div className="pt-4 border-t-2 border-[var(--border-main)] flex items-center justify-between gap-4">
+            <div className="pt-3 border-t-2 border-[var(--border-main)] flex items-center justify-between gap-4">
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="px-5 py-2.5 rounded-[4px] border-2 border-[var(--border-main)] bg-[var(--panel-bg)] text-[var(--text-primary)] font-mono text-xs font-bold uppercase hover:bg-[var(--hover-bg)] transition-all cursor-pointer"
+                className="px-4 py-2 rounded-[4px] border-2 border-[var(--border-main)] bg-[var(--panel-bg)] text-[var(--text-primary)] font-mono text-xs font-bold uppercase hover:bg-[var(--hover-bg)] transition-all cursor-pointer"
               >
                 Cancel
               </button>
@@ -247,7 +250,7 @@ export function MascotAvatarPicker({
               <button
                 type="button"
                 onClick={handleConfirm}
-                className="px-6 py-2.5 rounded-[4px] border-2 border-[var(--border-main)] bg-[#FFC400] text-[#111111] font-mono text-xs font-extrabold uppercase hover:bg-[#ffe066] transition-all shadow-paper-sm flex items-center gap-2 cursor-pointer"
+                className="px-5 py-2 rounded-[4px] border-2 border-[var(--border-main)] bg-[#FFC400] text-[#111111] font-mono text-xs font-extrabold uppercase hover:bg-[#ffe066] transition-all shadow-paper-sm flex items-center gap-1.5 cursor-pointer"
               >
                 <Check className="h-4 w-4 stroke-[3]" />
                 <span>CONFIRM & APPLY AVATAR</span>
