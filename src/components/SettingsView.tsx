@@ -32,6 +32,7 @@ import {
 import { PageId, UserSettings } from '../types';
 import { auth } from '../firebaseConfig';
 import { API_BASE_URL } from '../config';
+import { MascotAvatarPicker } from './bauhaus/MascotAvatarPicker';
 
 const PROVIDER_METADATA: Record<string, {
   name: string;
@@ -181,6 +182,7 @@ export default function SettingsView({
   const [institution, setInstitution] = useState(settings.profile.institution || '');
   const [countryCode, setCountryCode] = useState(settings.profile.countryCode || '');
   const [phoneNumber, setPhoneNumber] = useState(settings.profile.phoneNumber || '');
+  const [avatarUrl, setAvatarUrl] = useState(settings.profile.avatarUrl || '');
   const [error, setError] = useState<string | null>(null);
   
   // Canvas Credentials
@@ -243,6 +245,7 @@ export default function SettingsView({
       setInstitution(settings.profile.institution || '');
       setCountryCode(settings.profile.countryCode || '');
       setPhoneNumber(settings.profile.phoneNumber || '');
+      setAvatarUrl(settings.profile.avatarUrl || '');
     }
     if (settings.integrations) {
       setCanvasUrl(settings.integrations.canvasUrl || '');
@@ -280,6 +283,7 @@ export default function SettingsView({
       ...settings,
       profile: {
         ...settings.profile,
+        avatarUrl,
         fullName: `${firstName.trim()} ${lastName.trim()}`,
         emailAddress: emailAddress.trim(),
         firstName: firstName.trim(),
@@ -763,6 +767,13 @@ export default function SettingsView({
                 </div>
               </div>
             </div>
+
+            {/* Official Mascot Avatar Picker */}
+            <MascotAvatarPicker
+              currentAvatarUrl={avatarUrl}
+              onSelectAvatar={(url) => setAvatarUrl(url)}
+              userInitial={firstName ? firstName.charAt(0) : 'U'}
+            />
 
             {error && (
               <div className="rounded-[6px] border-2 border-[#111111] bg-[#FF4D4D]/15 p-3 flex items-start gap-2 text-[#111111]">

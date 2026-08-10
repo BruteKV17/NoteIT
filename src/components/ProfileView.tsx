@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { UserSettings } from '../types';
 import { Button, Card, Badge, Input } from './bauhaus';
+import { MascotAvatarPicker } from './bauhaus/MascotAvatarPicker';
 
 interface ProfileViewProps {
   settings: UserSettings;
@@ -202,42 +203,11 @@ export default function ProfileView({
               </p>
             </div>
 
-            <div className="flex flex-col gap-2 pt-1 w-full items-center">
-              {avatarUrl ? (
-                <div className="flex flex-col gap-2 w-full">
-                  <label className="w-full flex items-center justify-center gap-2 p-2 rounded-[6px] border-2 border-[#111111] bg-white font-mono text-xs font-bold uppercase shadow-paper-sm hover:bg-[#FFC400] transition-colors cursor-pointer text-[#111111]">
-                    <Camera className="h-4 w-4" />
-                    <span>Change Photo</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoUpload}
-                      className="hidden"
-                    />
-                  </label>
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={handleRemovePhoto}
-                    icon={<Trash2 className="h-4 w-4" />}
-                    className="w-full"
-                  >
-                    Remove Photo
-                  </Button>
-                </div>
-              ) : (
-                <label className="w-full flex items-center justify-center gap-2 p-2.5 rounded-[6px] border-2 border-[#111111] bg-[#FFC400] font-mono text-xs font-extrabold uppercase shadow-paper-sm hover:bg-[#ffe066] transition-colors cursor-pointer text-[#111111]">
-                  <Camera className="h-4 w-4" />
-                  <span>Upload Photo</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePhotoUpload}
-                    className="hidden"
-                  />
-                </label>
-              )}
-            </div>
+            <MascotAvatarPicker
+              currentAvatarUrl={avatarUrl}
+              onSelectAvatar={(url) => setAvatarUrl(url)}
+              userInitial={firstName ? firstName.charAt(0) : 'U'}
+            />
           </Card>
         </div>
 
