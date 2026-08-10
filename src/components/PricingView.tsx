@@ -14,6 +14,7 @@ import {
 import { PageId, UserSettings } from '../types';
 import { PRICING_PLANS } from '../data';
 import { Button, Card, Badge } from './bauhaus';
+import { openRazorpayCheckout } from '../services/razorpayService';
 
 interface PricingViewProps {
   settings: UserSettings;
@@ -35,25 +36,48 @@ export default function PricingView({
     if (planName === 'Institution') return 'Custom';
     
     if (billingCycle === 'yearly') {
-      return '₹320';
+      return '₹319';
     }
-    return '₹400';
+    return '₹399';
   };
 
-  const handleUpgradeSimulated = (planName: string, priceText: string) => {
+  const handleUpgradePlanClick = (planName: string, priceText: string) => {
     if (planName === 'Institution') {
       alert("Sales contact form activated. Our representative will contact your university administrators.");
       return;
     }
 
-    const castPlan = planName as 'BYOK' | 'Premium';
-    onUpgradePlan(castPlan, priceText, billingCycle);
-    setUpgradedPlanName(planName);
-    
-    setTimeout(() => {
-      setUpgradedPlanName(null);
-      setActivePage('dashboard');
-    }, 2800);
+    if (planName === 'BYOK') {
+      onUpgradePlan('BYOK', '₹0', billingCycle);
+      setUpgradedPlanName('BYOK');
+      setTimeout(() => {
+        setUpgradedPlanName(null);
+        setActivePage('dashboard');
+      }, 2500);
+      return;
+    }
+
+    // Launch Razorpay Live Payment Modal for ₹399 Plan!
+    const numPrice = billingCycle === 'yearly' ? 3828 : 399;
+
+    openRazorpayCheckout({
+      amount: numPrice,
+      planName: `Scholar Pro (${billingCycle})`,
+      userName: settings.profile.fullName || 'Academic Scholar',
+      userEmail: settings.profile.emailAddress || '',
+      userPhone: settings.profile.phoneNumber || '',
+      onSuccess: (paymentId) => {
+        onUpgradePlan('Premium', priceText, billingCycle);
+        setUpgradedPlanName(`Scholar Pro (Payment ID: ${paymentId})`);
+        setTimeout(() => {
+          setUpgradedPlanName(null);
+          setActivePage('dashboard');
+        }, 3500);
+      },
+      onFailure: (err) => {
+        console.warn('Razorpay checkout failed:', err);
+      }
+    });
   };
 
   return (
@@ -160,7 +184,7 @@ export default function PricingView({
 
                 <div className="pt-2">
                   <button
-                    onClick={() => handleUpgradeSimulated(plan.name, displayPrice)}
+                    onClick={() => handleUpgradePlanClick(plan.name, displayPrice)}
                     disabled={plan.name === 'Institution' || isActive}
                     className={`w-full py-3 px-4 font-mono text-xs font-bold uppercase rounded-[6px] border-2 border-[var(--border-main)] shadow-paper-sm transition-all ${
                       plan.name === 'Institution'

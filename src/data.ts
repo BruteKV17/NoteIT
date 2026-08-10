@@ -93,7 +93,7 @@ export const PRICING_PLANS: PricingPlan[] = [
   {
     name: 'Premium',
     tierLabel: 'TIER 02',
-    price: '₹400',
+    price: '₹399',
     period: 'month',
     tagline: 'No API key needed. Managed high-speed academic AI model access.',
     description: 'We provide high-speed, managed Gemini API keys.',

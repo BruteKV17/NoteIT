@@ -1272,10 +1272,10 @@ export default function SettingsView({
                   <p className="text-xs font-mono font-bold text-[#666666] mt-0.5">Renews automatically on <strong className="text-[#111111]">{settings.subscription.nextBillDate}</strong></p>
                 </div>
                 <div className="text-right font-mono">
-                  <div className="text-2xl font-black text-[#111111]">
-                    {settings.subscription.planName === 'BYOK' ? '₹0' : '₹400 / mo'}
+                  <div className="text-2xl font-black text-[var(--text-primary)]">
+                    {settings.subscription.planName === 'BYOK' ? '₹0' : (settings.subscription.price || '₹399 / mo')}
                   </div>
-                  <div className="text-[10px] font-bold text-[#666666] mt-0.5">billed monthly</div>
+                  <div className="text-[10px] font-bold text-[var(--text-secondary)] mt-0.5">billed monthly</div>
                 </div>
               </div>
 
