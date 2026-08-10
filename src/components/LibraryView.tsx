@@ -237,14 +237,11 @@ export default function LibraryView({
                 className="rounded-[6px] border-2 border-[#111111] bg-white p-5 hover:shadow-paper-lg transition-all flex flex-col justify-between min-h-[210px] relative group shadow-paper-md text-[#111111]"
               >
                 <div>
-                  {/* Category and icon indicator */}
+                  {/* Category badge header */}
                   <div className="flex items-center justify-between">
                     <span className="rounded-[4px] px-2.5 py-1 text-[10px] font-mono font-extrabold tracking-wide uppercase bg-[#FFC400] text-[#111111] border border-[#111111] shadow-paper-sm">
                       {lec.subject}
                     </span>
-                    <div className="p-2 rounded-[6px] border-2 border-[#111111] bg-[#F6F2EA] text-[#111111] shadow-paper-sm">
-                      {isRecording ? <Volume2 className="h-4.5 w-4.5" /> : <FileText className="h-4.5 w-4.5" />}
-                    </div>
                   </div>
 
                   {/* Title or Rename Input */}
@@ -373,7 +370,7 @@ export default function LibraryView({
                 </div>
 
                 {/* Inline Action Overlays: Rename/Delete */}
-                <div className="absolute top-4 right-14 flex items-center gap-1">
+                <div className="absolute top-4 right-4 flex items-center gap-1.5">
                   <button
                     onClick={() => {
                       setRenamingLectureId(lec.id);
@@ -419,13 +416,6 @@ export default function LibraryView({
                     }`}>
                       {lec.subject}
                     </span>
-                    <div className={`p-1.5 rounded-lg border ${
-                      isRecording 
-                        ? theme === 'dark' ? 'bg-orange-500/10 border-orange-500/10 text-orange-400' : 'bg-orange-50 text-orange-600'
-                        : theme === 'dark' ? 'bg-blue-500/10 border-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'
-                    }`}>
-                      {isRecording ? <Volume2 className="h-3.5 w-3.5" /> : <FileText className="h-3.5 w-3.5" />}
-                    </div>
                   </div>
 
                   <div>
@@ -575,7 +565,7 @@ export default function LibraryView({
                             ? theme === 'dark' ? 'bg-orange-500/10 border-orange-500/10 text-orange-400' : 'bg-orange-50 text-orange-600'
                             : theme === 'dark' ? 'bg-blue-500/10 border-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'
                         }`}>
-                          {isRecording ? <Volume2 className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
+                          <FileText className="h-4 w-4" />
                         </div>
                       </td>
                       <td className="px-6 py-4">

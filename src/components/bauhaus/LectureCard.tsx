@@ -42,16 +42,11 @@ export const LectureCard: React.FC<LectureCardProps> = ({
       className="p-4 bg-[var(--card-bg)] flex flex-col justify-between h-full group"
     >
       <div className="flex flex-col gap-3">
-        {/* Category & Audio Badges Header */}
+        {/* Category Badge Header */}
         <div className="flex items-center justify-between gap-2 border-b-2 border-[var(--border-main)] pb-2.5">
           <Badge variant={badgeVariant} size="sm">
             {subject}
           </Badge>
-          {audioUrl && (
-            <div className="w-7 h-7 rounded-[4px] bg-[var(--panel-bg)] border-2 border-[var(--border-main)] flex items-center justify-center text-[var(--text-primary)] group-hover:bg-[#FFC400] group-hover:text-[#111111]">
-              <Volume2 className="w-3.5 h-3.5" />
-            </div>
-          )}
         </div>
 
         {/* Lecture Title Box */}
