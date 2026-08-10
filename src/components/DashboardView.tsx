@@ -29,6 +29,8 @@ interface DashboardViewProps {
   onOpenLecture: (lectureId: string) => void;
   theme: 'light' | 'dark';
   notes?: Note[];
+  totalXp?: number;
+  currentStreak?: number;
 }
 
 export default function DashboardView({
@@ -39,7 +41,9 @@ export default function DashboardView({
   onNewAnalysis,
   onOpenLecture,
   theme,
-  notes = []
+  notes = [],
+  totalXp = 2450,
+  currentStreak = 0
 }: DashboardViewProps) {
   
   // Quick navigation helpers
@@ -61,9 +65,11 @@ export default function DashboardView({
         <div className="absolute top-0 right-0 w-32 h-32 bg-[#FFC400] opacity-15 rotate-12 -translate-y-8 translate-x-8 border-2 border-[var(--border-main)] pointer-events-none" />
 
         <div className="relative z-10 max-w-3xl space-y-4">
-          <Badge variant="yellow" size="md" icon={<Sparkles className="h-3.5 w-3.5" />}>
-            NOTE-IT AI SUITE • CORE
-          </Badge>
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <Badge variant="yellow" size="md" icon={<Sparkles className="h-3.5 w-3.5" />}>
+              NOTE-IT AI SUITE • CORE
+            </Badge>
+          </div>
 
           <h1 className="font-heading font-extrabold text-3xl sm:text-5xl lg:text-6xl tracking-tight text-[var(--text-primary)] leading-none uppercase">
             AI THAT THINKS <br />

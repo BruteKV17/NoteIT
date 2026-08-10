@@ -38,6 +38,7 @@ import PresentationWorkspace from './PresentationWorkspace';
 import { db, auth } from '../firebaseConfig';
 import { doc, updateDoc } from 'firebase/firestore';
 import { saveRecordingChunks, getRecordingChunks, deleteRecordingBackup, getAllBackupKeys } from '../services/dbBackup';
+import { awardXP, processActivityEvent } from '../services/activityTracker';
 
 interface LectureCaptureViewProps {
   onSaveCapture: (title: string, subject: string, duration: string, audioBlob: Blob, existingLectureId?: string) => Promise<void>;
@@ -460,7 +461,20 @@ export default function LectureCaptureView({
         }
 
         try {
+          const recordedSecs = secondsRef.current;
           await onSaveCapture(lectureTitle, lectureSubject, durationStr, audioBlob, finalId || undefined);
+          
+          // Automatically award +50 XP for Task 01 if continuous recording >= 10 minutes (600s) and saved successfully (Section 1)
+          if (auth.currentUser?.uid && recordedSecs >= 600) {
+            awardXP({
+              userId: auth.currentUser.uid,
+              taskId: 'task_01',
+              xpAmount: 50,
+              resourceId: finalId || 'rec_' + Date.now(),
+              reason: 'Completed 10-minute live lecture capture'
+            }).catch(console.error);
+          }
+
           if (finalId) {
             await deleteRecordingBackup(finalId);
           }

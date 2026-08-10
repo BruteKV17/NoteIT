@@ -13,15 +13,17 @@ interface Props {
 
 interface State {
   hasError: boolean;
+  error: Error | null;
 }
 
 export default class ErrorBoundary extends Component<Props, State> {
   public state: State = {
-    hasError: false
+    hasError: false,
+    error: null
   };
 
-  public static getDerivedStateFromError(_: Error): State {
-    return { hasError: true };
+  public static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, error };
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
@@ -29,7 +31,7 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 
   private handleRetry = () => {
-    this.setState({ hasError: false });
+    this.setState({ hasError: false, error: null });
     window.location.reload();
   };
 
@@ -72,6 +74,11 @@ export default class ErrorBoundary extends Component<Props, State> {
               <p className="text-xs text-neutral-400 leading-relaxed max-w-sm mx-auto">
                 An unexpected exception was caught in the cognitive sandbox. Your transcripts, notes, and local recording drafts remain completely secure in Firestore and IndexedDB.
               </p>
+              {this.state.error && (
+                <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 font-mono text-[11px] text-left overflow-auto max-h-24">
+                  {this.state.error.message || String(this.state.error)}
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 pt-2">

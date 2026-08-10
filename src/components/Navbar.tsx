@@ -15,6 +15,7 @@ import {
   User,
   CreditCard,
   HelpCircle,
+  Trophy,
   LogOut,
   Sun,
   Moon
@@ -33,6 +34,8 @@ interface NavbarProps {
   theme: 'light' | 'dark';
   setTheme: (theme: 'light' | 'dark') => void;
   onLogOut: () => void;
+  totalXp?: number;
+  currentStreak?: number;
 }
 
 export default function Navbar({
@@ -45,7 +48,9 @@ export default function Navbar({
   onNewAnalysis,
   theme,
   setTheme,
-  onLogOut
+  onLogOut,
+  totalXp = 0,
+  currentStreak = 0
 }: NavbarProps) {
   
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -74,6 +79,8 @@ export default function Navbar({
         return 'ACADEMIC LIBRARY';
       case 'quiz-mode':
         return 'QUIZ MODE';
+      case 'rewards':
+        return 'REWARDS & XP STORE';
       case 'notifications':
         return 'ACTIVITY CENTER';
       case 'settings':
@@ -141,19 +148,6 @@ export default function Navbar({
 
       {/* Right widgets: Quick triggers, actions, theme toggle, profiles */}
       <div className="flex items-center gap-2 relative">
-        
-        {/* Short-path Actions */}
-        {onNewAnalysis && (
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setActivePage('lecture-capture')}
-            className="hidden sm:inline-flex"
-            icon={<Plus className="h-4 w-4" />}
-          >
-            Capture
-          </Button>
-        )}
 
         {/* Theme Toggle Quick Button */}
         <button
@@ -224,6 +218,23 @@ export default function Navbar({
                 </div>
               </div>
 
+              {/* XP & Streak Counter in Dropdown Menu */}
+              <button
+                onClick={() => handleDropdownOption('rewards')}
+                className="w-full flex items-center justify-between gap-2 rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--panel-bg)] p-2.5 shadow-paper-sm hover:bg-[#FFC400] hover:text-[#111111] transition-all cursor-pointer group"
+                title="View Rewards & XP Store"
+              >
+                <div className="flex items-center gap-1.5 font-mono text-xs font-extrabold text-[var(--text-primary)] group-hover:text-[#111111]">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-[3px] bg-[#FFC400] text-[#111111] font-bold text-xs border border-[var(--border-main)] shadow-paper-xs">
+                    ⚡
+                  </span>
+                  <span>{(totalXp || 0).toLocaleString()} XP</span>
+                </div>
+                <div className="flex items-center gap-1 font-mono text-xs font-extrabold text-[#FF4D4D] group-hover:text-[#111111]">
+                  <span>🔥 {currentStreak || 0} DAY STREAK</span>
+                </div>
+              </button>
+
               {/* Items List */}
               <div className="space-y-1 font-mono text-xs text-[var(--text-primary)]">
                 <button
@@ -232,6 +243,14 @@ export default function Navbar({
                 >
                   <User className="h-4 w-4 shrink-0" />
                   <span>Academic Profile</span>
+                </button>
+
+                <button
+                  onClick={() => handleDropdownOption('rewards')}
+                  className="flex w-full items-center gap-2.5 rounded-[4px] px-2.5 py-2 font-bold text-left hover:bg-[#FFC400] hover:text-[#111111] transition-colors cursor-pointer"
+                >
+                  <Trophy className="h-4 w-4 shrink-0 text-[#FFC400]" />
+                  <span>Rewards & XP Store</span>
                 </button>
 
                 <button

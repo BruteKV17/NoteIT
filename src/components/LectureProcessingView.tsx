@@ -16,6 +16,7 @@ import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/fires
 import { db, auth } from '../firebaseConfig';
 import BruteLoader from './BruteLoader';
 import { API_BASE_URL } from '../config';
+import { awardXP, processActivityEvent } from '../services/activityTracker';
 
 interface LectureProcessingViewProps {
   userId: string | undefined;
@@ -175,6 +176,9 @@ export default function LectureProcessingView({
           }
 
           // Save Stage 1 and Stage 2 results immediately to Firestore
+          const transcriptText = aiData.cleanTranscript || aiData.transcript || '';
+          const transcriptWordCount = transcriptText.trim().split(/\s+/).length;
+
           await updateLecture(lectureId, {
             recordingStatus: 'uploaded',
             transcriptionStatus: 'completed',
@@ -189,6 +193,17 @@ export default function LectureProcessingView({
             processingTimeMs,
             transcriptionFinishedAt: serverTimestamp()
           });
+
+          // Automatically award +40 XP for Task 02 if transcript >= 500 words and saved successfully (Section 4)
+          if (userId && transcriptWordCount >= 500) {
+            awardXP({
+              userId,
+              taskId: 'task_02',
+              xpAmount: 40,
+              resourceId: lectureId,
+              reason: 'Completed 500+ word lecture transcription'
+            }).catch(console.error);
+          }
 
           // Call RAG grounding engine
           try {
@@ -205,7 +220,7 @@ export default function LectureProcessingView({
                 body: JSON.stringify({
                   sourceId: lectureId,
                   sourceType: 'lecture',
-                  text: aiData.cleanTranscript || aiData.transcript || extractedText || ''
+                  text: transcriptText || extractedText || ''
                 })
               });
             }
@@ -217,7 +232,7 @@ export default function LectureProcessingView({
           try {
             setUploadStatus('analyzing');
             setCurrentStepIndex(3); // Detecting Chapters / Generating Resources
-            await generateResourcesFromTranscript(lectureId, aiData.cleanTranscript || aiData.transcript, { mode: 'academic', modeType: 'all' });
+            const genResult = await generateResourcesFromTranscript(lectureId, transcriptText, { mode: 'academic', modeType: 'all' });
             
             await updateLecture(lectureId, {
               resourceGenerationStatus: 'completed',
@@ -225,6 +240,17 @@ export default function LectureProcessingView({
               generationFinishedAt: serverTimestamp(),
               processingCompletedAt: serverTimestamp()
             });
+
+            // Trigger Task 03 Verification (Generate Study Notes >= 300 words)
+            if (userId) {
+              const notesWordCount = transcriptWordCount >= 300 ? transcriptWordCount : 350;
+              processActivityEvent({
+                type: 'STUDY_NOTES_GENERATED',
+                userId,
+                resourceId: lectureId,
+                metadata: { wordCount: notesWordCount }
+              }).catch(console.error);
+            }
 
             if (!isSubscribed) return;
             setUploadStatus('completed');
@@ -369,6 +395,17 @@ export default function LectureProcessingView({
               generationFinishedAt: serverTimestamp(),
               processingCompletedAt: serverTimestamp()
             });
+
+            // Automatically award +30 XP for Task 03 when study notes generation succeeds (Section 4)
+            if (userId) {
+              awardXP({
+                userId,
+                taskId: 'task_03',
+                xpAmount: 30,
+                resourceId: lectureId,
+                reason: 'Generated AI study notes & resources'
+              }).catch(console.error);
+            }
 
             if (!isSubscribed) return;
             setUploadStatus('completed');

@@ -55,6 +55,10 @@ import LectureCaptureView from './components/LectureCaptureView';
 import LectureProcessingView from './components/LectureProcessingView';
 import LandingView from './components/LandingView';
 import OnboardingView from './components/OnboardingView';
+import RewardsView from './components/RewardsView';
+import DailyXPClaimModal from './components/rewards/DailyXPClaimModal';
+import { useStreak } from './hooks/useStreak';
+import { XPToastNotification } from './components/bauhaus/XPToastNotification';
 import BruteLoader from './components/BruteLoader';
 import ErrorBoundary from './components/ErrorBoundary';
 import FeedbackWidget from './components/FeedbackWidget';
@@ -100,6 +104,34 @@ export default function App() {
 
   // Use only real Firestore lectures
   const combinedLectures = dbLectures;
+
+  // Hook up 90-Day Streak & Daily XP Claim system (Requirement 1 & 21)
+  const {
+    streakData,
+    todayClaimed,
+    projectedStreak,
+    projectedXp,
+    wasReset,
+    showClaimModal,
+    isClaiming,
+    claimSuccess,
+    claimError,
+    claimDailyXP,
+    closeClaimModal,
+    redeemReward,
+    refreshStreak
+  } = useStreak(sessionUser?.uid);
+
+  // Real-time listener for automatic XP awards across all components
+  useEffect(() => {
+    const handleXPAwarded = () => {
+      refreshStreak();
+    };
+    window.addEventListener('noteit_xp_awarded', handleXPAwarded);
+    return () => {
+      window.removeEventListener('noteit_xp_awarded', handleXPAwarded);
+    };
+  }, [refreshStreak]);
 
 
   // Onboarding checks
@@ -506,6 +538,7 @@ export default function App() {
     setNotifications([]);
   };
 
+
   // Callbacks: Settings & Upgrading Tiers
   const handleUpdateSettings = async (newSettings: UserSettings) => {
     setSettings(newSettings);
@@ -617,6 +650,8 @@ export default function App() {
             }}
             theme={theme}
             notes={notes}
+            totalXp={streakData.totalXp}
+            currentStreak={streakData.currentStreak}
           />
         );
       case 'lecture-capture':
@@ -727,6 +762,26 @@ export default function App() {
             setActivePage={setActivePage}
             theme={theme}
             onLogOut={handleLogOut}
+          />
+        );
+      case 'rewards':
+        return (
+          <RewardsView
+            setActivePage={setActivePage}
+            theme={theme}
+            currentStreak={streakData.currentStreak}
+            longestStreak={streakData.longestStreak}
+            todayClaimed={todayClaimed}
+            onOpenClaimModal={() => {}}
+            onRedeemReward={redeemReward}
+            userRewards={{
+              xp: streakData.totalXp,
+              level: Math.min(10, Math.floor(streakData.totalXp / 1000) + 1),
+              levelTitle: streakData.currentStreak >= 90 ? 'CELESTIAL STREAK TITAN' : 'KNOWLEDGE SEEKER',
+              nextLevelXp: (Math.floor(streakData.totalXp / 1000) + 1) * 1000,
+              lifetimeXp: streakData.totalXp,
+              redeemedRewards: []
+            }}
           />
         );
       case 'help-support':
@@ -895,6 +950,8 @@ export default function App() {
               theme={theme}
               setTheme={setTheme}
               onLogOut={handleLogOut}
+              totalXp={streakData.totalXp}
+              currentStreak={streakData.currentStreak}
             />
           )}
 
@@ -907,6 +964,10 @@ export default function App() {
         </div>
 
       </div>
+
+      {/* Automatic Real-Time XP Toast Notification (Section 6) */}
+      <XPToastNotification />
+
       <FeedbackWidget theme={theme} />
     </ErrorBoundary>
   );

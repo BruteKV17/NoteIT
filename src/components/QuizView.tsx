@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import { Quiz, QuizQuestion } from '../types';
 import { generateAdditionalQuizQuestions } from '../services/gemini';
+import { auth } from '../firebaseConfig';
+import { awardXP, processActivityEvent } from '../services/activityTracker';
 import BruteLoader from './BruteLoader';
 import { Button, Card, Badge, SectionHeader } from './bauhaus';
 
@@ -158,8 +160,21 @@ export default function QuizView({
       } else {
         setIsQuizFinished(true);
         if (activeQuiz) {
-          const score = Math.round((sessionScores.easy.correct + sessionScores.medium.correct + sessionScores.hard.correct) / Math.max(1, (sessionScores.easy.attempted + sessionScores.medium.attempted + sessionScores.hard.attempted)) * 100);
+          const totalAttempted = sessionScores.easy.attempted + sessionScores.medium.attempted + sessionScores.hard.attempted;
+          const totalCorrect = sessionScores.easy.correct + sessionScores.medium.correct + sessionScores.hard.correct;
+          const score = Math.round((totalCorrect / Math.max(1, totalAttempted)) * 100);
           onUpdateQuizScore(activeQuiz.id, score);
+
+          // Automatically award +30 XP for Task 04 when quiz >= 10 Qs is submitted with score >= 70% (Section 4)
+          if (auth.currentUser?.uid && totalAttempted >= 10 && score >= 70) {
+            awardXP({
+              userId: auth.currentUser.uid,
+              taskId: 'task_04',
+              xpAmount: 30,
+              resourceId: activeQuiz.id,
+              reason: `Quiz Completed (${score}% score on ${totalAttempted} questions)`
+            }).catch(console.error);
+          }
         }
       }
     }

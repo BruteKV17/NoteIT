@@ -24,7 +24,10 @@ import {
   AlertTriangle,
   Sun,
   Moon,
-  Palette
+  Palette,
+  Trophy,
+  Zap,
+  ArrowRight
 } from 'lucide-react';
 import { PageId, UserSettings } from '../types';
 import { auth } from '../firebaseConfig';
@@ -151,6 +154,7 @@ interface SettingsViewProps {
   settings: UserSettings;
   onUpdateSettings: (newSettings: UserSettings) => void;
   setActivePage: (page: PageId) => void;
+  initialTab?: string;
   theme?: 'light' | 'dark';
   setTheme?: (theme: 'light' | 'dark') => void;
   onLogOut?: () => void;
@@ -160,13 +164,15 @@ export default function SettingsView({
   settings,
   onUpdateSettings,
   setActivePage,
+  initialTab,
   theme = 'dark',
   setTheme,
   onLogOut
 }: SettingsViewProps) {
   
   // Local state
-  const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'ai' | 'usage' | 'security' | 'billing'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'rewards' | 'ai' | 'usage' | 'security' | 'billing'>((initialTab as any) || 'profile');
+
   
   // Profile edits
   const [firstName, setFirstName] = useState(settings.profile.firstName || '');
@@ -476,11 +482,13 @@ export default function SettingsView({
           {[
             { id: 'profile', label: 'User Profile', icon: User },
             { id: 'appearance', label: 'Theme & Appearance', icon: Sun },
+            { id: 'rewards', label: 'Rewards & XP', icon: Trophy, badge: 'NEW' },
             { id: 'ai', label: 'AI Provider Keys', icon: Sparkles },
             { id: 'usage', label: 'Usage & Costs', icon: Activity },
             { id: 'security', label: 'Security & Auth', icon: ShieldCheck },
             { id: 'billing', label: 'Billing & Plan', icon: CreditCard }
           ].map(tab => {
+
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
             return (
@@ -638,12 +646,122 @@ export default function SettingsView({
           </div>
         )}
 
+        {/* Tab: Rewards & XP */}
+        {activeTab === 'rewards' && (
+          <div className="space-y-6 text-left">
+            <div>
+              <h3 className="font-heading font-extrabold text-lg uppercase text-[var(--text-primary)] flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-[#FFC400]" />
+                Rewards & XP System
+              </h3>
+              <p className="text-xs font-mono font-bold text-[var(--text-secondary)] mt-1">
+                Access the full-page NoteIT Rewards Store to redeem gift cards, pro subscription passes, and AI perks with your earned XP.
+              </p>
+            </div>
+
+            <div className="rounded-[8px] border-2 border-[var(--border-main)] bg-[var(--panel-bg)] p-6 shadow-paper-md space-y-6 relative overflow-hidden">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="space-y-1.5">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[4px] bg-[#FFC400] text-[#111111] text-[10px] font-mono font-extrabold border border-[var(--border-main)] uppercase shadow-paper-sm">
+                    <Zap className="h-3.5 w-3.5" />
+                    GAMIFIED ACADEMIC MASTERY
+                  </span>
+                  <h4 className="font-heading font-extrabold text-2xl text-[var(--text-primary)] uppercase tracking-tight mt-1">
+                    REWARDS & XP STORE
+                  </h4>
+                  <p className="text-xs font-mono text-[var(--text-secondary)] max-w-xl leading-relaxed">
+                    Every lecture captured, summary created, and quiz completed earns you Experience Points (XP). Level up your rank from Knowledge Seeker to Apex Knowledge Titan and claim real rewards!
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setActivePage('rewards')}
+                  className="px-6 py-4 rounded-[6px] border-2 border-[var(--border-main)] bg-[#FFC400] text-[#111111] font-mono text-sm font-extrabold uppercase hover:bg-[#ffe066] hover:-translate-y-0.5 transition-all shadow-paper-md flex items-center justify-center gap-2 cursor-pointer shrink-0"
+                >
+                  <Trophy className="h-5 w-5" />
+                  <span>OPEN REWARDS PAGE</span>
+                  <ArrowRight className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Status Overview Banner */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 font-mono">
+                <div className="p-4 bg-[var(--card-bg)] rounded-[6px] border-2 border-[var(--border-main)] shadow-paper-sm">
+                  <div className="text-[10px] uppercase text-[var(--text-secondary)] font-bold">XP BALANCE</div>
+                  <div className="text-xl font-extrabold text-[#FFC400] mt-1 flex items-center gap-1">
+                    <Zap className="h-5 w-5 fill-[#FFC400]" />
+                    <span>2,450 XP</span>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-[var(--card-bg)] rounded-[6px] border-2 border-[var(--border-main)] shadow-paper-sm">
+                  <div className="text-[10px] uppercase text-[var(--text-secondary)] font-bold">CURRENT RANK</div>
+                  <div className="text-sm font-extrabold text-[var(--text-primary)] mt-1">LEVEL 04</div>
+                  <div className="text-[11px] font-bold text-[#38BDF8]">KNOWLEDGE SEEKER</div>
+                </div>
+
+                <div className="p-4 bg-[var(--card-bg)] rounded-[6px] border-2 border-[var(--border-main)] shadow-paper-sm">
+                  <div className="text-[10px] uppercase text-[var(--text-secondary)] font-bold">DAILY STREAK</div>
+                  <div className="text-xl font-extrabold text-[#FF5353] mt-1 flex items-center gap-1">
+                    <span>🔥 5 DAYS</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Tab 1: User Profile */}
         {activeTab === 'profile' && (
           <form onSubmit={handleSaveProfile} className="space-y-5 text-left">
             <div>
               <h3 className="font-heading font-extrabold text-lg uppercase text-[var(--text-primary)]">User Profile</h3>
               <p className="text-xs font-mono font-bold text-[var(--text-secondary)] mt-1">Configure your primary academic researcher identification and institutional information.</p>
+            </div>
+
+            {/* Dedicated REWARDS & XP Card (Requirement 3) */}
+            <div className="p-5 rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--panel-bg)] space-y-4 shadow-paper-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <span className="text-[10px] font-mono font-extrabold text-[#19B56B] uppercase tracking-[2px] block">
+                    GAMIFIED ACADEMIC MASTERY
+                  </span>
+                  <h4 className="font-heading font-extrabold text-lg text-[var(--text-primary)] uppercase tracking-tight mt-0.5">
+                    REWARDS & XP
+                  </h4>
+                  <p className="text-xs font-mono text-[var(--text-secondary)] mt-0.5">
+                    Turn your learning activity into XP and unlock useful rewards.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setActivePage('rewards')}
+                  className="px-4 py-2.5 rounded-[4px] border-2 border-[var(--border-main)] bg-[#FFC400] text-[#111111] font-mono text-xs font-extrabold uppercase hover:bg-[#ffe066] transition-all shadow-paper-sm flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+                >
+                  <span>OPEN REWARDS PAGE</span>
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Stats Overview Pill */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 font-mono text-xs text-[var(--text-primary)]">
+                <div className="p-3 bg-[var(--card-bg)] rounded-[4px] border border-[var(--border-main)] shadow-paper-sm">
+                  <div className="text-[9px] uppercase text-[var(--text-secondary)] font-bold">Current XP Balance</div>
+                  <div className="text-lg font-extrabold text-[#FFC400] mt-0.5">2,450 XP</div>
+                </div>
+
+                <div className="p-3 bg-[var(--card-bg)] rounded-[4px] border border-[var(--border-main)] shadow-paper-sm">
+                  <div className="text-[9px] uppercase text-[var(--text-secondary)] font-bold">Current Level</div>
+                  <div className="text-sm font-extrabold text-[var(--text-primary)] mt-0.5">LEVEL 04 — KNOWLEDGE SEEKER</div>
+                </div>
+
+                <div className="p-3 bg-[var(--card-bg)] rounded-[4px] border border-[var(--border-main)] shadow-paper-sm">
+                  <div className="text-[9px] uppercase text-[var(--text-secondary)] font-bold">Next Level Target</div>
+                  <div className="text-xs font-extrabold text-[#38BDF8] mt-1">2,450 / 3,000 XP (550 XP to Lvl 5)</div>
+                </div>
+              </div>
             </div>
 
             {error && (

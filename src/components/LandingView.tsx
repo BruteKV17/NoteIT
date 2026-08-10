@@ -25,7 +25,8 @@ import {
   Globe,
   Award,
   Zap,
-  Key
+  Key,
+  Trophy
 } from 'lucide-react';
 import AILogo from './AILogo';
 import { Button, Card, Badge } from './bauhaus';
@@ -291,6 +292,78 @@ export default function LandingView({
                 <p className="text-xs font-mono text-[var(--text-secondary)]">{step.desc}</p>
               </Card>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 4.5. REWARDS PROMOTION SECTION (Requirements 12 & 13) */}
+      <section id="rewards-promo" className="border-t-2 border-[var(--border-main)] bg-[var(--card-bg)] py-16 px-6 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto space-y-10">
+          <div className="text-center space-y-3 max-w-3xl mx-auto">
+            <Badge variant="yellow" size="md" icon={<Trophy className="h-3.5 w-3.5" />}>
+              GAMIFIED ACADEMIC MASTERY
+            </Badge>
+
+            <h2 className="font-heading font-extrabold text-3xl md:text-5xl uppercase text-[var(--text-primary)] tracking-tight">
+              LEARN. EARN. UNLOCK.
+            </h2>
+
+            <p className="text-xs md:text-sm font-mono text-[var(--text-secondary)] max-w-2xl mx-auto">
+              Your learning activity now has XP. Capture lectures, build knowledge, complete learning activities and level up.
+            </p>
+          </div>
+
+          {/* Progression Visual */}
+          <div className="p-4 rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--panel-bg)] max-w-3xl mx-auto shadow-paper-sm">
+            <div className="flex flex-wrap items-center justify-around gap-2 font-mono text-xs font-extrabold uppercase text-[var(--text-primary)]">
+              <span className="bg-[var(--card-bg)] px-3 py-1.5 rounded-[4px] border border-[var(--border-main)] shadow-paper-sm">LEARN</span>
+              <span className="text-[#FFC400]">→</span>
+              <span className="bg-[#FFC400] text-[#111111] px-3 py-1.5 rounded-[4px] border border-[var(--border-main)] shadow-paper-sm">EARN XP</span>
+              <span className="text-[#FFC400]">→</span>
+              <span className="bg-[var(--card-bg)] px-3 py-1.5 rounded-[4px] border border-[var(--border-main)] shadow-paper-sm">LEVEL UP</span>
+              <span className="text-[#FFC400]">→</span>
+              <span className="bg-[#2F6BFF] text-white px-3 py-1.5 rounded-[4px] border border-[var(--border-main)] shadow-paper-sm">UNLOCK REWARDS</span>
+            </div>
+          </div>
+
+          {/* Small Reward Preview Cards (Requirement 13) */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 max-w-5xl mx-auto">
+            {[
+              { provider: 'AMAZON', title: '₹500 VOUCHER', xp: '8,000 XP', color: '#FF9900' },
+              { provider: 'CROMA', title: '₹500 VOUCHER', xp: '8,050 XP', color: '#00E5D1' },
+              { provider: 'AMAZON PRIME', title: 'SUBSCRIPTION', xp: '15,000 XP', color: '#00A8E1' },
+              { provider: 'CLAUDE AI', title: 'SUBSCRIPTION', xp: '20,000 XP', color: '#D97757' },
+              { provider: 'CANVA PRO', title: 'SUBSCRIPTION', xp: '20,000 XP', color: '#00C4CC' }
+            ].map((card, idx) => (
+              <Card 
+                key={idx} 
+                shadow="sm" 
+                className="p-4 bg-[var(--panel-bg)] border-2 border-[var(--border-main)] flex flex-col justify-between space-y-2 text-center hover:-translate-y-1 transition-transform"
+              >
+                <div className="text-[10px] font-mono font-extrabold uppercase px-2 py-0.5 rounded-[3px] border border-[var(--border-main)] bg-[var(--card-bg)]" style={{ color: card.color }}>
+                  {card.provider}
+                </div>
+                <div className="font-heading font-extrabold text-xs text-[var(--text-primary)] uppercase">
+                  {card.title}
+                </div>
+                <div className="font-mono text-xs font-bold text-[#FFC400] bg-[var(--card-bg)] py-1 rounded-[3px] border border-[var(--border-main)]">
+                  {card.xp}
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          {/* CTA Button */}
+          <div className="text-center pt-2">
+            <Button
+              variant="secondary"
+              size="lg"
+              onClick={onGetStarted}
+              className="bg-[#FFC400] text-[#111111] hover:bg-[#ffe066] font-extrabold border-2 border-[var(--border-main)] shadow-paper-md uppercase px-8"
+              icon={<Trophy className="h-4 w-4" />}
+            >
+              EXPLORE REWARDS →
+            </Button>
           </div>
         </div>
       </section>

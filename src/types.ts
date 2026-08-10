@@ -17,7 +17,30 @@ export type PageId =
   | 'lecture-processing'
   | 'profile'
   | 'knowledge-studio'
+  | 'rewards'
   | 'auth';
+
+export interface RewardItem {
+  id: string;
+  name: string;
+  provider: string;
+  description: string;
+  xpCost: number;
+  image: string;
+  status: 'available' | 'locked' | 'coming_soon' | 'out_of_stock';
+  category?: 'voucher' | 'subscription' | 'ai' | 'tool';
+  valueLabel?: string;
+}
+
+export interface UserRewardsState {
+  xp: number;
+  level: number;
+  levelTitle: string;
+  nextLevelXp: number;
+  lifetimeXp: number;
+  redeemedRewards: string[];
+}
+
 
 export interface Citation {
   text: string;

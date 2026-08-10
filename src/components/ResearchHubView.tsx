@@ -39,6 +39,8 @@ import {
 } from 'lucide-react';
 import { Source, Note, Lecture, PageId } from '../types';
 import { generateResourcesFromTranscript, generateNotesFromTranscript } from '../services/gemini';
+import { auth } from '../firebaseConfig';
+import { useNoteReviewTimer } from '../hooks/useNoteReviewTimer';
 
 interface ResearchHubViewProps {
   sources: Source[];
@@ -159,6 +161,11 @@ export default function ResearchHubView({
 
   // Notes UI active/expanded note states
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+
+  // Active Note Review Timer for Task 05 (+20 XP after 3 min active focus)
+  const safeNotes = Array.isArray(notes) ? notes : [];
+  const activeReviewNote = safeNotes.find(n => n.id === editingNoteId) || safeNotes[0] || null;
+  const noteReviewTimer = useNoteReviewTimer(activeReviewNote?.id, auth.currentUser?.uid);
   const [noteTitle, setNoteTitle] = useState('');
   const [noteContent, setNoteContent] = useState('');
   const [isCreatingNote, setIsCreatingNote] = useState(false);

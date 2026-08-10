@@ -11,6 +11,7 @@ import {
   Bell, 
   GraduationCap,
   BookMarked,
+  Trophy,
   X,
   Mic,
   ChevronLeft,
@@ -54,7 +55,8 @@ export default function Sidebar({
     { id: 'lecture-capture', label: 'Capture Live', icon: Mic, badge: 'REC' },
     { id: 'knowledge-studio', label: 'Knowledge Studio', icon: Compass },
     { id: 'academic-library', label: 'Academic Library', icon: BookMarked },
-    { id: 'quiz-mode', label: 'Quiz Mode', icon: GraduationCap }
+    { id: 'quiz-mode', label: 'Quiz Mode', icon: GraduationCap },
+    { id: 'rewards', label: 'Rewards & XP', icon: Trophy, badge: 'XP' }
   ];
 
   const accountItems = [
