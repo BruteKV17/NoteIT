@@ -405,8 +405,9 @@ export default function App() {
 
   const handleStartCapture = async (title: string, subject: string) => {
     if (!sessionUser) throw new Error('User not authenticated');
+    const finalTitle = title.trim() || 'Auto-Detecting Topic...';
     const lectureId = await addLecture({
-      title,
+      title: finalTitle,
       subject,
       type: 'recording',
       status: 'recording',
@@ -421,9 +422,10 @@ export default function App() {
     if (!sessionUser) return;
     try {
       let lectureId = existingLectureId;
+      const finalTitle = title.trim() || 'Auto-Detecting Topic...';
       if (!lectureId) {
         lectureId = await addLecture({
-          title,
+          title: finalTitle,
           subject,
           duration,
           type: 'recording',
@@ -431,7 +433,7 @@ export default function App() {
         });
       } else {
         await updateLecture(lectureId, {
-          title,
+          title: finalTitle,
           subject,
           duration,
           status: 'recording'

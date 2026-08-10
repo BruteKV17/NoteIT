@@ -47,6 +47,43 @@ const DOCUMENT_COMPILATION_STEPS = [
   { label: "Saving Results", description: "Persisting the completed academic workspace directly to Firestore." }
 ];
 
+const determineLectureTitle = (existingTitle: string | undefined, aiData: any): string => {
+  const trimmed = (existingTitle || '').trim();
+  const isGeneric = !trimmed ||
+    trimmed === 'Untitled Lecture' ||
+    trimmed === 'Auto-Detecting Topic...' ||
+    trimmed === 'Deep Neural Optimization - Captured Live' ||
+    trimmed === 'Enter the lecture topic...' ||
+    trimmed.toLowerCase().includes('deep neural optimization');
+
+  if (!isGeneric) {
+    return trimmed;
+  }
+
+  const rootConcept = aiData.keyConcepts?.find((k: any) => k.id === 'root')?.label;
+  const firstSectionTitle = aiData.sections?.[0]?.title;
+  const firstTimelineTitle = aiData.timeline?.[0]?.title;
+
+  if (rootConcept && rootConcept !== 'Core Topic' && rootConcept !== 'Lecture' && rootConcept !== 'Central Topic') {
+    return rootConcept.toUpperCase();
+  }
+  if (firstSectionTitle) {
+    return firstSectionTitle.toUpperCase();
+  }
+  if (firstTimelineTitle) {
+    return firstTimelineTitle.toUpperCase();
+  }
+  
+  const text = aiData.cleanTranscript || aiData.transcript || '';
+  if (text) {
+    const cleanText = text.replace(/\[\d{2}:\d{2}\]/g, '').replace(/[^a-zA-Z0-9\s]/g, '').trim();
+    const words = cleanText.split(/\s+/).slice(0, 5).join(' ');
+    if (words) return words.toUpperCase();
+  }
+
+  return 'CAPTURED LECTURE TOPIC';
+};
+
 export default function LectureProcessingView({
   userId,
   lectureId,
@@ -179,7 +216,10 @@ export default function LectureProcessingView({
           const transcriptText = aiData.cleanTranscript || aiData.transcript || '';
           const transcriptWordCount = transcriptText.trim().split(/\s+/).length;
 
+          const resolvedDocTitle = determineLectureTitle(existingData?.title, aiData);
+
           await updateLecture(lectureId, {
+            title: resolvedDocTitle,
             recordingStatus: 'uploaded',
             transcriptionStatus: 'completed',
             resourceGenerationStatus: 'processing',
@@ -345,8 +385,10 @@ export default function LectureProcessingView({
             await updateLecture(lectureId, { status: 'saving' });
           }
 
-          // Save Stage 1 and Stage 2 results immediately to Firestore
+          const resolvedTitle = determineLectureTitle(existingData?.title, aiData);
+
           await updateLecture(lectureId, {
+            title: resolvedTitle,
             recordingStatus: 'uploaded',
             transcriptionStatus: 'completed',
             resourceGenerationStatus: 'processing',

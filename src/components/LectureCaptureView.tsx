@@ -77,7 +77,7 @@ export default function LectureCaptureView({
 }: LectureCaptureViewProps) {
   
   // Lecture Metadata inputs
-  const [lectureTitle, setLectureTitle] = useState('Deep Neural Optimization - Captured Live');
+  const [lectureTitle, setLectureTitle] = useState('');
   const [lectureSubject, setLectureSubject] = useState('Computer Science');
 
   // Capturing state machines
@@ -2360,7 +2360,7 @@ export default function LectureCaptureView({
                     disabled={isRecording}
                     value={lectureTitle}
                     onChange={(e) => setLectureTitle(e.target.value)}
-                    placeholder="Enter lecture title..."
+                    placeholder="Enter the lecture topic..."
                     style={{ color: 'var(--text-primary)' }}
                     className="w-full rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] text-xs font-mono font-bold p-3 outline-none shadow-paper-sm disabled:bg-[var(--panel-bg)] disabled:cursor-not-allowed"
                   />
