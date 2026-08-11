@@ -390,8 +390,9 @@ export const transcribeAudio = async (
   apiKey: string,
   onBusy?: (isBusy: boolean) => void
 ): Promise<string> => {
-  const prompt = `You are an expert multilingual speech transcriber proficient in English, Hindi (Devanagari & Romanized Hinglish), and Indian languages. Transcribe the provided audio lecture word-for-word accurately.
-If the speaker is talking in Hindi or Hinglish (mixed Hindi and English), accurately capture every Hindi word and concept as spoken (preserving Hindi words in Devanagari or Romanized script and English technical terms as used by the teacher).
+  const prompt = `You are an expert bilingual transcriber proficient in English and Hindi. Transcribe the provided audio lecture word-for-word accurately using English Roman script (Hinglish / Romanized Hindi).
+Whenever the teacher speaks in Hindi or a mix of Hindi and English, capture every word and concept spoken in English text (Roman script, e.g. "bhai iska matlab ye hai ki...", "kitne components hain...").
+Ensure NO Hindi information given by the teacher is lost or dropped; write all Hindi spoken content using the English alphabet.
 Format the transcript text by prepending bracketed timestamps at fixed 2-minute interval checkpoints (e.g. [00:00], [02:00], [04:00], [06:00]) at the beginning of each major statement or logical paragraph based on the audio timeline.`;
   return executeGeminiCall(prompt, apiKey, { mimeType, data: base64Audio }, undefined, onBusy);
 };
@@ -401,11 +402,10 @@ export const cleanTranscriptText = async (
   apiKey: string,
   onBusy?: (isBusy: boolean) => void
 ): Promise<string> => {
-  const prompt = `You are an expert academic editor proficient in English, Hindi, and Hinglish. Take the following raw lecture transcript and clean it up.
-Remove all stutters, filler words (such as 'uh', 'um', 'so basically', 'like', 'you know', 'right', 'actually', 'sort of', 'now', 'okay', 'मतलब', 'हां', 'बेटा', 'dekho', 'samjhe'), and speech disfluencies.
-Convert the spoken language (whether English, Hindi, Hinglish, or mixed speech) into professional, clean, written academic prose. Retain technical concepts, Hindi explanations, and key subject terminology accurately.
+  const prompt = `You are an expert academic editor proficient in English and Hinglish. Take the following raw lecture transcript (written in English/Hinglish text) and clean it up.
+Remove stutters and filler words (such as 'uh', 'um', 'so basically', 'like', 'you know', 'right', 'actually', 'sort of', 'now', 'okay', 'matlab', 'dekho', 'samjhe') while preserving every teacher explanation and concept (both Hindi spoken content written in Roman script and English content).
+Convert the text into clean, clear, readable prose in English text without deleting any important lecture details.
 IMPORTANT: You MUST preserve the 2-minute bracketed interval timestamps (e.g. [00:00], [02:00], [04:00]) at their correct 2-minute checkpoints in the text. Do not omit them!
-Do not summarize or delete important lecture content; just clean the language.
 Return ONLY the cleaned transcript with timestamps.
 
 Raw Transcript:
