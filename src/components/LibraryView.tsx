@@ -194,11 +194,10 @@ export default function LibraryView({
     }
   };
 
-  // Filter lectures by search, subject, and folder
+  // Filter lectures by search and folder
   const filteredLectures = lectures.filter(lec => {
     const matchesSearch = lec.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           lec.subject.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesSubject = activeSubject === 'All' || lec.subject === activeSubject;
     
     let matchesFolder = true;
     if (selectedFolderId === 'unorganized') {
@@ -207,7 +206,7 @@ export default function LibraryView({
       matchesFolder = lec.folderId === selectedFolderId;
     }
 
-    return matchesSearch && matchesSubject && matchesFolder;
+    return matchesSearch && matchesFolder;
   });
 
   return (
@@ -399,22 +398,7 @@ export default function LibraryView({
         </div>
       </div>
 
-      {/* Filter Tabs by Subject */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none whitespace-nowrap select-none">
-        {subjectsList.map((subject) => (
-          <button
-            key={subject}
-            onClick={() => setActiveSubject(subject)}
-            className={`px-4 py-2 rounded-[6px] font-mono text-xs font-bold uppercase tracking-tight transition-all cursor-pointer border-2 border-[var(--border-main)] ${
-              activeSubject === subject
-                ? 'bg-[#FFC400] text-[#111111] shadow-paper-sm font-extrabold'
-                : 'bg-[var(--card-bg)] text-[var(--text-primary)] hover:bg-[var(--hover-bg)]'
-            }`}
-          >
-            {subject}
-          </button>
-        ))}
-      </div>
+
 
       {/* Grid or List list output */}
       {filteredLectures.length === 0 ? (
