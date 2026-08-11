@@ -1282,7 +1282,7 @@ export const askLectureAI = async (
 
 export const generateSummary = async (
   transcriptText: string,
-  mode: 'quick_revision' | 'detailed_notes' | 'executive_summary' | 'beginner_friendly' | 'academic_format' | 'bhailang',
+  mode: 'quick_revision' | 'detailed_notes' | 'executive_summary' | 'beginner_friendly' | 'academic_format' | 'bhailang' | 'bhailang_normal' | 'bhailang_savage' | 'bhailang_pro',
   apiKey: string,
   onBusy?: (isBusy: boolean) => void
 ): Promise<string> => {
@@ -1304,7 +1304,14 @@ export const generateSummary = async (
       modeInstructions = 'Maintain a formal scientific, scholarly tone with rigorous academic language and research-oriented explanations.';
       break;
     case 'bhailang':
-      modeInstructions = 'Style/Format Focus: BhaiLang (casual Hinglish). Explain the content in a very easy, friendly, and informal way in Hinglish (a mix of Hindi and English like "bhai iska mtlb ye ki tu..."). Use casual phrasing, Indian slang terms like "bhai", "yaar", "tu", "apna", "scena", etc., but keep the core concept technically accurate. Frame it as if an older friendly brother or college senior is explaining it to a junior.';
+    case 'bhailang_normal':
+      modeInstructions = 'Style Focus: Normal Bhai Mode (Conversational Hinglish). Explain the content in a friendly, informal Hinglish tone (mix of Hindi & English), like a college senior explaining to a junior.';
+      break;
+    case 'bhailang_savage':
+      modeInstructions = 'Style Focus: Savage Bhai Mode (Hinglish + Witty Sarcasm). Explain concepts in Hinglish with light, playful sarcasm targeting technical situations/concepts (e.g. comparing CPU scheduling to canteen token queues). Never insult the student, never compromise factual accuracy, use sarcasm selectively.';
+      break;
+    case 'bhailang_pro':
+      modeInstructions = 'Style Focus: Bhai Pro Mode (Hinglish + Relatable Analogies). Explain concepts in Hinglish using super relatable real-world analogies (hostel life, IPL bowling, canteen queues) to make concepts unforgettable.';
       break;
   }
 
@@ -1360,7 +1367,7 @@ export const generateSummary = async (
 
 export const generateNotes = async (
   transcriptText: string,
-  mode: 'quick' | 'detailed' | 'academic' | 'exam' | 'bhailang',
+  mode: 'quick' | 'detailed' | 'academic' | 'exam' | 'bhailang' | 'bhailang_normal' | 'bhailang_savage' | 'bhailang_pro',
   apiKey: string,
   onBusy?: (isBusy: boolean) => void
 ): Promise<string> => {
@@ -1379,7 +1386,14 @@ export const generateNotes = async (
       modeInstructions = 'Generate High-Yield Exam Notes. Focus on memory recall, core formulas, common pitfalls, worked examples, and key distinctions.';
       break;
     case 'bhailang':
-      modeInstructions = 'Style/Format Focus: BhaiLang (casual Hinglish). Explain the concepts in a friendly, informal Hinglish tone (like an experienced senior explaining to a junior), while maintaining 100% technical accuracy of the concepts.';
+    case 'bhailang_normal':
+      modeInstructions = 'Style Focus: Normal Bhai Mode (Conversational Hinglish). Explain the concepts in a friendly, informal Hinglish tone (like an experienced senior explaining to a junior), while maintaining 100% technical accuracy of the concepts.';
+      break;
+    case 'bhailang_savage':
+      modeInstructions = 'Style Focus: Savage Bhai Mode (Hinglish + Witty Sarcasm). Explain concepts in Hinglish with light, playful sarcasm targeting technical situations/concepts (e.g. comparing CPU scheduling to college canteen token queues with more suffering). SARCASM RULES: Be playful and witty, relevant to the concept, never insult the student or make fun of identity/background, never compromise factual accuracy, use sarcasm selectively when it genuinely improves memorability.';
+      break;
+    case 'bhailang_pro':
+      modeInstructions = 'Style Focus: Bhai Pro Mode (Hinglish + Relatable Analogies). Explain concepts in Hinglish using super relatable real-world analogies (hostel life, IPL bowling strategy, canteen tokens, traffic jams) + memorable punchy breakdowns to make complex engineering concepts unforgettable.';
       break;
   }
 

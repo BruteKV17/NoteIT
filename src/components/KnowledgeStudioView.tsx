@@ -42,6 +42,7 @@ import {
 } from 'lucide-react';
 import { renderTranscriptWithDots } from './bauhaus/TimestampDot';
 import { AcademicNotesViewer } from './bauhaus/AcademicNotesViewer';
+import { HandwrittenNotesViewer } from './bauhaus/HandwrittenNotesViewer';
 import { db, auth } from '../firebaseConfig';
 import { API_BASE_URL } from '../config';
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp, query, orderBy, onSnapshot } from 'firebase/firestore';
@@ -133,9 +134,9 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
 
   // Output Studio state
   const [addSourceDropdownOpen, setAddSourceDropdownOpen] = useState(false);
-  const [activeOutputTab, setActiveOutputTab] = useState<'notes' | 'summary' | 'flashcards' | 'quiz' | 'mindmap' | 'slides' | 'podcast' | 'infographics'>('notes');
-  const [notesFormat, setNotesFormat] = useState<'academic' | 'executive' | 'revision' | 'bhailang'>('academic');
-  const [summaryFormat, setSummaryFormat] = useState<'academic' | 'revision' | 'executive' | 'beginner' | 'bhailang'>('academic');
+  const [activeOutputTab, setActiveOutputTab] = useState<'notes' | 'summary' | 'flashcards' | 'quiz' | 'mindmap' | 'slides' | 'podcast' | 'infographics' | 'handwritten'>('notes');
+  const [notesFormat, setNotesFormat] = useState<'academic' | 'executive' | 'revision' | 'bhailang' | 'bhailang_normal' | 'bhailang_savage' | 'bhailang_pro'>('academic');
+  const [summaryFormat, setSummaryFormat] = useState<'academic' | 'revision' | 'executive' | 'beginner' | 'bhailang' | 'bhailang_normal' | 'bhailang_savage' | 'bhailang_pro'>('academic');
   const [isGeneratingNotes, setIsGeneratingNotes] = useState(false);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [isGeneratingFlashcards, setIsGeneratingFlashcards] = useState(false);
@@ -240,7 +241,7 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
     return '';
   };
 
-  const triggerGenerateNotes = async (format: 'academic' | 'executive' | 'revision' | 'bhailang') => {
+  const triggerGenerateNotes = async (format: 'academic' | 'executive' | 'revision' | 'bhailang' | 'bhailang_normal' | 'bhailang_savage' | 'bhailang_pro') => {
     if (!activeSourceId || !userId || !activeSource || isGeneratingNotes) return;
 
     const textContent = activeSource.transcript || activeSource.cleanTranscript || activeSource.content || activeSource.text || '';
@@ -254,7 +255,7 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
       const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
       const notesData = await generateStructuredNotes(
         textContent,
-        format,
+        format as any,
         apiKey
       );
       const docRef = doc(db, 'users', userId, 'sources', activeSourceId);
@@ -270,7 +271,7 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
     }
   };
 
-  const triggerGenerateSummary = async (format: 'academic' | 'revision' | 'executive' | 'beginner' | 'bhailang') => {
+  const triggerGenerateSummary = async (format: 'academic' | 'revision' | 'executive' | 'beginner' | 'bhailang' | 'bhailang_normal' | 'bhailang_savage' | 'bhailang_pro') => {
     if (!activeSourceId || !userId || !activeSource || isGeneratingSummary) return;
 
     const textContent = activeSource.content || activeSource.transcript || '';
@@ -2918,6 +2919,7 @@ ${queryText}`;
                 <option value="slides" className="bg-[var(--card-bg)] text-[var(--text-primary)]">📊 Presentation Slides Deck</option>
                 <option value="podcast" className="bg-[var(--card-bg)] text-[var(--text-primary)]">🎙️ Audio Podcast Overview</option>
                 <option value="infographics" className="bg-[var(--card-bg)] text-[var(--text-primary)]">📈 Visual Infographics</option>
+                <option value="handwritten" className="bg-[var(--card-bg)] text-[var(--text-primary)]">📝 Handwritten Notes (A4 Sheet)</option>
               </select>
               <ChevronDown className="h-4 w-4 text-[var(--text-primary)] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
@@ -2951,7 +2953,9 @@ ${queryText}`;
                             <option value="academic">🎓 Academic Notes</option>
                             <option value="executive">💼 Executive Notes</option>
                             <option value="revision">⚡ Revision Notes</option>
-                            <option value="bhailang">🔥 BhaiLang Notes</option>
+                            <option value="bhailang_normal">🔥 Normal Bhai</option>
+                            <option value="bhailang_savage">💥 Savage Bhai (Sarcasm)</option>
+                            <option value="bhailang_pro">🚀 Bhai Pro (Analogies)</option>
                           </select>
                         </div>
                       </div>
@@ -3562,6 +3566,11 @@ ${queryText}`;
                       </div>
                     </div>
                   </div>
+                )}
+
+                {/* 9. HANDWRITTEN NOTES TAB */}
+                {activeOutputTab === 'handwritten' && (
+                  <HandwrittenNotesViewer lectureData={activeSource} theme={theme} />
                 )}
 
               </div>

@@ -38,6 +38,7 @@ import PresentationWorkspace from './PresentationWorkspace';
 import { db, auth } from '../firebaseConfig';
 import { doc, updateDoc } from 'firebase/firestore';
 import { AcademicNotesViewer } from './bauhaus/AcademicNotesViewer';
+import { HandwrittenNotesViewer } from './bauhaus/HandwrittenNotesViewer';
 import { saveRecordingChunks, getRecordingChunks, deleteRecordingBackup, getAllBackupKeys } from '../services/dbBackup';
 import { awardXP, processActivityEvent } from '../services/activityTracker';
 import { renderTranscriptWithDots } from './bauhaus/TimestampDot';
@@ -143,8 +144,8 @@ export default function LectureCaptureView({
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   
   // Format / Mode selectors
-  const [selectedNotesMode, setSelectedNotesMode] = useState<'quick' | 'detailed' | 'academic' | 'exam' | 'bhailang'>('quick');
-  const [selectedSummaryMode, setSelectedSummaryMode] = useState<'quick_revision' | 'detailed_notes' | 'executive_summary' | 'beginner_friendly' | 'academic_format' | 'bhailang'>('quick_revision');
+  const [selectedNotesMode, setSelectedNotesMode] = useState<'quick' | 'detailed' | 'academic' | 'exam' | 'bhailang' | 'bhailang_normal' | 'bhailang_savage' | 'bhailang_pro'>('quick');
+  const [selectedSummaryMode, setSelectedSummaryMode] = useState<'quick_revision' | 'detailed_notes' | 'executive_summary' | 'beginner_friendly' | 'academic_format' | 'bhailang' | 'bhailang_normal' | 'bhailang_savage' | 'bhailang_pro'>('quick_revision');
   const [flashcardsFormat, setFlashcardsFormat] = useState<'basic' | 'advanced'>('basic');
   const [selectedFlashcardCategory, setSelectedFlashcardCategory] = useState<'All' | 'Basic Recall' | 'Concept Understanding' | 'Application Based'>('All');
   const [selectedQuizDifficulty, setSelectedQuizDifficulty] = useState<'easy' | 'medium' | 'hard' | 'scenario' | 'application'>('easy');
@@ -911,7 +912,7 @@ export default function LectureCaptureView({
   };
 
   // Dynamic On-Demand Asset Generators
-  const triggerGenerateNotes = async (mode: 'quick' | 'detailed' | 'academic' | 'exam' | 'bhailang') => {
+  const triggerGenerateNotes = async (mode: 'quick' | 'detailed' | 'academic' | 'exam' | 'bhailang' | 'bhailang_normal' | 'bhailang_savage' | 'bhailang_pro') => {
     const activeLecture = lectures.find(l => l.id === activeLectureId);
     if (!activeLecture || isGeneratingNotes) return;
     const uid = auth.currentUser?.uid;
@@ -940,7 +941,7 @@ export default function LectureCaptureView({
     }
   };
 
-  const triggerGenerateSummary = async (mode: 'quick_revision' | 'detailed_notes' | 'executive_summary' | 'beginner_friendly' | 'academic_format' | 'bhailang') => {
+  const triggerGenerateSummary = async (mode: 'quick_revision' | 'detailed_notes' | 'executive_summary' | 'beginner_friendly' | 'academic_format' | 'bhailang' | 'bhailang_normal' | 'bhailang_savage' | 'bhailang_pro') => {
     const activeLecture = lectures.find(l => l.id === activeLectureId);
     if (!activeLecture || isGeneratingSummary) return;
     const uid = auth.currentUser?.uid;
@@ -1340,20 +1341,20 @@ export default function LectureCaptureView({
             
             {/* MINI TAB ROW SELECTOR */}
             <div className="flex gap-1.5 overflow-x-auto pb-1.5 scrollbar-none whitespace-nowrap bg-[#F6F2EA] p-2 rounded-[6px] border border-[#111111] shadow-paper-sm">
-              {(['notes', 'summary', 'flashcards', 'quiz', 'mindmap', 'timeline', 'slides', 'chat'] as const).map(tab => (
+              {(['notes', 'summary', 'flashcards', 'quiz', 'mindmap', 'timeline', 'slides', 'handwritten', 'chat'] as const).map(tab => (
                 <button
                   key={tab}
                   onClick={() => {
-                    setActiveOutputTab(tab);
+                    setActiveOutputTab(tab as any);
                     setSelectedMindmapNode(null);
                   }}
                   className={`px-3 py-1.5 rounded-[4px] text-xs font-mono font-extrabold uppercase transition-all cursor-pointer ${
-                    activeOutputTab === tab 
+                    activeOutputTab === (tab as any)
                       ? 'bg-[#FFC400] text-[#111111] border border-[#111111] shadow-paper-sm' 
                       : 'bg-white text-[#111111] border border-[#111111] shadow-paper-sm hover:bg-[#FFF8D6]'
                   }`}
                 >
-                  {tab === 'mindmap' ? 'Mind Map' : tab === 'chat' ? 'Ask Lecture AI' : tab}
+                  {tab === 'mindmap' ? 'Mind Map' : tab === 'handwritten' ? '📝 Handwritten' : tab === 'chat' ? 'Ask Lecture AI' : tab}
                 </button>
               ))}
             </div>
@@ -1377,7 +1378,9 @@ export default function LectureCaptureView({
                           <option value="detailed">📜 Detailed Notes</option>
                           <option value="academic">🎓 Academic Notes</option>
                           <option value="exam">🎯 Exam Notes</option>
-                          <option value="bhailang">🔥 BhaiLang Notes</option>
+                          <option value="bhailang_normal">🔥 Normal Bhai</option>
+                          <option value="bhailang_savage">💥 Savage Bhai (Sarcasm)</option>
+                          <option value="bhailang_pro">🚀 Bhai Pro (Analogies)</option>
                         </select>
                       </div>
                     </div>
@@ -1439,7 +1442,9 @@ export default function LectureCaptureView({
                           <option value="executive_summary">💼 Executive Summary</option>
                           <option value="beginner_friendly">🌱 Beginner Friendly</option>
                           <option value="academic_format">🎓 Academic Format</option>
-                          <option value="bhailang">🔥 BhaiLang</option>
+                          <option value="bhailang_normal">🔥 Normal Bhai</option>
+                          <option value="bhailang_savage">💥 Savage Bhai (Sarcasm)</option>
+                          <option value="bhailang_pro">🚀 Bhai Pro (Analogies)</option>
                         </select>
                       </div>
                     </div>
@@ -2045,7 +2050,12 @@ export default function LectureCaptureView({
                 />
               )}
 
-              {/* 8. LECTURE CHAT TAB */}
+              {/* 8. HANDWRITTEN NOTES TAB */}
+              {activeOutputTab === 'handwritten' && (
+                <HandwrittenNotesViewer lectureData={activeLecture} theme={theme} />
+              )}
+
+              {/* 9. LECTURE CHAT TAB */}
               {activeOutputTab === 'chat' && (
                 <div className="flex flex-col h-[520px] border border-neutral-900 rounded-xl overflow-hidden bg-neutral-950/30 animate-fade-in">
                   {/* Chat messages */}
