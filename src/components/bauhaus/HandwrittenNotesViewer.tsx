@@ -202,18 +202,19 @@ export const HandwrittenNotesViewer: React.FC<HandwrittenNotesViewerProps> = ({
         {pages.map((pg) => (
           <div
             key={pg.pageNumber}
-            className="a4-page relative w-[210mm] min-h-[297mm] bg-[#FDFBF7] text-[#1E3A8A] p-[20mm] rounded-[4px] border-2 border-[#111111] shadow-2xl overflow-hidden font-handwritten"
+            className="a4-page relative w-[210mm] min-h-[297mm] bg-white text-[#1E3A8A] p-[20mm] rounded-[2px] border-[5px] border-[#2563EB] shadow-2xl overflow-hidden font-handwritten select-text"
             style={{
               fontFamily: "'Kalam', 'Caveat', cursive",
-              backgroundImage: 'linear-gradient(#e2e8f0 1px, transparent 1px), linear-gradient(90deg, #e2e8f0 1px, transparent 1px)',
-              backgroundSize: '24px 24px'
+              backgroundImage: 'linear-gradient(transparent 27px, #CBD5E1 28px)',
+              backgroundSize: '100% 28px',
+              lineHeight: '28px'
             }}
           >
             {/* VERTICAL NOTEBOOK MARGIN LINE */}
-            <div className="absolute top-0 bottom-0 left-[25mm] border-l-2 border-red-300 pointer-events-none" />
+            <div className="absolute top-0 bottom-0 left-[22mm] border-l-2 border-red-400/70 pointer-events-none" />
 
             {/* HEADER METADATA */}
-            <div className="flex justify-between items-center pb-3 border-b-2 border-[#1E3A8A] mb-6 text-sm font-bold tracking-wide">
+            <div className="flex justify-between items-center pb-2 border-b-2 border-[#2563EB] mb-6 text-sm font-bold tracking-wide">
               <div>
                 <span className="text-[#0F2C59] uppercase tracking-wider text-xs font-mono">{pg.header}</span>
               </div>
