@@ -76,10 +76,19 @@ export interface ResourceGenerationError {
   timestamp?: any;
 }
 
+export interface Folder {
+  id: string;
+  name: string;
+  color?: string;
+  icon?: string;
+  createdAt?: any;
+}
+
 export interface Lecture {
   id: string;
   title: string;
   subject: string;
+  folderId?: string;
   duration?: string;
   pages?: number;
   addedAt: string;

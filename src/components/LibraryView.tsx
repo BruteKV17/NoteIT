@@ -27,10 +27,19 @@ import {
   Brain,
   RefreshCw,
   MoreVertical,
-  BookOpen
+  BookOpen,
+  Folder as FolderIcon,
+  FolderPlus,
+  FolderOpen,
+  FolderCheck,
+  MoveRight,
+  ChevronRight,
+  X
 } from 'lucide-react';
-import { PageId, Lecture } from '../types';
+import { PageId, Lecture, Folder } from '../types';
 import { generateResourcesFromTranscript } from '../services/gemini';
+import { useFolders } from '../hooks/useFolders';
+import { auth } from '../firebaseConfig';
 
 interface LibraryViewProps {
   lectures: Lecture[];
@@ -128,6 +137,7 @@ export default function LibraryView({
       onSaveDocument(newTitle.trim(), newSubject, selectedFile);
       setNewTitle('');
       setSelectedFile(null);
+      setDestinationFolderForUpload('');
       setShowSyncModal(false);
       return;
     }
@@ -136,6 +146,7 @@ export default function LibraryView({
       id: Math.random().toString(),
       title: newTitle,
       subject: newSubject,
+      folderId: destinationFolderForUpload || undefined,
       addedAt: 'Just now',
       status: 'transcribing',
       type: newType,
@@ -146,15 +157,57 @@ export default function LibraryView({
     onAddLecture(added);
 
     setNewTitle('');
+    setDestinationFolderForUpload('');
     setShowSyncModal(false);
   };
 
-  // Filter lectures
+  // Folder Hook & States
+  const { folders, addFolder, deleteFolder, renameFolder } = useFolders(auth.currentUser?.uid);
+  const [selectedFolderId, setSelectedFolderId] = useState<string>('all');
+  const [showCreateFolderModal, setShowCreateFolderModal] = useState<boolean>(false);
+  const [newFolderName, setNewFolderName] = useState<string>('');
+  const [newFolderColor, setNewFolderColor] = useState<string>('#2F6BFF');
+  const [movingLectureId, setMovingLectureId] = useState<string | null>(null);
+  const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
+  const [editingFolderName, setEditingFolderName] = useState<string>('');
+  const [destinationFolderForUpload, setDestinationFolderForUpload] = useState<string>('');
+
+  const handleCreateFolderSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newFolderName.trim()) return;
+    const createdId = await addFolder(newFolderName.trim(), newFolderColor);
+    setNewFolderName('');
+    setShowCreateFolderModal(false);
+    if (createdId) {
+      setSelectedFolderId(createdId);
+    }
+  };
+
+  const handleMoveLecture = async (lectureId: string, folderId: string) => {
+    try {
+      if (onUpdateLecture) {
+        await onUpdateLecture(lectureId, { folderId: folderId || undefined });
+      }
+      setMovingLectureId(null);
+    } catch (err) {
+      console.error('Failed to move lecture to folder:', err);
+    }
+  };
+
+  // Filter lectures by search, subject, and folder
   const filteredLectures = lectures.filter(lec => {
     const matchesSearch = lec.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           lec.subject.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesSubject = activeSubject === 'All' || lec.subject === activeSubject;
-    return matchesSearch && matchesSubject;
+    
+    let matchesFolder = true;
+    if (selectedFolderId === 'unorganized') {
+      matchesFolder = !lec.folderId;
+    } else if (selectedFolderId !== 'all') {
+      matchesFolder = lec.folderId === selectedFolderId;
+    }
+
+    return matchesSearch && matchesSubject && matchesFolder;
   });
 
   return (
@@ -187,6 +240,162 @@ export default function LibraryView({
               <span>Sync Document</span>
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* 2. ACADEMIC FOLDERS SECTION */}
+      <div className="rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] p-5 shadow-paper-md space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-[var(--border-main)] pb-3">
+          <div className="flex items-center gap-2">
+            <FolderIcon className="h-5 w-5 text-[#FFC400]" />
+            <h2 className="font-heading font-extrabold text-sm md:text-base uppercase tracking-tight text-[var(--text-primary)]">
+              MY FOLDERS & COLLECTIONS
+            </h2>
+            <span className="px-2 py-0.5 rounded-[4px] bg-[#FFC400] text-[#111111] text-[10px] font-mono font-extrabold border border-[#111111]">
+              {folders.length} FOLDERS
+            </span>
+          </div>
+
+          <button
+            onClick={() => setShowCreateFolderModal(true)}
+            className="px-3.5 py-1.5 rounded-[4px] border-2 border-[var(--border-main)] bg-[#2F6BFF] text-white text-xs font-mono font-extrabold uppercase shadow-paper-sm hover:bg-[#255cd9] transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
+          >
+            <FolderPlus className="h-4 w-4 text-white" />
+            <span>+ Create Folder</span>
+          </button>
+        </div>
+
+        {/* Folders List Carousel / Badges */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          
+          {/* ALL FILES FOLDER */}
+          <div
+            onClick={() => setSelectedFolderId('all')}
+            className={`rounded-[6px] border-2 p-3 flex flex-col justify-between cursor-pointer transition-all ${
+              selectedFolderId === 'all'
+                ? 'bg-[#FFC400] border-[#111111] text-[#111111] shadow-paper-md font-black'
+                : 'bg-[var(--panel-bg)] border-[var(--border-main)] text-[var(--text-primary)] hover:border-[#FFC400]'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <FolderOpen className="h-5 w-5" />
+              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-black/10">
+                {lectures.length}
+              </span>
+            </div>
+            <div className="mt-3">
+              <span className="text-xs font-mono font-extrabold block truncate uppercase">All Files</span>
+              <span className="text-[9px] font-mono opacity-70 block">Root Library</span>
+            </div>
+          </div>
+
+          {/* UNORGANIZED FOLDER */}
+          <div
+            onClick={() => setSelectedFolderId('unorganized')}
+            className={`rounded-[6px] border-2 p-3 flex flex-col justify-between cursor-pointer transition-all ${
+              selectedFolderId === 'unorganized'
+                ? 'bg-[#FFC400] border-[#111111] text-[#111111] shadow-paper-md font-black'
+                : 'bg-[var(--panel-bg)] border-[var(--border-main)] text-[var(--text-primary)] hover:border-[#FFC400]'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <FolderIcon className="h-5 w-5 text-gray-400" />
+              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-black/10">
+                {lectures.filter(l => !l.folderId).length}
+              </span>
+            </div>
+            <div className="mt-3">
+              <span className="text-xs font-mono font-extrabold block truncate uppercase">Unorganized</span>
+              <span className="text-[9px] font-mono opacity-70 block">No Folder</span>
+            </div>
+          </div>
+
+          {/* CUSTOM USER FOLDERS */}
+          {folders.map(folder => {
+            const count = lectures.filter(l => l.folderId === folder.id).length;
+            const isSelected = selectedFolderId === folder.id;
+
+            return (
+              <div
+                key={folder.id}
+                onClick={() => setSelectedFolderId(folder.id)}
+                className={`rounded-[6px] border-2 p-3 flex flex-col justify-between cursor-pointer transition-all relative group ${
+                  isSelected
+                    ? 'bg-[#FFC400] border-[#111111] text-[#111111] shadow-paper-md font-black'
+                    : 'bg-[var(--panel-bg)] border-[var(--border-main)] text-[var(--text-primary)] hover:border-[#FFC400]'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span 
+                      className="h-3 w-3 rounded-full border border-black/20" 
+                      style={{ backgroundColor: folder.color || '#2F6BFF' }} 
+                    />
+                    <FolderIcon className="h-4 w-4" />
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-black/10">
+                      {count}
+                    </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`Delete folder "${folder.name}"? Files inside will move to Unorganized.`)) {
+                          deleteFolder(folder.id);
+                          if (selectedFolderId === folder.id) setSelectedFolderId('all');
+                        }
+                      }}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-red-500/20 text-red-500"
+                      title="Delete Folder"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-3">
+                  {editingFolderId === folder.id ? (
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        if (editingFolderName.trim()) {
+                          renameFolder(folder.id, editingFolderName.trim());
+                        }
+                        setEditingFolderId(null);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex items-center gap-1"
+                    >
+                      <input
+                        type="text"
+                        value={editingFolderName}
+                        onChange={(e) => setEditingFolderName(e.target.value)}
+                        className="w-full text-[10px] font-bold p-1 rounded bg-white text-black border outline-none"
+                        autoFocus
+                      />
+                      <button type="submit" className="text-[9px] bg-black text-white px-1.5 py-0.5 rounded font-mono font-bold">OK</button>
+                    </form>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-mono font-extrabold block truncate uppercase">{folder.name}</span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingFolderId(folder.id);
+                          setEditingFolderName(folder.name);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-black/10 rounded"
+                        title="Rename Folder"
+                      >
+                        <Edit className="h-3 w-3" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
         </div>
       </div>
 
@@ -785,6 +994,22 @@ export default function LibraryView({
                 </div>
               </div>
 
+              <div>
+                <label className="block text-[10px] font-black text-neutral-500 uppercase font-mono mb-1">SAVE TO FOLDER (OPTIONAL)</label>
+                <select
+                  value={destinationFolderForUpload}
+                  onChange={(e) => setDestinationFolderForUpload(e.target.value)}
+                  className={`w-full rounded-xl text-xs font-semibold outline-none p-3 cursor-pointer ${
+                    theme === 'dark' ? 'bg-neutral-950 border border-neutral-900 text-white' : 'bg-[#F9FAFB] border border-gray-200 text-gray-900'
+                  }`}
+                >
+                  <option value="">📂 Unorganized / Root Library</option>
+                  {folders.map(f => (
+                    <option key={f.id} value={f.id}>📁 {f.name}</option>
+                  ))}
+                </select>
+              </div>
+
               {/* Usability Guidelines: Drag and Drop block */}
               <div 
                 onClick={() => fileInputRef.current?.click()}
@@ -987,6 +1212,134 @@ export default function LibraryView({
                 className="px-4.5 py-2.5 rounded-xl bg-amber-500 text-black hover:bg-amber-400 text-xs font-black transition-all cursor-pointer shadow-md"
               >
                 Regenerate All
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CREATE NEW FOLDER MODAL */}
+      {showCreateFolderModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-fade-in">
+          <div className="rounded-[6px] border-2 border-[#111111] bg-white p-6 max-w-md w-full space-y-5 shadow-paper-lg text-[#111111]">
+            <div className="flex items-center justify-between border-b-2 border-[#111111] pb-3">
+              <div className="flex items-center gap-2">
+                <FolderPlus className="h-5 w-5 text-[#2F6BFF]" />
+                <h3 className="font-heading font-extrabold text-sm uppercase">Create New Academic Folder</h3>
+              </div>
+              <button 
+                onClick={() => setShowCreateFolderModal(false)}
+                className="p-1 rounded border border-[#111111] hover:bg-[#FFC400] text-[#111111]"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateFolderSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-mono font-extrabold uppercase mb-1">Folder Title</label>
+                <input
+                  type="text"
+                  required
+                  value={newFolderName}
+                  onChange={(e) => setNewFolderName(e.target.value)}
+                  placeholder="e.g., Operating Systems - Unit 1"
+                  className="w-full rounded-[6px] border-2 border-[#111111] p-3 text-xs font-mono font-bold outline-none bg-white text-[#111111]"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono font-extrabold uppercase mb-1">Color Theme Badge</label>
+                <div className="flex gap-2 pt-1">
+                  {['#2F6BFF', '#FFC400', '#19B56B', '#FF4D4D', '#9333EA', '#FF8800'].map(color => (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => setNewFolderColor(color)}
+                      className={`h-7 w-7 rounded-full border-2 border-[#111111] transition-transform cursor-pointer ${
+                        newFolderColor === color ? 'scale-125 shadow-paper-sm border-black' : 'opacity-70 hover:opacity-100'
+                      }`}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-[#111111]">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateFolderModal(false)}
+                  className="px-4 py-2 rounded-[4px] border-2 border-[#111111] bg-white text-xs font-mono font-bold uppercase cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-[4px] border-2 border-[#111111] bg-[#FFC400] text-xs font-mono font-extrabold uppercase shadow-paper-sm hover:bg-[#ffe066] cursor-pointer"
+                >
+                  Create Folder
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MOVE FILE TO FOLDER MODAL */}
+      {movingLectureId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-fade-in">
+          <div className="rounded-[6px] border-2 border-[#111111] bg-white p-6 max-w-md w-full space-y-4 shadow-paper-lg text-[#111111]">
+            <div className="flex items-center justify-between border-b-2 border-[#111111] pb-3">
+              <div className="flex items-center gap-2">
+                <FolderIcon className="h-5 w-5 text-[#FFC400]" />
+                <h3 className="font-heading font-extrabold text-sm uppercase">Move Document to Folder</h3>
+              </div>
+              <button 
+                onClick={() => setMovingLectureId(null)}
+                className="p-1 rounded border border-[#111111] hover:bg-[#FFC400] text-[#111111]"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <p className="text-xs font-mono font-bold text-[#666666]">
+              Select a target folder to organize this academic document:
+            </p>
+
+            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+              <button
+                type="button"
+                onClick={() => handleMoveLecture(movingLectureId, '')}
+                className="w-full text-left p-3 rounded-[6px] border-2 border-[#111111] bg-[#F6F2EA] hover:bg-[#FFC400] transition-colors font-mono text-xs font-bold flex items-center justify-between cursor-pointer"
+              >
+                <span>📂 Unorganized (Remove from folder)</span>
+                <MoveRight className="h-4 w-4" />
+              </button>
+
+              {folders.map(folder => (
+                <button
+                  key={folder.id}
+                  type="button"
+                  onClick={() => handleMoveLecture(movingLectureId, folder.id)}
+                  className="w-full text-left p-3 rounded-[6px] border-2 border-[#111111] bg-white hover:bg-[#FFC400] transition-colors font-mono text-xs font-bold flex items-center justify-between cursor-pointer"
+                >
+                  <span className="flex items-center gap-2">
+                    <span className="h-3 w-3 rounded-full border border-black/20" style={{ backgroundColor: folder.color || '#2F6BFF' }} />
+                    <span>{folder.name}</span>
+                  </span>
+                  <MoveRight className="h-4 w-4" />
+                </button>
+              ))}
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-[#111111]">
+              <button
+                type="button"
+                onClick={() => setMovingLectureId(null)}
+                className="px-4 py-2 rounded-[4px] border-2 border-[#111111] bg-white text-xs font-mono font-bold uppercase cursor-pointer"
+              >
+                Close
               </button>
             </div>
           </div>
