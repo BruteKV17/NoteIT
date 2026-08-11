@@ -27,7 +27,7 @@ export interface RewardItem {
   description: string;
   xpCost: number;
   image: string;
-  status: 'available' | 'locked' | 'coming_soon' | 'out_of_stock';
+  status: 'available' | 'locked' | 'coming_soon' | 'out_of_stock' | 'active';
   category?: 'voucher' | 'subscription' | 'ai' | 'tool';
   valueLabel?: string;
 }

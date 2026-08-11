@@ -137,8 +137,18 @@ export default function LectureCaptureView({
   const [isMobile, setIsMobile] = useState(false);
   const [mobileWorkspaceTab, setMobileWorkspaceTab] = useState<'transcript' | 'tools'>('tools');
 
+  // Speech Recognition Language setting (defaults to Hindi/Hinglish hi-IN)
+  const [speechLanguage, setSpeechLanguage] = useState<string>(() => {
+    return localStorage.getItem('noteit_speech_language') || 'hi-IN';
+  });
+  const speechLanguageRef = useRef(speechLanguage);
+
+  useEffect(() => {
+    speechLanguageRef.current = speechLanguage;
+  }, [speechLanguage]);
+
   // Active review workspace states
-  const [activeOutputTab, setActiveOutputTab] = useState<'notes' | 'summary' | 'flashcards' | 'quiz' | 'mindmap' | 'timeline' | 'slides' | 'chat'>('notes');
+  const [activeOutputTab, setActiveOutputTab] = useState<'notes' | 'summary' | 'flashcards' | 'quiz' | 'mindmap' | 'timeline' | 'slides' | 'handwritten' | 'chat'>('notes');
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
@@ -358,6 +368,26 @@ export default function LectureCaptureView({
     }
   }, [liveTranscript]);
 
+  const handleSpeechLanguageChange = (newLang: string) => {
+    setSpeechLanguage(newLang);
+    speechLanguageRef.current = newLang;
+    localStorage.setItem('noteit_speech_language', newLang);
+
+    if (isRecordingRef.current && recognitionRef.current) {
+      try {
+        recognitionRef.current.onend = null;
+        recognitionRef.current.stop();
+      } catch (err) {
+        console.error('Failed to stop speech recognition for language update:', err);
+      }
+      setTimeout(() => {
+        if (isRecordingRef.current && !isPausedRef.current) {
+          startSpeechRecognition();
+        }
+      }, 150);
+    }
+  };
+
   const startSpeechRecognition = () => {
     const SpeechRecognitionClass = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognitionClass) {
@@ -369,7 +399,7 @@ export default function LectureCaptureView({
       const recognition = new SpeechRecognitionClass();
       recognition.continuous = true;
       recognition.interimResults = true;
-      recognition.lang = 'en-US';
+      recognition.lang = speechLanguageRef.current || 'hi-IN';
 
       recognition.onresult = (event: any) => {
         let currentSessionTranscript = '';
@@ -2396,6 +2426,34 @@ export default function LectureCaptureView({
                     <option value="General Science" className="bg-[var(--card-bg)] text-[var(--text-primary)]">General Science</option>
                   </select>
                 </div>
+                <div>
+                  <label className="block text-xs font-mono font-extrabold text-[var(--text-primary)] uppercase tracking-wider mb-1 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Globe className="h-3.5 w-3.5 text-[#2F6BFF]" />
+                      <span>SPEECH LANGUAGE</span>
+                    </span>
+                    <span className="text-[10px] text-[#2F6BFF] font-bold">🇮🇳 HINDI / HINGLISH ACTIVE</span>
+                  </label>
+                  <select
+                    value={speechLanguage}
+                    onChange={(e) => handleSpeechLanguageChange(e.target.value)}
+                    style={{ color: 'var(--text-primary)' }}
+                    className="w-full rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] text-xs font-mono font-bold p-3 outline-none shadow-paper-sm cursor-pointer"
+                  >
+                    <option value="hi-IN" className="bg-[var(--card-bg)] text-[var(--text-primary)]">🇮🇳 Hindi / Hinglish (हिन्दी + English Mix)</option>
+                    <option value="en-IN" className="bg-[var(--card-bg)] text-[var(--text-primary)]">🇮🇳 English (India)</option>
+                    <option value="en-US" className="bg-[var(--card-bg)] text-[var(--text-primary)]">🇺🇸 English (US)</option>
+                    <option value="bn-IN" className="bg-[var(--card-bg)] text-[var(--text-primary)]">🇮🇳 Bengali (বাংলা)</option>
+                    <option value="ta-IN" className="bg-[var(--card-bg)] text-[var(--text-primary)]">🇮🇳 Tamil (தமிழ்)</option>
+                    <option value="te-IN" className="bg-[var(--card-bg)] text-[var(--text-primary)]">🇮🇳 Telugu (తెలుగు)</option>
+                    <option value="mr-IN" className="bg-[var(--card-bg)] text-[var(--text-primary)]">🇮🇳 Marathi (मराठी)</option>
+                    <option value="gu-IN" className="bg-[var(--card-bg)] text-[var(--text-primary)]">🇮🇳 Gujarati (ગુજરાતી)</option>
+                    <option value="kn-IN" className="bg-[var(--card-bg)] text-[var(--text-primary)]">🇮🇳 Kannada (ಕನ್ನಡ)</option>
+                    <option value="ml-IN" className="bg-[var(--card-bg)] text-[var(--text-primary)]">🇮🇳 Malayalam (മലയാളം)</option>
+                    <option value="pa-IN" className="bg-[var(--card-bg)] text-[var(--text-primary)]">🇮🇳 Punjabi (ਪੰਜਾਬੀ)</option>
+                    <option value="ur-IN" className="bg-[var(--card-bg)] text-[var(--text-primary)]">🇮🇳 Urdu (اردو)</option>
+                  </select>
+                </div>
               </div>
 
               {/* Dynamic microphone container */}
@@ -2573,11 +2631,18 @@ export default function LectureCaptureView({
                     <div className="flex flex-col h-full w-full justify-between items-stretch text-left overflow-hidden">
                       {liveTranscript ? (
                         <div className="flex flex-col h-full w-full justify-between items-stretch text-left overflow-hidden">
-                          <div className="flex items-center gap-2 mb-2 pb-2 border-b border-[var(--border-main)] shrink-0">
-                            <span className="h-2 w-2 rounded-full bg-[#FF4D4D] animate-ping" />
-                            <span className="text-[10px] font-mono font-bold uppercase text-[var(--text-primary)]">
-                              Live Speech Transcription
-                            </span>
+                          <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-[var(--border-main)] shrink-0">
+                            <div className="flex items-center gap-2">
+                              <span className="h-2 w-2 rounded-full bg-[#FF4D4D] animate-ping" />
+                              <span className="text-[10px] font-mono font-bold uppercase text-[var(--text-primary)]">
+                                Live Speech Transcription
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-[9px] font-mono font-bold bg-[#FFC400] text-[#111111] px-2 py-0.5 rounded-[4px] border border-[var(--border-main)] uppercase">
+                                {speechLanguage === 'hi-IN' ? '🇮🇳 HINDI / HINGLISH' : speechLanguage === 'en-IN' ? '🇮🇳 ENGLISH (IN)' : speechLanguage === 'en-US' ? '🇺🇸 ENGLISH (US)' : speechLanguage.toUpperCase()}
+                              </span>
+                            </div>
                           </div>
                           
                           <div className="flex-1 overflow-y-auto pr-1 text-xs leading-relaxed font-mono text-[var(--text-primary)] select-text">

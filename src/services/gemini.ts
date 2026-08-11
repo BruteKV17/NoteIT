@@ -390,7 +390,9 @@ export const transcribeAudio = async (
   apiKey: string,
   onBusy?: (isBusy: boolean) => void
 ): Promise<string> => {
-  const prompt = `You are an expert transcriber. Transcribe the provided audio lecture word-for-word. Format the transcript text by prepending bracketed timestamps at fixed 2-minute interval checkpoints (e.g. [00:00], [02:00], [04:00], [06:00]) at the beginning of each major statement or logical paragraph based on the audio timeline.`;
+  const prompt = `You are an expert multilingual speech transcriber proficient in English, Hindi (Devanagari & Romanized Hinglish), and Indian languages. Transcribe the provided audio lecture word-for-word accurately.
+If the speaker is talking in Hindi or Hinglish (mixed Hindi and English), accurately capture every Hindi word and concept as spoken (preserving Hindi words in Devanagari or Romanized script and English technical terms as used by the teacher).
+Format the transcript text by prepending bracketed timestamps at fixed 2-minute interval checkpoints (e.g. [00:00], [02:00], [04:00], [06:00]) at the beginning of each major statement or logical paragraph based on the audio timeline.`;
   return executeGeminiCall(prompt, apiKey, { mimeType, data: base64Audio }, undefined, onBusy);
 };
 
@@ -399,9 +401,9 @@ export const cleanTranscriptText = async (
   apiKey: string,
   onBusy?: (isBusy: boolean) => void
 ): Promise<string> => {
-  const prompt = `You are an expert academic editor. Take the following raw lecture transcript and clean it up.
-Remove all stutters, filler words (such as 'uh', 'um', 'so basically', 'like', 'you know', 'right', 'actually', 'sort of', 'now', 'okay'), and speech disfluencies.
-Convert the spoken language into professional, clean, written academic prose.
+  const prompt = `You are an expert academic editor proficient in English, Hindi, and Hinglish. Take the following raw lecture transcript and clean it up.
+Remove all stutters, filler words (such as 'uh', 'um', 'so basically', 'like', 'you know', 'right', 'actually', 'sort of', 'now', 'okay', 'मतलब', 'हां', 'बेटा', 'dekho', 'samjhe'), and speech disfluencies.
+Convert the spoken language (whether English, Hindi, Hinglish, or mixed speech) into professional, clean, written academic prose. Retain technical concepts, Hindi explanations, and key subject terminology accurately.
 IMPORTANT: You MUST preserve the 2-minute bracketed interval timestamps (e.g. [00:00], [02:00], [04:00]) at their correct 2-minute checkpoints in the text. Do not omit them!
 Do not summarize or delete important lecture content; just clean the language.
 Return ONLY the cleaned transcript with timestamps.
@@ -660,7 +662,7 @@ export const generateStudyAssets = async (
 export const generateIngestedAssetsFromText = async (
   rawText: string,
   apiKey: string,
-  mode: 'academic' | 'executive' | 'revision' = 'academic',
+  mode: 'academic' | 'executive' | 'revision' | 'bhailang' | 'bhailang_normal' | 'bhailang_savage' | 'bhailang_pro' = 'academic',
   onBusy?: (isBusy: boolean) => void
 ): Promise<any> => {
   const prompt = `
@@ -981,7 +983,7 @@ export const generateLectureContent = async (
 export const generateLectureContentFromText = async (
   extractedText: string,
   onBusy?: (isBusy: boolean) => void,
-  mode: 'academic' | 'executive' | 'revision' | 'bhailang' = 'academic',
+  mode: 'academic' | 'executive' | 'revision' | 'bhailang' | 'bhailang_normal' | 'bhailang_savage' | 'bhailang_pro' = 'academic',
   onProgress?: (step: number, message: string) => void
 ): Promise<any> => {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
