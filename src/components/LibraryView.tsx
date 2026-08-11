@@ -172,6 +172,8 @@ export default function LibraryView({
   const [editingFolderName, setEditingFolderName] = useState<string>('');
   const [destinationFolderForUpload, setDestinationFolderForUpload] = useState<string>('');
   const [isCreatingFolder, setIsCreatingFolder] = useState<boolean>(false);
+  const [draggedOverFolderId, setDraggedOverFolderId] = useState<string | null>(null);
+  const [draggingLectureId, setDraggingLectureId] = useState<string | null>(null);
 
   const handleCreateFolderSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -262,6 +264,9 @@ export default function LibraryView({
             <span className="px-2 py-0.5 rounded-[4px] bg-[#FFC400] text-[#111111] text-[10px] font-mono font-extrabold border border-[#111111]">
               {folders.length} FOLDERS
             </span>
+            <span className="text-[11px] font-mono text-[var(--text-secondary)] font-bold border-l-2 border-[#FFC400] pl-2 hidden md:inline">
+              💡 Drag & drop any lecture onto a folder below to organize!
+            </span>
           </div>
 
           <button
@@ -300,8 +305,27 @@ export default function LibraryView({
           {/* UNORGANIZED FOLDER */}
           <div
             onClick={() => setSelectedFolderId('unorganized')}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = 'move';
+              if (draggedOverFolderId !== 'unorganized') setDraggedOverFolderId('unorganized');
+            }}
+            onDragLeave={(e) => {
+              e.preventDefault();
+              setDraggedOverFolderId(null);
+            }}
+            onDrop={async (e) => {
+              e.preventDefault();
+              setDraggedOverFolderId(null);
+              const lectureId = e.dataTransfer.getData('text/plain');
+              if (lectureId) {
+                await handleMoveLecture(lectureId, '');
+              }
+            }}
             className={`rounded-[6px] border-2 p-3 flex flex-col justify-between cursor-pointer transition-all ${
-              selectedFolderId === 'unorganized'
+              draggedOverFolderId === 'unorganized'
+                ? 'bg-[#FFC400] border-[#111111] text-[#111111] scale-105 shadow-paper-lg ring-4 ring-[#FFC400]/40 font-black'
+                : selectedFolderId === 'unorganized'
                 ? 'bg-[#FFC400] border-[#111111] text-[#111111] shadow-paper-md font-black'
                 : 'bg-[var(--panel-bg)] border-[var(--border-main)] text-[var(--text-primary)] hover:border-[#FFC400]'
             }`}
@@ -313,8 +337,12 @@ export default function LibraryView({
               </span>
             </div>
             <div className="mt-3">
-              <span className="text-xs font-mono font-extrabold block truncate uppercase">Unorganized</span>
-              <span className="text-[9px] font-mono opacity-70 block">No Folder</span>
+              <span className="text-xs font-mono font-extrabold block truncate uppercase">
+                {draggedOverFolderId === 'unorganized' ? '📥 Drop Here' : 'Unorganized'}
+              </span>
+              <span className="text-[9px] font-mono opacity-70 block">
+                {draggedOverFolderId === 'unorganized' ? 'Remove folder' : 'No Folder'}
+              </span>
             </div>
           </div>
 
@@ -322,13 +350,33 @@ export default function LibraryView({
           {folders.map(folder => {
             const count = lectures.filter(l => l.folderId === folder.id).length;
             const isSelected = selectedFolderId === folder.id;
+            const isDraggedOver = draggedOverFolderId === folder.id;
 
             return (
               <div
                 key={folder.id}
                 onClick={() => setSelectedFolderId(folder.id)}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'move';
+                  if (draggedOverFolderId !== folder.id) setDraggedOverFolderId(folder.id);
+                }}
+                onDragLeave={(e) => {
+                  e.preventDefault();
+                  setDraggedOverFolderId(null);
+                }}
+                onDrop={async (e) => {
+                  e.preventDefault();
+                  setDraggedOverFolderId(null);
+                  const lectureId = e.dataTransfer.getData('text/plain');
+                  if (lectureId) {
+                    await handleMoveLecture(lectureId, folder.id);
+                  }
+                }}
                 className={`rounded-[6px] border-2 p-3 flex flex-col justify-between cursor-pointer transition-all relative group ${
-                  isSelected
+                  isDraggedOver
+                    ? 'bg-[#2F6BFF] text-white border-[#111111] scale-105 shadow-paper-lg ring-4 ring-[#2F6BFF]/40 font-black'
+                    : isSelected
                     ? 'bg-[#FFC400] border-[#111111] text-[#111111] shadow-paper-md font-black'
                     : 'bg-[var(--panel-bg)] border-[var(--border-main)] text-[var(--text-primary)] hover:border-[#FFC400]'
                 }`}
@@ -385,7 +433,9 @@ export default function LibraryView({
                     </form>
                   ) : (
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-mono font-extrabold block truncate uppercase">{folder.name}</span>
+                      <span className="text-xs font-mono font-extrabold block truncate uppercase font-sans">
+                        {isDraggedOver ? '📥 Move Here' : folder.name}
+                      </span>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -433,16 +483,33 @@ export default function LibraryView({
           {filteredLectures.map((lec) => {
             const isRecording = lec.type === 'recording';
             const isTranscribing = lec.status === 'transcribing';
+            const isBeingDragged = draggingLectureId === lec.id;
+
             return (
               <div 
                 key={lec.id}
-                className="rounded-[6px] border-2 border-[#111111] bg-white p-5 hover:shadow-paper-lg transition-all flex flex-col justify-between min-h-[210px] relative group shadow-paper-md text-[#111111]"
+                draggable={true}
+                onDragStart={(e) => {
+                  e.dataTransfer.setData('text/plain', lec.id);
+                  e.dataTransfer.effectAllowed = 'move';
+                  setDraggingLectureId(lec.id);
+                }}
+                onDragEnd={() => {
+                  setDraggingLectureId(null);
+                  setDraggedOverFolderId(null);
+                }}
+                className={`rounded-[6px] border-2 border-[#111111] bg-white p-5 hover:shadow-paper-lg transition-all flex flex-col justify-between min-h-[210px] relative group shadow-paper-md text-[#111111] cursor-grab active:cursor-grabbing ${
+                  isBeingDragged ? 'opacity-40 scale-95 border-dashed border-[#2F6BFF]' : ''
+                }`}
               >
                 <div>
                   {/* Category badge header */}
                   <div className="flex items-center justify-between">
                     <span className="rounded-[4px] px-2.5 py-1 text-[10px] font-mono font-extrabold tracking-wide uppercase bg-[#FFC400] text-[#111111] border border-[#111111] shadow-paper-sm">
                       {lec.subject}
+                    </span>
+                    <span className="text-[9px] font-mono text-[#666666] font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 select-none">
+                      <span>⋮⋮ Drag to Folder</span>
                     </span>
                   </div>
 
@@ -610,14 +677,31 @@ export default function LibraryView({
             {filteredLectures.map((lec) => {
               const isRecording = lec.type === 'recording';
               const isTranscribing = lec.status === 'transcribing';
+              const isBeingDragged = draggingLectureId === lec.id;
               return (
-                <div key={lec.id} className="p-4 space-y-3 font-sans relative">
+                <div 
+                  key={lec.id} 
+                  draggable={true}
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('text/plain', lec.id);
+                    e.dataTransfer.effectAllowed = 'move';
+                    setDraggingLectureId(lec.id);
+                  }}
+                  onDragEnd={() => {
+                    setDraggingLectureId(null);
+                    setDraggedOverFolderId(null);
+                  }}
+                  className={`p-4 space-y-3 font-sans relative cursor-grab active:cursor-grabbing ${
+                    isBeingDragged ? 'opacity-40 bg-indigo-500/10' : ''
+                  }`}
+                >
                   <div className="flex items-center justify-between">
                     <span className={`rounded px-2.5 py-0.5 text-[8.5px] font-black tracking-wide uppercase ${
                       theme === 'dark' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-gray-100 text-gray-600'
                     }`}>
                       {lec.subject}
                     </span>
+                    <span className="text-[9px] font-mono text-gray-400">⋮⋮ Drag</span>
                   </div>
 
                   <div>
@@ -759,8 +843,24 @@ export default function LibraryView({
                 {filteredLectures.map((lec) => {
                   const isRecording = lec.type === 'recording';
                   const isTranscribing = lec.status === 'transcribing';
+                  const isBeingDragged = draggingLectureId === lec.id;
                   return (
-                    <tr key={lec.id} className={`transition-colors ${theme === 'dark' ? 'hover:bg-neutral-950/30' : 'hover:bg-gray-50/50'}`}>
+                    <tr 
+                      key={lec.id} 
+                      draggable={true}
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData('text/plain', lec.id);
+                        e.dataTransfer.effectAllowed = 'move';
+                        setDraggingLectureId(lec.id);
+                      }}
+                      onDragEnd={() => {
+                        setDraggingLectureId(null);
+                        setDraggedOverFolderId(null);
+                      }}
+                      className={`transition-colors cursor-grab active:cursor-grabbing ${
+                        isBeingDragged ? 'opacity-40 bg-indigo-500/10' : ''
+                      } ${theme === 'dark' ? 'hover:bg-neutral-950/30' : 'hover:bg-gray-50/50'}`}
+                    >
                       <td className="px-6 py-4 select-none">
                         <div className={`p-2 rounded-lg border inline-block ${
                           isRecording 
