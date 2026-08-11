@@ -41,6 +41,7 @@ import {
   Info
 } from 'lucide-react';
 import { renderTranscriptWithDots } from './bauhaus/TimestampDot';
+import { AcademicNotesViewer } from './bauhaus/AcademicNotesViewer';
 import { db, auth } from '../firebaseConfig';
 import { API_BASE_URL } from '../config';
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp, query, orderBy, onSnapshot } from 'firebase/firestore';
@@ -2973,14 +2974,9 @@ ${queryText}`;
                           <BruteLoader size="md" message={`Generating ${notesFormat} notes...`} />
                         </div>
                       ) : getActiveNotes().length > 0 ? (
-                        getActiveNotes().map((n: any, i: number) => (
-                          <div key={i} className="p-5 rounded-[6px] border border-[#111111] bg-white text-[#111111] shadow-paper-sm font-sans">
-                            <h4 className="text-xs font-heading font-extrabold text-[#111111] uppercase tracking-wider font-mono border-b border-[#111111] pb-1.5 mb-2">{n.title}</h4>
-                            <div className="text-xs text-[#111111] leading-relaxed whitespace-pre-wrap mt-2">
-                              {renderTextWithCitations(cleanMarkdownText(n.content))}
-                            </div>
-                          </div>
-                        ))
+                        <div className="p-5 rounded-[6px] border border-[#111111] bg-white text-[#111111] shadow-paper-sm font-sans">
+                          <AcademicNotesViewer content={getActiveNotes()} mode={notesFormat} theme={theme} />
+                        </div>
                       ) : (
                         <div className="text-center py-16 border border-dashed border-gray-200 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5 p-6 space-y-4">
                           <FileText className="h-10 w-10 text-neutral-600 mx-auto animate-pulse" />

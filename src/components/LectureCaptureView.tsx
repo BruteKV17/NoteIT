@@ -37,6 +37,7 @@ import { PageId } from '../types';
 import PresentationWorkspace from './PresentationWorkspace';
 import { db, auth } from '../firebaseConfig';
 import { doc, updateDoc } from 'firebase/firestore';
+import { AcademicNotesViewer } from './bauhaus/AcademicNotesViewer';
 import { saveRecordingChunks, getRecordingChunks, deleteRecordingBackup, getAllBackupKeys } from '../services/dbBackup';
 import { awardXP, processActivityEvent } from '../services/activityTracker';
 import { renderTranscriptWithDots } from './bauhaus/TimestampDot';
@@ -1398,8 +1399,8 @@ export default function LectureCaptureView({
 
                   <div className="space-y-3">
                     {activeLecture.notes?.[selectedNotesMode] ? (
-                      <div className="p-5 rounded-[6px] border border-[#111111] bg-white text-[#111111] shadow-paper-sm font-sans leading-relaxed whitespace-pre-wrap text-xs">
-                        {renderTextWithCitations(cleanMarkdownText(activeLecture.notes[selectedNotesMode]))}
+                      <div className="p-5 rounded-[6px] border border-[#111111] bg-white text-[#111111] shadow-paper-sm font-sans">
+                        <AcademicNotesViewer content={activeLecture.notes[selectedNotesMode]} mode={selectedNotesMode} theme={theme} />
                       </div>
                     ) : isGeneratingNotes ? (
                       <div className="py-16 flex flex-col items-center justify-center border border-dashed border-gray-200 dark:border-neutral-800 rounded-2xl bg-gray-50/10 dark:bg-neutral-900/5">

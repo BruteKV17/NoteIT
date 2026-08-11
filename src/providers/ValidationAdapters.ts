@@ -14,28 +14,23 @@ export class GeminiAdapter implements ValidationAdapter {
         const text = await response.text();
         const status = response.status;
         if (status === 400 || status === 401 || status === 403) {
-          throw new ProviderValidationError('Invalid or unauthorized API key', 401);
+          throw new ProviderValidationError('Invalid or unauthorized API key. Please check your Gemini API key.', 401);
         } else if (status === 429) {
-          throw new ProviderValidationError('Rate limit/quota exceeded', 429);
+          throw new ProviderValidationError('Rate limit/quota exceeded for this Gemini API key', 429);
         } else if (status === 500 || status === 503) {
-          throw new ProviderValidationError('Gemini service unavailable', 503);
+          throw new ProviderValidationError('Gemini service is temporarily unavailable', 503);
         } else {
           throw new ProviderValidationError(`Gemini key validation failed: ${text}`, status);
         }
       }
       
-      if (model) {
-        const data = await response.json();
-        const modelsList = data.models || [];
-        const normalizedModel = model.toLowerCase().replace('models/', '');
-        const exists = modelsList.some((m: any) => m.name?.toLowerCase().replace('models/', '') === normalizedModel);
-        if (!exists) {
-          throw new ProviderValidationError(`Selected model '${model}' is not available or valid for your Gemini key`, 404);
-        }
+      const data = await response.json().catch(() => ({}));
+      if (data && data.models && Array.isArray(data.models) && data.models.length === 0) {
+        throw new ProviderValidationError('API key is valid but has no accessible Gemini models', 401);
       }
     } catch (err: any) {
       if (err instanceof ProviderValidationError) throw err;
-      throw new ProviderValidationError('Provider unavailable due to network timeout or connection failure', 504);
+      throw new ProviderValidationError(`Provider unavailable: ${err.message || 'network timeout or connection failure'}`, 504);
     }
   }
 }
@@ -55,7 +50,7 @@ export class OpenAIAdapter implements ValidationAdapter {
         if (status === 401 || status === 403) {
           throw new ProviderValidationError('Invalid or unauthorized API key', 401);
         } else if (status === 404) {
-          throw new ProviderValidationError('Invalid API endpoint or model', 404);
+          throw new ProviderValidationError('Invalid API endpoint', 404);
         } else if (status === 429) {
           throw new ProviderValidationError('Rate limit/quota exceeded', 429);
         } else if (status >= 500) {
@@ -64,17 +59,9 @@ export class OpenAIAdapter implements ValidationAdapter {
           throw new ProviderValidationError(`OpenAI validation failed: ${text}`, status);
         }
       }
-      if (model) {
-        const data = await response.json();
-        const modelsList = data.data || [];
-        const exists = modelsList.some((m: any) => m.id?.toLowerCase() === model.toLowerCase());
-        if (!exists) {
-          throw new ProviderValidationError(`Selected model '${model}' is not valid or available for your OpenAI key`, 404);
-        }
-      }
     } catch (err: any) {
       if (err instanceof ProviderValidationError) throw err;
-      throw new ProviderValidationError('Provider unavailable due to network timeout or connection failure', 504);
+      throw new ProviderValidationError(`Provider unavailable: ${err.message || 'network timeout or connection failure'}`, 504);
     }
   }
 }
@@ -159,7 +146,7 @@ export class ClaudeAdapter implements ValidationAdapter {
       }
     } catch (err: any) {
       if (err instanceof ProviderValidationError) throw err;
-      throw new ProviderValidationError('Provider unavailable due to network timeout or connection failure', 504);
+      throw new ProviderValidationError(`Provider unavailable: ${err.message || 'network timeout or connection failure'}`, 504);
     }
   }
 }
@@ -179,7 +166,7 @@ export class DeepSeekAdapter implements ValidationAdapter {
         if (status === 401 || status === 403) {
           throw new ProviderValidationError('Invalid or unauthorized API key', 401);
         } else if (status === 404) {
-          throw new ProviderValidationError('Invalid API endpoint or model', 404);
+          throw new ProviderValidationError('Invalid API endpoint', 404);
         } else if (status === 429) {
           throw new ProviderValidationError('Rate limit/quota exceeded', 429);
         } else if (status >= 500) {
@@ -188,17 +175,9 @@ export class DeepSeekAdapter implements ValidationAdapter {
           throw new ProviderValidationError(`DeepSeek validation failed: ${text}`, status);
         }
       }
-      if (model) {
-        const data = await response.json();
-        const modelsList = data.data || [];
-        const exists = modelsList.some((m: any) => m.id?.toLowerCase() === model.toLowerCase());
-        if (!exists) {
-          throw new ProviderValidationError(`Selected model '${model}' is not valid or available for your DeepSeek key`, 404);
-        }
-      }
     } catch (err: any) {
       if (err instanceof ProviderValidationError) throw err;
-      throw new ProviderValidationError('Provider unavailable due to network timeout or connection failure', 504);
+      throw new ProviderValidationError(`Provider unavailable: ${err.message || 'network timeout or connection failure'}`, 504);
     }
   }
 }
@@ -218,7 +197,7 @@ export class OpenRouterAdapter implements ValidationAdapter {
         if (status === 401 || status === 403) {
           throw new ProviderValidationError('Invalid or unauthorized API key', 401);
         } else if (status === 404) {
-          throw new ProviderValidationError('Invalid API endpoint or model', 404);
+          throw new ProviderValidationError('Invalid API endpoint', 404);
         } else if (status === 429) {
           throw new ProviderValidationError('Rate limit/quota exceeded', 429);
         } else if (status >= 500) {
@@ -227,17 +206,9 @@ export class OpenRouterAdapter implements ValidationAdapter {
           throw new ProviderValidationError(`OpenRouter validation failed: ${text}`, status);
         }
       }
-      if (model) {
-        const data = await response.json();
-        const modelsList = data.data || [];
-        const exists = modelsList.some((m: any) => m.id?.toLowerCase() === model.toLowerCase());
-        if (!exists) {
-          throw new ProviderValidationError(`Selected model '${model}' is not valid or available on OpenRouter`, 404);
-        }
-      }
     } catch (err: any) {
       if (err instanceof ProviderValidationError) throw err;
-      throw new ProviderValidationError('Provider unavailable due to network timeout or connection failure', 504);
+      throw new ProviderValidationError(`Provider unavailable: ${err.message || 'network timeout or connection failure'}`, 504);
     }
   }
 }
@@ -257,7 +228,7 @@ export class MistralAdapter implements ValidationAdapter {
         if (status === 401 || status === 403) {
           throw new ProviderValidationError('Invalid or unauthorized API key', 401);
         } else if (status === 404) {
-          throw new ProviderValidationError('Invalid API endpoint or model', 404);
+          throw new ProviderValidationError('Invalid API endpoint', 404);
         } else if (status === 429) {
           throw new ProviderValidationError('Rate limit/quota exceeded', 429);
         } else if (status >= 500) {
@@ -266,17 +237,9 @@ export class MistralAdapter implements ValidationAdapter {
           throw new ProviderValidationError(`Mistral validation failed: ${text}`, status);
         }
       }
-      if (model) {
-        const data = await response.json();
-        const modelsList = data.data || [];
-        const exists = modelsList.some((m: any) => m.id?.toLowerCase() === model.toLowerCase());
-        if (!exists) {
-          throw new ProviderValidationError(`Selected model '${model}' is not valid or available for your Mistral key`, 404);
-        }
-      }
     } catch (err: any) {
       if (err instanceof ProviderValidationError) throw err;
-      throw new ProviderValidationError('Provider unavailable due to network timeout or connection failure', 504);
+      throw new ProviderValidationError(`Provider unavailable: ${err.message || 'network timeout or connection failure'}`, 504);
     }
   }
 }

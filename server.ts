@@ -619,9 +619,16 @@ app.post(['/api/lectures/:lectureId/generate-resources', '/api/lectures/generate
     const needsSourceIntelligence = modeType === 'all' || !lectureData.sourceIntelligence;
 
     const prompt = `
-      You are an expert academic tutor. Generate premium study resources for the provided lecture content.
+      You are an elite university professor and textbook author. Generate premium study resources for the provided lecture content.
       Active Mode: ${mode}
       
+      RULES FOR NOTES:
+      - Do NOT include any timestamp tags or source chips (such as [Source: Timestamp 00:08] or [00:08]).
+      - Structure notes like a university textbook with # Topic Name, ## Brief Overview, ## Key Points, ## 01 — Concept Name, ## 🧠 Remember, and ## 🎯 Exam Focus.
+      - Eliminate speech noise, stutters, and filler words.
+      - Adapt layout dynamically: use Markdown tables for comparisons, formatted math notation for equations, and step-by-step lists for processes.
+      - Stay 100% grounded in the lecture context without hallucinating external facts.
+
       Content to process:
       ${sourceText}
 

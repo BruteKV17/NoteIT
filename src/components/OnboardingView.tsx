@@ -28,10 +28,10 @@ const PROVIDER_METADATA: Record<string, {
   gemini: {
     name: 'Google Gemini',
     description: 'Highly capable multimodal model for fast note synthesis, quizzes, and mind maps.',
-    defaultModel: 'gemini-2.5-flash',
+    defaultModel: 'gemini-2.0-flash',
     docLink: 'https://ai.google.dev/gemini-api/docs',
     getKeyLink: 'https://aistudio.google.com/apikey',
-    models: ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-1.5-flash', 'gemini-1.5-pro']
+    models: ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.5-flash']
   },
   groq: {
     name: 'Groq',

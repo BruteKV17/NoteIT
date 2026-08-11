@@ -1367,35 +1367,80 @@ export const generateNotes = async (
   let modeInstructions = '';
   switch (mode) {
     case 'quick':
-      modeInstructions = 'Generate Quick Notes. Keep it high-yield, formatted in clean, structured bullet points, tables, and short checklists. Highlight essential metrics.';
+      modeInstructions = 'Generate Quick Notes. Focus on high-yield bullet points, core definitions, and concise takeaways.';
       break;
     case 'detailed':
-      modeInstructions = 'Generate Detailed Notes. Provide comprehensive, structured explanations of all lecture topics with concrete examples, terminology tables, and full applications.';
+      modeInstructions = 'Generate Comprehensive Academic Notes. Detail every concept thoroughly with explanations, step-by-step procedures, and tables.';
       break;
     case 'academic':
-      modeInstructions = 'Generate Academic Notes. Maintain a formal, scientific, research-oriented scholarly tone. Detail the methodologies, theories, and citations.';
+      modeInstructions = 'Generate Textbook-Quality Academic Notes. Maintain a formal university scholarly tone, clear conceptual breakdown, and rigorous organization.';
       break;
     case 'exam':
-      modeInstructions = 'Generate Exam Notes. Focus on memory retention, formulas, cheat sheets, common pitfalls, and study guide questions with model answers.';
+      modeInstructions = 'Generate High-Yield Exam Notes. Focus on memory recall, core formulas, common pitfalls, worked examples, and key distinctions.';
       break;
     case 'bhailang':
-      modeInstructions = 'Style/Format Focus: BhaiLang (casual Hinglish). Explain the content in a very easy, friendly, and informal way in Hinglish (a mix of Hindi and English like "bhai iska mtlb ye ki tu..."). Use casual phrasing, Indian slang terms like "bhai", "yaar", "tu", "apna", "scena", etc., but keep the core concept technically accurate. Frame it as if an older friendly brother or college senior is explaining it to a junior.';
+      modeInstructions = 'Style/Format Focus: BhaiLang (casual Hinglish). Explain the concepts in a friendly, informal Hinglish tone (like an experienced senior explaining to a junior), while maintaining 100% technical accuracy of the concepts.';
       break;
   }
 
   const prompt = `
-    You are an expert academic tutor. Generate a premium structured note document based on the following lecture transcript.
-    
+    You are an elite university professor and textbook author creating clean, structured, university-level study notes from lecture transcriptions.
+
+    CORE GOAL:
+    Lecture-grounded learning + textbook-quality organization + extremely readable notes.
+
     Selected Notes Mode: ${mode}
-    Style Instructions: ${modeInstructions}
-    
-    CRITICAL GROUNDING INSTRUCTION:
-    Throughout the notes text, you MUST integrate inline citations referencing the source timestamps (e.g. '[Source: Timestamp 01:30]') from the transcript.
-    
-    CRITICAL FORMATTING RULE: For any mathematical equations, numbers, variables, or exponents, NEVER use caret notation (like '3^2', 'x^y', 'x^2', '2^n'). Instead, write them with actual superscript Unicode characters representing the power/exponent directly above the base (e.g., '3²', 'xʸ', 'x²', '2ⁿ'). Apply this rule strictly to all mathematical powers and exponents throughout the output.
-    
-    Structure your notes cleanly with professional Markdown syntax (headings, bullet points, code blocks for equations). Return raw Markdown content. Do not output JSON.
-    
+    Style Guidance: ${modeInstructions}
+
+    PIPELINE RULES:
+    1. Do NOT treat the lecture transcript as text to be summarized or rewritten as spoken.
+    2. Understand the lecture -> Identify concepts -> Group related concepts -> Extract definitions, formulas, procedures, comparisons & worked examples -> Eliminate speech noise (fillers like "uh", "okay", stutters, repetitions, lecturer tangents) -> Construct a logical, textbook-quality learning document.
+    3. REMOVE TIMESTAMPS: Do NOT include ANY timestamp references or source tags (such as '[Source: Timestamp 00:08]', '[00:08]', or '[Source: Page 3]'). Write a clean, textbook-style document without timestamp clutter.
+    4. STRICT GROUNDING: Remain 100% grounded in the transcript. Do NOT invent concepts, formulas, statistics, or examples that were not taught in the lecture.
+    5. INTELLIGENT CONTENT ADAPTATION:
+       - If definitions exist: Include "### Definition"
+       - If processes exist: Include "### Process / Steps" (1. Step 1, 2. Step 2)
+       - If comparisons exist: Include Markdown tables (| Feature | Method A | Method B |)
+       - If formulas exist: Include "### Formula" with formatted notation (e.g. b = log₂(L)) and variable descriptions (Where: - b = number of bits)
+       - If worked calculations exist: Include "### Worked Example" (Given -> Formula -> Substitution -> Result)
+       - If concepts are easily confused: Include "## ⚠️ Common Confusion"
+       - Do NOT invent sections or fake examples if not supported by the lecture context.
+
+    TARGET STRUCTURE:
+
+    # [Topic Name]
+
+    ## Brief Overview
+    [Concise 2–4 sentence explanation of what the topic is, why it is important, and what the lecture covers]
+
+    ## Key Points
+    - [4–8 highly relevant, concise academic bullet points representing core takeaways]
+
+    ## 01 — [FIRST MAJOR CONCEPT NAME]
+    ### Definition
+    [Clear student-friendly definition]
+
+    ### Explanation
+    [Simple, academically rigorous explanation]
+
+    ### Important Points
+    - [Bulleted key principles]
+
+    (Add ### Example, ### Formula, ### Process / Steps, or Comparison Tables ONLY when present in lecture)
+
+    ## 02 — [NEXT MAJOR CONCEPT NAME]
+    (Repeat dynamic concept layout as appropriate)
+
+    ## 🧠 Remember
+    - [3–6 concise bullet points for quick revision]
+
+    ## 🎯 Exam Focus
+    - [High-yield exam definitions, core formulas, major distinctions, and critical exam topics]
+
+    CRITICAL FORMATTING RULE: For any mathematical equations, numbers, variables, or exponents, write them with actual superscript/subscript Unicode characters (e.g., '3²', 'xʸ', 'x²', '2ⁿ', 'log₂').
+
+    Return raw Markdown content only. Do not output JSON.
+
     Transcript:
     ${transcriptText}
   `;
