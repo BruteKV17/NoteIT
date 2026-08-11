@@ -171,15 +171,24 @@ export default function LibraryView({
   const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
   const [editingFolderName, setEditingFolderName] = useState<string>('');
   const [destinationFolderForUpload, setDestinationFolderForUpload] = useState<string>('');
+  const [isCreatingFolder, setIsCreatingFolder] = useState<boolean>(false);
 
   const handleCreateFolderSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newFolderName.trim()) return;
-    const createdId = await addFolder(newFolderName.trim(), newFolderColor);
-    setNewFolderName('');
-    setShowCreateFolderModal(false);
-    if (createdId) {
-      setSelectedFolderId(createdId);
+    if (!newFolderName.trim() || isCreatingFolder) return;
+    
+    setIsCreatingFolder(true);
+    try {
+      const createdId = await addFolder(newFolderName.trim(), newFolderColor);
+      setNewFolderName('');
+      setShowCreateFolderModal(false);
+      if (createdId) {
+        setSelectedFolderId(createdId);
+      }
+    } catch (err) {
+      console.error('Failed to create folder:', err);
+    } finally {
+      setIsCreatingFolder(false);
     }
   };
 
@@ -1260,9 +1269,17 @@ export default function LibraryView({
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-[4px] border-2 border-[#111111] bg-[#FFC400] text-xs font-mono font-extrabold uppercase shadow-paper-sm hover:bg-[#ffe066] cursor-pointer"
+                  disabled={isCreatingFolder || !newFolderName.trim()}
+                  className="px-5 py-2 rounded-[4px] border-2 border-[#111111] bg-[#FFC400] text-xs font-mono font-extrabold uppercase shadow-paper-sm hover:bg-[#ffe066] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
                 >
-                  Create Folder
+                  {isCreatingFolder ? (
+                    <>
+                      <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                      <span>Creating...</span>
+                    </>
+                  ) : (
+                    <span>Create Folder</span>
+                  )}
                 </button>
               </div>
             </form>

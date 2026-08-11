@@ -42,6 +42,98 @@ import { generateResourcesFromTranscript, generateNotesFromTranscript } from '..
 import { auth } from '../firebaseConfig';
 import { useNoteReviewTimer } from '../hooks/useNoteReviewTimer';
 import { renderTranscriptWithDots } from './bauhaus/TimestampDot';
+import { AcademicNotesViewer } from './bauhaus/AcademicNotesViewer';
+import { HandwrittenNotesViewer } from './bauhaus/HandwrittenNotesViewer';
+
+interface StructuredSummary {
+  overview: string;
+  keyConcepts: string;
+  importantDefinitions: string;
+  examples: string;
+  applications: string;
+  commonMistakes: string;
+  revisionNotes: string;
+  examQuestions: string;
+  keyTakeaways: string;
+  oneMinuteRevision: string;
+}
+
+const cleanMarkdownText = (text: string): string => {
+  if (!text) return '';
+  return text.replace(/[*#`_~]/g, '').trim();
+};
+
+const parseSummaryIntoSections = (summaryText: string): StructuredSummary => {
+  const clean = (txt: string) => txt.replace(/[*#`_~]/g, '').trim();
+  const sections: StructuredSummary = {
+    overview: '',
+    keyConcepts: '',
+    importantDefinitions: '',
+    examples: '',
+    applications: '',
+    commonMistakes: '',
+    revisionNotes: '',
+    examQuestions: '',
+    keyTakeaways: '',
+    oneMinuteRevision: ''
+  };
+
+  if (!summaryText) return sections;
+
+  const patterns = {
+    overview: /overview|introduction/i,
+    keyConcepts: /key\s+concepts/i,
+    importantDefinitions: /important\s+definitions|definitions/i,
+    examples: /examples/i,
+    applications: /applications/i,
+    commonMistakes: /common\s+mistakes/i,
+    revisionNotes: /revision\s+notes/i,
+    examQuestions: /exam\s+questions/i,
+    keyTakeaways: /key\s+takeaways/i,
+    oneMinuteRevision: /one\s+minute\s+revision|minute\s+revision/i
+  };
+
+  const lines = summaryText.split('\n');
+  let currentKey: keyof StructuredSummary | null = null;
+
+  lines.forEach(line => {
+    const lineCleaned = line.trim().replace(/[*#]/g, '').trim();
+    let matched = false;
+    for (const [key, regex] of Object.entries(patterns)) {
+      if (regex.test(lineCleaned) && lineCleaned.length < 50) {
+        currentKey = key as keyof StructuredSummary;
+        matched = true;
+        break;
+      }
+    }
+
+    if (!matched) {
+      if (currentKey) {
+        sections[currentKey] += (sections[currentKey] ? '\n' : '') + line;
+      } else {
+        sections.overview += (sections.overview ? '\n' : '') + line;
+      }
+    }
+  });
+
+  const keys = Object.keys(sections) as (keyof StructuredSummary)[];
+  const filledCount = keys.filter(k => sections[k].trim().length > 0).length;
+
+  if (filledCount < 4) {
+    const words = summaryText.split(/\s+/);
+    const chunkSize = Math.ceil(words.length / 10);
+    for (let i = 0; i < 10; i++) {
+      const partWords = words.slice(i * chunkSize, (i + 1) * chunkSize);
+      sections[keys[i]] = partWords.join(' ');
+    }
+  }
+
+  for (const key of keys) {
+    sections[key] = clean(sections[key]);
+  }
+
+  return sections;
+};
 
 interface ResearchHubViewProps {
   sources: Source[];
@@ -82,6 +174,10 @@ export default function ResearchHubView({
   // Choose Active Source Lecture
   const [selectedLecture, setSelectedLecture] = useState<any>(availableLectures.length > 0 ? availableLectures[0] : null);
   const [activeTab, setActiveTab] = useState<string | null>(null);
+
+  // Notes & Summary mode format states
+  const [selectedNotesMode, setSelectedNotesMode] = useState<'quick' | 'detailed' | 'academic' | 'exam' | 'bhailang_normal' | 'bhailang_savage' | 'bhailang_pro'>('academic');
+  const [selectedSummaryMode, setSelectedSummaryMode] = useState<'quick_revision' | 'detailed_notes' | 'executive_summary' | 'beginner_friendly' | 'academic_format' | 'bhailang_normal' | 'bhailang_savage' | 'bhailang_pro'>('academic_format');
 
   // Console logging for activeTab transitions
   useEffect(() => {
@@ -139,18 +235,7 @@ export default function ResearchHubView({
     setNotesError(null);
 
     try {
-      const generated = await generateNotesFromTranscript(transcriptText);
-      const notesContent = generated.markdownNotes || generated;
-
-      if (updateLecture) {
-        await updateLecture(selectedLecture.id, {
-          notes: notesContent,
-          status: 'generated',
-          resourceGenerationStatus: 'completed',
-          updatedAt: new Date()
-        });
-      }
-
+      await generateResourcesFromTranscript(selectedLecture.id, transcriptText, { mode: 'academic', modeType: 'all' });
       setIsGeneratingNotes(false);
       setActiveTab('Notes');
     } catch (err: any) {
@@ -641,6 +726,7 @@ export default function ResearchHubView({
               { id: 'Summary', label: 'Summary', icon: FileText },
               { id: 'Transcript', label: 'Transcript', icon: Volume2 },
               { id: 'Notes', label: 'Notes', icon: Edit },
+              { id: 'Handwritten', label: 'Handwritten', icon: BookOpen },
               { id: 'Flashcards', label: 'Flashcards', icon: Bookmark },
               { id: 'Quiz', label: 'Quiz', icon: GraduationCap },
               { id: 'Mind Map', label: 'Mind Map', icon: Brain },
@@ -671,7 +757,7 @@ export default function ResearchHubView({
 
           {/* DYNAMIC TEMPLATE DISPATCHER */}
           {activeTab === 'Summary' && (
-            <div className="bg-[#0b0c10]/90 border border-neutral-900/80 rounded-3xl p-6 md:p-10 shadow-2xl space-y-8 select-text animate-fade-in">
+            <div className="bg-[#0b0c10]/90 border border-neutral-900/80 rounded-3xl p-6 md:p-10 shadow-2xl space-y-6 select-text animate-fade-in">
               <div className="flex flex-col md:flex-row justify-between gap-6 border-b border-neutral-900 pb-6">
                 <div className="space-y-2">
                   <span className="rounded-full bg-indigo-500/10 px-3 py-1 text-[10px] font-black text-indigo-400 font-mono tracking-widest uppercase">
@@ -693,9 +779,81 @@ export default function ResearchHubView({
                 )}
               </div>
 
+              {/* Summary Mode Selector Bar */}
+              <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-2xl border border-neutral-900 bg-neutral-950/70">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-neutral-400">Summary Format:</span>
+                  <select
+                    value={selectedSummaryMode}
+                    onChange={(e) => setSelectedSummaryMode(e.target.value as any)}
+                    className="bg-neutral-900 text-white text-xs font-mono font-bold uppercase px-3 py-1.5 rounded-xl border border-neutral-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                  >
+                    <option value="quick_revision">⚡ Quick Revision</option>
+                    <option value="detailed_notes">📜 Detailed Notes</option>
+                    <option value="executive_summary">💼 Executive Summary</option>
+                    <option value="beginner_friendly">🌱 Beginner Friendly</option>
+                    <option value="academic_format">🎓 Academic Format</option>
+                    <option value="bhailang_normal">🔥 Normal Bhai</option>
+                    <option value="bhailang_savage">💥 Savage Bhai (Sarcasm)</option>
+                    <option value="bhailang_pro">🚀 Bhai Pro (Analogies)</option>
+                  </select>
+                </div>
+              </div>
+
               {selectedLecture.summary ? (
-                <div className="text-xs md:text-sm text-neutral-300 leading-relaxed font-serif whitespace-pre-wrap p-5 bg-neutral-950/45 rounded-2xl border border-neutral-900/60 max-h-[500px] overflow-y-auto">
-                  {selectedLecture.summary}
+                <div className="space-y-4 max-h-[600px] overflow-y-auto pr-1">
+                  {(() => {
+                    const rawSummary = typeof selectedLecture.summary === 'object' 
+                      ? (selectedLecture.summary[selectedSummaryMode] || Object.values(selectedLecture.summary)[0] || '')
+                      : selectedLecture.summary;
+                    
+                    const sections = parseSummaryIntoSections(rawSummary);
+                    const allSections = [
+                      { key: 'overview', label: 'Overview', content: sections.overview },
+                      { key: 'keyConcepts', label: 'Key Concepts', content: sections.keyConcepts },
+                      { key: 'importantDefinitions', label: 'Important Definitions', content: sections.importantDefinitions },
+                      { key: 'examples', label: 'Examples', content: sections.examples },
+                      { key: 'applications', label: 'Applications', content: sections.applications },
+                      { key: 'commonMistakes', label: 'Common Mistakes', content: sections.commonMistakes },
+                      { key: 'revisionNotes', label: 'Revision Notes', content: sections.revisionNotes },
+                      { key: 'examQuestions', label: 'Exam Questions', content: sections.examQuestions },
+                      { key: 'keyTakeaways', label: 'Key Takeaways', content: sections.keyTakeaways },
+                      { key: 'oneMinuteRevision', label: 'One Minute Revision', content: sections.oneMinuteRevision }
+                    ];
+
+                    const filteredSections = allSections.filter(sec => {
+                      if (!sec.content || sec.content.trim().length === 0) return false;
+                      if (selectedSummaryMode === 'quick_revision') {
+                        return ['revisionNotes', 'commonMistakes', 'keyTakeaways', 'oneMinuteRevision'].includes(sec.key);
+                      } else if (selectedSummaryMode === 'detailed_notes') {
+                        return ['overview', 'keyConcepts', 'examples', 'applications', 'importantDefinitions'].includes(sec.key);
+                      } else if (selectedSummaryMode === 'executive_summary') {
+                        return ['overview', 'applications', 'keyTakeaways'].includes(sec.key);
+                      } else if (selectedSummaryMode === 'beginner_friendly') {
+                        return ['keyConcepts', 'examples', 'oneMinuteRevision'].includes(sec.key);
+                      } else if (selectedSummaryMode === 'academic_format') {
+                        return ['overview', 'keyConcepts', 'importantDefinitions', 'applications'].includes(sec.key);
+                      }
+                      return true;
+                    });
+
+                    if (filteredSections.length === 0) {
+                      return (
+                        <div className="p-5 rounded-2xl border border-neutral-900 bg-neutral-950/60 text-neutral-300 text-xs font-serif leading-relaxed whitespace-pre-wrap">
+                          {cleanMarkdownText(rawSummary)}
+                        </div>
+                      );
+                    }
+
+                    return filteredSections.map((sec, idx) => (
+                      <div key={idx} className="p-5 rounded-2xl border border-neutral-900 bg-neutral-950/60 space-y-2">
+                        <h4 className="text-xs font-mono font-extrabold text-indigo-400 uppercase tracking-wider border-b border-neutral-900 pb-2">{sec.label}</h4>
+                        <p className="text-xs md:text-sm text-neutral-300 font-serif leading-relaxed whitespace-pre-wrap">
+                          {cleanMarkdownText(sec.content)}
+                        </p>
+                      </div>
+                    ));
+                  })()}
                 </div>
               ) : (
                 <div className="text-center py-12 text-neutral-500 font-sans border border-dashed border-neutral-900/40 rounded-2xl bg-[#0c0d12]/50">
@@ -706,6 +864,12 @@ export default function ResearchHubView({
                   </p>
                 </div>
               )}
+            </div>
+          )}
+
+          {activeTab === 'Handwritten' && (
+            <div className="bg-[#0b0c10]/90 border border-neutral-900/80 rounded-3xl p-6 md:p-10 shadow-2xl space-y-6 select-text animate-fade-in">
+              <HandwrittenNotesViewer lectureData={selectedLecture} theme={theme} />
             </div>
           )}
 
@@ -860,10 +1024,10 @@ export default function ResearchHubView({
           {activeTab === 'Notes' && (() => {
             const actualTranscript = selectedLecture.transcript || selectedLecture.cleanTranscript || selectedLecture.text || '';
             const hasValidTranscript = actualTranscript && actualTranscript.trim().length > 0;
-            const hasNotes = selectedLecture.notes && (typeof selectedLecture.notes === 'string' ? selectedLecture.notes.trim().length > 0 : Object.keys(selectedLecture.notes).length > 0);
+            const hasNotes = selectedLecture.notes && (typeof selectedLecture.notes === 'string' ? selectedLecture.notes.trim().length > 0 : (Array.isArray(selectedLecture.notes) ? selectedLecture.notes.length > 0 : Object.keys(selectedLecture.notes).length > 0));
 
             return (
-              <div className="bg-[#0b0c10]/90 border border-neutral-900/80 rounded-3xl p-6 md:p-10 shadow-2xl space-y-8 select-text animate-fade-in">
+              <div className="bg-[#0b0c10]/90 border border-neutral-900/80 rounded-3xl p-6 md:p-10 shadow-2xl space-y-6 select-text animate-fade-in">
                 <div className="flex flex-col md:flex-row justify-between gap-6 border-b border-neutral-900 pb-6">
                   <div className="space-y-2">
                     <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-[10px] font-black text-emerald-400 font-mono tracking-widest uppercase">
@@ -872,7 +1036,7 @@ export default function ResearchHubView({
                     <h2 className="font-sans font-black text-2xl md:text-3xl tracking-tight text-white">
                       {selectedLecture.title}
                     </h2>
-                    <p className="text-xs text-neutral-400 font-mono">Generated strictly from saved lecture transcript</p>
+                    <p className="text-xs text-neutral-400 font-mono">Textbook-quality structured notes generated strictly from transcript</p>
                   </div>
 
                   {hasValidTranscript && (
@@ -903,9 +1067,29 @@ export default function ResearchHubView({
                   </div>
                 )}
 
+                {/* Notes Mode Selector Bar */}
+                <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-2xl border border-neutral-900 bg-neutral-950/70">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-neutral-400">Notes Format:</span>
+                    <select
+                      value={selectedNotesMode}
+                      onChange={(e) => setSelectedNotesMode(e.target.value as any)}
+                      className="bg-neutral-900 text-white text-xs font-mono font-bold uppercase px-3 py-1.5 rounded-xl border border-neutral-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                    >
+                      <option value="quick">⚡ Quick Notes</option>
+                      <option value="detailed">📜 Detailed Notes</option>
+                      <option value="academic">🎓 Academic Notes</option>
+                      <option value="exam">🎯 Exam Notes</option>
+                      <option value="bhailang_normal">🔥 Normal Bhai</option>
+                      <option value="bhailang_savage">💥 Savage Bhai (Sarcasm)</option>
+                      <option value="bhailang_pro">🚀 Bhai Pro (Analogies)</option>
+                    </select>
+                  </div>
+                </div>
+
                 {hasNotes ? (
-                  <div className="text-xs md:text-sm text-neutral-300 leading-relaxed font-serif whitespace-pre-wrap p-6 bg-neutral-950/45 rounded-2xl border border-neutral-900/60 max-h-[600px] overflow-y-auto">
-                    {typeof selectedLecture.notes === 'string' ? selectedLecture.notes : JSON.stringify(selectedLecture.notes, null, 2)}
+                  <div className="p-6 bg-neutral-950/60 rounded-2xl border border-neutral-900/80 max-h-[650px] overflow-y-auto">
+                    <AcademicNotesViewer content={selectedLecture.notes} mode={selectedNotesMode} theme={theme} />
                   </div>
                 ) : (
                   <div className="text-center py-16 text-neutral-500 font-sans border border-dashed border-neutral-900/60 rounded-2xl bg-[#0c0d12]/50 space-y-4">
