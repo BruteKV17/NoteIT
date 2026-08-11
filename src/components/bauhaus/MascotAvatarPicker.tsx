@@ -18,7 +18,8 @@ export const OFFICIAL_MASCOTS: MascotOption[] = [
   { id: 'cat', name: 'Cyber Cat', role: 'LED Synth', url: '/mascots/mascot-cat.jpg' },
   { id: 'owl', name: 'Scholar Owl', role: 'Academic Dean', url: '/mascots/mascot-owl.jpg' },
   { id: 'monkey', name: 'Cyber Monkey', role: 'Matrix Hacker', url: '/mascots/mascot-monkey.jpg' },
-  { id: 'husky', name: 'Astro Husky', role: 'Space Scholar', url: '/mascots/mascot-husky.jpg' }
+  { id: 'husky', name: 'Astro Husky', role: 'Space Scholar', url: '/mascots/mascot-husky.jpg' },
+  { id: 'wolf', name: 'Shadow Wolf', role: 'Hoodie Scholar', url: '/mascots/mascot-wolf.jpg' }
 ];
 
 interface MascotAvatarPickerProps {
