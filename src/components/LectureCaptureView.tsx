@@ -1351,7 +1351,7 @@ export default function LectureCaptureView({
           >
             
             {/* MINI TAB ROW SELECTOR */}
-            <div className="flex gap-1.5 overflow-x-auto pb-1.5 scrollbar-none whitespace-nowrap bg-[#F6F2EA] p-2 rounded-[6px] border border-[#111111] shadow-paper-sm">
+            <div className="shrink-0 sticky top-0 z-20 flex items-center gap-1.5 overflow-x-auto p-2.5 scrollbar-none whitespace-nowrap bg-[#F6F2EA] rounded-[6px] border-2 border-[#111111] shadow-paper-sm">
               {(['notes', 'summary', 'flashcards', 'quiz', 'mindmap', 'timeline', 'slides', 'handwritten', 'chat'] as const).map(tab => (
                 <button
                   key={tab}
@@ -1359,7 +1359,7 @@ export default function LectureCaptureView({
                     setActiveOutputTab(tab as any);
                     setSelectedMindmapNode(null);
                   }}
-                  className={`px-3 py-1.5 rounded-[4px] text-xs font-mono font-extrabold uppercase transition-all cursor-pointer ${
+                  className={`shrink-0 px-3.5 py-2 rounded-[4px] text-xs font-mono font-extrabold uppercase transition-all cursor-pointer flex items-center justify-center ${
                     activeOutputTab === (tab as any)
                       ? 'bg-[#FFC400] text-[#111111] border border-[#111111] shadow-paper-sm' 
                       : 'bg-white text-[#111111] border border-[#111111] shadow-paper-sm hover:bg-[#FFF8D6]'
@@ -1376,7 +1376,7 @@ export default function LectureCaptureView({
               {/* 1. NOTES TAB */}
               {activeOutputTab === 'notes' && (
                 <div className="space-y-4">
-                  <div className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-[6px] border border-[#111111] bg-[#F6F2EA] shadow-paper-sm">
+                  <div className="shrink-0 flex flex-wrap items-center justify-between gap-2 p-2 rounded-[6px] border border-[#111111] bg-[#F6F2EA] shadow-paper-sm">
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#666666]">Format:</span>
                       <div className="relative">
@@ -1439,7 +1439,7 @@ export default function LectureCaptureView({
               {/* 2. SUMMARY TAB */}
               {activeOutputTab === 'summary' && (
                 <div className="space-y-4">
-                  <div className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-[6px] border border-[#111111] bg-[#F6F2EA] shadow-paper-sm">
+                  <div className="shrink-0 flex flex-wrap items-center justify-between gap-2 p-2 rounded-[6px] border border-[#111111] bg-[#F6F2EA] shadow-paper-sm">
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#666666]">Format:</span>
                       <div className="relative">
