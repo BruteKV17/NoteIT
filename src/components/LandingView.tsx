@@ -489,7 +489,7 @@ export default function LandingView({
                 </span>
                 <div>
                   <h3 className="font-heading font-extrabold text-xl uppercase text-[var(--text-primary)]">SCHOLAR PRO</h3>
-                  <div className="text-3xl font-heading font-extrabold text-[var(--text-primary)] mt-1">₹400 <span className="text-xs font-mono text-[var(--text-secondary)]">/ month</span></div>
+                  <div className="text-3xl font-heading font-extrabold text-[var(--text-primary)] mt-1">₹399 <span className="text-xs font-mono text-[var(--text-secondary)]">/ month</span></div>
                 </div>
                 <p className="text-xs font-mono text-[var(--text-secondary)] font-bold">Managed AI infrastructure with high-speed API quota included.</p>
                 <div className="space-y-2 font-mono text-xs text-[var(--text-primary)] border-t-2 border-[var(--border-main)] pt-3">
