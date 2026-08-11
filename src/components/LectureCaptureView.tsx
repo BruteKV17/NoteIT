@@ -43,36 +43,6 @@ import { saveRecordingChunks, getRecordingChunks, deleteRecordingBackup, getAllB
 import { awardXP, processActivityEvent } from '../services/activityTracker';
 import { renderTranscriptWithDots } from './bauhaus/TimestampDot';
 
-export function transliterateHindiToHinglish(text: string): string {
-  if (!text) return '';
-  if (!/[\u0900-\u097F]/.test(text)) return text;
-
-  const charMap: Record<string, string> = {
-    'अ': 'a', 'आ': 'aa', 'इ': 'i', 'ई': 'ee', 'उ': 'u', 'ऊ': 'oo', 'ऋ': 'ri', 'ए': 'e', 'ऐ': 'ai', 'ओ': 'o', 'औ': 'au', 'अं': 'an', 'अः': 'ah',
-    'क': 'k', 'ख': 'kh', 'ग': 'g', 'घ': 'gh', 'ङ': 'ng',
-    'च': 'ch', 'छ': 'chh', 'ज': 'j', 'झ': 'jh', 'ञ': 'ny',
-    'ट': 't', 'ठ': 'th', 'ड': 'd', 'ढ': 'dh', 'ण': 'n',
-    'त': 't', 'थ': 'th', 'द': 'd', 'ध': 'dh', 'न': 'n',
-    'प': 'p', 'फ': 'ph', 'ब': 'b', 'भ': 'bh', 'म': 'm',
-    'य': 'y', 'र': 'r', 'ल': 'l', 'व': 'v', 'श': 'sh', 'ष': 'sh', 'स': 's', 'ह': 'h',
-    'क्ष': 'ksh', 'त्र': 'tr', 'ज्ञ': 'gyan', 'ड़': 'd', 'ढ़': 'dh', 'क़': 'q', 'ख़': 'kh', 'ग़': 'g', 'ज़': 'z', 'फ़': 'f',
-    'ा': 'a', 'ि': 'i', 'ी': 'i', 'ु': 'u', 'ू': 'u', 'ृ': 'ri', 'े': 'e', 'ै': 'ai', 'ो': 'o', 'ौ': 'au', 'ं': 'n', 'ँ': 'n', 'ः': 'h', '्': '',
-    '०': '0', '१': '1', '२': '2', '३': '3', '४': '4', '५': '5', '६': '6', '७': '7', '८': '8', '९': '9'
-  };
-
-  let out = '';
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    const code = ch.charCodeAt(0);
-    if (code >= 0x0900 && code <= 0x097F) {
-      out += charMap[ch] !== undefined ? charMap[ch] : ch;
-    } else {
-      out += ch;
-    }
-  }
-  return out;
-}
-
 interface LectureCaptureViewProps {
   onSaveCapture: (title: string, subject: string, duration: string, audioBlob: Blob, existingLectureId?: string) => Promise<void>;
   onStartCapture?: (title: string, subject: string) => Promise<string>;
@@ -399,18 +369,27 @@ export default function LectureCaptureView({
       const recognition = new SpeechRecognitionClass();
       recognition.continuous = true;
       recognition.interimResults = true;
-      recognition.lang = 'hi-IN';
+      recognition.lang = 'en-IN';
 
       recognition.onresult = (event: any) => {
-        let currentSessionTranscript = '';
-        for (let i = 0; i < event.results.length; ++i) {
-          currentSessionTranscript += event.results[i][0].transcript + ' ';
+        let finalChunk = '';
+        let interimChunk = '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          const text = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalChunk += text + ' ';
+          } else {
+            interimChunk += text;
+          }
         }
-        
-        // Convert any Hindi Devanagari characters into Roman Hinglish (English alphabet text)
-        const hinglishTranscript = transliterateHindiToHinglish(currentSessionTranscript);
-        const base = accumulatedTranscriptRef.current;
-        setLiveTranscript((base + ' ' + hinglishTranscript).trim());
+
+        if (finalChunk) {
+          accumulatedTranscriptRef.current = (accumulatedTranscriptRef.current + ' ' + finalChunk).replace(/\s+/g, ' ');
+        }
+
+        const fullLiveText = (accumulatedTranscriptRef.current + ' ' + interimChunk).trim();
+        setLiveTranscript(fullLiveText);
       };
 
       recognition.onerror = (event: any) => {
@@ -2614,7 +2593,7 @@ export default function LectureCaptureView({
                             </div>
                             <div className="flex items-center gap-1">
                               <span className="text-[9px] font-mono font-bold bg-[#FFC400] text-[#111111] px-2 py-0.5 rounded-[4px] border border-[var(--border-main)] uppercase">
-                                HINDI + ENGLISH (ENGLISH SCRIPT)
+                                LIVE AUTO-TRANSCRIPTION
                               </span>
                             </div>
                           </div>
