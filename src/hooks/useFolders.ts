@@ -13,14 +13,10 @@ import {
 import { db } from '../firebaseConfig';
 import { Folder } from '../types';
 
-const DEFAULT_FOLDERS: Folder[] = [
-  { id: 'f-core', name: 'Core Subjects', color: '#2F6BFF' },
-  { id: 'f-exam', name: 'Exam Preparation', color: '#FFC400' },
-  { id: 'f-lab', name: 'Lab & Projects', color: '#19B56B' }
-];
+const DEFAULT_FOLDERS: Folder[] = [];
 
 export function useFolders(userId: string | undefined) {
-  const [folders, setFolders] = useState<Folder[]>(DEFAULT_FOLDERS);
+  const [folders, setFolders] = useState<Folder[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -28,12 +24,15 @@ export function useFolders(userId: string | undefined) {
       const savedLocal = localStorage.getItem('noteit_local_folders');
       if (savedLocal) {
         try {
-          setFolders(JSON.parse(savedLocal));
+          const parsed = JSON.parse(savedLocal);
+          // Filter out legacy dummy folders if present
+          const clean = parsed.filter((f: Folder) => !['f-core', 'f-exam', 'f-lab'].includes(f.id));
+          setFolders(clean);
         } catch (e) {
-          setFolders(DEFAULT_FOLDERS);
+          setFolders([]);
         }
       } else {
-        setFolders(DEFAULT_FOLDERS);
+        setFolders([]);
       }
       setIsLoading(false);
       return;
@@ -49,6 +48,8 @@ export function useFolders(userId: string | undefined) {
         const folderList: Folder[] = [];
         snapshot.forEach((docSnap) => {
           const data = docSnap.data();
+          // Skip legacy default IDs
+          if (['f-core', 'f-exam', 'f-lab'].includes(docSnap.id)) return;
           folderList.push({
             id: docSnap.id,
             name: data.name || 'Untitled Folder',
@@ -58,17 +59,12 @@ export function useFolders(userId: string | undefined) {
           });
         });
         
-        // If user has no folders yet, provide initial default set
-        if (folderList.length === 0) {
-          setFolders(DEFAULT_FOLDERS);
-        } else {
-          setFolders(folderList);
-        }
+        setFolders(folderList);
         setIsLoading(false);
       },
       (err) => {
         console.error('Error fetching folders:', err);
-        setFolders(DEFAULT_FOLDERS);
+        setFolders([]);
         setIsLoading(false);
       }
     );
