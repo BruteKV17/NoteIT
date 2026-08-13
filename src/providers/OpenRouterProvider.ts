@@ -2,12 +2,12 @@ import { BaseProvider, extractJsonObject } from './AIProvider';
 
 export class OpenRouterProvider extends BaseProvider {
   constructor(apiKey: string) {
-    super(apiKey, 'google/gemini-2.5-flash');
+    super(apiKey, 'google/gemini-2.0-flash-001');
   }
 
   getAvailableModels(): string[] {
     return [
-      'google/gemini-2.5-flash',
+      'google/gemini-2.0-flash-001',
       'meta-llama/llama-3.3-70b-instruct',
       'deepseek/deepseek-chat',
       'anthropic/claude-3.5-sonnet',

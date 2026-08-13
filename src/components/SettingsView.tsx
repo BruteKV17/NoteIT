@@ -49,7 +49,7 @@ const PROVIDER_METADATA: Record<string, {
     defaultModel: 'gemini-2.0-flash',
     docLink: 'https://ai.google.dev/gemini-api/docs',
     getKeyLink: 'https://aistudio.google.com/apikey',
-    models: ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.5-flash'],
+    models: ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'],
     endpoint: 'generativelanguage.googleapis.com'
   },
   groq: {
@@ -91,10 +91,10 @@ const PROVIDER_METADATA: Record<string, {
   openrouter: {
     name: 'OpenRouter',
     description: 'Access any open or closed model through a single unified API key.',
-    defaultModel: 'google/gemini-2.5-flash',
+    defaultModel: 'google/gemini-2.0-flash-001',
     docLink: 'https://openrouter.ai/docs',
     getKeyLink: 'https://openrouter.ai/keys',
-    models: ['google/gemini-2.5-flash', 'meta-llama/llama-3.3-70b-instruct', 'deepseek/deepseek-chat', 'anthropic/claude-3.5-sonnet', 'openai/gpt-4o-mini'],
+    models: ['google/gemini-2.0-flash-001', 'meta-llama/llama-3.3-70b-instruct', 'deepseek/deepseek-chat', 'anthropic/claude-3.5-sonnet', 'openai/gpt-4o-mini'],
     endpoint: 'openrouter.ai/api/v1'
   },
   mistral: {
@@ -197,7 +197,7 @@ export default function SettingsView({
 
   // AI Provider & API Keys state
   const [aiProvider, setAiProvider] = useState<string>('gemini');
-  const [selectedModel, setSelectedModel] = useState<string>('gemini-2.5-flash');
+  const [selectedModel, setSelectedModel] = useState<string>('gemini-2.0-flash');
   
   // Search & custom dropdowns
   const [searchQuery, setSearchQuery] = useState('');
@@ -916,7 +916,7 @@ export default function SettingsView({
                     <div>
                       <div className="text-[9px] uppercase text-[#666666]">Active Model</div>
                       <div className="mt-1 font-extrabold text-[#2F6BFF]">
-                        {configStatus?.selectedModel || 'gemini-2.5-flash'}
+                        {configStatus?.selectedModel || 'gemini-2.0-flash'}
                       </div>
                     </div>
                     <div>

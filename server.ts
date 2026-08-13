@@ -198,7 +198,7 @@ app.post('/api/ai/provider-proxy', authenticateFirebaseUser, async (req, res) =>
       const isOp = !!data.openaiApiKey;
       const keyToMigrate = isOp ? data.openaiApiKey : data.geminiApiKey;
       const provToMigrate = isOp ? 'openai' : 'gemini';
-      const modelToMigrate = isOp ? 'gpt-4o-mini' : 'gemini-2.5-flash';
+      const modelToMigrate = isOp ? 'gpt-4o-mini' : 'gemini-2.0-flash';
       
       const migrationFields = {
         aiProvider: provToMigrate,
@@ -368,7 +368,7 @@ app.get('/api/ai/config-status', authenticateFirebaseUser, async (req, res) => {
       const isOp = !!data.openaiApiKey;
       const keyToMigrate = isOp ? data.openaiApiKey : data.geminiApiKey;
       const provToMigrate = isOp ? 'openai' : 'gemini';
-      const modelToMigrate = isOp ? 'gpt-4o-mini' : 'gemini-2.5-flash';
+      const modelToMigrate = isOp ? 'gpt-4o-mini' : 'gemini-2.0-flash';
       
       const migrationFields = {
         aiProvider: provToMigrate,

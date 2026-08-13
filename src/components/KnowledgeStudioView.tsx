@@ -46,7 +46,7 @@ import { HandwrittenNotesViewer } from './bauhaus/HandwrittenNotesViewer';
 import { db, auth } from '../firebaseConfig';
 import { API_BASE_URL } from '../config';
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp, query, orderBy, onSnapshot } from 'firebase/firestore';
-import { generateLectureContentFromText, generateStructuredNotes, generateSummary, generateFlashcards, generateQuiz, generateMoreQuestions, generateMindmap } from '../services/gemini';
+import { generateLectureContentFromText, generateStructuredNotes, generateSummary, generateFlashcards, generateQuiz, generateMoreQuestions, generateMindmap, getAIConfig } from '../services/gemini';
 import { getAzureUploadSasUrl, uploadBlobToAzure, extractTextFromDocument, extractTextFromUrl } from '../services/azure';
 import pptxgen from 'pptxgenjs';
 import BruteLoader from './BruteLoader';
@@ -1321,7 +1321,7 @@ Question:
 ${queryText}`;
 
       const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
       const res = await fetch(url, {
         method: 'POST',
@@ -1501,7 +1501,7 @@ ${queryText}`;
       `;
 
       const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
       const res = await fetch(url, {
         method: 'POST',
@@ -2216,7 +2216,7 @@ ${queryText}`;
 
     try {
       const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
       const prompt = `
         Create a structured PowerPoint presentation deck based on the following material.
@@ -3462,7 +3462,7 @@ ${queryText}`;
                 {activeOutputTab === 'slides' && (
                   <PresentationWorkspace
                     theme={theme}
-                    apiKey={import.meta.env.VITE_GEMINI_API_KEY || ''}
+                    apiKey={getAIConfig().geminiKey}
                     contentSourceText={activeSource.content || activeSource.summary || ''}
                     initialBlueprint={activeSource.presentationBlueprint}
                     title={activeSource.title}

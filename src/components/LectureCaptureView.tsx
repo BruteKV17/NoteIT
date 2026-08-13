@@ -42,6 +42,7 @@ import { HandwrittenNotesViewer } from './bauhaus/HandwrittenNotesViewer';
 import { saveRecordingChunks, getRecordingChunks, deleteRecordingBackup, getAllBackupKeys } from '../services/dbBackup';
 import { awardXP, processActivityEvent } from '../services/activityTracker';
 import { renderTranscriptWithDots } from './bauhaus/TimestampDot';
+import { getAIConfig } from '../services/gemini';
 
 interface LectureCaptureViewProps {
   onSaveCapture: (title: string, subject: string, duration: string, audioBlob: Blob, existingLectureId?: string) => Promise<void>;
@@ -937,8 +938,8 @@ export default function LectureCaptureView({
 
     setIsGeneratingNotes(true);
     try {
-      const { generateNotes: callGenerateNotes } = await import('../services/gemini');
-      const generated = await callGenerateNotes(textContent, mode, import.meta.env.VITE_GEMINI_API_KEY || '');
+      const { generateNotes: callGenerateNotes, getAIConfig } = await import('../services/gemini');
+      const generated = await callGenerateNotes(textContent, mode, getAIConfig().geminiKey);
       
       const docRef = doc(db, 'users', uid, 'lectures', activeLecture.id);
       await updateDoc(docRef, {
@@ -966,8 +967,8 @@ export default function LectureCaptureView({
 
     setIsGeneratingSummary(true);
     try {
-      const { generateSummary: callGenerateSummary } = await import('../services/gemini');
-      const generated = await callGenerateSummary(textContent, mode, import.meta.env.VITE_GEMINI_API_KEY || '');
+      const { generateSummary: callGenerateSummary, getAIConfig } = await import('../services/gemini');
+      const generated = await callGenerateSummary(textContent, mode, getAIConfig().geminiKey);
 
       const docRef = doc(db, 'users', uid, 'lectures', activeLecture.id);
       await updateDoc(docRef, {
@@ -1001,7 +1002,7 @@ export default function LectureCaptureView({
       const textLen = textContent.length;
       const count = textLen < 3000 ? 15 : textLen < 10000 ? 30 : 50;
 
-      const generated = await callGenerateFlashcards(textContent, count, [], import.meta.env.VITE_GEMINI_API_KEY || '');
+      const generated = await callGenerateFlashcards(textContent, count, [], getAIConfig().geminiKey);
       
       const docRef = doc(db, 'users', uid, 'lectures', activeLecture.id);
       await updateDoc(docRef, {
@@ -1029,10 +1030,10 @@ export default function LectureCaptureView({
 
     setIsGeneratingFlashcards(true);
     try {
-      const { generateFlashcards: callGenerateFlashcards } = await import('../services/gemini');
+      const { generateFlashcards: callGenerateFlashcards, getAIConfig } = await import('../services/gemini');
       const existing = activeLecture.flashcards || [];
 
-      const generated = await callGenerateFlashcards(textContent, 10, existing, import.meta.env.VITE_GEMINI_API_KEY || '');
+      const generated = await callGenerateFlashcards(textContent, 10, existing, getAIConfig().geminiKey);
       
       const docRef = doc(db, 'users', uid, 'lectures', activeLecture.id);
       await updateDoc(docRef, {
@@ -1060,9 +1061,9 @@ export default function LectureCaptureView({
 
     setIsGeneratingQuiz(true);
     try {
-      const { generateQuiz: callGenerateQuiz } = await import('../services/gemini');
+      const { generateQuiz: callGenerateQuiz, getAIConfig } = await import('../services/gemini');
       
-      const generated = await callGenerateQuiz(textContent, import.meta.env.VITE_GEMINI_API_KEY || '');
+      const generated = await callGenerateQuiz(textContent, getAIConfig().geminiKey);
       
       const docRef = doc(db, 'users', uid, 'lectures', activeLecture.id);
       await updateDoc(docRef, {
@@ -1090,12 +1091,12 @@ export default function LectureCaptureView({
 
     setIsGeneratingQuiz(true);
     try {
-      const { generateMoreQuestions: callGenerateMoreQuiz } = await import('../services/gemini');
+      const { generateMoreQuestions: callGenerateMoreQuiz, getAIConfig } = await import('../services/gemini');
       const existing = activeLecture.quiz || [];
       const difficultyQuestions = existing.filter((q: any) => q.difficulty === selectedQuizDifficulty);
       const questionTexts = difficultyQuestions.map((q: any) => q.question);
 
-      const generated = await callGenerateMoreQuiz(textContent, selectedQuizDifficulty, questionTexts, import.meta.env.VITE_GEMINI_API_KEY || '');
+      const generated = await callGenerateMoreQuiz(textContent, selectedQuizDifficulty, questionTexts, getAIConfig().geminiKey);
       
       const docRef = doc(db, 'users', uid, 'lectures', activeLecture.id);
       await updateDoc(docRef, {
@@ -1123,10 +1124,10 @@ export default function LectureCaptureView({
 
     setIsGeneratingMindmap(true);
     try {
-      const { generateMindmap: callGenerateMindmap } = await import('../services/gemini');
+      const { generateMindmap: callGenerateMindmap, getAIConfig } = await import('../services/gemini');
       const sections = activeLecture.sections || [];
 
-      const generated = await callGenerateMindmap(textContent, sections, import.meta.env.VITE_GEMINI_API_KEY || '');
+      const generated = await callGenerateMindmap(textContent, sections, getAIConfig().geminiKey);
       
       const docRef = doc(db, 'users', uid, 'lectures', activeLecture.id);
       await updateDoc(docRef, {
@@ -1146,7 +1147,7 @@ export default function LectureCaptureView({
     const activeLecture = lectures.find(l => l.id === activeLectureId);
     if (!activeLecture) return;
 
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+    const apiKey = getAIConfig().geminiKey;
     if (!apiKey) return;
 
     const hasTranscript = !!(activeLecture.transcript?.trim() || activeLecture.cleanTranscript?.trim());

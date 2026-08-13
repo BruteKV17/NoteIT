@@ -36,7 +36,7 @@ const extractJsonObject = (rawText: string): string => {
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-const getAIConfig = () => {
+export const getAIConfig = () => {
   const isBrowser = typeof window !== 'undefined';
   const provider = isBrowser ? (localStorage.getItem('noteit_ai_provider') || 'gemini') : 'gemini';
   const customGeminiKey = isBrowser ? (localStorage.getItem('noteit_gemini_api_key') || '') : '';
@@ -305,7 +305,7 @@ ${transcript}`;
     required: ['title', 'overview', 'keyConcepts', 'importantPoints', 'examples', 'formulas', 'definitions', 'takeaways']
   };
 
-  const rawResult = await executeGeminiCall(prompt, customGeminiApiKey || '', undefined, schema, onBusy, 'gemini-2.5-flash', 'generate-notes');
+  const rawResult = await executeGeminiCall(prompt, customGeminiApiKey || '', undefined, schema, onBusy, 'gemini-2.0-flash', 'generate-notes');
 
   const title = rawResult.title || 'Lecture Study Notes';
   const overview = rawResult.overview || '';
@@ -957,9 +957,9 @@ export const generateLectureContent = async (
   mode: 'academic' | 'executive' | 'revision' = 'academic',
   onProgress?: (step: number, message: string) => void
 ): Promise<any> => {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+  const apiKey = getAIConfig().geminiKey;
   if (!apiKey) {
-    throw new Error("Gemini API key is not configured in .env. Please configure VITE_GEMINI_API_KEY.");
+    throw new Error("Gemini API key is not configured. Please configure an API key in Settings or environment.");
   }
 
   // Phase 1: Transcribe Audio
@@ -986,9 +986,9 @@ export const generateLectureContentFromText = async (
   mode: 'academic' | 'executive' | 'revision' | 'bhailang' | 'bhailang_normal' | 'bhailang_savage' | 'bhailang_pro' = 'academic',
   onProgress?: (step: number, message: string) => void
 ): Promise<any> => {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+  const apiKey = getAIConfig().geminiKey;
   if (!apiKey) {
-    throw new Error("Gemini API key is not configured in .env. Please configure VITE_GEMINI_API_KEY.");
+    throw new Error("Gemini API key is not configured. Please configure an API key in Settings or environment.");
   }
 
   if (onProgress) onProgress(1, "Analyzing text and generating initial workspace chapters...");
@@ -1011,12 +1011,12 @@ export const generateAdditionalQuizQuestions = async (
   contextText: string = '',
   outputLanguage: string = 'English'
 ): Promise<any[]> => {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+  const apiKey = getAIConfig().geminiKey;
   if (!apiKey) {
-    throw new Error("Gemini API key is not configured in .env. Please configure VITE_GEMINI_API_KEY.");
+    throw new Error("Gemini API key is not configured. Please configure an API key in Settings or environment.");
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
   const prompt = `
     You are an expert academic tutor. Generate 12 unique additional quiz questions about the topic "${topic}" with difficulty level "${difficulty}" directly from the provided source context.
@@ -1215,9 +1215,9 @@ export const askLectureAI = async (
   question: string,
   chatHistory: { sender: 'user' | 'ai'; text: string }[] = []
 ): Promise<{ answer: string; citations: any[] }> => {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+  const apiKey = getAIConfig().geminiKey;
   if (!apiKey) {
-    throw new Error("Gemini API key is not configured.");
+    throw new Error("Gemini API key is not configured. Please configure an API key in Settings or environment.");
   }
 
   // 1. Retrieve relevant chunks
