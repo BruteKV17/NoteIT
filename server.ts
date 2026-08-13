@@ -179,6 +179,12 @@ app.post('/api/ai/validate-key', authenticateFirebaseUser, async (req, res) => {
   }
 });
 
+function sanitizeModelName(model?: string): string {
+  if (!model || model === 'gemini-2.5-flash' || model === 'google/gemini-2.5-flash') return 'gemini-2.0-flash';
+  if (model === 'gemini-2.5-pro' || model === 'google/gemini-2.5-pro') return 'gemini-1.5-pro';
+  return model;
+}
+
 app.post('/api/ai/provider-proxy', authenticateFirebaseUser, async (req, res) => {
   const { prompt, model, inlineData, responseSchema, action } = req.body;
   const user = req.body.user;
@@ -223,7 +229,7 @@ app.post('/api/ai/provider-proxy', authenticateFirebaseUser, async (req, res) =>
     }
 
     const providerName = data?.aiProvider || 'gemini';
-    const selectedModel = model || data?.selectedModel || ProviderFactory.getAvailableModels(providerName)[0];
+    const selectedModel = sanitizeModelName(model || data?.selectedModel || ProviderFactory.getAvailableModels(providerName)[0]);
 
     let decryptedKey: string;
     try {
@@ -577,7 +583,7 @@ app.post(['/api/lectures/:lectureId/generate-resources', '/api/lectures/generate
     }
 
     const providerName = userData?.aiProvider || 'gemini';
-    const selectedModel = options?.model || userData?.selectedModel || ProviderFactory.getAvailableModels(providerName)[0];
+    const selectedModel = sanitizeModelName(options?.model || userData?.selectedModel || ProviderFactory.getAvailableModels(providerName)[0]);
 
     let decryptedKey: string;
     try {

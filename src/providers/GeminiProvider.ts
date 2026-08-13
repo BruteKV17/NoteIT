@@ -1,5 +1,11 @@
 import { BaseProvider } from './AIProvider';
 
+function sanitizeGeminiModel(model?: string): string {
+  if (!model || model === 'gemini-2.5-flash' || model === 'google/gemini-2.5-flash') return 'gemini-2.0-flash';
+  if (model === 'gemini-2.5-pro' || model === 'google/gemini-2.5-pro') return 'gemini-1.5-pro';
+  return model;
+}
+
 export class GeminiProvider extends BaseProvider {
   constructor(apiKey: string) {
     super(apiKey, 'gemini-2.0-flash');
@@ -26,7 +32,7 @@ export class GeminiProvider extends BaseProvider {
   }
 
   async generateText(prompt: string, model?: string): Promise<string> {
-    const activeModel = model || this.defaultModel;
+    const activeModel = sanitizeGeminiModel(model || this.defaultModel);
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${activeModel}:generateContent?key=${this.apiKey}`;
     
     const response = await fetch(url, {
@@ -47,7 +53,7 @@ export class GeminiProvider extends BaseProvider {
   }
 
   async generateStructuredOutput(prompt: string, schema: any, model?: string): Promise<any> {
-    const activeModel = model || this.defaultModel;
+    const activeModel = sanitizeGeminiModel(model || this.defaultModel);
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${activeModel}:generateContent?key=${this.apiKey}`;
     
     const response = await fetch(url, {
@@ -73,7 +79,7 @@ export class GeminiProvider extends BaseProvider {
   }
 
   async transcribeAudio(base64Audio: string, mimeType: string, model?: string): Promise<string> {
-    const activeModel = model || this.defaultModel;
+    const activeModel = sanitizeGeminiModel(model || this.defaultModel);
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${activeModel}:generateContent?key=${this.apiKey}`;
     
     const response = await fetch(url, {

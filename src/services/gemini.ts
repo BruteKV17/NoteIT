@@ -133,6 +133,10 @@ export const executeGeminiCall = async (
     const idToken = await currentUser.getIdToken(true);
     const proxyUrl = `${API_BASE_URL}/api/ai/provider-proxy`;
 
+    let targetModel = model;
+    if (!targetModel || targetModel === 'gemini-2.5-flash' || targetModel === 'google/gemini-2.5-flash') targetModel = 'gemini-2.0-flash';
+    if (targetModel === 'gemini-2.5-pro' || targetModel === 'google/gemini-2.5-pro') targetModel = 'gemini-1.5-pro';
+
     const response = await fetch(proxyUrl, {
       method: 'POST',
       headers: {
@@ -141,7 +145,7 @@ export const executeGeminiCall = async (
       },
       body: JSON.stringify({
         prompt,
-        model,
+        model: targetModel,
         inlineData,
         responseSchema,
         action
