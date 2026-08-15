@@ -3,12 +3,12 @@ import { OpenRouterAdapter } from './ValidationAdapters';
 
 export class OpenRouterProvider extends BaseProvider {
   constructor(apiKey: string) {
-    super(apiKey, 'google/gemini-flash-1.5');
+    super(apiKey, 'google/gemini-3.6-flash');
   }
 
   getAvailableModels(): string[] {
     return [
-      'google/gemini-flash-1.5',
+      'google/gemini-3.6-flash',
       'meta-llama/llama-3.3-70b-instruct',
       'deepseek/deepseek-chat',
       'anthropic/claude-3.5-sonnet',

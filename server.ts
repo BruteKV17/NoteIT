@@ -160,21 +160,25 @@ app.post('/api/ai/validate-key', authenticateFirebaseUser, async (req, res) => {
     const providerInstance = ProviderFactory.getProvider(inputProvider, inputKey);
     const defaultModel = model || providerInstance.getAvailableModels()[0];
 
-    const adminDb = getFirestore();
-    const userDocRef = adminDb.collection('users').doc(uid);
+    try {
+      const adminDb = getFirestore();
+      const userDocRef = adminDb.collection('users').doc(uid);
 
-    const updateFields: any = {
-      aiProvider: activeProvider,
-      providerConfigured: true,
-      providerLastValidated: new Date(),
-      encryptedApiKey: encrypted,
-      selectedModel: defaultModel,
-      usageStats: { todayRequests: 0, estimatedTokens: 0, avgResponseTime: 0, failedRequests: 0, errors429: 0, errors503: 0 },
-      estimatedMonthlyTokens: 0,
-      lastHealthCheck: { status: 'Healthy', latency: 0, checkedAt: new Date() }
-    };
+      const updateFields: any = {
+        aiProvider: activeProvider,
+        providerConfigured: true,
+        providerLastValidated: new Date(),
+        encryptedApiKey: encrypted,
+        selectedModel: defaultModel,
+        usageStats: { todayRequests: 0, estimatedTokens: 0, avgResponseTime: 0, failedRequests: 0, errors429: 0, errors503: 0 },
+        estimatedMonthlyTokens: 0,
+        lastHealthCheck: { status: 'Healthy', latency: 0, checkedAt: new Date() }
+      };
 
-    await userDocRef.set(updateFields, { merge: true });
+      await userDocRef.set(updateFields, { merge: true });
+    } catch (fsErr) {
+      console.warn('[validate-key] Local Firestore save skipped (no GCP ADC credentials):', fsErr);
+    }
 
     res.json({ success: true, message: `${activeProvider} API connected successfully` });
   } catch (error: any) {
@@ -188,9 +192,8 @@ app.post('/api/ai/validate-key', authenticateFirebaseUser, async (req, res) => {
 });
 
 function sanitizeModelName(model?: string): string {
-  const validModels = ['gemini-1.5-flash', 'gemini-1.5-pro'];
-  if (model && validModels.includes(model)) return model;
-  if (!model || model.startsWith('gemini-') || model.startsWith('google/gemini-')) return 'gemini-1.5-flash';
+  if (!model || model.startsWith('gemini-') || model.startsWith('google/gemini-')) return 'gemini-3.6-flash';
+  if (model === 'gemini-3.6-flash') return 'gemini-3.6-flash';
   return model;
 }
 
@@ -202,32 +205,36 @@ app.post('/api/ai/provider-proxy', authenticateFirebaseUser, async (req, res) =>
   const startTime = Date.now();
 
   try {
-    const adminDb = getFirestore();
-    const userDocRef = adminDb.collection('users').doc(uid);
-    const userDoc = await userDocRef.get();
+    let data: any = null;
+    try {
+      const adminDb = getFirestore();
+      const userDocRef = adminDb.collection('users').doc(uid);
+      const userDoc = await userDocRef.get();
+      data = userDoc.exists ? userDoc.data() : null;
 
-    let data = userDoc.exists ? userDoc.data() : null;
-
-    // Automatic legacy migration
-    if (data && !data.providerConfigured && (data.geminiApiKey || data.openaiApiKey)) {
-      const isOp = !!data.openaiApiKey;
-      const keyToMigrate = isOp ? data.openaiApiKey : data.geminiApiKey;
-      const provToMigrate = isOp ? 'openai' : 'gemini';
-      const modelToMigrate = isOp ? 'gpt-4o-mini' : 'gemini-1.5-flash';
-      
-      const migrationFields = {
-        aiProvider: provToMigrate,
-        providerConfigured: true,
-        encryptedApiKey: encryptKey(keyToMigrate),
-        selectedModel: modelToMigrate,
-        providerLastValidated: data.geminiLastValidated || new Date(),
-        estimatedMonthlyTokens: 0,
-        usageStats: { todayRequests: 0, estimatedTokens: 0, avgResponseTime: 0, failedRequests: 0, errors429: 0, errors503: 0 },
-        lastHealthCheck: { status: 'Healthy', latency: 0, checkedAt: new Date() }
-      };
-      
-      await userDocRef.set(migrationFields, { merge: true });
-      data = { ...data, ...migrationFields };
+      // Automatic legacy migration
+      if (data && !data.providerConfigured && (data.geminiApiKey || data.openaiApiKey)) {
+        const isOp = !!data.openaiApiKey;
+        const keyToMigrate = isOp ? data.openaiApiKey : data.geminiApiKey;
+        const provToMigrate = isOp ? 'openai' : 'gemini';
+        const modelToMigrate = isOp ? 'gpt-4o-mini' : 'gemini-3.6-flash';
+        
+        const migrationFields = {
+          aiProvider: provToMigrate,
+          providerConfigured: true,
+          encryptedApiKey: encryptKey(keyToMigrate),
+          selectedModel: modelToMigrate,
+          providerLastValidated: data.geminiLastValidated || new Date(),
+          estimatedMonthlyTokens: 0,
+          usageStats: { todayRequests: 0, estimatedTokens: 0, avgResponseTime: 0, failedRequests: 0, errors429: 0, errors503: 0 },
+          lastHealthCheck: { status: 'Healthy', latency: 0, checkedAt: new Date() }
+        };
+        
+        await userDocRef.set(migrationFields, { merge: true });
+        data = { ...data, ...migrationFields };
+      }
+    } catch (fsErr) {
+      console.warn('[provider-proxy] Firestore read skipped (no GCP ADC credentials):', fsErr);
     }
 
     const rawKey = data?.encryptedApiKey || data?.geminiApiKey || data?.openaiApiKey || process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
@@ -300,15 +307,23 @@ app.post('/api/ai/provider-proxy', authenticateFirebaseUser, async (req, res) =>
 
     const monthlyTokens = (data.estimatedMonthlyTokens || 0) + tokenUsage.totalTokens;
 
-    await userDocRef.set({
-      usageStats: updatedStats,
-      estimatedMonthlyTokens: monthlyTokens,
-      lastHealthCheck: {
-        status: 'Healthy',
-        latency,
-        checkedAt: new Date()
+    try {
+      if (data) {
+        const adminDb = getFirestore();
+        const userDocRef = adminDb.collection('users').doc(uid);
+        await userDocRef.set({
+          usageStats: updatedStats,
+          estimatedMonthlyTokens: monthlyTokens,
+          lastHealthCheck: {
+            status: 'Healthy',
+            latency,
+            checkedAt: new Date()
+          }
+        }, { merge: true });
       }
-    }, { merge: true });
+    } catch (fsErr) {
+      console.warn('[provider-proxy] Stats save skipped (no GCP ADC credentials):', fsErr);
+    }
 
     res.json(result);
   } catch (error: any) {
@@ -367,37 +382,39 @@ app.get('/api/ai/config-status', authenticateFirebaseUser, async (req, res) => {
   const uid = user.uid;
 
   try {
-    const adminDb = getFirestore();
-    const userDocRef = adminDb.collection('users').doc(uid);
-    const userDoc = await userDocRef.get();
+    let data: any = null;
+    try {
+      const adminDb = getFirestore();
+      const userDocRef = adminDb.collection('users').doc(uid);
+      const userDoc = await userDocRef.get();
 
-    if (!userDoc.exists) {
-      res.json({ configured: false });
-      return;
-    }
+      if (userDoc.exists) {
+        data = userDoc.data();
+      }
 
-    let data = userDoc.data();
-
-    // Migration logic
-    if (data && !data.providerConfigured && (data.geminiApiKey || data.openaiApiKey)) {
-      const isOp = !!data.openaiApiKey;
-      const keyToMigrate = isOp ? data.openaiApiKey : data.geminiApiKey;
-      const provToMigrate = isOp ? 'openai' : 'gemini';
-      const modelToMigrate = isOp ? 'gpt-4o-mini' : 'gemini-1.5-flash';
-      
-      const migrationFields = {
-        aiProvider: provToMigrate,
-        providerConfigured: true,
-        encryptedApiKey: keyToMigrate,
-        selectedModel: modelToMigrate,
-        providerLastValidated: data.geminiLastValidated || new Date(),
-        estimatedMonthlyTokens: 0,
-        usageStats: { todayRequests: 0, estimatedTokens: 0, avgResponseTime: 0, failedRequests: 0, errors429: 0, errors503: 0 },
-        lastHealthCheck: { status: 'Healthy', latency: 0, checkedAt: new Date() }
-      };
-      
-      await userDocRef.set(migrationFields, { merge: true });
-      data = { ...data, ...migrationFields };
+      // Migration logic
+      if (data && !data.providerConfigured && (data.geminiApiKey || data.openaiApiKey)) {
+        const isOp = !!data.openaiApiKey;
+        const keyToMigrate = isOp ? data.openaiApiKey : data.geminiApiKey;
+        const provToMigrate = isOp ? 'openai' : 'gemini';
+        const modelToMigrate = isOp ? 'gpt-4o-mini' : 'gemini-3.6-flash';
+        
+        const migrationFields = {
+          aiProvider: provToMigrate,
+          providerConfigured: true,
+          encryptedApiKey: keyToMigrate,
+          selectedModel: modelToMigrate,
+          providerLastValidated: data.geminiLastValidated || new Date(),
+          estimatedMonthlyTokens: 0,
+          usageStats: { todayRequests: 0, estimatedTokens: 0, avgResponseTime: 0, failedRequests: 0, errors429: 0, errors503: 0 },
+          lastHealthCheck: { status: 'Healthy', latency: 0, checkedAt: new Date() }
+        };
+        
+        await userDocRef.set(migrationFields, { merge: true });
+        data = { ...data, ...migrationFields };
+      }
+    } catch (fsErr) {
+      console.warn('[config-status] Firestore read skipped (no GCP ADC credentials):', fsErr);
     }
 
     if (!data || !data.providerConfigured) {

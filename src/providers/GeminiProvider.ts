@@ -2,64 +2,55 @@ import { BaseProvider } from './AIProvider';
 import { GeminiAdapter } from './ValidationAdapters';
 
 function sanitizeGeminiModel(model?: string): string {
-  const validModels = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.5-flash-latest', 'gemini-2.0-flash-exp'];
-  if (model && validModels.includes(model)) return model;
-  if (!model || model.startsWith('gemini-') || model.startsWith('google/gemini-')) return 'gemini-1.5-flash';
-  return model;
+  return 'gemini-3.6-flash';
 }
 
 export async function fetchGeminiApi(apiKey: string, requestedModel: string, bodyObj: any): Promise<Response> {
-  const versions = ['v1', 'v1beta'];
-  const candidates = Array.from(new Set([
-    requestedModel,
-    'gemini-1.5-flash',
-    'gemini-1.5-flash-latest',
-    'gemini-1.5-pro',
-    'gemini-2.0-flash-exp'
-  ]));
+  const model = 'gemini-3.6-flash';
+  for (const ver of ['v1beta', 'v1']) {
+    const url = `https://generativelanguage.googleapis.com/${ver}/models/${model}:generateContent?key=${apiKey}`;
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: typeof bodyObj === 'string' ? bodyObj : JSON.stringify(bodyObj)
+      });
 
-  let lastStatus = 404;
-  let lastErrText = '';
+      if (response.ok) {
+        return response;
+      }
 
-  for (const ver of versions) {
-    for (const m of candidates) {
-      const url = `https://generativelanguage.googleapis.com/${ver}/models/${m}:generateContent?key=${apiKey}`;
-      try {
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(bodyObj)
-        });
-
-        if (response.ok) {
-          return response;
-        }
-
-        lastStatus = response.status;
-        lastErrText = await response.text();
-
-        // If failure is auth (401/403) or rate limit (429), stop looping and throw immediately
-        if (response.status !== 404) {
-          throw new Error(`Gemini API error: ${response.status} - ${lastErrText}`);
-        }
-      } catch (err: any) {
-        if (err.message && err.message.startsWith('Gemini API error:')) {
-          throw err;
-        }
+      const errText = await response.text();
+      if (response.status !== 404) {
+        throw new Error(`Gemini API error: ${response.status} - ${errText}`);
+      }
+    } catch (err: any) {
+      if (err.message && err.message.startsWith('Gemini API error:')) {
+        throw err;
       }
     }
   }
 
-  throw new Error(`Gemini API error: ${lastStatus} - ${lastErrText || 'No accessible Gemini models found on v1 or v1beta endpoints.'}`);
+  const finalUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const response = await fetch(finalUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: typeof bodyObj === 'string' ? bodyObj : JSON.stringify(bodyObj)
+  });
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Gemini API error: ${response.status} - ${errText}`);
+  }
+  return response;
 }
 
 export class GeminiProvider extends BaseProvider {
   constructor(apiKey: string) {
-    super(apiKey, 'gemini-1.5-flash');
+    super(apiKey, 'gemini-3.6-flash');
   }
 
   getAvailableModels(): string[] {
-    return ['gemini-1.5-flash', 'gemini-1.5-pro'];
+    return ['gemini-3.6-flash'];
   }
 
   async validateKey(): Promise<boolean> {

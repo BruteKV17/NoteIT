@@ -133,11 +133,7 @@ export const executeGeminiCall = async (
     const idToken = await currentUser.getIdToken(true);
     const proxyUrl = `${API_BASE_URL}/api/ai/provider-proxy`;
 
-    let targetModel = model;
-    const validModels = ['gemini-1.5-flash', 'gemini-1.5-pro'];
-    if (!targetModel || (targetModel.startsWith('gemini-') && !validModels.includes(targetModel)) || (targetModel.startsWith('google/gemini-') && !validModels.includes(targetModel.replace('google/', '')))) {
-      targetModel = 'gemini-1.5-flash';
-    }
+    let targetModel = 'gemini-3.6-flash';
 
     const response = await fetch(proxyUrl, {
       method: 'POST',
@@ -311,7 +307,7 @@ ${transcript}`;
     required: ['title', 'overview', 'keyConcepts', 'importantPoints', 'examples', 'formulas', 'definitions', 'takeaways']
   };
 
-  const rawResult = await executeGeminiCall(prompt, customGeminiApiKey || '', undefined, schema, onBusy, 'gemini-1.5-flash', 'generate-notes');
+  const rawResult = await executeGeminiCall(prompt, customGeminiApiKey || '', undefined, schema, onBusy, 'gemini-3.6-flash', 'generate-notes');
 
   const title = rawResult.title || 'Lecture Study Notes';
   const overview = rawResult.overview || '';
@@ -964,7 +960,7 @@ export const generateLectureContent = async (
   onProgress?: (step: number, message: string) => void
 ): Promise<any> => {
   const apiKey = getAIConfig().geminiKey;
-  if (!apiKey) {
+  if (!apiKey && !auth.currentUser) {
     throw new Error("Gemini API key is not configured. Please configure an API key in Settings or environment.");
   }
 
@@ -993,7 +989,7 @@ export const generateLectureContentFromText = async (
   onProgress?: (step: number, message: string) => void
 ): Promise<any> => {
   const apiKey = getAIConfig().geminiKey;
-  if (!apiKey) {
+  if (!apiKey && !auth.currentUser) {
     throw new Error("Gemini API key is not configured. Please configure an API key in Settings or environment.");
   }
 
@@ -1022,7 +1018,7 @@ export const generateAdditionalQuizQuestions = async (
     throw new Error("Gemini API key is not configured. Please configure an API key in Settings or environment.");
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`;
 
   const prompt = `
     You are an expert academic tutor. Generate 12 unique additional quiz questions about the topic "${topic}" with difficulty level "${difficulty}" directly from the provided source context.

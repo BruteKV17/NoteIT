@@ -28,10 +28,10 @@ const PROVIDER_METADATA: Record<string, {
   gemini: {
     name: 'Google Gemini',
     description: 'Highly capable multimodal model for fast note synthesis, quizzes, and mind maps.',
-    defaultModel: 'gemini-1.5-flash',
+    defaultModel: 'gemini-3.6-flash',
     docLink: 'https://ai.google.dev/gemini-api/docs',
     getKeyLink: 'https://aistudio.google.com/apikey',
-    models: ['gemini-1.5-flash', 'gemini-1.5-pro']
+    models: ['gemini-3.6-flash']
   },
   groq: {
     name: 'Groq',
@@ -68,10 +68,10 @@ const PROVIDER_METADATA: Record<string, {
   openrouter: {
     name: 'OpenRouter',
     description: 'Access any open or closed model through a single unified API key.',
-    defaultModel: 'google/gemini-flash-1.5',
+    defaultModel: 'google/gemini-3.6-flash',
     docLink: 'https://openrouter.ai/docs',
     getKeyLink: 'https://openrouter.ai/keys',
-    models: ['google/gemini-flash-1.5', 'meta-llama/llama-3.3-70b-instruct', 'deepseek/deepseek-chat', 'anthropic/claude-3.5-sonnet', 'openai/gpt-4o-mini']
+    models: ['google/gemini-3.6-flash', 'meta-llama/llama-3.3-70b-instruct', 'deepseek/deepseek-chat', 'anthropic/claude-3.5-sonnet', 'openai/gpt-4o-mini']
   },
   mistral: {
     name: 'Mistral',
@@ -146,7 +146,7 @@ export default function OnboardingView({
   // AI Provider configuration state
   const [selectedProvider, setSelectedProvider] = useState('gemini');
   const [apiKey, setApiKey] = useState('');
-  const [selectedModel, setSelectedModel] = useState('gemini-1.5-flash');
+  const [selectedModel, setSelectedModel] = useState('gemini-3.6-flash');
   const [searchQuery, setSearchQuery] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isValidatingKey, setIsValidatingKey] = useState(false);

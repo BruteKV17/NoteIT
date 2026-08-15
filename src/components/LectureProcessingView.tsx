@@ -229,7 +229,7 @@ export default function LectureProcessingView({
             timeline: aiData.timeline || [],
             sourceIntelligence: aiData.sourceIntelligence || null,
             keyConcepts: [],
-            geminiModel: 'gemini-1.5-flash',
+            geminiModel: 'gemini-3.6-flash',
             processingTimeMs,
             transcriptionFinishedAt: serverTimestamp()
           });
@@ -398,7 +398,7 @@ export default function LectureProcessingView({
             timeline: aiData.timeline || [],
             sourceIntelligence: aiData.sourceIntelligence || null,
             keyConcepts: [],
-            geminiModel: 'gemini-1.5-flash',
+            geminiModel: 'gemini-3.6-flash',
             processingTimeMs,
             transcriptionFinishedAt: serverTimestamp()
           });

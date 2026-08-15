@@ -119,11 +119,11 @@ export function getDynamicFontSize(text: string, type: 'title' | 'body'): number
 // execute call helper inside service
 const executeLlmCall = async (
   prompt: string,
-  model: 'gemini-1.5-flash' | 'gemini-1.5-pro',
+  model: string,
   apiKey: string,
   responseSchema?: any
 ): Promise<any> => {
-  return executeGeminiCall(prompt, apiKey, undefined, responseSchema, undefined, model);
+  return executeGeminiCall(prompt, apiKey, undefined, responseSchema, undefined, 'gemini-3.6-flash');
 };
 
 // Stage 1 & 2 & 11 presentation blueprint planner with AI Critic pass
@@ -135,7 +135,7 @@ export const generatePresentationBlueprint = async (
   level: 'quick' | 'balanced' | 'premium',
   apiKey: string
 ): Promise<SlideBlueprint[]> => {
-  const model = level === 'premium' ? 'gemini-1.5-pro' : 'gemini-1.5-flash';
+  const model = 'gemini-3.6-flash';
 
   const schema = {
     type: 'OBJECT',

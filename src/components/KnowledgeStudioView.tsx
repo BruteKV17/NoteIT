@@ -1323,7 +1323,7 @@ ${queryText}`;
 
       const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
       const bodyObj = { contents: [{ parts: [{ text: prompt }] }] };
-      const res = await fetchGeminiApi(apiKey, 'gemini-1.5-flash', bodyObj);
+      const res = await fetchGeminiApi(apiKey, 'gemini-3.6-flash', bodyObj);
 
       if (!res.ok) throw new Error("API request failed");
       const data = await res.json();
@@ -1553,7 +1553,7 @@ ${queryText}`;
           }
         }
       };
-      const res = await fetchGeminiApi(apiKey, 'gemini-1.5-flash', bodyObj);
+      const res = await fetchGeminiApi(apiKey, 'gemini-3.6-flash', bodyObj);
 
       setUploadProgress(70);
       if (!res.ok) throw new Error(`Translation API error: ${res.status}`);
@@ -2299,7 +2299,7 @@ ${queryText}`;
           }
         }
       };
-      const res = await fetchGeminiApi(apiKey, 'gemini-1.5-flash', bodyObj);
+      const res = await fetchGeminiApi(apiKey, 'gemini-3.6-flash', bodyObj);
 
       setUploadProgress(75);
       let slides = [];
