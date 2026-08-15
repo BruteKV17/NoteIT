@@ -429,13 +429,13 @@ export default function LibraryView({
           </div>
 
           {/* DUAL TAB SWITCHER */}
-          <div className="flex items-center gap-1 border-2 border-black p-0.5 bg-[#F4F1EA] dark:bg-[#0D1117]">
+          <div className="flex items-center gap-1 border-2 border-black p-1 bg-black">
             <button
               onClick={() => setLibraryTab('map')}
               className={`px-3 py-1.5 font-black text-xs uppercase transition-all ${
                 libraryTab === 'map'
                   ? 'bg-[#FFC107] text-black border-2 border-black shadow-[2px_2px_0px_#000]'
-                  : 'text-black dark:text-white hover:bg-[#FFC107] hover:text-black'
+                  : 'bg-white text-black hover:bg-[#FFC107] hover:text-black border-2 border-black'
               }`}
             >
               SUBJECT MAP
@@ -445,7 +445,7 @@ export default function LibraryView({
               className={`px-3 py-1.5 font-black text-xs uppercase transition-all ${
                 libraryTab === 'saved'
                   ? 'bg-[#FFC107] text-black border-2 border-black shadow-[2px_2px_0px_#000]'
-                  : 'text-black dark:text-white hover:bg-[#FFC107] hover:text-black'
+                  : 'bg-white text-black hover:bg-[#FFC107] hover:text-black border-2 border-black'
               }`}
             >
               ACADEMIC SAVED
