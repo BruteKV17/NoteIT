@@ -43,6 +43,7 @@ import { saveRecordingChunks, getRecordingChunks, deleteRecordingBackup, getAllB
 import { awardXP, processActivityEvent } from '../services/activityTracker';
 import { renderTranscriptWithDots } from './bauhaus/TimestampDot';
 import { getAIConfig } from '../services/gemini';
+import ChromaKeyVideo from './ChromaKeyVideo';
 import { useSubjects } from '../hooks/useSubjects';
 
 interface LectureCaptureViewProps {
@@ -2626,31 +2627,17 @@ export default function LectureCaptureView({
                   <div 
                     onClick={handleStopCapture}
                     className="relative cursor-pointer group flex flex-col items-center select-none"
-                    title="Click mascot video to stop lecture recording"
+                    title="Click mascot to stop lecture recording"
                   >
-                    <div className="absolute -inset-3 rounded-full bg-[#FFC400]/30 animate-ping" />
-                    
-                    {/* Mascot Video player when recording starts */}
-                    <div className="relative w-36 h-36 md:w-44 md:h-44 rounded-full border-4 border-[#FFC400] bg-[#111111] overflow-hidden shadow-[0_0_32px_rgba(255,196,0,0.5)] flex items-center justify-center p-2 group-hover:scale-105 transition-transform">
-                      <video
-                        autoPlay
-                        loop
-                        muted
-                        playsInline
-                        className="w-full h-full object-contain"
-                      >
-                        <source src="/mascots/mascot-recording.mp4" type="video/mp4" />
-                        <source src="/mascots/mascot-recording.mp4.mp4" type="video/mp4" />
-                        <source src="/mascots/mascot-recording.webm" type="video/webm" />
-                        <img 
-                          src="/mascots/mascot-celebrate.png" 
-                          alt="Recording Mascot" 
-                          className="w-full h-full object-contain animate-pulse" 
-                        />
-                      </video>
-                    </div>
+                    {/* Transparent Floating Mascot with Green Screen Removed */}
+                    <ChromaKeyVideo
+                      src="/mascots/mascot-recording.mp4"
+                      fallbackSrc="/mascots/mascot-recording.mp4.mp4"
+                      fallbackImg="/mascots/mascot-celebrate.png"
+                      className="w-48 h-48 sm:w-60 sm:h-60 group-hover:scale-105 transition-transform"
+                    />
 
-                    <div className="mt-3 px-3.5 py-1.5 rounded-full bg-[#FF4D4D] border-2 border-[#111111] text-white text-[10px] font-mono font-black uppercase tracking-wider flex items-center gap-2 shadow-paper-xs">
+                    <div className="mt-2 px-3.5 py-1.5 rounded-full bg-[#FF4D4D] border-2 border-[#111111] text-white text-[10px] font-mono font-black uppercase tracking-wider flex items-center gap-2 shadow-paper-xs">
                       <span className="h-2 w-2 rounded-full bg-white animate-ping" />
                       <span>RECORDING LIVE • CLICK MASCOT TO STOP</span>
                     </div>
