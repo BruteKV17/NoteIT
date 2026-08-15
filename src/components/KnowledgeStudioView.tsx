@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
+import { fetchGeminiApi } from '../providers/GeminiProvider';
 import {
   Upload,
   Globe,
@@ -1321,15 +1322,8 @@ Question:
 ${queryText}`;
 
       const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }]
-        })
-      });
+      const bodyObj = { contents: [{ parts: [{ text: prompt }] }] };
+      const res = await fetchGeminiApi(apiKey, 'gemini-1.5-flash', bodyObj);
 
       if (!res.ok) throw new Error("API request failed");
       const data = await res.json();
@@ -1501,70 +1495,65 @@ ${queryText}`;
       `;
 
       const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            responseMimeType: 'application/json',
-            responseSchema: {
-              type: 'OBJECT',
-              properties: {
-                summary: { type: 'STRING' },
-                notes: {
-                  type: 'ARRAY',
-                  items: {
-                    type: 'OBJECT',
-                    properties: { title: { type: 'STRING' }, content: { type: 'STRING' } },
-                    required: ['title', 'content']
-                  }
-                },
-                flashcards: {
-                  type: 'ARRAY',
-                  items: {
-                    type: 'OBJECT',
-                    properties: { q: { type: 'STRING' }, a: { type: 'STRING' } },
-                    required: ['q', 'a']
-                  }
-                },
-                quiz: {
-                  type: 'ARRAY',
-                  items: {
-                    type: 'OBJECT',
-                    properties: {
-                      question: { type: 'STRING' },
-                      options: { type: 'ARRAY', items: { type: 'STRING' } },
-                      correctAnswer: { type: 'INTEGER' },
-                      explanation: { type: 'STRING' }
-                    },
-                    required: ['question', 'options', 'correctAnswer', 'explanation']
-                  }
-                },
-                keyConcepts: {
-                  type: 'ARRAY',
-                  items: {
-                    type: 'OBJECT',
-                    properties: {
-                      id: { type: 'STRING' },
-                      label: { type: 'STRING' },
-                      desc: { type: 'STRING' },
-                      parent: { type: 'STRING' },
-                      x: { type: 'INTEGER' },
-                      y: { type: 'INTEGER' },
-                      group: { type: 'STRING' }
-                    },
-                    required: ['id', 'label', 'desc', 'x', 'y', 'group']
-                  }
+      const bodyObj = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: 'OBJECT',
+            properties: {
+              summary: { type: 'STRING' },
+              notes: {
+                type: 'ARRAY',
+                items: {
+                  type: 'OBJECT',
+                  properties: { title: { type: 'STRING' }, content: { type: 'STRING' } },
+                  required: ['title', 'content']
                 }
               },
-              required: ['summary', 'notes', 'flashcards', 'quiz', 'keyConcepts']
-            }
+              flashcards: {
+                type: 'ARRAY',
+                items: {
+                  type: 'OBJECT',
+                  properties: { q: { type: 'STRING' }, a: { type: 'STRING' } },
+                  required: ['q', 'a']
+                }
+              },
+              quiz: {
+                type: 'ARRAY',
+                items: {
+                  type: 'OBJECT',
+                  properties: {
+                    question: { type: 'STRING' },
+                    options: { type: 'ARRAY', items: { type: 'STRING' } },
+                    correctAnswer: { type: 'INTEGER' },
+                    explanation: { type: 'STRING' }
+                  },
+                  required: ['question', 'options', 'correctAnswer', 'explanation']
+                }
+              },
+              keyConcepts: {
+                type: 'ARRAY',
+                items: {
+                  type: 'OBJECT',
+                  properties: {
+                    id: { type: 'STRING' },
+                    label: { type: 'STRING' },
+                    desc: { type: 'STRING' },
+                    parent: { type: 'STRING' },
+                    x: { type: 'INTEGER' },
+                    y: { type: 'INTEGER' },
+                    group: { type: 'STRING' }
+                  },
+                  required: ['id', 'label', 'desc', 'x', 'y', 'group']
+                }
+              }
+            },
+            required: ['summary', 'notes', 'flashcards', 'quiz', 'keyConcepts']
           }
-        })
-      });
+        }
+      };
+      const res = await fetchGeminiApi(apiKey, 'gemini-1.5-flash', bodyObj);
 
       setUploadProgress(70);
       if (!res.ok) throw new Error(`Translation API error: ${res.status}`);
@@ -2216,7 +2205,6 @@ ${queryText}`;
 
     try {
       const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
       const prompt = `
         Create a structured PowerPoint presentation deck based on the following material.
@@ -2249,22 +2237,19 @@ ${queryText}`;
       `;
 
       setUploadProgress(30);
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            responseMimeType: 'application/json',
-            responseSchema: {
-              type: 'OBJECT',
-              properties: {
-                slides: {
-                  type: 'ARRAY',
-                  items: {
-                    type: 'OBJECT',
-                    properties: {
-                      title: { type: 'STRING' },
+      const bodyObj = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: 'OBJECT',
+            properties: {
+              slides: {
+                type: 'ARRAY',
+                items: {
+                  type: 'OBJECT',
+                  properties: {
+                    title: { type: 'STRING' },
                       layout: { type: 'STRING' },
                       content: { type: 'ARRAY', items: { type: 'STRING' } },
                       imageSearchQuery: { type: 'STRING' },
@@ -2311,10 +2296,10 @@ ${queryText}`;
                 }
               },
               required: ['slides']
-            }
           }
-        })
-      });
+        }
+      };
+      const res = await fetchGeminiApi(apiKey, 'gemini-1.5-flash', bodyObj);
 
       setUploadProgress(75);
       let slides = [];

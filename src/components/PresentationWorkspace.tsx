@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { fetchGeminiApi } from '../providers/GeminiProvider';
 import {
   Sparkles,
   Download,
@@ -211,28 +212,24 @@ Return JSON only matching this schema:
   "designNotes": "Specific styling layout suggestions"
 }
 `;
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            responseMimeType: 'application/json',
-            responseSchema: {
-              type: 'OBJECT',
-              properties: {
-                title: { type: 'STRING' },
-                objective: { type: 'STRING' },
-                keyPoints: { type: 'ARRAY', items: { type: 'STRING' } },
-                imageQuery: { type: 'STRING' },
-                designNotes: { type: 'STRING' }
-              },
-              required: ['title', 'objective', 'keyPoints', 'imageQuery', 'designNotes']
-            }
+      const bodyObj = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: 'OBJECT',
+            properties: {
+              title: { type: 'STRING' },
+              objective: { type: 'STRING' },
+              keyPoints: { type: 'ARRAY', items: { type: 'STRING' } },
+              imageQuery: { type: 'STRING' },
+              designNotes: { type: 'STRING' }
+            },
+            required: ['title', 'objective', 'keyPoints', 'imageQuery', 'designNotes']
           }
-        })
-      });
+        }
+      };
+      const res = await fetchGeminiApi(apiKey, model, bodyObj);
 
       if (res.ok) {
         const data = await res.json();

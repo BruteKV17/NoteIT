@@ -26,9 +26,10 @@ export class GeminiAdapter implements ValidationAdapter {
       throw new ProviderValidationError('Invalid API key format. Key is too short.', 401);
     }
     try {
-      const response = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}&pageSize=1`, {
-        method: 'GET'
-      });
+      let response = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1/models?key=${apiKey}&pageSize=1`, { method: 'GET' });
+      if (!response.ok && response.status === 404) {
+        response = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}&pageSize=1`, { method: 'GET' });
+      }
       if (!response.ok) {
         const text = await response.text();
         const status = response.status;
