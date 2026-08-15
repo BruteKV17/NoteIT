@@ -599,7 +599,7 @@ export default function LibraryView({
                             <p className="text-xs font-black uppercase tracking-widest bg-[#FFC107] text-black px-2 py-0.5 border-2 border-black">
                               LECTURE {lec.lectureNumber < 10 ? `0${lec.lectureNumber}` : lec.lectureNumber}
                             </p>
-                            <span className="text-xs font-bold flex items-center gap-1 border-2 border-black px-1.5 py-0.5 bg-[#F4F1EA] dark:bg-[#0D1117] text-black dark:text-white">
+                            <span className="text-xs font-extrabold flex items-center gap-1 border-2 border-black px-2 py-0.5 bg-black text-white dark:bg-[#FFC107] dark:text-black">
                               <Timer className="w-3.5 h-3.5" /> {lec.duration || '45m'}
                             </span>
                           </div>
@@ -608,8 +608,8 @@ export default function LibraryView({
                             {lec.title}
                           </h3>
 
-                          <div className="inline-flex items-center gap-2 bg-[#F4F1EA] dark:bg-[#21262D] text-black dark:text-white border-2 border-black px-3 py-1 font-bold text-xs uppercase">
-                            <Sparkles className="w-3.5 h-3.5 text-[#FFC107]" />
+                          <div className="inline-flex items-center gap-2 bg-[#FFC107] text-black border-2 border-black px-3 py-1 font-black text-xs uppercase shadow-[2px_2px_0px_#000]">
+                            <Sparkles className="w-3.5 h-3.5 text-black" />
                             <span>{isCompleted ? 'Synthesized' : isRecording ? 'Processing...' : 'Not Started'}</span>
                           </div>
                         </div>
@@ -623,7 +623,7 @@ export default function LibraryView({
                       onClick={() => setShowCreateLectureModal(true)}
                       className="w-20 h-20 bg-white dark:bg-[#161B22] brutal-border rounded-full flex items-center justify-center mb-4 hover:bg-[#FFC107] transition-colors cursor-pointer group"
                     >
-                      <Plus className="w-8 h-8 text-black stroke-[4] group-hover:scale-125 transition-transform" />
+                      <Plus className="w-8 h-8 text-black dark:text-white group-hover:text-black stroke-[4] group-hover:scale-125 transition-transform" />
                     </div>
 
                     <div className="p-2 bg-[#FFC107] brutal-border transform rotate-6 flex items-center gap-3">
@@ -661,7 +661,7 @@ export default function LibraryView({
                       {activeLectureDetail.title}
                     </h2>
 
-                    <p className="text-xs font-medium mb-6 border-l-4 border-black pl-3 text-black/80 dark:text-white/80 line-clamp-3">
+                    <p className="text-xs font-semibold leading-relaxed mb-6 border-l-4 border-black pl-3 text-[#1E293B] dark:text-[#E2E8F0] line-clamp-3">
                       {activeLectureDetail.transcript || "Exploration of tree data structures, search algorithms, and cognitive notes generation."}
                     </p>
 
@@ -680,7 +680,7 @@ export default function LibraryView({
                   {/* Panel Body Resources */}
                   <div className="flex-1 p-6 overflow-y-auto bg-[#F4F1EA] dark:bg-[#0D1117] flex flex-col gap-4">
                     <h3 className="text-xs font-black uppercase tracking-widest border-b-4 border-black pb-1 inline-block text-black dark:text-white">
-                      Resources & AI Assets
+                      RESOURCES & AI ASSETS
                     </h3>
 
                     {/* Resource 1: Structured Notes */}
@@ -696,7 +696,7 @@ export default function LibraryView({
                       </div>
                       <div className="flex-1">
                         <h4 className="text-xs font-black uppercase text-black dark:text-white group-hover:text-black">Structured Notes</h4>
-                        <p className="text-[10px] font-bold text-black/60 dark:text-white/60 group-hover:text-black">Definitions & algorithms</p>
+                        <p className="text-[11px] font-bold text-[#475569] dark:text-[#CBD5E1] group-hover:text-black">Definitions & algorithms</p>
                       </div>
                       <ArrowRight className="w-4 h-4 stroke-[3] group-hover:translate-x-1 transition-transform" />
                     </button>
@@ -714,7 +714,7 @@ export default function LibraryView({
                       </div>
                       <div className="flex-1">
                         <h4 className="text-xs font-black uppercase text-black dark:text-white group-hover:text-black">Executive Summary</h4>
-                        <p className="text-[10px] font-bold text-black/60 dark:text-white/60 group-hover:text-black">2-minute revision read</p>
+                        <p className="text-[11px] font-bold text-[#475569] dark:text-[#CBD5E1] group-hover:text-black">2-minute revision read</p>
                       </div>
                       <ArrowRight className="w-4 h-4 stroke-[3] group-hover:translate-x-1 transition-transform" />
                     </button>
@@ -732,7 +732,7 @@ export default function LibraryView({
                       </div>
                       <div className="flex-1">
                         <h4 className="text-xs font-black uppercase text-black dark:text-white group-hover:text-black">Flashcards Deck</h4>
-                        <p className="text-[10px] font-bold text-black/60 dark:text-white/60 group-hover:text-black">24 cards generated</p>
+                        <p className="text-[11px] font-bold text-[#475569] dark:text-[#CBD5E1] group-hover:text-black">24 cards generated</p>
                       </div>
                       <ArrowRight className="w-4 h-4 stroke-[3] group-hover:translate-x-1 transition-transform" />
                     </button>
@@ -750,7 +750,7 @@ export default function LibraryView({
                       </div>
                       <div className="flex-1">
                         <h4 className="text-xs font-black uppercase text-black dark:text-white group-hover:text-black">Practice Quiz</h4>
-                        <p className="text-[10px] font-bold text-black/60 dark:text-white/60 group-hover:text-black">10 questions</p>
+                        <p className="text-[11px] font-bold text-[#475569] dark:text-[#CBD5E1] group-hover:text-black">10 questions</p>
                       </div>
                       <ArrowRight className="w-4 h-4 stroke-[3] group-hover:translate-x-1 transition-transform" />
                     </button>

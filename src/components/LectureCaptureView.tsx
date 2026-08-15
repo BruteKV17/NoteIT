@@ -43,6 +43,7 @@ import { saveRecordingChunks, getRecordingChunks, deleteRecordingBackup, getAllB
 import { awardXP, processActivityEvent } from '../services/activityTracker';
 import { renderTranscriptWithDots } from './bauhaus/TimestampDot';
 import { getAIConfig } from '../services/gemini';
+import { useSubjects } from '../hooks/useSubjects';
 
 interface LectureCaptureViewProps {
   onSaveCapture: (title: string, subject: string, duration: string, audioBlob: Blob, existingLectureId?: string) => Promise<void>;
@@ -79,6 +80,9 @@ export default function LectureCaptureView({
   notes = []
 }: LectureCaptureViewProps) {
   
+  // Hook up user subjects from Academic Library
+  const { subjects } = useSubjects(auth.currentUser?.uid);
+
   // Lecture Metadata inputs
   const [lectureTitle, setLectureTitle] = useState('');
   const [lectureSubject, setLectureSubject] = useState('Computer Science');
@@ -2399,13 +2403,18 @@ export default function LectureCaptureView({
                     style={{ color: 'var(--text-primary)' }}
                     className="w-full rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] text-xs font-mono font-bold p-3 outline-none shadow-paper-sm disabled:bg-[var(--panel-bg)] disabled:cursor-not-allowed cursor-pointer"
                   >
-                    <option value="Computer Science" className="bg-[var(--card-bg)] text-[var(--text-primary)]">Computer Science</option>
-                    <option value="Physics" className="bg-[var(--card-bg)] text-[var(--text-primary)]">Physics</option>
-                    <option value="Chemistry" className="bg-[var(--card-bg)] text-[var(--text-primary)]">Chemistry</option>
-                    <option value="Mathematics" className="bg-[var(--card-bg)] text-[var(--text-primary)]">Mathematics</option>
-                    <option value="Philosophy" className="bg-[var(--card-bg)] text-[var(--text-primary)]">Philosophy</option>
-                    <option value="Economics" className="bg-[var(--card-bg)] text-[var(--text-primary)]">Economics</option>
-                    <option value="General Science" className="bg-[var(--card-bg)] text-[var(--text-primary)]">General Science</option>
+                    <optgroup label="ACADEMIC LIBRARY — SUBJECT MAPS" className="bg-[var(--card-bg)] text-[var(--text-primary)] font-bold">
+                      {subjects.map(s => (
+                        <option key={s.id} value={s.name} className="bg-[var(--card-bg)] text-[var(--text-primary)] font-bold">
+                          {s.name.toUpperCase()} {s.code ? `(${s.code})` : ''} — SUBJECT MAP
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="ACADEMIC LIBRARY — SAVED MATERIALS" className="bg-[var(--card-bg)] text-[var(--text-primary)] font-bold">
+                      <option value="General" className="bg-[var(--card-bg)] text-[var(--text-primary)] font-bold">
+                        GENERAL — ACADEMIC SAVED
+                      </option>
+                    </optgroup>
                   </select>
                 </div>
               </div>
