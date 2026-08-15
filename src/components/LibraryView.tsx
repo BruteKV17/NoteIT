@@ -89,11 +89,11 @@ export default function LibraryView({
   const { subjects, addSubject, updateSubject, deleteSubject } = useSubjects(auth.currentUser?.uid);
 
   // Auto-select first subject if none selected initially
-  useMemo(() => {
+  useEffect(() => {
     if (!selectedSubjectId && subjects.length > 0) {
       setSelectedSubjectId(subjects[0].id);
     }
-  }, [subjects]);
+  }, [subjects, selectedSubjectId]);
 
   // Subject Dropdown State & Click-Outside Ref
   const [showSubjectDropdown, setShowSubjectDropdown] = useState(false);
@@ -165,57 +165,52 @@ export default function LibraryView({
       return false;
     });
 
-    // If no matching lectures in Firestore yet, provide sample lectures so the map renders beautifully immediately
+    // If no matching lectures in Firestore yet, provide subject-specific sample lectures
     if (matched.length === 0) {
-      return [
-        {
-          id: 'sample-lec-1',
-          title: 'Intro to Data Structures',
-          subject: currentSubject.name,
-          lectureNumber: 1,
-          status: 'completed',
-          reviewed: true,
-          addedAt: 'Yesterday',
-          duration: '45m',
-          type: 'recording',
-          transcript: 'Sample introductory transcript on Arrays and Memory allocations.'
-        },
-        {
-          id: 'sample-lec-10',
-          title: 'Heaps & Priority Queues',
-          subject: currentSubject.name,
-          lectureNumber: 10,
-          status: 'completed',
-          reviewed: true,
-          addedAt: '3 days ago',
-          duration: '50m',
-          type: 'recording',
-          transcript: 'Priority Queues binary tree representation and heapify algorithms.'
-        },
-        {
-          id: 'sample-lec-11',
-          title: 'Binary Search Trees',
-          subject: currentSubject.name,
-          lectureNumber: 11,
-          status: 'completed',
-          reviewed: false,
-          addedAt: 'Today',
-          duration: '52m',
-          type: 'recording',
-          transcript: 'Exploration of tree data structures where each node has at most two children. Focus on search, insertion, and deletion operations with O(log n) time complexity.'
-        },
-        {
-          id: 'sample-lec-12',
-          title: 'AVL Trees & Balancing',
-          subject: currentSubject.name,
-          lectureNumber: 12,
-          status: 'transcribing',
-          reviewed: false,
-          addedAt: 'Just now',
-          duration: '40m',
-          type: 'recording'
-        }
-      ] as Lecture[];
+      const sName = currentSubject.name.toUpperCase();
+      let sampleTopics = [
+        { title: `Intro to ${currentSubject.name}`, desc: `Fundamental principles, core definitions, and scope of ${currentSubject.name}.` },
+        { title: `Core Concepts & Architecture`, desc: `Detailed exploration of foundational models and key structural elements.` },
+        { title: `Advanced Topics & Problem Solving`, desc: `Analytical methods, algorithmic approaches, and practical implementations.` },
+        { title: `Synthesis & Exam Preparation`, desc: `Comprehensive revision, high-yield practice questions, and summary takeaways.` }
+      ];
+
+      if (sName.includes('DATA STRUCTURE') || sName.includes('CS201')) {
+        sampleTopics = [
+          { title: 'Intro to Data Structures', desc: 'Arrays, linked lists, and memory allocation fundamentals.' },
+          { title: 'Heaps & Priority Queues', desc: 'Binary tree representations and heapify algorithms.' },
+          { title: 'Binary Search Trees', desc: 'Tree traversal, insertion, and deletion operations with O(log n) complexity.' },
+          { title: 'AVL Trees & Balancing', desc: 'Self-balancing trees, rotations, and height invariance proofs.' }
+        ];
+      } else if (sName.includes('OPERATING') || sName.includes('CS302')) {
+        sampleTopics = [
+          { title: 'Process & Thread Management', desc: 'Process control blocks, context switching, and thread execution models.' },
+          { title: 'CPU Scheduling Algorithms', desc: 'Round Robin, FCFS, Priority, and Multi-level Feedback Queue scheduling.' },
+          { title: 'Virtual Memory & Paging', desc: 'Page replacement policy, TLB, demand paging, and thrashing prevention.' },
+          { title: 'Synchronization & Deadlocks', desc: 'Mutex locks, semaphores, Banker algorithm, and deadlock detection.' }
+        ];
+      } else if (sName.includes('LINEAR') || sName.includes('MATH')) {
+        sampleTopics = [
+          { title: 'Vector Spaces & Subspaces', desc: 'Linear independence, basis, dimension, and vector transformations.' },
+          { title: 'Matrix Factorization & Systems', desc: 'Gaussian elimination, LU decomposition, and system solving.' },
+          { title: 'Eigenvalues & Eigenvectors', desc: 'Characteristic polynomials, diagonalization, and eigenspaces.' },
+          { title: 'Orthogonality & SVD', desc: 'Gram-Schmidt process, least squares, and Singular Value Decomposition.' }
+        ];
+      }
+
+      return sampleTopics.map((topic, idx) => ({
+        id: `sample-${currentSubject.id}-${idx + 1}`,
+        title: topic.title,
+        subject: currentSubject.name,
+        subjectId: currentSubject.id,
+        lectureNumber: idx === 0 ? 1 : idx === 1 ? 5 : idx === 2 ? 10 : 12,
+        status: idx < 3 ? 'completed' : 'transcribing',
+        reviewed: idx < 3,
+        addedAt: idx === 0 ? 'Yesterday' : idx === 1 ? '3 days ago' : idx === 2 ? 'Today' : 'Just now',
+        duration: idx === 0 ? '45m' : idx === 1 ? '50m' : idx === 2 ? '52m' : '40m',
+        type: 'recording',
+        transcript: topic.desc
+      })) as Lecture[];
     }
 
     return matched.map((l, index) => ({
@@ -371,14 +366,14 @@ export default function LibraryView({
       `}</style>
 
       {/* TOP BAUHAUS HEADER BAR */}
-      <header className="bg-white dark:bg-[#161B22] border-b-4 border-black px-8 py-4 flex flex-col lg:flex-row justify-between items-center gap-4 z-10">
+      <header className="bg-white dark:bg-[#161B22] border-b-4 border-black px-8 py-4 flex flex-col lg:flex-row justify-between items-center gap-4 relative z-30">
         
         {/* Left: Breadcrumbs & Subject Selector Dropdown */}
         <div className="flex items-center gap-4 font-bold uppercase tracking-wide">
           <span className="text-black dark:text-white text-sm font-black">Library</span>
           <ChevronRight className="w-5 h-5 text-black dark:text-white stroke-[3]" />
           
-          <div className="relative" ref={dropdownRef}>
+          <div className="relative z-50" ref={dropdownRef}>
             <button 
               onClick={() => setShowSubjectDropdown(!showSubjectDropdown)}
               className="flex items-center gap-2 bg-[#FFC107] text-black px-4 py-2 brutal-border font-black text-base hover:bg-[#FFD54F] transition-colors"
@@ -389,7 +384,7 @@ export default function LibraryView({
 
             {/* Subject Selector Dropdown with Outside Click Auto-Close */}
             {showSubjectDropdown && (
-              <div className="absolute left-0 top-full mt-2 w-64 bg-white dark:bg-[#161B22] border-4 border-black shadow-[6px_6px_0px_#000] z-50 p-2 flex flex-col gap-1">
+              <div className="absolute left-0 top-full mt-2 w-64 bg-white dark:bg-[#161B22] border-4 border-black shadow-[8px_8px_0px_#000] z-[999] p-2 flex flex-col gap-1">
                 <div className="text-[10px] font-black uppercase text-black/70 dark:text-white/70 px-2 py-1">
                   Active Subjects ({subjects.length}/5)
                 </div>
