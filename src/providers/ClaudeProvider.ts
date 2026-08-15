@@ -1,4 +1,5 @@
 import { BaseProvider, extractJsonObject } from './AIProvider';
+import { ClaudeAdapter } from './ValidationAdapters';
 
 export class ClaudeProvider extends BaseProvider {
   constructor(apiKey: string) {
@@ -11,21 +12,11 @@ export class ClaudeProvider extends BaseProvider {
 
   async validateKey(): Promise<boolean> {
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': this.apiKey,
-          'anthropic-version': '2023-06-01'
-        },
-        body: JSON.stringify({
-          model: 'claude-3-5-haiku-latest',
-          messages: [{ role: 'user', content: 'ping' }],
-          max_tokens: 1
-        })
-      });
-      return response.ok;
-    } catch {
+      const adapter = new ClaudeAdapter();
+      await adapter.validate(this.apiKey, this.defaultModel);
+      return true;
+    } catch (err) {
+      console.error('[ClaudeProvider] Key validation failed:', err);
       return false;
     }
   }

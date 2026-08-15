@@ -1,32 +1,29 @@
 import { BaseProvider } from './AIProvider';
+import { GeminiAdapter } from './ValidationAdapters';
 
 function sanitizeGeminiModel(model?: string): string {
-  if (!model || model === 'gemini-2.5-flash' || model === 'google/gemini-2.5-flash') return 'gemini-2.0-flash';
-  if (model === 'gemini-2.5-pro' || model === 'google/gemini-2.5-pro') return 'gemini-1.5-pro';
+  const validModels = ['gemini-1.5-flash', 'gemini-1.5-pro'];
+  if (model && validModels.includes(model)) return model;
+  if (!model || model.startsWith('gemini-') || model.startsWith('google/gemini-')) return 'gemini-1.5-flash';
   return model;
 }
 
 export class GeminiProvider extends BaseProvider {
   constructor(apiKey: string) {
-    super(apiKey, 'gemini-2.0-flash');
+    super(apiKey, 'gemini-1.5-flash');
   }
 
   getAvailableModels(): string[] {
-    return ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+    return ['gemini-1.5-flash', 'gemini-1.5-pro'];
   }
 
   async validateKey(): Promise<boolean> {
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${this.apiKey}`;
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: 'ping' }] }]
-        })
-      });
-      return response.ok;
-    } catch {
+      const adapter = new GeminiAdapter();
+      await adapter.validate(this.apiKey, this.defaultModel);
+      return true;
+    } catch (err) {
+      console.error('[GeminiProvider] Key validation failed:', err);
       return false;
     }
   }

@@ -1,13 +1,14 @@
 import { BaseProvider, extractJsonObject } from './AIProvider';
+import { OpenRouterAdapter } from './ValidationAdapters';
 
 export class OpenRouterProvider extends BaseProvider {
   constructor(apiKey: string) {
-    super(apiKey, 'google/gemini-2.0-flash-001');
+    super(apiKey, 'google/gemini-flash-1.5');
   }
 
   getAvailableModels(): string[] {
     return [
-      'google/gemini-2.0-flash-001',
+      'google/gemini-flash-1.5',
       'meta-llama/llama-3.3-70b-instruct',
       'deepseek/deepseek-chat',
       'anthropic/claude-3.5-sonnet',
@@ -17,20 +18,11 @@ export class OpenRouterProvider extends BaseProvider {
 
   async validateKey(): Promise<boolean> {
     try {
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`
-        },
-        body: JSON.stringify({
-          model: this.defaultModel,
-          messages: [{ role: 'user', content: 'ping' }],
-          max_tokens: 1
-        })
-      });
-      return response.ok;
-    } catch {
+      const adapter = new OpenRouterAdapter();
+      await adapter.validate(this.apiKey, this.defaultModel);
+      return true;
+    } catch (err) {
+      console.error('[OpenRouterProvider] Key validation failed:', err);
       return false;
     }
   }

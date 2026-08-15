@@ -1,4 +1,5 @@
 import { BaseProvider, extractJsonObject } from './AIProvider';
+import { MistralAdapter } from './ValidationAdapters';
 
 export class MistralProvider extends BaseProvider {
   constructor(apiKey: string) {
@@ -11,20 +12,11 @@ export class MistralProvider extends BaseProvider {
 
   async validateKey(): Promise<boolean> {
     try {
-      const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`
-        },
-        body: JSON.stringify({
-          model: 'mistral-small-latest',
-          messages: [{ role: 'user', content: 'ping' }],
-          max_tokens: 1
-        })
-      });
-      return response.ok;
-    } catch {
+      const adapter = new MistralAdapter();
+      await adapter.validate(this.apiKey, this.defaultModel);
+      return true;
+    } catch (err) {
+      console.error('[MistralProvider] Key validation failed:', err);
       return false;
     }
   }

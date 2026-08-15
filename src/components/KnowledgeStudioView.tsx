@@ -1321,7 +1321,7 @@ Question:
 ${queryText}`;
 
       const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
       const res = await fetch(url, {
         method: 'POST',
@@ -1501,7 +1501,7 @@ ${queryText}`;
       `;
 
       const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
       const res = await fetch(url, {
         method: 'POST',
@@ -2216,7 +2216,7 @@ ${queryText}`;
 
     try {
       const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
       const prompt = `
         Create a structured PowerPoint presentation deck based on the following material.

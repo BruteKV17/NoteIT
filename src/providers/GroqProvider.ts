@@ -1,4 +1,5 @@
 import { BaseProvider, extractJsonObject } from './AIProvider';
+import { GroqAdapter } from './ValidationAdapters';
 
 export class GroqProvider extends BaseProvider {
   constructor(apiKey: string) {
@@ -11,20 +12,11 @@ export class GroqProvider extends BaseProvider {
 
   async validateKey(): Promise<boolean> {
     try {
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`
-        },
-        body: JSON.stringify({
-          model: this.defaultModel,
-          messages: [{ role: 'user', content: 'ping' }],
-          max_tokens: 1
-        })
-      });
-      return response.ok;
-    } catch {
+      const adapter = new GroqAdapter();
+      await adapter.validate(this.apiKey, this.defaultModel);
+      return true;
+    } catch (err) {
+      console.error('[GroqProvider] Key validation failed:', err);
       return false;
     }
   }

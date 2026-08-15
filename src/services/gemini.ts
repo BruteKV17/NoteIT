@@ -134,8 +134,10 @@ export const executeGeminiCall = async (
     const proxyUrl = `${API_BASE_URL}/api/ai/provider-proxy`;
 
     let targetModel = model;
-    if (!targetModel || targetModel === 'gemini-2.5-flash' || targetModel === 'google/gemini-2.5-flash') targetModel = 'gemini-2.0-flash';
-    if (targetModel === 'gemini-2.5-pro' || targetModel === 'google/gemini-2.5-pro') targetModel = 'gemini-1.5-pro';
+    const validModels = ['gemini-1.5-flash', 'gemini-1.5-pro'];
+    if (!targetModel || (targetModel.startsWith('gemini-') && !validModels.includes(targetModel)) || (targetModel.startsWith('google/gemini-') && !validModels.includes(targetModel.replace('google/', '')))) {
+      targetModel = 'gemini-1.5-flash';
+    }
 
     const response = await fetch(proxyUrl, {
       method: 'POST',
@@ -309,7 +311,7 @@ ${transcript}`;
     required: ['title', 'overview', 'keyConcepts', 'importantPoints', 'examples', 'formulas', 'definitions', 'takeaways']
   };
 
-  const rawResult = await executeGeminiCall(prompt, customGeminiApiKey || '', undefined, schema, onBusy, 'gemini-2.0-flash', 'generate-notes');
+  const rawResult = await executeGeminiCall(prompt, customGeminiApiKey || '', undefined, schema, onBusy, 'gemini-1.5-flash', 'generate-notes');
 
   const title = rawResult.title || 'Lecture Study Notes';
   const overview = rawResult.overview || '';
@@ -1020,7 +1022,7 @@ export const generateAdditionalQuizQuestions = async (
     throw new Error("Gemini API key is not configured. Please configure an API key in Settings or environment.");
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
   const prompt = `
     You are an expert academic tutor. Generate 12 unique additional quiz questions about the topic "${topic}" with difficulty level "${difficulty}" directly from the provided source context.

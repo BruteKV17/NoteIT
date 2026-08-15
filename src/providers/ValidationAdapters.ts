@@ -1,13 +1,32 @@
 import { ProviderValidationError } from './AIProvider';
 
+async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 5000): Promise<Response> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    return response;
+  } catch (err: any) {
+    if (err.name === 'AbortError') {
+      throw new ProviderValidationError('Validation request timed out after 5 seconds', 504);
+    }
+    throw err;
+  } finally {
+    clearTimeout(id);
+  }
+}
+
 export interface ValidationAdapter {
   validate(apiKey: string, model?: string): Promise<void>;
 }
 
 export class GeminiAdapter implements ValidationAdapter {
   async validate(apiKey: string, model?: string): Promise<void> {
+    if (!apiKey || apiKey.trim().length < 8) {
+      throw new ProviderValidationError('Invalid API key format. Key is too short.', 401);
+    }
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, {
+      const response = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}&pageSize=1`, {
         method: 'GET'
       });
       if (!response.ok) {
@@ -37,8 +56,11 @@ export class GeminiAdapter implements ValidationAdapter {
 
 export class OpenAIAdapter implements ValidationAdapter {
   async validate(apiKey: string, model?: string): Promise<void> {
+    if (!apiKey || apiKey.trim().length < 8) {
+      throw new ProviderValidationError('Invalid API key format.', 401);
+    }
     try {
-      const response = await fetch('https://api.openai.com/v1/models', {
+      const response = await fetchWithTimeout('https://api.openai.com/v1/models', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${apiKey}`
@@ -68,38 +90,27 @@ export class OpenAIAdapter implements ValidationAdapter {
 
 export class XAIAdapter implements ValidationAdapter {
   async validate(apiKey: string, model?: string): Promise<void> {
-    const selectedModel = model || 'grok-2';
+    if (!apiKey || apiKey.trim().length < 8) {
+      throw new ProviderValidationError('Invalid API key format.', 401);
+    }
     try {
-      const response = await fetch('https://api.x.ai/v1/chat/completions', {
-        method: 'POST',
+      const response = await fetchWithTimeout('https://api.x.ai/v1/models', {
+        method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          model: selectedModel,
-          messages: [{ role: 'user', content: 'ping' }],
-          max_tokens: 1
-        })
+        }
       });
       if (!response.ok) {
         const text = await response.text();
         const status = response.status;
         let parsed: any = {};
-        try {
-          parsed = JSON.parse(text);
-        } catch {}
-
+        try { parsed = JSON.parse(text); } catch {}
         const errMsg = parsed.error?.message || parsed.error || text;
 
         if (status === 401 || status === 403 || errMsg.includes('API key') || errMsg.includes('disabled')) {
           throw new ProviderValidationError(`Invalid or unauthorized API key: ${errMsg}`, 401);
-        } else if (status === 404 || errMsg.includes('Model not found') || errMsg.includes('model_not_found') || errMsg.includes('invalid-argument')) {
-          throw new ProviderValidationError(`The selected xAI model is currently unavailable. Please select another supported model.`, 404);
         } else if (status === 429 || errMsg.includes('quota') || errMsg.includes('rate limit')) {
           throw new ProviderValidationError(`Rate limit/quota exceeded: ${errMsg}`, 429);
-        } else if (status === 400) {
-          throw new ProviderValidationError(`Bad request/configuration error: ${errMsg}`, 400);
         } else if (status >= 500) {
           throw new ProviderValidationError(`xAI service unavailable: ${errMsg}`, 503);
         } else {
@@ -115,8 +126,11 @@ export class XAIAdapter implements ValidationAdapter {
 
 export class ClaudeAdapter implements ValidationAdapter {
   async validate(apiKey: string, model?: string): Promise<void> {
+    if (!apiKey || apiKey.trim().length < 8) {
+      throw new ProviderValidationError('Invalid API key format.', 401);
+    }
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
           'x-api-key': apiKey,
@@ -124,7 +138,7 @@ export class ClaudeAdapter implements ValidationAdapter {
           'content-type': 'application/json'
         },
         body: JSON.stringify({
-          model: model || 'claude-3-5-sonnet-latest',
+          model: 'claude-3-5-haiku-latest',
           max_tokens: 1,
           messages: [{ role: 'user', content: 'ping' }]
         })
@@ -153,8 +167,11 @@ export class ClaudeAdapter implements ValidationAdapter {
 
 export class DeepSeekAdapter implements ValidationAdapter {
   async validate(apiKey: string, model?: string): Promise<void> {
+    if (!apiKey || apiKey.trim().length < 8) {
+      throw new ProviderValidationError('Invalid API key format.', 401);
+    }
     try {
-      const response = await fetch('https://api.deepseek.com/models', {
+      const response = await fetchWithTimeout('https://api.deepseek.com/models', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${apiKey}`
@@ -184,8 +201,11 @@ export class DeepSeekAdapter implements ValidationAdapter {
 
 export class OpenRouterAdapter implements ValidationAdapter {
   async validate(apiKey: string, model?: string): Promise<void> {
+    if (!apiKey || apiKey.trim().length < 8) {
+      throw new ProviderValidationError('Invalid API key format.', 401);
+    }
     try {
-      const response = await fetch('https://openrouter.ai/api/v1/models', {
+      const response = await fetchWithTimeout('https://openrouter.ai/api/v1/auth/key', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${apiKey}`
@@ -215,8 +235,11 @@ export class OpenRouterAdapter implements ValidationAdapter {
 
 export class MistralAdapter implements ValidationAdapter {
   async validate(apiKey: string, model?: string): Promise<void> {
+    if (!apiKey || apiKey.trim().length < 8) {
+      throw new ProviderValidationError('Invalid API key format.', 401);
+    }
     try {
-      const response = await fetch('https://api.mistral.ai/v1/models', {
+      const response = await fetchWithTimeout('https://api.mistral.ai/v1/models', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${apiKey}`
@@ -246,42 +269,65 @@ export class MistralAdapter implements ValidationAdapter {
 
 export class NvidiaAdapter implements ValidationAdapter {
   async validate(apiKey: string, model?: string): Promise<void> {
-    const selectedModel = model || 'z-ai/glm-5.2';
+    if (!apiKey || apiKey.trim().length < 8) {
+      throw new ProviderValidationError('Invalid API key format.', 401);
+    }
     try {
-      const response = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
-        method: 'POST',
+      const response = await fetchWithTimeout('https://integrate.api.nvidia.com/v1/models', {
+        method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          model: selectedModel,
-          messages: [{ role: 'user', content: 'ping' }],
-          max_tokens: 1
-        })
+        }
       });
       if (!response.ok) {
         const text = await response.text();
         const status = response.status;
         let parsed: any = {};
-        try {
-          parsed = JSON.parse(text);
-        } catch {}
-
+        try { parsed = JSON.parse(text); } catch {}
         const errMsg = parsed.error?.message || parsed.error || text;
 
         if (status === 401 || status === 403 || errMsg.includes('API key') || errMsg.includes('unauthorized') || errMsg.includes('invalid')) {
           throw new ProviderValidationError(`Invalid or unauthorized API key: ${errMsg}`, 401);
-        } else if (status === 404 || errMsg.includes('Model not found') || errMsg.includes('model_not_found') || errMsg.includes('invalid-argument')) {
-          throw new ProviderValidationError(`The selected GLM model is currently unavailable. Please select another supported model.`, 404);
         } else if (status === 429 || errMsg.includes('quota') || errMsg.includes('rate limit')) {
           throw new ProviderValidationError(`Rate limit/quota exceeded: ${errMsg}`, 429);
-        } else if (status === 400) {
-          throw new ProviderValidationError(`Bad request/configuration error: ${errMsg}`, 400);
         } else if (status >= 500) {
           throw new ProviderValidationError(`NVIDIA GLM service unavailable: ${errMsg}`, 503);
         } else {
           throw new ProviderValidationError(`NVIDIA GLM validation failed: ${errMsg}`, status);
+        }
+      }
+    } catch (err: any) {
+      if (err instanceof ProviderValidationError) throw err;
+      throw new ProviderValidationError(`Provider unavailable: ${err.message || 'network timeout or connection failure'}`, 504);
+    }
+  }
+}
+
+export class GroqAdapter implements ValidationAdapter {
+  async validate(apiKey: string, model?: string): Promise<void> {
+    if (!apiKey || apiKey.trim().length < 8) {
+      throw new ProviderValidationError('Invalid API key format.', 401);
+    }
+    try {
+      const response = await fetchWithTimeout('https://api.groq.com/openai/v1/models', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`
+        }
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        const status = response.status;
+        if (status === 401 || status === 403) {
+          throw new ProviderValidationError('Invalid or unauthorized API key', 401);
+        } else if (status === 404) {
+          throw new ProviderValidationError('Invalid API endpoint', 404);
+        } else if (status === 429) {
+          throw new ProviderValidationError('Rate limit/quota exceeded', 429);
+        } else if (status >= 500) {
+          throw new ProviderValidationError('Groq service unavailable', 503);
+        } else {
+          throw new ProviderValidationError(`Groq validation failed: ${text}`, status);
         }
       }
     } catch (err: any) {
@@ -318,8 +364,11 @@ export class ValidationAdapterFactory {
       case 'glm':
       case 'nvidia nim':
         return new NvidiaAdapter();
+      case 'groq':
+        return new GroqAdapter();
       default:
         throw new ProviderValidationError(`Unsupported AI provider validation: ${provider}`, 400);
     }
   }
 }
+

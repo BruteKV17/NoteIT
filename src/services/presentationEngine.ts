@@ -119,7 +119,7 @@ export function getDynamicFontSize(text: string, type: 'title' | 'body'): number
 // execute call helper inside service
 const executeLlmCall = async (
   prompt: string,
-  model: 'gemini-2.0-flash' | 'gemini-1.5-pro',
+  model: 'gemini-1.5-flash' | 'gemini-1.5-pro',
   apiKey: string,
   responseSchema?: any
 ): Promise<any> => {
@@ -135,7 +135,7 @@ export const generatePresentationBlueprint = async (
   level: 'quick' | 'balanced' | 'premium',
   apiKey: string
 ): Promise<SlideBlueprint[]> => {
-  const model = level === 'premium' ? 'gemini-1.5-pro' : 'gemini-2.0-flash';
+  const model = level === 'premium' ? 'gemini-1.5-pro' : 'gemini-1.5-flash';
 
   const schema = {
     type: 'OBJECT',
