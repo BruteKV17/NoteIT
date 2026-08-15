@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Square, Maximize2, GripVertical, Mic } from 'lucide-react';
+import { Play, Pause, Square, Maximize2, GripVertical, ExternalLink } from 'lucide-react';
 
 interface FloatingRecordingWidgetProps {
   isRecording: boolean;
@@ -27,6 +27,8 @@ export default function FloatingRecordingWidget({
   const [size, setSize] = useState({ width: 152, height: 56 });
   const [position, setPosition] = useState({ x: window.innerWidth - 176, y: window.innerHeight - 80 });
   const [isDragging, setIsDragging] = useState(false);
+  const pipWindowRef = useRef<Window | null>(null);
+
   const dragRef = useRef<{ startX: number; startY: number; initialX: number; initialY: number }>({
     startX: 0,
     startY: 0,
@@ -34,7 +36,7 @@ export default function FloatingRecordingWidget({
     initialY: 0
   });
 
-  // Keep widget inside screen viewport on resize
+  // Keep widget inside screen viewport on window resize
   useEffect(() => {
     const handleWindowResize = () => {
       setPosition(prev => ({
@@ -46,9 +48,8 @@ export default function FloatingRecordingWidget({
     return () => window.removeEventListener('resize', handleWindowResize);
   }, [size]);
 
-  // Drag handlers
+  // Drag handlers for in-app floating widget
   const handleMouseDown = (e: React.MouseEvent) => {
-    // Only drag when clicking on header/drag handle or widget background (not buttons)
     if ((e.target as HTMLElement).closest('button')) return;
     setIsDragging(true);
     dragRef.current = {
@@ -96,6 +97,95 @@ export default function FloatingRecordingWidget({
     return `${displayMins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // --- Document Picture-in-Picture (OS Level Desktop Floating Window) ---
+  const updatePipDOM = () => {
+    if (!pipWindowRef.current) return;
+    const doc = pipWindowRef.current.document;
+    doc.body.innerHTML = `
+      <div style="display:flex; align-items:center; justify-between; padding:6px 10px; height:100%; box-sizing:border-box; background:#111111; border:2px solid #FFC400; border-radius:6px; font-family:monospace; user-select:none;">
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${isPaused ? '#FFC400' : '#FF4D4D'};"></span>
+          <span style="font-size:13px; font-weight:bold; color:#FFFFFF;">${formatTime(seconds)}</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:5px;">
+          <button id="pip-pause" title="${isPaused ? 'Resume' : 'Pause'}" style="background:#222222; border:1px solid #555555; color:${isPaused ? '#FFC400' : '#FFFFFF'}; border-radius:4px; width:26px; height:26px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:11px; font-weight:bold;">
+            ${isPaused ? '▶' : '⏸'}
+          </button>
+          <button id="pip-stop" title="Stop & Save" style="background:#331111; border:1px solid #FF4D4D; color:#FF4D4D; border-radius:4px; width:26px; height:26px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:11px; font-weight:bold;">
+            ⏹
+          </button>
+        </div>
+      </div>
+    `;
+
+    const pauseBtn = doc.getElementById('pip-pause');
+    if (pauseBtn) {
+      pauseBtn.onclick = () => onPauseToggle();
+    }
+    const stopBtn = doc.getElementById('pip-stop');
+    if (stopBtn) {
+      stopBtn.onclick = () => {
+        onStop();
+        if (pipWindowRef.current) {
+          pipWindowRef.current.close();
+          pipWindowRef.current = null;
+        }
+      };
+    }
+  };
+
+  const openDesktopPipWindow = async () => {
+    if ('documentPictureInPicture' in (window as any)) {
+      try {
+        if (pipWindowRef.current) return;
+        const pipWin = await (window as any).documentPictureInPicture.requestWindow({
+          width: 170,
+          height: 65
+        });
+        pipWindowRef.current = pipWin;
+
+        pipWin.document.body.style.margin = '0';
+        pipWin.document.body.style.padding = '0';
+        pipWin.document.body.style.backgroundColor = '#111111';
+        pipWin.document.body.style.color = '#ffffff';
+
+        pipWin.addEventListener('pagehide', () => {
+          pipWindowRef.current = null;
+        });
+
+        updatePipDOM();
+      } catch (err) {
+        console.warn("Desktop PIP window opening skipped:", err);
+      }
+    }
+  };
+
+  // Sync PIP window contents when recording state changes
+  useEffect(() => {
+    if (pipWindowRef.current) {
+      updatePipDOM();
+    }
+  }, [seconds, isPaused, isRecording]);
+
+  // Auto-trigger PIP popout window when user switches software / hides browser tab
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden' && isRecording && !pipWindowRef.current) {
+        openDesktopPipWindow();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [isRecording]);
+
+  // Close PIP window when recording stops
+  useEffect(() => {
+    if (!isRecording && pipWindowRef.current) {
+      pipWindowRef.current.close();
+      pipWindowRef.current = null;
+    }
+  }, [isRecording]);
+
   if (!isRecording) return null;
 
   return (
@@ -117,7 +207,7 @@ export default function FloatingRecordingWidget({
         isDragging ? 'cursor-grabbing shadow-[0_12px_32px_rgba(255,196,0,0.4)] ring-2 ring-[#FFC400]' : 'cursor-grab'
       }`}
     >
-      {/* Top row: Drag Grip, Live Pulse, Time Ticker, Maximize Button */}
+      {/* Top row: Drag Grip, Live Pulse, Time Ticker, Actions */}
       <div className="flex items-center justify-between gap-1 w-full flex-1">
         {/* Left: Drag Handle & Live Mic Pulse */}
         <div className="flex items-center gap-1 min-w-0">
@@ -131,7 +221,7 @@ export default function FloatingRecordingWidget({
           </span>
         </div>
 
-        {/* Right: Compact Action Buttons (Pause/Play, Stop, Open) */}
+        {/* Right: Action Buttons (Pause, Stop, Float to Desktop, Maximize) */}
         <div className="flex items-center gap-1 shrink-0">
           {/* Pause / Resume Button */}
           <button
@@ -161,6 +251,19 @@ export default function FloatingRecordingWidget({
             className="h-6 w-6 rounded-[4px] border border-red-500/50 bg-red-950/60 hover:bg-red-900 flex items-center justify-center transition-all cursor-pointer"
           >
             <Square className="h-3 w-3 fill-current text-[#FF4D4D]" />
+          </button>
+
+          {/* Float Window on Desktop (Always-on-top OS Window for PowerPoint/Word/Zoom) */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              openDesktopPipWindow();
+            }}
+            title="Float Window on Desktop (Stays on top of PowerPoint / Word / Software)"
+            className="h-6 w-6 rounded-[4px] border border-[#38BDF8]/60 bg-[#38BDF8]/20 hover:bg-[#38BDF8]/40 text-[#38BDF8] flex items-center justify-center transition-all cursor-pointer"
+          >
+            <ExternalLink className="h-3 w-3" />
           </button>
 
           {/* Open Full Capture View */}
