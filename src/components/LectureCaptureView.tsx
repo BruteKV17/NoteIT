@@ -2620,22 +2620,51 @@ export default function LectureCaptureView({
                 </div>
               </div>
 
-              {/* Dynamic microphone container */}
-              <div className="relative my-2">
-                {isRecording && !isPaused && (
-                  <div className="absolute -inset-2 rounded-full bg-[#FF4D4D] animate-ping opacity-75" />
+              {/* Dynamic mascot video / microphone container */}
+              <div className="relative my-4 flex flex-col items-center justify-center">
+                {isRecording ? (
+                  <div 
+                    onClick={handleStopCapture}
+                    className="relative cursor-pointer group flex flex-col items-center select-none"
+                    title="Click mascot video to stop lecture recording"
+                  >
+                    <div className="absolute -inset-3 rounded-full bg-[#FFC400]/30 animate-ping" />
+                    
+                    {/* Mascot Video player when recording starts */}
+                    <div className="relative w-36 h-36 md:w-44 md:h-44 rounded-full border-4 border-[#FFC400] bg-[#111111] overflow-hidden shadow-[0_0_32px_rgba(255,196,0,0.5)] flex items-center justify-center p-2 group-hover:scale-105 transition-transform">
+                      <video
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        className="w-full h-full object-contain"
+                      >
+                        <source src="/mascots/mascot-recording.mp4" type="video/mp4" />
+                        <source src="/mascots/mascot-recording.webm" type="video/webm" />
+                        <img 
+                          src="/mascots/mascot-celebrate.png" 
+                          alt="Recording Mascot" 
+                          className="w-full h-full object-contain animate-pulse" 
+                        />
+                      </video>
+                    </div>
+
+                    <div className="mt-3 px-3.5 py-1.5 rounded-full bg-[#FF4D4D] border-2 border-[#111111] text-white text-[10px] font-mono font-black uppercase tracking-wider flex items-center gap-2 shadow-paper-xs">
+                      <span className="h-2 w-2 rounded-full bg-white animate-ping" />
+                      <span>RECORDING LIVE • CLICK MASCOT TO STOP</span>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    disabled={aiStatus === 'synthesizing'}
+                    onClick={handleStartCapture}
+                    className="h-28 w-28 rounded-full flex flex-col items-center justify-center border-4 border-[var(--border-main)] bg-[#FFC400] text-[#111111] hover:bg-[#ffe066] hover:scale-105 shadow-paper-md transition-all cursor-pointer relative z-10"
+                    title="Click to Start Recording"
+                  >
+                    <Mic className="h-10 w-10 text-[#111111]" />
+                    <span className="text-[9px] font-mono font-black uppercase tracking-wider mt-0.5">START</span>
+                  </button>
                 )}
-                <button
-                  disabled={aiStatus === 'synthesizing'}
-                  onClick={isRecording ? handleStopCapture : handleStartCapture}
-                  className={`h-24 w-24 rounded-full flex items-center justify-center border-2 border-[var(--border-main)] shadow-paper-md transition-all cursor-pointer relative z-10 ${
-                    isRecording 
-                      ? 'bg-[#FF4D4D] text-white hover:bg-[#ff3333]' 
-                      : 'bg-[#FFC400] text-[#111111] hover:bg-[#ffe066]'
-                  }`}
-                >
-                  {isRecording ? <Mic className="h-10 w-10 animate-bounce" /> : <Mic className="h-10 w-10 text-[#111111]" />}
-                </button>
               </div>
 
               {/* Status and Clock time ticker */}
