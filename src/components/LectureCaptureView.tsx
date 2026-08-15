@@ -82,10 +82,19 @@ export default function LectureCaptureView({
   
   // Hook up user subjects from Academic Library
   const { subjects } = useSubjects(auth.currentUser?.uid);
+  const [captureDestination, setCaptureDestination] = useState<'map' | 'saved'>('map');
 
   // Lecture Metadata inputs
   const [lectureTitle, setLectureTitle] = useState('');
-  const [lectureSubject, setLectureSubject] = useState('Computer Science');
+  const [lectureSubject, setLectureSubject] = useState('Data Structures');
+
+  useEffect(() => {
+    if (captureDestination === 'map' && subjects.length > 0) {
+      if (!subjects.some(s => s.name.toLowerCase() === lectureSubject.toLowerCase())) {
+        setLectureSubject(subjects[0].name);
+      }
+    }
+  }, [subjects, captureDestination]);
 
   // Capturing state machines
   const [isRecording, setIsRecording] = useState(false);
@@ -2392,30 +2401,81 @@ export default function LectureCaptureView({
                     className="w-full rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] text-xs font-mono font-bold p-3 outline-none shadow-paper-sm disabled:bg-[var(--panel-bg)] disabled:cursor-not-allowed"
                   />
                 </div>
+                {/* 1. Destination Section Selector */}
+                <div>
+                  <label className="block text-xs font-mono font-extrabold text-[var(--text-primary)] uppercase tracking-wider mb-1.5">
+                    1. LIBRARY SECTION
+                  </label>
+                  <div className="grid grid-cols-2 gap-2 p-1 rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--panel-bg)]">
+                    <button
+                      type="button"
+                      disabled={isRecording}
+                      onClick={() => {
+                        setCaptureDestination('map');
+                        if (subjects.length > 0) setLectureSubject(subjects[0].name);
+                      }}
+                      className={`py-2 px-3 rounded-[4px] text-xs font-mono font-extrabold transition-all flex items-center justify-center gap-1.5 ${
+                        captureDestination === 'map'
+                          ? 'bg-[#FFC400] text-[#111111] shadow-paper-sm border border-black'
+                          : 'text-[var(--text-primary)] opacity-70 hover:opacity-100 hover:bg-[var(--card-bg)]'
+                      }`}
+                    >
+                      <span>🗺️</span> SUBJECT MAP
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isRecording}
+                      onClick={() => {
+                        setCaptureDestination('saved');
+                        setLectureSubject('General');
+                      }}
+                      className={`py-2 px-3 rounded-[4px] text-xs font-mono font-extrabold transition-all flex items-center justify-center gap-1.5 ${
+                        captureDestination === 'saved'
+                          ? 'bg-[#FFC400] text-[#111111] shadow-paper-sm border border-black'
+                          : 'text-[var(--text-primary)] opacity-70 hover:opacity-100 hover:bg-[var(--card-bg)]'
+                      }`}
+                    >
+                      <span>📁</span> ACADEMIC SAVED
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2. Subject Selection Dropdown */}
                 <div>
                   <label className="block text-xs font-mono font-extrabold text-[var(--text-primary)] uppercase tracking-wider mb-1">
-                    SUBJECT FIELD
+                    2. {captureDestination === 'map' ? 'SELECT SUBJECT MAP' : 'SELECT CATEGORY'}
                   </label>
-                  <select
-                    disabled={isRecording}
-                    value={lectureSubject}
-                    onChange={(e) => setLectureSubject(e.target.value)}
-                    style={{ color: 'var(--text-primary)' }}
-                    className="w-full rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] text-xs font-mono font-bold p-3 outline-none shadow-paper-sm disabled:bg-[var(--panel-bg)] disabled:cursor-not-allowed cursor-pointer"
-                  >
-                    <optgroup label="ACADEMIC LIBRARY — SUBJECT MAPS" className="bg-[var(--card-bg)] text-[var(--text-primary)] font-bold">
+                  {captureDestination === 'map' ? (
+                    <select
+                      disabled={isRecording}
+                      value={lectureSubject}
+                      onChange={(e) => setLectureSubject(e.target.value)}
+                      style={{ color: 'var(--text-primary)' }}
+                      className="w-full rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] text-xs font-mono font-bold p-3 outline-none shadow-paper-sm disabled:bg-[var(--panel-bg)] disabled:cursor-not-allowed cursor-pointer"
+                    >
                       {subjects.map(s => (
                         <option key={s.id} value={s.name} className="bg-[var(--card-bg)] text-[var(--text-primary)] font-bold">
-                          {s.name.toUpperCase()} {s.code ? `(${s.code})` : ''} — SUBJECT MAP
+                          {s.name.toUpperCase()} {s.code ? `(${s.code})` : ''}
                         </option>
                       ))}
-                    </optgroup>
-                    <optgroup label="ACADEMIC LIBRARY — SAVED MATERIALS" className="bg-[var(--card-bg)] text-[var(--text-primary)] font-bold">
-                      <option value="General" className="bg-[var(--card-bg)] text-[var(--text-primary)] font-bold">
-                        GENERAL — ACADEMIC SAVED
-                      </option>
-                    </optgroup>
-                  </select>
+                    </select>
+                  ) : (
+                    <select
+                      disabled={isRecording}
+                      value={lectureSubject}
+                      onChange={(e) => setLectureSubject(e.target.value)}
+                      style={{ color: 'var(--text-primary)' }}
+                      className="w-full rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] text-xs font-mono font-bold p-3 outline-none shadow-paper-sm disabled:bg-[var(--panel-bg)] disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      <option value="General" className="bg-[var(--card-bg)] text-[var(--text-primary)] font-bold">General Academic Saved</option>
+                      <option value="Computer Science" className="bg-[var(--card-bg)] text-[var(--text-primary)] font-bold">Computer Science</option>
+                      <option value="Physics" className="bg-[var(--card-bg)] text-[var(--text-primary)] font-bold">Physics</option>
+                      <option value="Chemistry" className="bg-[var(--card-bg)] text-[var(--text-primary)] font-bold">Chemistry</option>
+                      <option value="Mathematics" className="bg-[var(--card-bg)] text-[var(--text-primary)] font-bold">Mathematics</option>
+                      <option value="Philosophy" className="bg-[var(--card-bg)] text-[var(--text-primary)] font-bold">Philosophy</option>
+                      <option value="Economics" className="bg-[var(--card-bg)] text-[var(--text-primary)] font-bold">Economics</option>
+                    </select>
+                  )}
                 </div>
               </div>
 
