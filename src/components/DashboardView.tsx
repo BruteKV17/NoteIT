@@ -106,43 +106,7 @@ export default function DashboardView({
         </div>
       </div>
 
-      {/* 2. LEARNING PIPELINE STAGES (12-Column Swiss Grid) */}
-      <div className="space-y-3">
-        <div className="section-label text-xs font-bold uppercase tracking-[3px] text-[#38BDF8]">
-          LEARNING PIPELINE STAGES
-        </div>
-        
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {[
-            { tag: "RECORD LECTURE", desc: "Sync voice arrays", step: "01", active: true },
-            { tag: "AI UNDERSTANDS", desc: "Speech into context", step: "02" },
-            { tag: "GENERATE NOTES", desc: "Markdown outline", step: "03" },
-            { tag: "CORE SUMMARY", desc: "Bullet citations", step: "04" },
-            { tag: "DYNAMIC QUIZZES", desc: "Active retrieval", step: "05" },
-            { tag: "WEAK TRACKER", desc: "Close cognitive gaps", step: "06" }
-          ].map((item, idx) => (
-            <Card
-              key={idx}
-              shadow="sm"
-              className={`p-3 flex flex-col justify-between h-[100px] border-2 border-[var(--border-main)] transition-transform hover:-translate-y-0.5 ${
-                item.active ? 'bg-[var(--hover-bg)] border-2 border-[var(--border-main)]' : 'bg-[var(--card-bg)]'
-              }`}
-            >
-              <span className="font-mono text-base font-bold text-[#FFC400] block">
-                {item.step}
-              </span>
-              <div>
-                <h4 className="font-heading text-xs font-bold uppercase text-[var(--text-primary)] leading-tight">
-                  {item.tag}
-                </h4>
-                <p className="text-[10px] text-[var(--text-secondary)] font-mono mt-0.5 truncate">
-                  {item.desc}
-                </p>
-              </div>
-            </Card>
-          ))}
-        </div>
-      </div>
+
 
       {/* 3. COGNITIVE RECENT LECTURES MODULES */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
