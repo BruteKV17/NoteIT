@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { 
   Grid, 
   List, 
@@ -34,11 +34,25 @@ import {
   FolderCheck,
   MoveRight,
   ChevronRight,
-  X
+  ChevronLeft,
+  ChevronDown,
+  X,
+  MapPin,
+  Lock,
+  Layers,
+  Award,
+  HelpCircle,
+  Check,
+  Mic,
+  Compass,
+  BookMarked,
+  ArrowRight,
+  Timer
 } from 'lucide-react';
-import { PageId, Lecture, Folder } from '../types';
+import { PageId, Lecture, Folder, Subject } from '../types';
 import { generateResourcesFromTranscript } from '../services/gemini';
 import { useFolders } from '../hooks/useFolders';
+import { useSubjects } from '../hooks/useSubjects';
 import { auth } from '../firebaseConfig';
 
 interface LibraryViewProps {
@@ -67,27 +81,45 @@ export default function LibraryView({
   setActiveLectureId
 }: LibraryViewProps) {
   
-  // Renaming lecture states
+  // High-level navigation state: SUBJECT MAP vs ACADEMIC SAVED
+  const [libraryTab, setLibraryTab] = useState<'map' | 'saved'>('map');
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
+
+  // Firestore subjects hook
+  const { subjects, addSubject, updateSubject, deleteSubject } = useSubjects(auth.currentUser?.uid);
+
+  // Auto-select first subject if none selected initially
+  useMemo(() => {
+    if (!selectedSubjectId && subjects.length > 0) {
+      setSelectedSubjectId(subjects[0].id);
+    }
+  }, [subjects]);
+
+  // Subject Dropdown State
+  const [showSubjectDropdown, setShowSubjectDropdown] = useState(false);
+
+  // Subject Creation Modal
+  const [showCreateSubjectModal, setShowCreateSubjectModal] = useState(false);
+  const [newSubName, setNewSubName] = useState('');
+  const [newSubCode, setNewSubCode] = useState('');
+  const [newSubProf, setNewSubProf] = useState('');
+  const [subjectError, setSubjectError] = useState<string | null>(null);
+
+  // Lecture Creation Modal inside Subject Map
+  const [showCreateLectureModal, setShowCreateLectureModal] = useState(false);
+  const [newLectureTitle, setNewLectureTitle] = useState('');
+  const [subjectSearch, setSubjectSearch] = useState('');
+
+  // Selected Node Detail Side Panel (defaults to active/first lecture if available)
+  const [selectedLectureDetail, setSelectedLectureDetail] = useState<Lecture | null>(null);
+
+  // Academic Saved Tab States
   const [renamingLectureId, setRenamingLectureId] = useState<string | null>(null);
   const [renamingTitle, setRenamingTitle] = useState('');
-  
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Stable stars generation for the premium space background
-  const spaceStars = useMemo(() => {
-    return Array.from({ length: 30 }).map((_, i) => ({
-      id: i,
-      left: Math.random() * 100,
-      top: Math.random() * 100,
-      size: Math.random() * 1.5 + 0.8,
-      delay: Math.random() * 5,
-      duration: Math.random() * 4 + 3,
-    }));
-  }, []);
-  
-  // States
-  const [activeSubject, setActiveSubject] = useState<string>('All');
+  const [activeSubjectFilter, setActiveSubjectFilter] = useState<string>('All');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showSyncModal, setShowSyncModal] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -98,37 +130,190 @@ export default function LibraryView({
   const [generatingLectureId, setGeneratingLectureId] = useState<string | null>(null);
   const [generationStep, setGenerationStep] = useState<number>(0);
   const [generationError, setGenerationError] = useState<{ message: string; code?: string; provider?: string } | null>(null);
-  const [confirmRegenerateLectureId, setConfirmRegenerateLectureId] = useState<string | null>(null);
 
-  const handleRetryOrGenerateResources = async (lectureId: string, modeType: 'missing' | 'all' = 'missing') => {
-    setGeneratingLectureId(lectureId);
-    setGenerationStep(1);
-    setGenerationError(null);
+  // Folder Organization
+  const { 
+    folders, 
+    addFolder, 
+    deleteFolder
+  } = useFolders(auth.currentUser?.uid);
+
+  const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
+  const [showFolderModal, setShowFolderModal] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+
+  // Active Subject Object
+  const currentSubject = useMemo(() => {
+    if (!selectedSubjectId && subjects.length > 0) return subjects[0];
+    return subjects.find(s => s.id === selectedSubjectId) || subjects[0] || null;
+  }, [selectedSubjectId, subjects]);
+
+  // Active Subject Lectures List
+  const currentSubjectLectures = useMemo(() => {
+    if (!currentSubject) return [];
+    
+    const matched = lectures.filter(l => {
+      if (l.subjectId) return l.subjectId === currentSubject.id;
+      if (l.subject) {
+        return l.subject.toLowerCase() === currentSubject.name.toLowerCase() ||
+               (currentSubject.code && l.subject.toLowerCase().includes(currentSubject.code.toLowerCase()));
+      }
+      return false;
+    });
+
+    // If no matching lectures in Firestore yet, provide sample lectures so the map renders beautifully immediately
+    if (matched.length === 0) {
+      return [
+        {
+          id: 'sample-lec-1',
+          title: 'Intro to Data Structures',
+          subject: currentSubject.name,
+          lectureNumber: 1,
+          status: 'completed',
+          reviewed: true,
+          addedAt: 'Yesterday',
+          duration: '45m',
+          type: 'recording',
+          transcript: 'Sample introductory transcript on Arrays and Memory allocations.'
+        },
+        {
+          id: 'sample-lec-10',
+          title: 'Heaps & Priority Queues',
+          subject: currentSubject.name,
+          lectureNumber: 10,
+          status: 'completed',
+          reviewed: true,
+          addedAt: '3 days ago',
+          duration: '50m',
+          type: 'recording',
+          transcript: 'Priority Queues binary tree representation and heapify algorithms.'
+        },
+        {
+          id: 'sample-lec-11',
+          title: 'Binary Search Trees',
+          subject: currentSubject.name,
+          lectureNumber: 11,
+          status: 'completed',
+          reviewed: false,
+          addedAt: 'Today',
+          duration: '52m',
+          type: 'recording',
+          transcript: 'Exploration of tree data structures where each node has at most two children. Focus on search, insertion, and deletion operations with O(log n) time complexity.'
+        },
+        {
+          id: 'sample-lec-12',
+          title: 'AVL Trees & Balancing',
+          subject: currentSubject.name,
+          lectureNumber: 12,
+          status: 'transcribing',
+          reviewed: false,
+          addedAt: 'Just now',
+          duration: '40m',
+          type: 'recording'
+        }
+      ] as Lecture[];
+    }
+
+    return matched.map((l, index) => ({
+      ...l,
+      lectureNumber: l.lectureNumber || (index + 1),
+      reviewed: l.reviewed || l.status === 'completed' || l.status === 'generated'
+    }));
+  }, [currentSubject, lectures]);
+
+  // Set default selected lecture detail to current active lecture
+  const activeLectureDetail = useMemo(() => {
+    if (selectedLectureDetail) return selectedLectureDetail;
+    if (currentSubjectLectures.length > 0) return currentSubjectLectures[currentSubjectLectures.length - 2] || currentSubjectLectures[0];
+    return null;
+  }, [selectedLectureDetail, currentSubjectLectures]);
+
+  // Calculate subject progress
+  const subjectProgress = useMemo(() => {
+    if (!currentSubjectLectures.length) return 0;
+    const reviewed = currentSubjectLectures.filter(l => l.reviewed || l.status === 'completed').length;
+    return Math.round((reviewed / currentSubjectLectures.length) * 100);
+  }, [currentSubjectLectures]);
+
+  // Handle Subject Creation
+  const handleCreateSubjectSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubjectError(null);
+    if (!newSubName.trim()) {
+      setSubjectError('Subject name is required.');
+      return;
+    }
+    if (subjects.length >= 5) {
+      setSubjectError('Maximum limit of 5 active subjects reached.');
+      return;
+    }
 
     try {
-      setGenerationStep(1); // Reading transcript
-      await new Promise(r => setTimeout(r, 400));
-      
-      setGenerationStep(2); // Generating summary & notes
-      await generateResourcesFromTranscript(lectureId, undefined, { mode: 'academic', modeType });
-
-      setGenerationStep(5); // Complete
-      await new Promise(r => setTimeout(r, 600));
-      setGeneratingLectureId(null);
-    } catch (err: any) {
-      console.error("Resource generation failed:", err);
-      setGenerationError({
-        message: err.message || "Failed to generate AI resources. Your transcript is safe.",
-        code: err.code,
-        provider: err.provider
+      const colors = ['#FFC107', '#10B981', '#8B5CF6', '#3B82F6', '#EF4444'];
+      const chosenColor = colors[subjects.length % colors.length];
+      const newId = await addSubject({
+        name: newSubName.trim(),
+        code: newSubCode.trim().toUpperCase(),
+        professor: newSubProf.trim(),
+        color: chosenColor
       });
+      setNewSubName('');
+      setNewSubCode('');
+      setNewSubProf('');
+      setShowCreateSubjectModal(false);
+      if (newId) {
+        setSelectedSubjectId(newId);
+      }
+    } catch (err: any) {
+      setSubjectError(err.message || 'Failed to create subject.');
     }
   };
 
-  // Subjects derived
-  const subjectsList = ['All', 'Physics', 'Economics', 'Computer Science', 'Philosophy', 'Chemistry', 'Mathematics'];
+  // Handle New Lecture Creation inside Subject Map
+  const handleCreateLectureInSubject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentSubject || !newLectureTitle.trim()) return;
 
-  // Handle addition
+    const nextNum = currentSubjectLectures.length + 1;
+    const title = newLectureTitle.trim();
+
+    const newLectureObj: any = {
+      id: `lec-map-${Date.now()}`,
+      title,
+      subject: currentSubject.name,
+      subjectId: currentSubject.id,
+      subjectCode: currentSubject.code || '',
+      lectureNumber: nextNum,
+      mapOrder: nextNum,
+      type: 'recording',
+      status: 'recording',
+      addedAt: 'Just now',
+      reviewed: false,
+      duration: '00:00:00'
+    };
+
+    onAddLecture(newLectureObj);
+    if (setActiveLectureId) {
+      setActiveLectureId(newLectureObj.id);
+    }
+    
+    setNewLectureTitle('');
+    setShowCreateLectureModal(false);
+    setActivePage('lecture-capture');
+  };
+
+  // Toggle Lecture Reviewed state
+  const handleToggleReviewed = async (lecture: Lecture) => {
+    const updatedReviewed = !lecture.reviewed;
+    if (onUpdateLecture) {
+      await onUpdateLecture(lecture.id, { reviewed: updatedReviewed });
+    }
+    if (selectedLectureDetail?.id === lecture.id) {
+      setSelectedLectureDetail(prev => prev ? { ...prev, reviewed: updatedReviewed } : null);
+    }
+  };
+
+  // Saved tab file upload handler
   const handleAddNewLecture = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
@@ -137,1312 +322,611 @@ export default function LibraryView({
       onSaveDocument(newTitle.trim(), newSubject, selectedFile);
       setNewTitle('');
       setSelectedFile(null);
-      setDestinationFolderForUpload('');
       setShowSyncModal(false);
       return;
     }
 
-    const added: Lecture = {
-      id: Math.random().toString(),
-      title: newTitle,
+    const created: Lecture = {
+      id: `lec-${Date.now()}`,
+      title: newTitle.trim(),
       subject: newSubject,
-      folderId: destinationFolderForUpload || undefined,
-      addedAt: 'Just now',
-      status: 'transcribing',
+      folderId: activeFolderId || undefined,
       type: newType,
-      duration: newType === 'recording' ? '12 mins' : undefined,
-      pages: newType === 'pdf' ? 8 : undefined
+      status: 'generated',
+      addedAt: 'Just now',
+      duration: newType === 'recording' ? '45 min' : undefined,
+      pages: newType === 'pdf' ? 12 : undefined,
     };
 
-    onAddLecture(added);
-
+    onAddLecture(created);
     setNewTitle('');
-    setDestinationFolderForUpload('');
+    setSelectedFile(null);
     setShowSyncModal(false);
   };
 
-  // Folder Hook & States
-  const { folders, addFolder, deleteFolder, renameFolder } = useFolders(auth.currentUser?.uid);
-  const [selectedFolderId, setSelectedFolderId] = useState<string>('all');
-  const [showCreateFolderModal, setShowCreateFolderModal] = useState<boolean>(false);
-  const [newFolderName, setNewFolderName] = useState<string>('');
-  const [newFolderColor, setNewFolderColor] = useState<string>('#2F6BFF');
-  const [movingLectureId, setMovingLectureId] = useState<string | null>(null);
-  const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
-  const [editingFolderName, setEditingFolderName] = useState<string>('');
-  const [destinationFolderForUpload, setDestinationFolderForUpload] = useState<string>('');
-  const [isCreatingFolder, setIsCreatingFolder] = useState<boolean>(false);
-  const [draggedOverFolderId, setDraggedOverFolderId] = useState<string | null>(null);
-  const [draggingLectureId, setDraggingLectureId] = useState<string | null>(null);
+  // Filtered lectures for ACADEMIC SAVED tab
+  const filteredSavedLectures = useMemo(() => {
+    return lectures.filter((lecture) => {
+      const matchesSearch = 
+        lecture.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        lecture.subject.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesSubject = activeSubjectFilter === 'All' || lecture.subject.toLowerCase() === activeSubjectFilter.toLowerCase();
+      const matchesFolder = activeFolderId ? lecture.folderId === activeFolderId : true;
 
-  const handleCreateFolderSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newFolderName.trim() || isCreatingFolder) return;
-    
-    setIsCreatingFolder(true);
-    try {
-      const createdId = await addFolder(newFolderName.trim(), newFolderColor);
-      setNewFolderName('');
-      setShowCreateFolderModal(false);
-      if (createdId) {
-        setSelectedFolderId(createdId);
-      }
-    } catch (err) {
-      console.error('Failed to create folder:', err);
-    } finally {
-      setIsCreatingFolder(false);
-    }
-  };
-
-  const handleMoveLecture = async (lectureId: string, folderId: string) => {
-    try {
-      if (onUpdateLecture) {
-        await onUpdateLecture(lectureId, { folderId: folderId || undefined });
-      }
-      setMovingLectureId(null);
-    } catch (err) {
-      console.error('Failed to move lecture to folder:', err);
-    }
-  };
-
-  // Filter lectures by search and folder
-  const filteredLectures = lectures.filter(lec => {
-    const matchesSearch = lec.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          lec.subject.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    let matchesFolder = true;
-    if (selectedFolderId === 'unorganized') {
-      matchesFolder = !lec.folderId;
-    } else if (selectedFolderId !== 'all') {
-      matchesFolder = lec.folderId === selectedFolderId;
-    }
-
-    return matchesSearch && matchesFolder;
-  });
+      return matchesSearch && matchesSubject && matchesFolder;
+    });
+  }, [lectures, searchQuery, activeSubjectFilter, activeFolderId]);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-16 bg-grid-paper p-4 md:p-8 select-none">
-      
-      {/* 1. ACADEMIC LIBRARY BAUHAUS HERO BANNER */}
-      <div className="hero-banner relative rounded-[6px] border-2 border-[var(--border-main)] p-6 md:p-8 shadow-paper-lg flex flex-col justify-between overflow-hidden">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-          <div className="space-y-2 max-w-2xl">
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-1 rounded-[4px] bg-[#FFC400] text-[#111111] font-mono text-[10px] font-extrabold uppercase border border-[#FFC400] shadow-paper-sm">
-                NOTEIT COGNITIVE HUB
-              </span>
-            </div>
-            <h1 className="font-heading font-extrabold text-3xl md:text-5xl tracking-tight text-[var(--text-primary)] uppercase leading-tight">
-              ACADEMIC LIBRARY
-            </h1>
-            <p className="text-xs md:text-sm text-[var(--text-secondary)] font-mono font-bold border-l-4 border-[#FFC400] pl-3 py-1">
-              CENTRAL HUB FOR SYNTHESIZED OUTLINES, TEXT REFERENCES, AND PROCESSED AUDIO NODES.
-            </p>
+    <div className="min-h-screen bg-[#F4F1EA] dark:bg-[#0E1117] text-[#000000] dark:text-white flex flex-col font-sans relative overflow-x-hidden selection:bg-[#FFC107] selection:text-black">
+
+      {/* Dynamic Path CSS Animation Keyframes */}
+      <style>{`
+        .brutal-border { 
+          border: 4px solid #000000; 
+          box-shadow: 4px 4px 0px #000000; 
+        }
+        .brutal-border:hover { 
+          box-shadow: 6px 6px 0px #000000; 
+          transform: translate(-2px, -2px); 
+        }
+        .brutal-border:active { 
+          box-shadow: 0px 0px 0px #000000; 
+          transform: translate(4px, 4px); 
+        }
+        .path-line-bauhaus {
+          stroke-dasharray: 20;
+          animation: dash-bauhaus 10s linear infinite;
+        }
+        @keyframes dash-bauhaus {
+          to { stroke-dashoffset: -100; }
+        }
+      `}</style>
+
+      {/* TOP BAUHAUS HEADER BAR */}
+      <header className="bg-white dark:bg-[#161B22] border-b-4 border-black px-8 py-4 flex flex-col lg:flex-row justify-between items-center gap-4 z-40">
+        
+        {/* Left: Breadcrumbs & Subject Selector Dropdown */}
+        <div className="flex items-center gap-4 font-bold uppercase tracking-wide">
+          <span className="text-black/60 dark:text-white/60 text-sm">Library</span>
+          <ChevronRight className="w-5 h-5 text-black dark:text-white stroke-[3]" />
+          
+          <div className="relative">
+            <button 
+              onClick={() => setShowSubjectDropdown(!showSubjectDropdown)}
+              className="flex items-center gap-2 bg-[#FFC107] text-black px-4 py-2 brutal-border font-black text-base hover:bg-[#FFD54F] transition-colors"
+            >
+              <span>{currentSubject ? currentSubject.name.toUpperCase() : 'SELECT SUBJECT'}</span>
+              <ChevronDown className="w-5 h-5 stroke-[3]" />
+            </button>
+
+            {/* Subject Selector Dropdown */}
+            {showSubjectDropdown && (
+              <div className="absolute left-0 top-full mt-2 w-64 bg-white dark:bg-[#161B22] border-4 border-black shadow-[6px_6px_0px_#000] z-50 p-2 flex flex-col gap-1">
+                <div className="text-[10px] font-black uppercase text-black/50 dark:text-white/50 px-2 py-1">
+                  Active Subjects ({subjects.length}/5)
+                </div>
+                {subjects.map((sub) => (
+                  <button
+                    key={sub.id}
+                    onClick={() => {
+                      setSelectedSubjectId(sub.id);
+                      setShowSubjectDropdown(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-xs font-black uppercase flex items-center justify-between border-2 transition-all ${
+                      selectedSubjectId === sub.id
+                        ? 'bg-[#FFC107] text-black border-black shadow-[2px_2px_0px_#000]'
+                        : 'border-transparent hover:border-black hover:bg-[#F4F1EA] dark:hover:bg-[#21262D]'
+                    }`}
+                  >
+                    <span>{sub.name}</span>
+                    {sub.code && <span className="text-[10px] font-mono px-1.5 py-0.5 bg-black text-white">{sub.code}</span>}
+                  </button>
+                ))}
+
+                <button
+                  onClick={() => {
+                    setShowSubjectDropdown(false);
+                    if (subjects.length >= 5) {
+                      alert('Maximum limit of 5 active subjects reached. Please delete an existing subject first.');
+                    } else {
+                      setShowCreateSubjectModal(true);
+                    }
+                  }}
+                  className="w-full text-center py-2 mt-1 bg-black text-white hover:bg-[#FFC107] hover:text-black font-black text-xs uppercase transition-colors border-2 border-black"
+                >
+                  + CREATE NEW SUBJECT
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* Action buttons */}
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
+          {/* DUAL TAB SWITCHER */}
+          <div className="hidden sm:flex items-center gap-1 border-2 border-black p-0.5 bg-[#F4F1EA] dark:bg-[#0D1117]">
             <button
-              onClick={() => setActivePage('knowledge-studio')}
-              className="px-4 py-2.5 rounded-[6px] border-2 border-[var(--border-main)] bg-[#FFC400] text-[#111111] font-extrabold uppercase text-xs shadow-paper-sm hover:bg-[#ffe066] transition-all cursor-pointer flex items-center gap-2"
+              onClick={() => setLibraryTab('map')}
+              className={`px-3 py-1.5 font-black text-xs uppercase transition-all ${
+                libraryTab === 'map'
+                  ? 'bg-[#FFC107] text-black border-2 border-black shadow-[2px_2px_0px_#000]'
+                  : 'text-black/70 dark:text-white/70 hover:text-black'
+              }`}
             >
-              <Plus className="h-4 w-4 text-[#111111] stroke-[3]" />
-              <span>Sync Document</span>
+              SUBJECT MAP
+            </button>
+            <button
+              onClick={() => setLibraryTab('saved')}
+              className={`px-3 py-1.5 font-black text-xs uppercase transition-all ${
+                libraryTab === 'saved'
+                  ? 'bg-[#FFC107] text-black border-2 border-black shadow-[2px_2px_0px_#000]'
+                  : 'text-black/70 dark:text-white/70 hover:text-black'
+              }`}
+            >
+              ACADEMIC SAVED
             </button>
           </div>
         </div>
-      </div>
 
-      {/* 2. ACADEMIC FOLDERS SECTION */}
-      <div className="rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] p-5 shadow-paper-md space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-[var(--border-main)] pb-3">
-          <div className="flex items-center gap-2">
-            <FolderIcon className="h-5 w-5 text-[#FFC400]" />
-            <h2 className="font-heading font-extrabold text-sm md:text-base uppercase tracking-tight text-[var(--text-primary)]">
-              MY FOLDERS & COLLECTIONS
-            </h2>
-            <span className="px-2 py-0.5 rounded-[4px] bg-[#FFC400] text-[#111111] text-[10px] font-mono font-extrabold border border-[#111111]">
-              {folders.length} FOLDERS
-            </span>
-            <span className="text-[11px] font-mono text-[var(--text-secondary)] font-bold border-l-2 border-[#FFC400] pl-2 hidden md:inline">
-              💡 Drag & drop any lecture onto a folder below to organize!
-            </span>
+        {/* Center Search Bar */}
+        <div className="flex items-center flex-1 max-w-md w-full">
+          <div className="relative w-full">
+            <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-black font-black stroke-[3]" />
+            <input
+              type="text"
+              value={subjectSearch}
+              onChange={(e) => setSubjectSearch(e.target.value)}
+              placeholder="SEARCH LECTURES, NOTES, TOPICS..."
+              className="w-full bg-white dark:bg-[#161B22] border-4 border-black py-2.5 pl-12 pr-4 text-xs font-bold uppercase placeholder:text-black/40 dark:placeholder:text-white/40 focus:outline-none focus:ring-4 focus:ring-[#FFC107] shadow-[3px_3px_0px_#000]"
+            />
+          </div>
+        </div>
+
+        {/* Right Progress Bar & Actions */}
+        <div className="flex items-center gap-4">
+          <div className="hidden xl:flex items-center gap-3 bg-white dark:bg-[#161B22] px-4 py-2 brutal-border">
+            <span className="text-xs font-black uppercase tracking-widest">Progress</span>
+            <div className="w-24 h-4 bg-[#F4F1EA] dark:bg-[#21262D] border-2 border-black relative overflow-hidden">
+              <div 
+                className="absolute top-0 left-0 h-full bg-[#FFC107] border-r-2 border-black transition-all duration-500"
+                style={{ width: `${subjectProgress}%` }}
+              />
+            </div>
+            <span className="text-sm font-black">{subjectProgress}%</span>
           </div>
 
           <button
-            onClick={() => setShowCreateFolderModal(true)}
-            className="px-3.5 py-1.5 rounded-[4px] border-2 border-[var(--border-main)] bg-[#2F6BFF] text-white text-xs font-mono font-extrabold uppercase shadow-paper-sm hover:bg-[#255cd9] transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
+            onClick={() => setShowCreateLectureModal(true)}
+            className="bg-[#FFC107] text-black font-black uppercase text-xs px-5 py-3 brutal-border flex items-center gap-2 hover:bg-[#FFD54F] transition-transform"
           >
-            <FolderPlus className="h-4 w-4 text-white" />
-            <span>+ Create Folder</span>
+            <Plus className="w-4 h-4 stroke-[3]" />
+            + NEW LECTURE
           </button>
         </div>
+      </header>
 
-        {/* Folders List Carousel / Badges */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-          
-          {/* ALL FILES FOLDER */}
-          <div
-            onClick={() => setSelectedFolderId('all')}
-            className={`rounded-[6px] border-2 p-3 flex flex-col justify-between cursor-pointer transition-all ${
-              selectedFolderId === 'all'
-                ? 'bg-[#FFC400] border-[#111111] text-[#111111] shadow-paper-md font-black'
-                : 'bg-[var(--panel-bg)] border-[var(--border-main)] text-[var(--text-primary)] hover:border-[#FFC400]'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <FolderOpen className="h-5 w-5" />
-              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-black/10">
-                {lectures.length}
-              </span>
-            </div>
-            <div className="mt-3">
-              <span className="text-xs font-mono font-extrabold block truncate uppercase">All Files</span>
-              <span className="text-[9px] font-mono opacity-70 block">Root Library</span>
-            </div>
-          </div>
+      {/* MAIN CONTAINER */}
+      <main className="flex-1 flex overflow-hidden">
 
-          {/* UNORGANIZED FOLDER */}
-          <div
-            onClick={() => setSelectedFolderId('unorganized')}
-            onDragOver={(e) => {
-              e.preventDefault();
-              e.dataTransfer.dropEffect = 'move';
-              if (draggedOverFolderId !== 'unorganized') setDraggedOverFolderId('unorganized');
-            }}
-            onDragLeave={(e) => {
-              e.preventDefault();
-              setDraggedOverFolderId(null);
-            }}
-            onDrop={async (e) => {
-              e.preventDefault();
-              setDraggedOverFolderId(null);
-              const lectureId = e.dataTransfer.getData('text/plain');
-              if (lectureId) {
-                await handleMoveLecture(lectureId, '');
-              }
-            }}
-            className={`rounded-[6px] border-2 p-3 flex flex-col justify-between cursor-pointer transition-all ${
-              draggedOverFolderId === 'unorganized'
-                ? 'bg-[#FFC400] border-[#111111] text-[#111111] scale-105 shadow-paper-lg ring-4 ring-[#FFC400]/40 font-black'
-                : selectedFolderId === 'unorganized'
-                ? 'bg-[#FFC400] border-[#111111] text-[#111111] shadow-paper-md font-black'
-                : 'bg-[var(--panel-bg)] border-[var(--border-main)] text-[var(--text-primary)] hover:border-[#FFC400]'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <FolderIcon className="h-5 w-5 text-gray-400" />
-              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-black/10">
-                {lectures.filter(l => !l.folderId).length}
-              </span>
-            </div>
-            <div className="mt-3">
-              <span className="text-xs font-mono font-extrabold block truncate uppercase">
-                {draggedOverFolderId === 'unorganized' ? '📥 Drop Here' : 'Unorganized'}
-              </span>
-              <span className="text-[9px] font-mono opacity-70 block">
-                {draggedOverFolderId === 'unorganized' ? 'Remove folder' : 'No Folder'}
-              </span>
-            </div>
-          </div>
+        {/* TAB 1: BAUHAUS SUBJECT MAP CANVAS VIEW */}
+        {libraryTab === 'map' && (
+          <div className="flex-1 flex overflow-hidden relative">
+            
+            {/* MAP AREA CANVAS */}
+            <div className="flex-1 relative overflow-y-auto overflow-x-hidden bg-[#F4F1EA] dark:bg-[#0D1117]">
+              
+              {/* Grid Background Overlay */}
+              <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.08)_2px,transparent_2px),linear-gradient(90deg,rgba(0,0,0,0.08)_2px,transparent_2px)] dark:bg-[linear-gradient(rgba(255,255,255,0.05)_2px,transparent_2px),linear-gradient(90deg,rgba(255,255,255,0.05)_2px,transparent_2px)] bg-[size:40px_40px] pointer-events-none" />
 
-          {/* CUSTOM USER FOLDERS */}
-          {folders.map(folder => {
-            const count = lectures.filter(l => l.folderId === folder.id).length;
-            const isSelected = selectedFolderId === folder.id;
-            const isDraggedOver = draggedOverFolderId === folder.id;
+              {/* Path Container */}
+              <div className="relative min-h-[1400px] w-full flex flex-col items-center py-16 pb-40">
 
-            return (
-              <div
-                key={folder.id}
-                onClick={() => setSelectedFolderId(folder.id)}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  e.dataTransfer.dropEffect = 'move';
-                  if (draggedOverFolderId !== folder.id) setDraggedOverFolderId(folder.id);
-                }}
-                onDragLeave={(e) => {
-                  e.preventDefault();
-                  setDraggedOverFolderId(null);
-                }}
-                onDrop={async (e) => {
-                  e.preventDefault();
-                  setDraggedOverFolderId(null);
-                  const lectureId = e.dataTransfer.getData('text/plain');
-                  if (lectureId) {
-                    await handleMoveLecture(lectureId, folder.id);
-                  }
-                }}
-                className={`rounded-[6px] border-2 p-3 flex flex-col justify-between cursor-pointer transition-all relative group ${
-                  isDraggedOver
-                    ? 'bg-[#2F6BFF] text-white border-[#111111] scale-105 shadow-paper-lg ring-4 ring-[#2F6BFF]/40 font-black'
-                    : isSelected
-                    ? 'bg-[#FFC400] border-[#111111] text-[#111111] shadow-paper-md font-black'
-                    : 'bg-[var(--panel-bg)] border-[var(--border-main)] text-[var(--text-primary)] hover:border-[#FFC400]'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <span 
-                      className="h-3 w-3 rounded-full border border-black/20" 
-                      style={{ backgroundColor: folder.color || '#2F6BFF' }} 
-                    />
-                    <FolderIcon className="h-4 w-4" />
+                {/* SVG Animated Connection Line */}
+                <svg className="absolute top-0 w-full h-full pointer-events-none z-0" preserveAspectRatio="none" viewBox="0 0 1000 1800">
+                  <path 
+                    className="path-line-bauhaus" 
+                    d="M 500,1800 L 400,1400 L 600,1000 L 400,600 L 600,200 L 500,0" 
+                    fill="none" 
+                    stroke="#000000" 
+                    strokeWidth="8"
+                  />
+                </svg>
+
+                {/* Module Landmark 01 */}
+                <div className="absolute top-[82%] right-[12%] text-right bg-white dark:bg-[#161B22] brutal-border p-4 transform rotate-3 z-10">
+                  <div className="text-[10px] font-black tracking-widest uppercase mb-1 border-b-2 border-black pb-1">
+                    MODULE 01
                   </div>
-                  <div className="flex items-center gap-1">
-                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-black/10">
-                      {count}
-                    </span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (window.confirm(`Delete folder "${folder.name}"? Files inside will move to Unorganized.`)) {
-                          deleteFolder(folder.id);
-                          if (selectedFolderId === folder.id) setSelectedFolderId('all');
-                        }
-                      }}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-red-500/20 text-red-500"
-                      title="Delete Folder"
+                  <div className="text-3xl font-black uppercase tracking-tighter text-black dark:text-white">
+                    FOUNDATIONS & ARRAYS
+                  </div>
+                </div>
+
+                {/* Module Landmark 04 */}
+                <div className="absolute top-[38%] left-[10%] bg-[#FFC107] text-black brutal-border p-4 transform -rotate-3 z-10">
+                  <div className="text-[10px] font-black tracking-widest uppercase mb-1 border-b-2 border-black pb-1">
+                    MODULE 04
+                  </div>
+                  <div className="text-3xl font-black uppercase tracking-tighter mt-1">
+                    TREES & GRAPHS
+                  </div>
+                </div>
+
+                {/* Lecture Nodes Container */}
+                <div className="relative w-full max-w-4xl flex flex-col items-center gap-28 z-10 my-auto">
+
+                  {currentSubjectLectures.map((lec, idx) => {
+                    const isSelected = activeLectureDetail?.id === lec.id;
+                    const isCompleted = lec.reviewed || lec.status === 'completed' || lec.status === 'generated';
+                    const isRecording = lec.status === 'recording' || lec.status === 'transcribing';
+
+                    // Node Offset positioning
+                    const alignments = ['ml-[-220px]', 'mr-[-280px]', 'ml-[-120px]', 'mr-[-180px]'];
+                    const alignmentClass = alignments[idx % alignments.length];
+
+                    return (
+                      <div
+                        key={lec.id}
+                        onClick={() => setSelectedLectureDetail(lec)}
+                        className={`relative group cursor-pointer ${alignmentClass} ${isSelected ? 'z-30 scale-105' : 'z-10'}`}
+                      >
+                        {/* Selected Connection Line to Panel */}
+                        {isSelected && (
+                          <div className="absolute right-[-180px] top-1/2 h-2 w-[180px] bg-black pointer-events-none hidden lg:block z-0" />
+                        )}
+
+                        {/* Node Status Badge Indicator */}
+                        {isCompleted ? (
+                          <div className="absolute -left-6 -top-6 w-12 h-12 bg-[#FFC107] text-black brutal-border flex items-center justify-center z-20">
+                            <Check className="w-7 h-7 stroke-[4]" />
+                          </div>
+                        ) : isRecording ? (
+                          <div className="absolute -left-8 top-1/2 -translate-y-1/2 w-16 h-16 bg-[#FFC107] brutal-border rounded-full flex items-center justify-center animate-pulse z-20">
+                            <div className="w-6 h-6 bg-black rounded-full" />
+                          </div>
+                        ) : (
+                          <div className="absolute -left-6 -top-6 w-12 h-12 bg-white dark:bg-[#21262D] text-black dark:text-white brutal-border flex items-center justify-center z-20">
+                            <Lock className="w-5 h-5 stroke-[3]" />
+                          </div>
+                        )}
+
+                        {/* Lecture Node Card */}
+                        <div className={`bg-white dark:bg-[#161B22] brutal-border p-6 w-72 transition-transform ${
+                          isSelected 
+                            ? 'shadow-[12px_12px_0px_#000] rotate-0 bg-[#FFC107]/20 border-black' 
+                            : idx % 2 === 0 ? 'transform -rotate-2 hover:rotate-0' : 'transform rotate-2 hover:rotate-0'
+                        }`}>
+                          <div className="flex justify-between items-center mb-3 border-b-4 border-black pb-2">
+                            <p className="text-xs font-black uppercase tracking-widest bg-[#FFC107] text-black px-2 py-0.5 border-2 border-black">
+                              LECTURE {lec.lectureNumber < 10 ? `0${lec.lectureNumber}` : lec.lectureNumber}
+                            </p>
+                            <span className="text-xs font-bold flex items-center gap-1 border-2 border-black px-1.5 py-0.5 bg-[#F4F1EA] dark:bg-[#0D1117] text-black dark:text-white">
+                              <Timer className="w-3.5 h-3.5" /> {lec.duration || '45m'}
+                            </span>
+                          </div>
+
+                          <h3 className="text-base font-black uppercase leading-tight mb-4 text-black dark:text-white">
+                            {lec.title}
+                          </h3>
+
+                          <div className="inline-flex items-center gap-2 bg-[#F4F1EA] dark:bg-[#21262D] text-black dark:text-white border-2 border-black px-3 py-1 font-bold text-xs uppercase">
+                            <Sparkles className="w-3.5 h-3.5 text-[#FFC107]" />
+                            <span>{isCompleted ? 'Synthesized' : isRecording ? 'Processing...' : 'Not Started'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* End Node with Mascot Avatar & Add Button */}
+                  <div className="relative mt-16 flex flex-col items-center z-20">
+                    <div 
+                      onClick={() => setShowCreateLectureModal(true)}
+                      className="w-20 h-20 bg-white dark:bg-[#161B22] brutal-border rounded-full flex items-center justify-center mb-4 hover:bg-[#FFC107] transition-colors cursor-pointer group"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Plus className="w-8 h-8 text-black stroke-[4] group-hover:scale-125 transition-transform" />
+                    </div>
+
+                    <div className="p-2 bg-[#FFC107] brutal-border transform rotate-6 flex items-center gap-3">
+                      <img 
+                        src="/mascots/mascot-owl.jpg" 
+                        alt="Mascot" 
+                        className="w-20 h-20 object-cover border-2 border-black grayscale contrast-125"
+                        onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                      />
+                      <div className="text-black pr-2">
+                        <div className="text-xs font-black uppercase">Scholar Owl</div>
+                        <div className="text-[10px] font-bold">"Click + to add Lecture {currentSubjectLectures.length + 1}!"</div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+              </div>
+            </div>
+
+            {/* SIDE PANEL INSPECTOR (Right Side Details for Selected Lecture) */}
+            <aside className="w-96 bg-white dark:bg-[#161B22] border-l-4 border-black flex flex-col z-30 shadow-2xl">
+              
+              {activeLectureDetail ? (
+                <>
+                  {/* Panel Header */}
+                  <div className="p-6 border-b-4 border-black bg-white dark:bg-[#161B22] relative">
+                    <div className="inline-flex items-center gap-2 bg-black text-white px-3 py-1 text-xs font-black uppercase tracking-widest mb-3 border-2 border-black">
+                      <Play className="w-3.5 h-3.5 text-[#FFC107] fill-[#FFC107]" />
+                      LECTURE {activeLectureDetail.lectureNumber < 10 ? `0${activeLectureDetail.lectureNumber}` : activeLectureDetail.lectureNumber}
+                    </div>
+
+                    <h2 className="text-2xl font-black uppercase leading-none mb-4 text-black dark:text-white">
+                      {activeLectureDetail.title}
+                    </h2>
+
+                    <p className="text-xs font-medium mb-6 border-l-4 border-black pl-3 text-black/80 dark:text-white/80 line-clamp-3">
+                      {activeLectureDetail.transcript || "Exploration of tree data structures, search algorithms, and cognitive notes generation."}
+                    </p>
+
+                    <button
+                      onClick={() => {
+                        if (setActiveLectureId) setActiveLectureId(activeLectureDetail.id);
+                        setActivePage('knowledge-studio');
+                      }}
+                      className="w-full bg-[#FFC107] text-black font-black uppercase text-sm py-3.5 brutal-border flex items-center justify-center gap-2 hover:bg-[#FFD54F] transition-transform"
+                    >
+                      <BookOpen className="w-5 h-5 stroke-[3]" />
+                      OPEN NOTES & STUDIO
                     </button>
                   </div>
-                </div>
 
-                <div className="mt-3">
-                  {editingFolderId === folder.id ? (
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        if (editingFolderName.trim()) {
-                          renameFolder(folder.id, editingFolderName.trim());
-                        }
-                        setEditingFolderId(null);
+                  {/* Panel Body Resources */}
+                  <div className="flex-1 p-6 overflow-y-auto bg-[#F4F1EA] dark:bg-[#0D1117] flex flex-col gap-4">
+                    <h3 className="text-xs font-black uppercase tracking-widest border-b-4 border-black pb-1 inline-block text-black dark:text-white">
+                      Resources & AI Assets
+                    </h3>
+
+                    {/* Resource 1: Structured Notes */}
+                    <button
+                      onClick={() => {
+                        if (setActiveLectureId) setActiveLectureId(activeLectureDetail.id);
+                        setActivePage('knowledge-studio');
                       }}
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex items-center gap-1"
+                      className="w-full flex items-center p-3.5 bg-white dark:bg-[#161B22] brutal-border hover:bg-[#FFC107] hover:text-black transition-colors group text-left"
                     >
-                      <input
-                        type="text"
-                        value={editingFolderName}
-                        onChange={(e) => setEditingFolderName(e.target.value)}
-                        className="w-full text-[10px] font-bold p-1 rounded bg-white text-black border outline-none"
-                        autoFocus
-                      />
-                      <button type="submit" className="text-[9px] bg-black text-white px-1.5 py-0.5 rounded font-mono font-bold">OK</button>
-                    </form>
-                  ) : (
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-mono font-extrabold block truncate uppercase font-sans">
-                        {isDraggedOver ? '📥 Move Here' : folder.name}
+                      <div className="w-10 h-10 bg-[#F4F1EA] dark:bg-[#21262D] border-2 border-black flex items-center justify-center mr-3 text-black dark:text-white group-hover:bg-white transition-colors">
+                        <FileText className="w-5 h-5 stroke-[2.5]" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-xs font-black uppercase text-black dark:text-white group-hover:text-black">Structured Notes</h4>
+                        <p className="text-[10px] font-bold text-black/60 dark:text-white/60 group-hover:text-black">Definitions & algorithms</p>
+                      </div>
+                      <ArrowRight className="w-4 h-4 stroke-[3] group-hover:translate-x-1 transition-transform" />
+                    </button>
+
+                    {/* Resource 2: Executive Summary */}
+                    <button
+                      onClick={() => {
+                        if (setActiveLectureId) setActiveLectureId(activeLectureDetail.id);
+                        setActivePage('knowledge-studio');
+                      }}
+                      className="w-full flex items-center p-3.5 bg-white dark:bg-[#161B22] brutal-border hover:bg-[#FFC107] hover:text-black transition-colors group text-left"
+                    >
+                      <div className="w-10 h-10 bg-[#F4F1EA] dark:bg-[#21262D] border-2 border-black flex items-center justify-center mr-3 text-black dark:text-white group-hover:bg-white transition-colors">
+                        <Sparkles className="w-5 h-5 stroke-[2.5]" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-xs font-black uppercase text-black dark:text-white group-hover:text-black">Executive Summary</h4>
+                        <p className="text-[10px] font-bold text-black/60 dark:text-white/60 group-hover:text-black">2-minute revision read</p>
+                      </div>
+                      <ArrowRight className="w-4 h-4 stroke-[3] group-hover:translate-x-1 transition-transform" />
+                    </button>
+
+                    {/* Resource 3: Flashcards */}
+                    <button
+                      onClick={() => {
+                        if (setActiveLectureId) setActiveLectureId(activeLectureDetail.id);
+                        setActivePage('quiz-mode');
+                      }}
+                      className="w-full flex items-center p-3.5 bg-white dark:bg-[#161B22] brutal-border hover:bg-[#FFC107] hover:text-black transition-colors group text-left"
+                    >
+                      <div className="w-10 h-10 bg-[#F4F1EA] dark:bg-[#21262D] border-2 border-black flex items-center justify-center mr-3 text-black dark:text-white group-hover:bg-white transition-colors">
+                        <Brain className="w-5 h-5 stroke-[2.5]" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-xs font-black uppercase text-black dark:text-white group-hover:text-black">Flashcards Deck</h4>
+                        <p className="text-[10px] font-bold text-black/60 dark:text-white/60 group-hover:text-black">24 cards generated</p>
+                      </div>
+                      <ArrowRight className="w-4 h-4 stroke-[3] group-hover:translate-x-1 transition-transform" />
+                    </button>
+
+                    {/* Resource 4: Practice Quiz */}
+                    <button
+                      onClick={() => {
+                        if (setActiveLectureId) setActiveLectureId(activeLectureDetail.id);
+                        setActivePage('quiz-mode');
+                      }}
+                      className="w-full flex items-center p-3.5 bg-white dark:bg-[#161B22] brutal-border hover:bg-[#FFC107] hover:text-black transition-colors group text-left"
+                    >
+                      <div className="w-10 h-10 bg-[#F4F1EA] dark:bg-[#21262D] border-2 border-black flex items-center justify-center mr-3 text-black dark:text-white group-hover:bg-white transition-colors">
+                        <Award className="w-5 h-5 stroke-[2.5]" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-xs font-black uppercase text-black dark:text-white group-hover:text-black">Practice Quiz</h4>
+                        <p className="text-[10px] font-bold text-black/60 dark:text-white/60 group-hover:text-black">10 questions</p>
+                      </div>
+                      <ArrowRight className="w-4 h-4 stroke-[3] group-hover:translate-x-1 transition-transform" />
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="p-8 text-center my-auto">
+                  <p className="text-xs font-black uppercase text-black/60 dark:text-white/60">Select a lecture node from the map to inspect details.</p>
+                </div>
+              )}
+
+            </aside>
+          </div>
+        )}
+
+        {/* TAB 2: ACADEMIC SAVED SECTION */}
+        {libraryTab === 'saved' && (
+          <div className="flex-1 p-8 overflow-y-auto bg-[#F4F1EA] dark:bg-[#0D1117] flex flex-col gap-6">
+            
+            {/* Folder Bar */}
+            <div className="bg-white dark:bg-[#161B22] p-4 brutal-border flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2 overflow-x-auto">
+                <button
+                  onClick={() => setActiveFolderId(null)}
+                  className={`px-3.5 py-1.5 font-black text-xs uppercase transition-all ${
+                    activeFolderId === null
+                      ? 'bg-[#FFC107] text-black border-2 border-black shadow-[2px_2px_0px_#000]'
+                      : 'bg-[#F4F1EA] dark:bg-[#21262D] text-black dark:text-white border-2 border-black'
+                  }`}
+                >
+                  All Materials ({lectures.length})
+                </button>
+
+                {folders.map(f => (
+                  <button
+                    key={f.id}
+                    onClick={() => setActiveFolderId(f.id)}
+                    className={`px-3.5 py-1.5 font-black text-xs uppercase transition-all ${
+                      activeFolderId === f.id
+                        ? 'bg-[#FFC107] text-black border-2 border-black shadow-[2px_2px_0px_#000]'
+                        : 'bg-[#F4F1EA] dark:bg-[#21262D] text-black dark:text-white border-2 border-black'
+                    }`}
+                  >
+                    {f.name}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setShowFolderModal(true)}
+                className="px-3.5 py-1.5 bg-[#FFC107] text-black border-2 border-black font-black text-xs uppercase shadow-[2px_2px_0px_#000]"
+              >
+                + NEW FOLDER
+              </button>
+            </div>
+
+            {/* Saved Lectures Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredSavedLectures.map((lec) => (
+                <div key={lec.id} className="bg-white dark:bg-[#161B22] brutal-border p-6 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-black uppercase px-2 py-0.5 bg-[#FFC107] text-black border border-black">
+                        {lec.subject || 'GENERAL'}
                       </span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingFolderId(folder.id);
-                          setEditingFolderName(folder.name);
-                        }}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-black/10 rounded"
-                        title="Rename Folder"
-                      >
-                        <Edit className="h-3 w-3" />
+                      <button onClick={() => onDeleteLecture(lec.id)} className="text-black/60 dark:text-white/60 hover:text-[#EF4444]">
+                        <Trash2 className="w-4 h-4 stroke-[2.5]" />
                       </button>
                     </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-
-        </div>
-      </div>
-
-
-
-      {/* Grid or List list output */}
-      {filteredLectures.length === 0 ? (
-        <div className="rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] p-12 text-center max-w-xl mx-auto space-y-4 shadow-paper-lg text-[var(--text-primary)]">
-          <div className="flex h-12 w-12 items-center justify-center rounded-[6px] mx-auto border-2 border-[#111111] bg-[#FFC400] text-[#111111] shadow-paper-sm">
-            <Filter className="h-6 w-6 text-[#111111]" />
-          </div>
-          <div>
-            <h4 className="font-heading font-extrabold text-base text-[#111111] uppercase">No items found</h4>
-            <p className="text-xs text-[#666666] font-mono mt-1 max-w-xs mx-auto">
-              We couldn't find matches for "{searchQuery || activeSubject}". Try resetting filters or recording a new lecture.
-            </p>
-          </div>
-          <button
-            onClick={() => { setSearchQuery(''); setActiveSubject('All'); }}
-            className="rounded-[6px] border-2 border-[#111111] bg-[#FFC400] px-4 py-2 text-xs font-mono font-bold text-[#111111] shadow-paper-sm hover:bg-[#ffe066] cursor-pointer transition-colors"
-          >
-            Clear Filters
-          </button>
-        </div>
-      ) : viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredLectures.map((lec) => {
-            const isRecording = lec.type === 'recording';
-            const isTranscribing = lec.status === 'transcribing';
-            const isBeingDragged = draggingLectureId === lec.id;
-
-            return (
-              <div 
-                key={lec.id}
-                draggable={true}
-                onDragStart={(e) => {
-                  e.dataTransfer.setData('text/plain', lec.id);
-                  e.dataTransfer.effectAllowed = 'move';
-                  setDraggingLectureId(lec.id);
-                }}
-                onDragEnd={() => {
-                  setDraggingLectureId(null);
-                  setDraggedOverFolderId(null);
-                }}
-                className={`rounded-[6px] border-2 border-[#111111] bg-white p-5 hover:shadow-paper-lg transition-all flex flex-col justify-between min-h-[210px] relative group shadow-paper-md text-[#111111] cursor-grab active:cursor-grabbing ${
-                  isBeingDragged ? 'opacity-40 scale-95 border-dashed border-[#2F6BFF]' : ''
-                }`}
-              >
-                <div>
-                  {/* Category badge header */}
-                  <div className="flex items-center justify-between">
-                    <span className="rounded-[4px] px-2.5 py-1 text-[10px] font-mono font-extrabold tracking-wide uppercase bg-[#FFC400] text-[#111111] border border-[#111111] shadow-paper-sm">
-                      {lec.subject}
-                    </span>
-                    <span className="text-[9px] font-mono text-[#666666] font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 select-none">
-                      <span>⋮⋮ Drag to Folder</span>
-                    </span>
+                    <h4 className="text-sm font-black uppercase mb-2 text-black dark:text-white">{lec.title}</h4>
+                    <p className="text-xs font-medium text-black/70 dark:text-white/70 line-clamp-3 mb-4">
+                      {lec.transcript || 'No transcript text available.'}
+                    </p>
                   </div>
 
-                  {/* Title or Rename Input */}
-                  {renamingLectureId === lec.id ? (
-                    <form
-                      onSubmit={async (e) => {
-                        e.preventDefault();
-                        if (!renamingTitle.trim()) return;
-                        try {
-                          if (onUpdateLecture) {
-                            await onUpdateLecture(lec.id, { title: renamingTitle.trim() });
-                          }
-                          setRenamingLectureId(null);
-                        } catch (err) {
-                          console.error("Failed to rename lecture:", err);
-                        }
-                      }}
-                      className="flex items-center gap-1.5 mt-4"
-                    >
-                      <input
-                        type="text"
-                        value={renamingTitle}
-                        onChange={(e) => setRenamingTitle(e.target.value)}
-                        className="rounded-[4px] text-xs font-mono font-bold p-2 border-2 border-[#111111] bg-white text-[#111111] outline-none w-full"
-                        autoFocus
-                      />
-                      <button
-                        type="submit"
-                        className="px-3 py-2 rounded-[4px] bg-[#19B56B] text-white border-2 border-[#111111] font-mono text-[10px] font-bold uppercase cursor-pointer"
-                      >
-                        Save
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setRenamingLectureId(null)}
-                        className="px-3 py-2 rounded-[4px] bg-white text-[#111111] border-2 border-[#111111] font-mono text-[10px] font-bold uppercase cursor-pointer"
-                      >
-                        Cancel
-                      </button>
-                    </form>
-                  ) : (
-                    <h3 className="font-heading font-extrabold text-base text-[#111111] mt-4 uppercase leading-snug line-clamp-2 pr-2 tracking-tight">
-                      {lec.title}
-                    </h3>
-                  )}
-
-                  <div className="flex items-center gap-4 text-xs font-mono text-[#666666] font-bold mt-2">
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5 text-[#111111]" />
-                      {lec.addedAt}
-                    </span>
-                    {lec.pages && <span>{lec.pages} pages</span>}
-                    {lec.duration && <span>{lec.duration}</span>}
-                  </div>
-
-                  {/* Stage Status Badges */}
-                  <div className="flex flex-wrap items-center gap-1.5 mt-3 select-none">
-                    {(lec.transcript || lec.cleanTranscript || lec.transcriptionStatus === 'completed') && (
-                      <span className="rounded-[4px] px-2 py-0.5 text-[9.5px] font-mono font-bold bg-[#2F6BFF]/15 text-[#111111] border border-[#111111] inline-flex items-center gap-1">
-                        <CheckCircle className="h-3 w-3 text-[#2F6BFF]" />
-                        Transcript Ready
-                      </span>
-                    )}
-
-                    {lec.resourceGenerationStatus === 'failed' || lec.status === 'failed' || lec.resourceGenerationError ? (
-                      <span className="rounded-[4px] px-2 py-0.5 text-[9.5px] font-mono font-bold bg-[#FF4D4D]/20 text-[#111111] border border-[#111111] inline-flex items-center gap-1" title={lec.resourceGenerationError?.message}>
-                        <AlertCircle className="h-3 w-3 text-[#FF4D4D] animate-pulse" />
-                        AI Resources Failed
-                      </span>
-                    ) : lec.summary && lec.notes ? (
-                      <span className="rounded-[4px] px-2 py-0.5 text-[9.5px] font-mono font-bold bg-[#19B56B]/20 text-[#111111] border border-[#111111] inline-flex items-center gap-1">
-                        <CheckCircle className="h-3 w-3 text-[#19B56B]" />
-                        AI Resources Ready
-                      </span>
-                    ) : (lec.transcript || lec.cleanTranscript) ? (
-                      <span className="rounded-[4px] px-2 py-0.5 text-[9.5px] font-mono font-bold bg-[#FFC400] text-[#111111] border border-[#111111] inline-flex items-center gap-1">
-                        <Sparkles className="h-3 w-3 text-[#111111]" />
-                        Resources Missing
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
-
-                {/* Sub Action panel container */}
-                <div className="mt-5 pt-3.5 border-t-2 border-[#111111]">
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center justify-between pt-3 border-t-2 border-black">
+                    <span className="text-[10px] font-bold uppercase text-black/60 dark:text-white/60">{lec.addedAt}</span>
                     <button
                       onClick={() => {
                         if (setActiveLectureId) setActiveLectureId(lec.id);
-                        setActivePage('research-hub');
+                        setActivePage('knowledge-studio');
                       }}
-                      className="group flex items-center gap-1 text-xs font-mono font-extrabold uppercase text-[#111111] hover:underline cursor-pointer"
+                      className="text-xs font-black uppercase text-black dark:text-white hover:text-[#FFC107] flex items-center gap-1"
                     >
-                      <BookOpen className="h-4 w-4" />
-                      <span>View Transcript</span>
-                      <ArrowUpRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                      OPEN STUDIO <ArrowRight className="w-3.5 h-3.5 stroke-[3]" />
                     </button>
-
-                    {lec.resourceGenerationStatus === 'failed' || lec.status === 'failed' || lec.resourceGenerationError ? (
-                      <button
-                        onClick={() => handleRetryOrGenerateResources(lec.id, 'missing')}
-                        className="px-3 py-1.5 rounded-[4px] bg-[#FF4D4D] text-white border-2 border-[#111111] text-xs font-mono font-bold uppercase hover:bg-[#ff3333] transition-colors cursor-pointer flex items-center gap-1 shadow-paper-sm"
-                      >
-                        <RotateCw className="h-3.5 w-3.5" />
-                        <span>Retry Generation</span>
-                      </button>
-                    ) : (!lec.summary || !lec.notes) && (lec.transcript || lec.cleanTranscript) ? (
-                      <button
-                        onClick={() => handleRetryOrGenerateResources(lec.id, 'missing')}
-                        className="px-3 py-1.5 rounded-[4px] bg-[#2F6BFF] text-white border-2 border-[#111111] text-xs font-mono font-bold uppercase hover:bg-[#1a57ee] transition-colors cursor-pointer flex items-center gap-1 shadow-paper-sm"
-                      >
-                        <Sparkles className="h-3.5 w-3.5" />
-                        <span>Generate Resources</span>
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => setConfirmRegenerateLectureId(lec.id)}
-                        className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase text-[#666666] hover:text-[#111111] transition-colors cursor-pointer flex items-center gap-1"
-                        title="Regenerate All Resources"
-                      >
-                        <RefreshCw className="h-3.5 w-3.5" />
-                        <span>Regenerate All</span>
-                      </button>
-                    )}
                   </div>
                 </div>
-
-                {/* Inline Action Overlays: Rename/Delete */}
-                <div className="absolute top-4 right-4 flex items-center gap-1.5">
-                  <button
-                    onClick={() => {
-                      setRenamingLectureId(lec.id);
-                      setRenamingTitle(lec.title);
-                    }}
-                    className="h-7 w-7 rounded-[4px] items-center justify-center hidden group-hover:flex border-2 border-[#111111] bg-white text-[#111111] shadow-paper-sm hover:bg-[#FFC400] cursor-pointer"
-                    title="Rename Lecture"
-                  >
-                    <Edit className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (window.confirm("Are you sure you want to delete this lecture?")) {
-                        onDeleteLecture(lec.id);
-                      }
-                    }}
-                    className="h-7 w-7 rounded-[4px] items-center justify-center hidden group-hover:flex border-2 border-[#111111] bg-[#FF4D4D] text-white shadow-paper-sm hover:bg-[#ff3333] cursor-pointer"
-                    title="Delete Lecture"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        /* List layout mode */
-        <div className={`rounded-2xl border overflow-hidden shadow-2xl transition-all ${
-          theme === 'dark' ? 'bg-[#0d0e12]/60 border-neutral-900' : 'bg-white border-gray-200'
-        }`}>
-          {/* Mobile Stacked List View */}
-          <div className="block md:hidden divide-y divide-gray-100 dark:divide-neutral-900">
-            {filteredLectures.map((lec) => {
-              const isRecording = lec.type === 'recording';
-              const isTranscribing = lec.status === 'transcribing';
-              const isBeingDragged = draggingLectureId === lec.id;
-              return (
-                <div 
-                  key={lec.id} 
-                  draggable={true}
-                  onDragStart={(e) => {
-                    e.dataTransfer.setData('text/plain', lec.id);
-                    e.dataTransfer.effectAllowed = 'move';
-                    setDraggingLectureId(lec.id);
-                  }}
-                  onDragEnd={() => {
-                    setDraggingLectureId(null);
-                    setDraggedOverFolderId(null);
-                  }}
-                  className={`p-4 space-y-3 font-sans relative cursor-grab active:cursor-grabbing ${
-                    isBeingDragged ? 'opacity-40 bg-indigo-500/10' : ''
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className={`rounded px-2.5 py-0.5 text-[8.5px] font-black tracking-wide uppercase ${
-                      theme === 'dark' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-gray-100 text-gray-600'
-                    }`}>
-                      {lec.subject}
-                    </span>
-                    <span className="text-[9px] font-mono text-gray-400">⋮⋮ Drag</span>
-                  </div>
-
-                  <div>
-                    {renamingLectureId === lec.id ? (
-                      <form
-                        onSubmit={async (e) => {
-                          e.preventDefault();
-                          if (!renamingTitle.trim()) return;
-                          try {
-                            if (onUpdateLecture) {
-                              await onUpdateLecture(lec.id, { title: renamingTitle.trim() });
-                            }
-                            setRenamingLectureId(null);
-                          } catch (err) {
-                            console.error("Failed to rename lecture:", err);
-                          }
-                        }}
-                        className="flex items-center gap-1.5"
-                      >
-                        <input
-                          type="text"
-                          value={renamingTitle}
-                          onChange={(e) => setRenamingTitle(e.target.value)}
-                          className={`rounded-lg text-xs font-semibold px-2 py-1.5 focus:border-indigo-500 outline-none w-full ${
-                            theme === 'dark' ? 'bg-neutral-900 border border-neutral-800 text-white' : 'bg-[#F9FAFB] border border-gray-200 text-gray-900'
-                          }`}
-                          autoFocus
-                        />
-                        <button
-                          type="submit"
-                          className="px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-sans text-[10px] font-bold cursor-pointer hover:bg-emerald-500/20 focus:outline-none"
-                        >
-                          Save
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setRenamingLectureId(null)}
-                          className="px-2 py-1 rounded bg-neutral-900/65 border border-neutral-800 text-neutral-400 font-sans text-[10px] font-bold cursor-pointer hover:bg-neutral-800 focus:outline-none"
-                        >
-                          Cancel
-                        </button>
-                      </form>
-                    ) : (
-                      <span className={`text-xs font-bold block ${
-                        theme === 'dark' ? 'text-white' : 'text-gray-900'
-                      }`}>
-                        {lec.title}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-between text-[10px] font-mono text-gray-400">
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3 text-indigo-400/50" />
-                      {lec.addedAt}
-                    </span>
-                    {lec.pages && <span>{lec.pages} pages</span>}
-                    {lec.duration && <span>{lec.duration}</span>}
-                  </div>
-
-                  <div className="flex items-center justify-between pt-2 border-t border-neutral-900/10 dark:border-neutral-900/40">
-                    <div>
-                      {isTranscribing ? (
-                        <span className="inline-flex items-center gap-1 text-amber-500 font-bold text-[10px] animate-pulse">
-                          <RotateCw className="h-3.5 w-3.5 animate-spin" />
-                          <span>Transcribing...</span>
-                        </span>
-                      ) : lec.status === 'uploading' ? (
-                        <span className="inline-flex items-center gap-1 text-indigo-500 font-bold text-[10px] animate-pulse">
-                          <RotateCw className="h-3.5 w-3.5 animate-spin" />
-                          <span>Uploading...</span>
-                        </span>
-                      ) : (
-                        <span className={`inline-flex items-center gap-1 font-bold text-[10px] ${
-                          theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'
-                        }`}>
-                          <CheckCircle className="h-3 w-3 fill-emerald-500/10" />
-                          <span>Synthesized</span>
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      {!isTranscribing && (
-                        <button
-                          onClick={() => setActivePage('research-hub')}
-                          className={`rounded px-2.5 py-1 text-[10px] font-black transition-all cursor-pointer ${
-                            theme === 'dark' ? 'bg-white text-black hover:bg-neutral-100' : 'bg-black text-white hover:bg-gray-800'
-                          }`}
-                        >
-                          Workspace
-                        </button>
-                      )}
-                      <button
-                        onClick={() => {
-                          setRenamingLectureId(lec.id);
-                          setRenamingTitle(lec.title);
-                        }}
-                        className={`rounded p-1 hover:bg-indigo-500/10 cursor-pointer ${
-                          theme === 'dark' ? 'text-neutral-400 hover:text-indigo-400' : 'text-gray-400 hover:text-indigo-600'
-                        }`}
-                      >
-                        <Edit className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (window.confirm("Are you sure you want to delete this lecture?")) {
-                            onDeleteLecture(lec.id);
-                          }
-                        }}
-                        className={`rounded p-1 hover:bg-red-500/10 cursor-pointer ${
-                          theme === 'dark' ? 'text-neutral-400 hover:text-red-400' : 'text-gray-400 hover:text-red-500'
-                        }`}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Desktop Table List View */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-left border-collapse select-text">
-              <thead>
-                <tr className={`border-b ${theme === 'dark' ? 'bg-neutral-950/60 border-neutral-900' : 'bg-gray-50/60 border-gray-200'}`}>
-                  <th className="px-6 py-4 text-[10px] font-black text-neutral-500 uppercase tracking-widest">Type</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-neutral-500 uppercase tracking-widest">Document Title</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-neutral-500 uppercase tracking-widest font-sans">Subject</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-neutral-500 uppercase tracking-widest">Details</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-neutral-500 uppercase tracking-widest">Added At</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-neutral-500 uppercase tracking-widest">Status</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-neutral-500 uppercase tracking-widest text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className={`divide-y ${theme === 'dark' ? 'divide-neutral-900' : 'divide-gray-100'}`}>
-                {filteredLectures.map((lec) => {
-                  const isRecording = lec.type === 'recording';
-                  const isTranscribing = lec.status === 'transcribing';
-                  const isBeingDragged = draggingLectureId === lec.id;
-                  return (
-                    <tr 
-                      key={lec.id} 
-                      draggable={true}
-                      onDragStart={(e) => {
-                        e.dataTransfer.setData('text/plain', lec.id);
-                        e.dataTransfer.effectAllowed = 'move';
-                        setDraggingLectureId(lec.id);
-                      }}
-                      onDragEnd={() => {
-                        setDraggingLectureId(null);
-                        setDraggedOverFolderId(null);
-                      }}
-                      className={`transition-colors cursor-grab active:cursor-grabbing ${
-                        isBeingDragged ? 'opacity-40 bg-indigo-500/10' : ''
-                      } ${theme === 'dark' ? 'hover:bg-neutral-950/30' : 'hover:bg-gray-50/50'}`}
-                    >
-                      <td className="px-6 py-4 select-none">
-                        <div className={`p-2 rounded-lg border inline-block ${
-                          isRecording 
-                            ? theme === 'dark' ? 'bg-orange-500/10 border-orange-500/10 text-orange-400' : 'bg-orange-50 text-orange-600'
-                            : theme === 'dark' ? 'bg-blue-500/10 border-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'
-                        }`}>
-                          <FileText className="h-4 w-4" />
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        {renamingLectureId === lec.id ? (
-                          <form
-                            onSubmit={async (e) => {
-                              e.preventDefault();
-                              if (!renamingTitle.trim()) return;
-                              try {
-                                if (onUpdateLecture) {
-                                  await onUpdateLecture(lec.id, { title: renamingTitle.trim() });
-                                }
-                                setRenamingLectureId(null);
-                              } catch (err) {
-                                console.error("Failed to rename lecture:", err);
-                              }
-                            }}
-                            className="flex items-center gap-1.5"
-                          >
-                            <input
-                              type="text"
-                              value={renamingTitle}
-                              onChange={(e) => setRenamingTitle(e.target.value)}
-                              className={`rounded-lg text-xs font-semibold px-2 py-1.5 focus:border-indigo-500 outline-none w-56 sm:w-64 ${
-                                theme === 'dark' ? 'bg-neutral-900 border border-neutral-800 text-white' : 'bg-[#F9FAFB] border border-gray-200 text-gray-900'
-                              }`}
-                              autoFocus
-                            />
-                            <button
-                              type="submit"
-                              className="px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-sans text-[10px] font-bold cursor-pointer hover:bg-emerald-500/20 transition-all focus:outline-none"
-                            >
-                              Save
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setRenamingLectureId(null)}
-                              className="px-2 py-1 rounded bg-neutral-900/65 border border-neutral-800 text-neutral-400 font-sans text-[10px] font-bold cursor-pointer hover:bg-neutral-800 transition-all focus:outline-none"
-                            >
-                              Cancel
-                            </button>
-                          </form>
-                        ) : (
-                          <span className={`text-sm font-bold block ${
-                            theme === 'dark' ? 'text-white' : 'text-gray-900'
-                          }`}>
-                            {lec.title}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 select-none">
-                        <span className={`rounded px-2.5 py-0.5 text-[9px] font-black tracking-wide uppercase ${
-                          theme === 'dark' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-gray-100 text-gray-600'
-                        }`}>
-                          {lec.subject}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-xs font-medium text-gray-500 font-mono">
-                        {lec.pages && <span>{lec.pages} pages</span>}
-                        {lec.duration && <span>{lec.duration}</span>}
-                      </td>
-                      <td className="px-6 py-4 text-xs font-semibold text-gray-400 font-mono">{lec.addedAt}</td>
-                      <td className="px-6 py-4">
-                        {isTranscribing ? (
-                          <span className="inline-flex items-center gap-1.5 text-amber-500 font-bold text-xs animate-pulse">
-                            <RotateCw className="h-3.5 w-3.5 animate-spin" />
-                            <span>Transcribing...</span>
-                          </span>
-                        ) : lec.status === 'uploading' ? (
-                          <span className="inline-flex items-center gap-1.5 text-indigo-500 font-bold text-xs animate-pulse">
-                            <RotateCw className="h-3.5 w-3.5 animate-spin" />
-                            <span>Uploading...</span>
-                          </span>
-                        ) : lec.status === 'extracting' ? (
-                          <span className="inline-flex items-center gap-1.5 text-indigo-400 font-bold text-xs animate-pulse">
-                            <RotateCw className="h-3.5 w-3.5 animate-spin" />
-                            <span>Extracting...</span>
-                          </span>
-                        ) : lec.status === 'analyzing' ? (
-                          <span className="inline-flex items-center gap-1.5 text-amber-500 font-bold text-xs animate-pulse">
-                            <RotateCw className="h-3.5 w-3.5 animate-spin" />
-                            <span>Analyzing...</span>
-                          </span>
-                        ) : lec.status === 'generating_notes' ? (
-                          <span className="inline-flex items-center gap-1.5 text-amber-500 font-bold text-xs animate-pulse">
-                            <RotateCw className="h-3.5 w-3.5 animate-spin" />
-                            <span>Generating notes...</span>
-                          </span>
-                        ) : (
-                          <span className={`inline-flex items-center gap-1 font-bold text-xs ${
-                            theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'
-                          }`}>
-                            <CheckCircle className="h-3.5 w-3.5 fill-emerald-500/10" />
-                            <span>Synthesized</span>
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-right select-none">
-                        <div className="flex items-center justify-end gap-2">
-                          {!isTranscribing && (
-                            <button
-                              onClick={() => setActivePage('research-hub')}
-                              className={`rounded px-2.5 py-1.5 text-xs font-black transition-all cursor-pointer ${
-                                theme === 'dark' ? 'bg-white text-black hover:bg-neutral-100' : 'bg-black text-white hover:bg-gray-800'
-                              }`}
-                            >
-                              Workspace
-                            </button>
-                          )}
-                          <button
-                            onClick={() => {
-                              setRenamingLectureId(lec.id);
-                              setRenamingTitle(lec.title);
-                            }}
-                            className={`rounded p-1.5 hover:bg-indigo-500/10 cursor-pointer ${
-                              theme === 'dark' ? 'text-neutral-500 hover:text-indigo-400' : 'text-gray-400 hover:text-indigo-600'
-                            }`}
-                            title="Rename"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (window.confirm("Are you sure you want to delete this lecture?")) {
-                                onDeleteLecture(lec.id);
-                              }
-                            }}
-                            className={`rounded p-1.5 hover:bg-red-500/10 cursor-pointer ${
-                              theme === 'dark' ? 'text-neutral-500 hover:text-red-400' : 'text-gray-400 hover:text-red-500'
-                            }`}
-                            title="Delete"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Document Sync Modal */}
-      {showSyncModal && (
-        <div className="fixed inset-0 bg-neutral-950/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 select-none">
-          <div className={`rounded-2xl max-w-md w-full border p-6 space-y-4 shadow-2xl relative ${
-            theme === 'dark' ? 'bg-[#0d0e12] border-neutral-900 text-white' : 'bg-white border-gray-200 text-gray-900'
-          }`}>
-            <div className={`flex items-center justify-between pb-3 border-b ${
-              theme === 'dark' ? 'border-neutral-900' : 'border-gray-100'
-            }`}>
-              <h3 className="font-sans font-black text-sm flex items-center gap-1.5">
-                <Sparkles className="h-4 w-4 text-indigo-400" />
-                <span>Upload & Sync Lecture Materials</span>
-              </h3>
-              <button 
-                onClick={() => setShowSyncModal(false)}
-                className="text-neutral-400 hover:text-white text-xs font-bold focus:outline-none cursor-pointer"
-              >
-                Close
-              </button>
-            </div>
-
-            <form onSubmit={handleAddNewLecture} className="space-y-4">
-              <div>
-                <label className="block text-[10px] font-black text-neutral-500 uppercase font-mono">LECTURE TITLE</label>
-                <input
-                  type="text"
-                  required
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder="e.g. Cognitive Neurology and Motor Synapses"
-                  className={`w-full rounded-xl text-xs font-semibold outline-none p-3.5 transition-all mt-1 ${
-                    theme === 'dark' 
-                      ? 'bg-neutral-950 border border-neutral-900 text-white placeholder-neutral-600 focus:border-indigo-500' 
-                      : 'bg-[#F9FAFB] border border-gray-200 text-gray-900 placeholder-gray-400 focus:border-black focus:bg-white'
-                  }`}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] font-black text-neutral-500 uppercase font-mono">SUBJECT FIELD</label>
-                  <select
-                    value={newSubject}
-                    onChange={(e) => setNewSubject(e.target.value)}
-                    className={`w-full rounded-xl text-xs font-semibold outline-none p-3 mt-1 cursor-pointer ${
-                      theme === 'dark' ? 'bg-neutral-950 border border-neutral-900 text-white' : 'bg-[#F9FAFB] border border-gray-200 text-gray-900'
-                    }`}
-                  >
-                    <option value="Computer Science">Computer Science</option>
-                    <option value="Physics">Physics</option>
-                    <option value="Chemistry">Chemistry</option>
-                    <option value="Mathematics">Mathematics</option>
-                    <option value="Philosophy">Philosophy</option>
-                    <option value="Economics">Economics</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-black text-neutral-500 uppercase font-mono">MATERIAL FORMAT</label>
-                  <select
-                    value={newType}
-                    onChange={(e) => setNewType(e.target.value as any)}
-                    className={`w-full rounded-xl text-xs font-semibold outline-none p-3 mt-1 cursor-pointer ${
-                      theme === 'dark' ? 'bg-neutral-950 border border-neutral-900 text-white' : 'bg-[#F9FAFB] border border-gray-200 text-gray-900'
-                    }`}
-                  >
-                    <option value="pdf">Academic PDF Paper</option>
-                    <option value="recording">WAV / MP3 Audio Lecture</option>
-                    <option value="ppt">Slides Presentation (PPT)</option>
-                    <option value="text">Formatted Text Note</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-black text-neutral-500 uppercase font-mono mb-1">SAVE TO FOLDER (OPTIONAL)</label>
-                <select
-                  value={destinationFolderForUpload}
-                  onChange={(e) => setDestinationFolderForUpload(e.target.value)}
-                  className={`w-full rounded-xl text-xs font-semibold outline-none p-3 cursor-pointer ${
-                    theme === 'dark' ? 'bg-neutral-950 border border-neutral-900 text-white' : 'bg-[#F9FAFB] border border-gray-200 text-gray-900'
-                  }`}
-                >
-                  <option value="">📂 Unorganized / Root Library</option>
-                  {folders.map(f => (
-                    <option key={f.id} value={f.id}>📁 {f.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Usability Guidelines: Drag and Drop block */}
-              <div 
-                onClick={() => fileInputRef.current?.click()}
-                className={`border border-dashed rounded-2xl p-5 text-center cursor-pointer hover:border-indigo-500/50 transition-all ${
-                  theme === 'dark' ? 'bg-neutral-950/45 border-neutral-900' : 'bg-gray-50/50 border-gray-300'
-                }`}
-              >
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  className="hidden"
-                  accept=".pdf,.docx,.pptx"
-                  onChange={(e) => {
-                    if (e.target.files && e.target.files[0]) {
-                      setSelectedFile(e.target.files[0]);
-                      if (!newTitle.trim()) {
-                        setNewTitle(e.target.files[0].name.replace(/\.[^/.]+$/, ""));
-                      }
-                    }
-                  }}
-                />
-                {selectedFile ? (
-                  <div className="space-y-1">
-                    <CheckCircle className="h-6 w-6 text-emerald-500 mx-auto" />
-                    <div className="text-xs font-bold text-emerald-400 truncate max-w-xs mx-auto">{selectedFile.name}</div>
-                    <div className="text-[10px] text-neutral-400">
-                      {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB • Click to change
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <Upload className="h-6 w-6 text-neutral-500 mx-auto" />
-                    <div className="text-xs font-bold text-neutral-300 mt-2">Drag and drop file here</div>
-                    <div className="text-[10px] text-neutral-500 mt-1">Accepts up to 150MB of PDFs, DOCX, or PPTX.</div>
-                  </>
-                )}
-              </div>
-
-              <div className={`pt-3 border-t flex items-center justify-end gap-2 ${
-                theme === 'dark' ? 'border-neutral-900' : 'border-gray-100'
-              }`}>
-                <button
-                  type="button"
-                  onClick={() => setShowSyncModal(false)}
-                  className={`rounded-xl px-4 py-2.5 text-xs font-black cursor-pointer transition-all ${
-                    theme === 'dark' ? 'bg-neutral-900 border border-neutral-800 text-neutral-400 hover:bg-neutral-800' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className={`rounded-xl px-4.5 py-2.5 text-xs font-black shadow-lg cursor-pointer transition-all ${
-                    theme === 'dark' ? 'bg-white text-black hover:bg-neutral-100' : 'bg-black text-white hover:bg-gray-900'
-                  }`}
-                >
-                  Sync Document
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Generation Progress Modal */}
-      {generatingLectureId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
-          <div className={`rounded-3xl border p-7 max-w-md w-full space-y-6 shadow-2xl ${
-            theme === 'dark' ? 'bg-[#0d0e12] border-neutral-800 text-white' : 'bg-white border-gray-200 text-gray-900'
-          }`}>
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
-                <Brain className="h-6 w-6 animate-bounce" />
-              </div>
-              <div>
-                <h3 className="font-sans font-black text-lg">Generating Study Resources</h3>
-                <p className="text-xs font-semibold text-gray-400">Processing transcript through active AI provider...</p>
-              </div>
-            </div>
-
-            <div className="space-y-3 font-sans">
-              <div className={`p-3 rounded-xl border flex items-center gap-3 transition-all ${
-                generationStep >= 1 ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400' : 'border-neutral-800/50 text-gray-500'
-              }`}>
-                {generationStep > 1 ? <CheckCircle className="h-4 w-4 text-emerald-400" /> : <RotateCw className="h-4 w-4 animate-spin text-indigo-400" />}
-                <span className="text-xs font-bold">1. Reading transcript</span>
-              </div>
-              <div className={`p-3 rounded-xl border flex items-center gap-3 transition-all ${
-                generationStep >= 2 ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400' : generationStep === 2 ? 'border-indigo-500/30 bg-indigo-500/5 text-indigo-400' : 'border-neutral-800/50 text-gray-500'
-              }`}>
-                {generationStep > 2 ? <CheckCircle className="h-4 w-4 text-emerald-400" /> : generationStep === 2 ? <RotateCw className="h-4 w-4 animate-spin text-indigo-400" /> : <Clock className="h-4 w-4" />}
-                <span className="text-xs font-bold">2. Creating summary</span>
-              </div>
-              <div className={`p-3 rounded-xl border flex items-center gap-3 transition-all ${
-                generationStep >= 3 ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400' : generationStep === 2 ? 'border-indigo-500/30 bg-indigo-500/5 text-indigo-400' : 'border-neutral-800/50 text-gray-500'
-              }`}>
-                {generationStep > 3 ? <CheckCircle className="h-4 w-4 text-emerald-400" /> : generationStep === 2 ? <RotateCw className="h-4 w-4 animate-spin text-indigo-400" /> : <Clock className="h-4 w-4" />}
-                <span className="text-xs font-bold">3. Creating academic notes</span>
-              </div>
-              <div className={`p-3 rounded-xl border flex items-center gap-3 transition-all ${
-                generationStep >= 4 ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400' : 'border-neutral-800/50 text-gray-500'
-              }`}>
-                {generationStep >= 4 ? <CheckCircle className="h-4 w-4 text-emerald-400" /> : <Clock className="h-4 w-4" />}
-                <span className="text-xs font-bold">4. Creating flashcards & quiz</span>
-              </div>
-              <div className={`p-3 rounded-xl border flex items-center gap-3 transition-all ${
-                generationStep >= 5 ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400' : 'border-neutral-800/50 text-gray-500'
-              }`}>
-                {generationStep >= 5 ? <CheckCircle className="h-4 w-4 text-emerald-400" /> : <Clock className="h-4 w-4" />}
-                <span className="text-xs font-bold">5. Creating mind map & saving workspace</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Generation Error Modal */}
-      {generationError && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-          <div className={`rounded-3xl border p-7 max-w-md w-full space-y-5 shadow-2xl text-center ${
-            theme === 'dark' ? 'bg-[#0d0e12] border-neutral-800 text-white' : 'bg-white border-gray-200 text-gray-900'
-          }`}>
-            <AlertCircle className="h-12 w-12 text-red-500 mx-auto animate-pulse" />
-            <div>
-              <h3 className="font-sans font-black text-lg">AI Resource Generation Failed</h3>
-              <div className="mt-2 text-xs font-bold text-emerald-400 bg-emerald-500/10 rounded-lg p-2.5 flex items-center justify-center gap-1.5">
-                <CheckCircle className="h-4 w-4" />
-                <span>Your lecture recording and transcript are safe.</span>
-              </div>
-              <p className="text-xs text-gray-400 mt-3 leading-relaxed">{generationError.message}</p>
-            </div>
-            <div className="flex flex-col gap-2.5 pt-2">
-              <button
-                onClick={() => {
-                  const targetId = generatingLectureId;
-                  setGenerationError(null);
-                  if (targetId) handleRetryOrGenerateResources(targetId, 'missing');
-                }}
-                className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
-              >
-                <RotateCw className="h-4 w-4" />
-                <span>Retry Generation</span>
-              </button>
-              <button
-                onClick={() => {
-                  setGenerationError(null);
-                  setGeneratingLectureId(null);
-                  setActivePage('settings');
-                }}
-                className="w-full py-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
-              >
-                <Settings className="h-4 w-4" />
-                <span>Change AI Provider in Settings</span>
-              </button>
-              <button
-                onClick={() => {
-                  setGenerationError(null);
-                  setGeneratingLectureId(null);
-                }}
-                className="w-full py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white transition-all cursor-pointer"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Confirm Regenerate All Modal */}
-      {confirmRegenerateLectureId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-          <div className={`rounded-3xl border p-7 max-w-md w-full space-y-5 shadow-2xl ${
-            theme === 'dark' ? 'bg-[#0d0e12] border-neutral-800 text-white' : 'bg-white border-gray-200 text-gray-900'
-          }`}>
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                <RefreshCw className="h-6 w-6" />
-              </div>
-              <div>
-                <h3 className="font-sans font-black text-lg">Regenerate All Resources?</h3>
-                <p className="text-xs font-semibold text-gray-400">Overwrites existing generated study content.</p>
-              </div>
-            </div>
-            <p className="text-xs text-gray-300 leading-relaxed">
-              This action will re-process the existing transcript to generate a fresh Summary, Notes, Flashcards, Quiz, Mind Map, and Weak Topics. Existing generated content will be overwritten.
-            </p>
-            <div className="flex items-center justify-end gap-3 pt-2">
-              <button
-                onClick={() => setConfirmRegenerateLectureId(null)}
-                className="px-4 py-2.5 rounded-xl border border-neutral-800 text-xs font-bold text-gray-400 hover:text-white transition-all cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  const targetId = confirmRegenerateLectureId;
-                  setConfirmRegenerateLectureId(null);
-                  handleRetryOrGenerateResources(targetId, 'all');
-                }}
-                className="px-4.5 py-2.5 rounded-xl bg-amber-500 text-black hover:bg-amber-400 text-xs font-black transition-all cursor-pointer shadow-md"
-              >
-                Regenerate All
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* CREATE NEW FOLDER MODAL */}
-      {showCreateFolderModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-fade-in">
-          <div className="rounded-[6px] border-2 border-[#111111] bg-white p-6 max-w-md w-full space-y-5 shadow-paper-lg text-[#111111]">
-            <div className="flex items-center justify-between border-b-2 border-[#111111] pb-3">
-              <div className="flex items-center gap-2">
-                <FolderPlus className="h-5 w-5 text-[#2F6BFF]" />
-                <h3 className="font-heading font-extrabold text-sm uppercase">Create New Academic Folder</h3>
-              </div>
-              <button 
-                onClick={() => setShowCreateFolderModal(false)}
-                className="p-1 rounded border border-[#111111] hover:bg-[#FFC400] text-[#111111]"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateFolderSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-mono font-extrabold uppercase mb-1">Folder Title</label>
-                <input
-                  type="text"
-                  required
-                  value={newFolderName}
-                  onChange={(e) => setNewFolderName(e.target.value)}
-                  placeholder="e.g., Operating Systems - Unit 1"
-                  className="w-full rounded-[6px] border-2 border-[#111111] p-3 text-xs font-mono font-bold outline-none bg-white text-[#111111]"
-                  autoFocus
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-mono font-extrabold uppercase mb-1">Color Theme Badge</label>
-                <div className="flex gap-2 pt-1">
-                  {['#2F6BFF', '#FFC400', '#19B56B', '#FF4D4D', '#9333EA', '#FF8800'].map(color => (
-                    <button
-                      key={color}
-                      type="button"
-                      onClick={() => setNewFolderColor(color)}
-                      className={`h-7 w-7 rounded-full border-2 border-[#111111] transition-transform cursor-pointer ${
-                        newFolderColor === color ? 'scale-125 shadow-paper-sm border-black' : 'opacity-70 hover:opacity-100'
-                      }`}
-                      style={{ backgroundColor: color }}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-3 border-t border-[#111111]">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateFolderModal(false)}
-                  className="px-4 py-2 rounded-[4px] border-2 border-[#111111] bg-white text-xs font-mono font-bold uppercase cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isCreatingFolder || !newFolderName.trim()}
-                  className="px-5 py-2 rounded-[4px] border-2 border-[#111111] bg-[#FFC400] text-xs font-mono font-extrabold uppercase shadow-paper-sm hover:bg-[#ffe066] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
-                >
-                  {isCreatingFolder ? (
-                    <>
-                      <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                      <span>Creating...</span>
-                    </>
-                  ) : (
-                    <span>Create Folder</span>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MOVE FILE TO FOLDER MODAL */}
-      {movingLectureId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-fade-in">
-          <div className="rounded-[6px] border-2 border-[#111111] bg-white p-6 max-w-md w-full space-y-4 shadow-paper-lg text-[#111111]">
-            <div className="flex items-center justify-between border-b-2 border-[#111111] pb-3">
-              <div className="flex items-center gap-2">
-                <FolderIcon className="h-5 w-5 text-[#FFC400]" />
-                <h3 className="font-heading font-extrabold text-sm uppercase">Move Document to Folder</h3>
-              </div>
-              <button 
-                onClick={() => setMovingLectureId(null)}
-                className="p-1 rounded border border-[#111111] hover:bg-[#FFC400] text-[#111111]"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <p className="text-xs font-mono font-bold text-[#666666]">
-              Select a target folder to organize this academic document:
-            </p>
-
-            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-              <button
-                type="button"
-                onClick={() => handleMoveLecture(movingLectureId, '')}
-                className="w-full text-left p-3 rounded-[6px] border-2 border-[#111111] bg-[#F6F2EA] hover:bg-[#FFC400] transition-colors font-mono text-xs font-bold flex items-center justify-between cursor-pointer"
-              >
-                <span>📂 Unorganized (Remove from folder)</span>
-                <MoveRight className="h-4 w-4" />
-              </button>
-
-              {folders.map(folder => (
-                <button
-                  key={folder.id}
-                  type="button"
-                  onClick={() => handleMoveLecture(movingLectureId, folder.id)}
-                  className="w-full text-left p-3 rounded-[6px] border-2 border-[#111111] bg-white hover:bg-[#FFC400] transition-colors font-mono text-xs font-bold flex items-center justify-between cursor-pointer"
-                >
-                  <span className="flex items-center gap-2">
-                    <span className="h-3 w-3 rounded-full border border-black/20" style={{ backgroundColor: folder.color || '#2F6BFF' }} />
-                    <span>{folder.name}</span>
-                  </span>
-                  <MoveRight className="h-4 w-4" />
-                </button>
               ))}
             </div>
 
-            <div className="flex justify-end pt-2 border-t border-[#111111]">
-              <button
-                type="button"
-                onClick={() => setMovingLectureId(null)}
-                className="px-4 py-2 rounded-[4px] border-2 border-[#111111] bg-white text-xs font-mono font-bold uppercase cursor-pointer"
-              >
-                Close
-              </button>
+          </div>
+        )}
+
+      </main>
+
+      {/* MODAL: CREATE SUBJECT */}
+      {showCreateSubjectModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#161B22] brutal-border max-w-md w-full p-6 relative">
+            <div className="flex items-center justify-between mb-4 border-b-4 border-black pb-2">
+              <h3 className="text-base font-black uppercase text-black dark:text-white">CREATE NEW SUBJECT MAP</h3>
+              <button onClick={() => setShowCreateSubjectModal(false)}><X className="w-5 h-5 stroke-[3]" /></button>
             </div>
+
+            {subjectError && <div className="mb-3 text-xs font-bold text-[#EF4444] bg-[#EF4444]/10 p-2 border border-[#EF4444]">{subjectError}</div>}
+
+            <form onSubmit={handleCreateSubjectSubmit} className="flex flex-col gap-4">
+              <div>
+                <label className="text-xs font-black uppercase block mb-1">Subject Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={newSubName}
+                  onChange={(e) => setNewSubName(e.target.value)}
+                  placeholder="e.g. DATA STRUCTURES & ALGORITHMS"
+                  className="w-full bg-[#F4F1EA] dark:bg-[#0D1117] border-2 border-black p-2.5 text-xs font-bold uppercase focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-black uppercase block mb-1">Subject Code (Optional)</label>
+                <input
+                  type="text"
+                  value={newSubCode}
+                  onChange={(e) => setNewSubCode(e.target.value)}
+                  placeholder="e.g. CS201"
+                  className="w-full bg-[#F4F1EA] dark:bg-[#0D1117] border-2 border-black p-2.5 text-xs font-bold uppercase focus:outline-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 mt-4 pt-3 border-t-2 border-black">
+                <button type="button" onClick={() => setShowCreateSubjectModal(false)} className="px-4 py-2 bg-[#F4F1EA] dark:bg-[#21262D] border-2 border-black font-black text-xs uppercase">
+                  CANCEL
+                </button>
+                <button type="submit" className="px-5 py-2 bg-[#FFC107] text-black font-black text-xs uppercase brutal-border">
+                  CREATE SUBJECT
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: CREATE NEW LECTURE */}
+      {showCreateLectureModal && currentSubject && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#161B22] brutal-border max-w-md w-full p-6 relative">
+            <div className="flex items-center justify-between mb-4 border-b-4 border-black pb-2">
+              <h3 className="text-base font-black uppercase text-black dark:text-white">CREATE NEW LECTURE</h3>
+              <button onClick={() => setShowCreateLectureModal(false)}><X className="w-5 h-5 stroke-[3]" /></button>
+            </div>
+
+            <form onSubmit={handleCreateLectureInSubject} className="flex flex-col gap-4">
+              <div>
+                <label className="text-xs font-black uppercase block mb-1">Lecture Topic / Title *</label>
+                <input
+                  type="text"
+                  required
+                  value={newLectureTitle}
+                  onChange={(e) => setNewLectureTitle(e.target.value)}
+                  placeholder="e.g. BINARY SEARCH TREES — PART 1"
+                  className="w-full bg-[#F4F1EA] dark:bg-[#0D1117] border-2 border-black p-2.5 text-xs font-bold uppercase focus:outline-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 mt-4 pt-3 border-t-2 border-black">
+                <button type="button" onClick={() => setShowCreateLectureModal(false)} className="px-4 py-2 bg-[#F4F1EA] dark:bg-[#21262D] border-2 border-black font-black text-xs uppercase">
+                  CANCEL
+                </button>
+                <button type="submit" className="px-5 py-2 bg-[#FFC107] text-black font-black text-xs uppercase brutal-border flex items-center gap-2">
+                  <Mic className="w-4 h-4 stroke-[3]" />
+                  START RECORDING
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

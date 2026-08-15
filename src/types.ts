@@ -84,10 +84,25 @@ export interface Folder {
   createdAt?: any;
 }
 
+export interface Subject {
+  id: string;
+  name: string;
+  code?: string;
+  professor?: string;
+  color?: string;
+  createdAt?: any;
+  archived?: boolean;
+}
+
 export interface Lecture {
   id: string;
   title: string;
   subject: string;
+  subjectId?: string;
+  subjectCode?: string;
+  lectureNumber?: number;
+  mapOrder?: number;
+  reviewed?: boolean;
   folderId?: string;
   duration?: string;
   pages?: number;
