@@ -54,6 +54,13 @@ interface LectureCaptureViewProps {
   activeLectureId: string | null;
   setActiveLectureId: (id: string | null) => void;
   notes?: any[];
+  onRecordingStatusChange?: (status: {
+    isRecording: boolean;
+    isPaused: boolean;
+    seconds: number;
+    pauseCapture: () => void;
+    stopCapture: () => void;
+  }) => void;
 }
 
 interface StructuredSummary {
@@ -77,7 +84,8 @@ export default function LectureCaptureView({
   lectures = [],
   activeLectureId,
   setActiveLectureId,
-  notes = []
+  notes = [],
+  onRecordingStatusChange
 }: LectureCaptureViewProps) {
   
   // Hook up user subjects from Academic Library
@@ -102,6 +110,76 @@ export default function LectureCaptureView({
   const [seconds, setSeconds] = useState(0);
   const [aiStatus, setAiStatus] = useState<'idle' | 'recording_transcription' | 'synthesizing' | 'completed'>('idle');
   const [micError, setMicError] = useState<string | null>(null);
+
+  // Auto-dim screen state during lecture recording when untouched
+  const [isScreenDimmed, setIsScreenDimmed] = useState(false);
+  const [autoDimEnabled, setAutoDimEnabled] = useState(true);
+  const userActivityTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Format timer helper for auto-dim screen overlay
+  const formatTimerDisplay = (sec: number) => {
+    const mins = Math.floor(sec / 60);
+    const secs = sec % 60;
+    const hrs = Math.floor(mins / 60);
+    const displayMins = mins % 60;
+    if (hrs > 0) {
+      return `${hrs.toString().padStart(2, '0')}:${displayMins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${displayMins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Monitor user activity during recording to slowly dim screen when untouched
+  useEffect(() => {
+    if (!isRecording || isPaused || !autoDimEnabled) {
+      setIsScreenDimmed(false);
+      if (userActivityTimerRef.current) {
+        clearTimeout(userActivityTimerRef.current);
+        userActivityTimerRef.current = null;
+      }
+      return;
+    }
+
+    const handleUserActivity = () => {
+      setIsScreenDimmed(false);
+      if (userActivityTimerRef.current) {
+        clearTimeout(userActivityTimerRef.current);
+      }
+      // Fade down after 3.5 seconds of untouched screen
+      userActivityTimerRef.current = setTimeout(() => {
+        setIsScreenDimmed(true);
+      }, 3500);
+    };
+
+    handleUserActivity();
+
+    window.addEventListener('mousemove', handleUserActivity);
+    window.addEventListener('mousedown', handleUserActivity);
+    window.addEventListener('keydown', handleUserActivity);
+    window.addEventListener('touchstart', handleUserActivity);
+    window.addEventListener('scroll', handleUserActivity);
+
+    return () => {
+      if (userActivityTimerRef.current) {
+        clearTimeout(userActivityTimerRef.current);
+      }
+      window.removeEventListener('mousemove', handleUserActivity);
+      window.removeEventListener('mousedown', handleUserActivity);
+      window.removeEventListener('keydown', handleUserActivity);
+      window.removeEventListener('touchstart', handleUserActivity);
+      window.removeEventListener('scroll', handleUserActivity);
+    };
+  }, [isRecording, isPaused, autoDimEnabled]);
+
+  // Notify parent App component of recording status for PiP Floating Box when tab changes
+  useEffect(() => {
+    onRecordingStatusChange?.({
+      isRecording,
+      isPaused,
+      seconds,
+      pauseCapture: handlePauseCapture,
+      stopCapture: handleStopCapture
+    });
+  }, [isRecording, isPaused, seconds]);
 
   // Real-time live transcript state
   const [liveTranscript, setLiveTranscript] = useState<string>('');
@@ -1260,7 +1338,38 @@ export default function LectureCaptureView({
     const filteredNotes = notes.filter((n: any) => n.lectureId === activeLectureId);
     
     return (
-      <div className="flex flex-col h-full bg-grid-paper rounded-[6px] border-2 border-[#111111] shadow-paper-lg overflow-hidden select-none">
+      <React.Fragment>
+        {/* STEALTH FOCUS AUTO-DIM SCREEN OVERLAY WHEN RECORDING AND UNTOUCHED */}
+        <div 
+          className={`fixed inset-0 z-[9999] bg-[#050508] transition-opacity duration-1000 ease-in-out flex flex-col items-center justify-center p-6 ${
+            isRecording && !isPaused && autoDimEnabled && isScreenDimmed ? 'opacity-95' : 'opacity-0 pointer-events-none'
+          }`}
+        >
+          <div className="flex flex-col items-center space-y-4 text-center select-none">
+            <div className="relative flex items-center justify-center">
+              <div className="absolute h-20 w-20 rounded-full bg-red-600/30 animate-ping" />
+              <div className="h-12 w-12 rounded-full bg-red-600 flex items-center justify-center shadow-[0_0_24px_rgba(239,68,68,0.7)] border border-red-400/50">
+                <Mic className="h-6 w-6 text-white animate-pulse" />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <div className="font-mono text-xs font-black text-[#FFC400] uppercase tracking-[4px]">
+                LECTURE RECORDING IN PROGRESS
+              </div>
+              <div className="font-mono text-3xl font-extrabold text-white tracking-wider">
+                {formatTimerDisplay(seconds)}
+              </div>
+            </div>
+
+            <div className="px-4 py-2 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-xs font-mono text-neutral-300 max-w-md flex items-center gap-2 shadow-lg">
+              <span className="h-2 w-2 rounded-full bg-[#19B56B] animate-pulse" />
+              <span>Screen dimmed • Touch screen or move cursor to wake</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col h-full bg-grid-paper rounded-[6px] border-2 border-[#111111] shadow-paper-lg overflow-hidden select-none">
         
         {/* ACTIVE WORKSPACE HEADER BAR */}
         <div className="p-4 border-b-2 border-[#111111] bg-white flex items-center justify-between">
@@ -2243,7 +2352,8 @@ export default function LectureCaptureView({
         )}
 
 
-      </div>
+        </div>
+      </React.Fragment>
     );
   }
 
@@ -2251,7 +2361,38 @@ export default function LectureCaptureView({
   // STANDBY RECORDING DASHBOARD
   // ----------------------------------------------------
   return (
-    <div className="max-w-6xl mx-auto space-y-6 md:space-y-8 pb-16 bg-grid-paper p-4 md:p-8 select-none">
+    <React.Fragment>
+      {/* STEALTH FOCUS AUTO-DIM SCREEN OVERLAY WHEN RECORDING AND UNTOUCHED */}
+      <div 
+        className={`fixed inset-0 z-[9999] bg-[#050508] transition-opacity duration-1000 ease-in-out flex flex-col items-center justify-center p-6 ${
+          isRecording && !isPaused && autoDimEnabled && isScreenDimmed ? 'opacity-95' : 'opacity-0 pointer-events-none'
+        }`}
+      >
+        <div className="flex flex-col items-center space-y-4 text-center select-none">
+          <div className="relative flex items-center justify-center">
+            <div className="absolute h-20 w-20 rounded-full bg-red-600/30 animate-ping" />
+            <div className="h-12 w-12 rounded-full bg-red-600 flex items-center justify-center shadow-[0_0_24px_rgba(239,68,68,0.7)] border border-red-400/50">
+              <Mic className="h-6 w-6 text-white animate-pulse" />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <div className="font-mono text-xs font-black text-[#FFC400] uppercase tracking-[4px]">
+              LECTURE RECORDING IN PROGRESS
+            </div>
+            <div className="font-mono text-3xl font-extrabold text-white tracking-wider">
+              {formatTimerDisplay(seconds)}
+            </div>
+          </div>
+
+          <div className="px-4 py-2 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-xs font-mono text-neutral-300 max-w-md flex items-center gap-2 shadow-lg">
+            <span className="h-2 w-2 rounded-full bg-[#19B56B] animate-pulse" />
+            <span>Screen dimmed • Touch screen or move cursor to wake</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto space-y-6 md:space-y-8 pb-16 bg-grid-paper p-4 md:p-8 select-none">
       
       {/* Upper header section */}
       <div className="hero-banner rounded-[6px] border-2 border-[var(--border-main)] p-6 shadow-paper-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -2498,14 +2639,27 @@ export default function LectureCaptureView({
               </div>
 
               {/* Status and Clock time ticker */}
-              <div className="space-y-1">
+              <div className="space-y-2">
                 <div className="text-xs font-mono font-extrabold uppercase tracking-widest text-[var(--text-primary)]">
                   {isRecording ? (isPaused ? 'CAPTURE PAUSED' : 'ACTIVE TRANSMISSION') : 'STANDBY MODE'}
                 </div>
                 <div className="text-3xl font-heading font-extrabold font-mono tracking-tight text-[var(--text-primary)] flex items-center gap-2 justify-center">
                   <Clock className="h-5 w-5 text-[var(--text-primary)]" />
-                  <span>{formatTime(seconds)}</span>
+                  <span>{formatTimerDisplay(seconds)}</span>
                 </div>
+
+                {isRecording && (
+                  <button
+                    type="button"
+                    onClick={() => setAutoDimEnabled(!autoDimEnabled)}
+                    className={`mt-1 px-3 py-1 rounded-full border-2 border-[var(--border-main)] font-mono text-[10px] font-extrabold transition-all shadow-paper-xs inline-flex items-center gap-1.5 cursor-pointer ${
+                      autoDimEnabled ? 'bg-[#111111] text-[#FFC400]' : 'bg-[var(--card-bg)] text-[var(--text-secondary)]'
+                    }`}
+                  >
+                    <span>🌙</span>
+                    <span>{autoDimEnabled ? 'AUTO-DIM: ON (Fades when untouched)' : 'AUTO-DIM: OFF'}</span>
+                  </button>
+                )}
               </div>
 
               {/* Action buttons controls Row */}
@@ -2699,9 +2853,8 @@ export default function LectureCaptureView({
             </div>
           </div>
         </div>
-
       </div>
-
     </div>
+  </React.Fragment>
   );
 }

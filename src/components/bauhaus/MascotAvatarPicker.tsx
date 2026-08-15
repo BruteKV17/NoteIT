@@ -14,6 +14,7 @@ export interface MascotOption {
 }
 
 export const OFFICIAL_MASCOTS: MascotOption[] = [
+  { id: 'blue-beats', name: 'Blue Beats', role: 'Lecture Listener', url: '/mascots/mascot-blue-headphones.png' },
   { id: 'fox', name: 'Spark Fox', role: 'Lightning Volt', url: '/mascots/mascot-fox.jpg' },
   { id: 'cat', name: 'Cyber Cat', role: 'LED Synth', url: '/mascots/mascot-cat.jpg' },
   { id: 'owl', name: 'Scholar Owl', role: 'Academic Dean', url: '/mascots/mascot-owl.jpg' },

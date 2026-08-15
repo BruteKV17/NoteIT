@@ -64,8 +64,18 @@ import ErrorBoundary from './components/ErrorBoundary';
 import FeedbackWidget from './components/FeedbackWidget';
 import AILogo from './components/AILogo';
 import { generateAdditionalQuizQuestions } from './services/gemini';
+import FloatingRecordingWidget from './components/FloatingRecordingWidget';
 
 export default function App() {
+  
+  // Live global recording state across tabs
+  const [globalRecordingState, setGlobalRecordingState] = useState<{
+    isRecording: boolean;
+    isPaused: boolean;
+    seconds: number;
+    pauseCapture: () => void;
+    stopCapture: () => void;
+  } | null>(null);
   
   // Theme state defaulting to dark for premium dark blue academic vibes
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -657,18 +667,7 @@ export default function App() {
           />
         );
       case 'lecture-capture':
-        return (
-          <LectureCaptureView
-            onSaveCapture={handleSaveCapture}
-            onStartCapture={handleStartCapture}
-            setActivePage={setActivePage}
-            theme={theme}
-            lectures={combinedLectures}
-            activeLectureId={activeLectureId}
-            setActiveLectureId={setActiveLectureId}
-            notes={notes}
-          />
-        );
+        return null;
       case 'lecture-processing':
         return (
           <LectureProcessingView
@@ -961,11 +960,36 @@ export default function App() {
           <main className={`flex-1 overflow-y-auto bg-[var(--bg-paper)] text-[var(--text-primary)] ${
             isLanding ? 'p-0' : 'p-2 md:p-3'
           }`}>
-            {renderActiveView()}
+            <div style={{ display: activePage === 'lecture-capture' ? 'block' : 'none', height: '100%' }}>
+              <LectureCaptureView
+                onSaveCapture={handleSaveCapture}
+                onStartCapture={handleStartCapture}
+                setActivePage={setActivePage}
+                theme={theme}
+                lectures={combinedLectures}
+                activeLectureId={activeLectureId}
+                setActiveLectureId={setActiveLectureId}
+                notes={notes}
+                onRecordingStatusChange={setGlobalRecordingState}
+              />
+            </div>
+            {activePage !== 'lecture-capture' && renderActiveView()}
           </main>
         </div>
 
       </div>
+
+      {/* Floating Resizable PiP Recording Box when tab is changed during recording */}
+      {activePage !== 'lecture-capture' && globalRecordingState?.isRecording && (
+        <FloatingRecordingWidget
+          isRecording={globalRecordingState.isRecording}
+          isPaused={globalRecordingState.isPaused}
+          seconds={globalRecordingState.seconds}
+          onPauseToggle={globalRecordingState.pauseCapture}
+          onStop={globalRecordingState.stopCapture}
+          onOpenCapture={() => setActivePage('lecture-capture')}
+        />
+      )}
 
       {/* Automatic Real-Time XP Toast Notification (Section 6) */}
       <XPToastNotification />

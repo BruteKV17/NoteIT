@@ -12,4 +12,4 @@ if (isProd && !apiEnvUrl) {
   throw new Error(errMsg);
 }
 
-export const API_BASE_URL = apiEnvUrl || import.meta.env.VITE_BACKEND_URL || 'http://localhost:3002';
+export const API_BASE_URL = apiEnvUrl || import.meta.env.VITE_BACKEND_URL || 'http://localhost:3003';

@@ -106,15 +106,21 @@ export default function DashboardView({
           </div>
         </div>
 
-        {/* Right Side: Uploaded 3D Blue Headphones Mascot */}
-        <div className="relative z-10 shrink-0 mt-4 md:mt-0 flex items-center justify-center">
-          <div className="relative group">
-            {/* Ambient Yellow Glow Accent */}
+        {/* Right Side: 3D Blue Mascot with Headphones */}
+        <div className="relative z-10 shrink-0 mt-6 md:mt-0 flex flex-col items-center justify-center">
+          <div className="relative group flex flex-col items-center">
+            {/* Friendly Mascot Speech Bubble */}
+            <div className="mb-2 px-3.5 py-1.5 rounded-full bg-[#FFC400] text-[#111111] border-2 border-[var(--border-main)] font-mono text-xs font-extrabold uppercase shadow-paper-xs animate-bounce flex items-center gap-1.5 z-20">
+              <span>Hey! Ready to learn? 🎧</span>
+            </div>
+
+            {/* Ambient Glow Accent */}
             <div className="absolute -inset-4 rounded-full bg-[#FFC400]/25 blur-2xl group-hover:bg-[#FFC400]/45 transition-all pointer-events-none" />
+
             <img
               src="/mascots/mascot-hero-blue.png"
-              alt="NoteIT AI Mascot"
-              className="w-48 h-48 sm:w-60 sm:h-60 lg:w-72 lg:h-72 object-contain drop-shadow-[0_12px_24px_rgba(0,0,0,0.45)] transform hover:scale-105 transition-transform duration-300 pointer-events-none"
+              alt="NoteIT Blue AI Mascot"
+              className="w-48 h-48 sm:w-60 sm:h-60 lg:w-72 lg:h-72 object-contain drop-shadow-[0_16px_32px_rgba(0,0,0,0.35)] transform group-hover:scale-105 transition-transform duration-300 pointer-events-none"
             />
           </div>
         </div>
