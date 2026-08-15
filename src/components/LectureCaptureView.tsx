@@ -2640,6 +2640,7 @@ export default function LectureCaptureView({
                         className="w-full h-full object-contain"
                       >
                         <source src="/mascots/mascot-recording.mp4" type="video/mp4" />
+                        <source src="/mascots/mascot-recording.mp4.mp4" type="video/mp4" />
                         <source src="/mascots/mascot-recording.webm" type="video/webm" />
                         <img 
                           src="/mascots/mascot-celebrate.png" 
