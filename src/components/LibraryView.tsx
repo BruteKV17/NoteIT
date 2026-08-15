@@ -371,7 +371,7 @@ export default function LibraryView({
       `}</style>
 
       {/* TOP BAUHAUS HEADER BAR */}
-      <header className="bg-white dark:bg-[#161B22] border-b-4 border-black px-8 py-4 flex flex-col lg:flex-row justify-between items-center gap-4 z-40">
+      <header className="bg-white dark:bg-[#161B22] border-b-4 border-black px-8 py-4 flex flex-col lg:flex-row justify-between items-center gap-4 z-10">
         
         {/* Left: Breadcrumbs & Subject Selector Dropdown */}
         <div className="flex items-center gap-4 font-bold uppercase tracking-wide">

@@ -102,7 +102,7 @@ export default function Navbar({
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-[var(--border-main)] bg-[var(--navbar-bg)] px-4 md:px-6 select-none">
+    <header className="sticky top-0 z-[100] flex h-16 w-full items-center justify-between border-b border-[var(--border-main)] bg-[var(--navbar-bg)] px-4 md:px-6 select-none">
       
       {/* Left items: Mobile trigger & Branded Breadcrumbs */}
       <div className="flex items-center gap-3">
