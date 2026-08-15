@@ -181,37 +181,36 @@ export default function Sidebar({
             />
           ))}
         </div>
+        {/* Subscription callout banner */}
+        {!isCollapsed && (
+          <div className="mt-4 p-3 rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] shadow-paper-sm">
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <span className="font-heading text-[11px] font-bold uppercase text-[var(--text-primary)]">
+                {settings.subscription.planName} MEMBER
+              </span>
+              <Badge variant={isPro ? "yellow" : "red"} size="sm">
+                {isPro ? "ACTIVE" : "FREE"}
+              </Badge>
+            </div>
+            <p className="text-[10px] text-[var(--text-secondary)] font-mono mb-2">
+              {isPro ? 'Direct API Key Mode' : 'Bring Your Own Key Mode'}
+            </p>
+            <Button
+              variant="tertiary"
+              size="sm"
+              fullWidth
+              onClick={() => handleNavClick('pricing')}
+              icon={<ExternalLink className="h-3 w-3" />}
+              iconPosition="right"
+            >
+              {isPro ? 'Upgrade SaaS Plan' : 'Unleash Pro Tiers'}
+            </Button>
+          </div>
+        )}
       </div>
 
-      {/* Subscription callout banner */}
-      {!isCollapsed && (
-        <div className="m-3 p-3.5 rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] shadow-paper-sm">
-          <div className="flex items-center justify-between gap-2 mb-1.5">
-            <span className="font-heading text-xs font-bold uppercase text-[var(--text-primary)]">
-              {settings.subscription.planName} MEMBER
-            </span>
-            <Badge variant={isPro ? "yellow" : "red"} size="sm">
-              {isPro ? "ACTIVE" : "FREE"}
-            </Badge>
-          </div>
-          <p className="text-[10px] text-[var(--text-secondary)] font-mono mb-2">
-            {isPro ? 'Direct API Key Mode' : 'Bring Your Own Key Mode'}
-          </p>
-          <Button
-            variant="tertiary"
-            size="sm"
-            fullWidth
-            onClick={() => handleNavClick('pricing')}
-            icon={<ExternalLink className="h-3 w-3" />}
-            iconPosition="right"
-          >
-            {isPro ? 'Upgrade SaaS Plan' : 'Unleash Pro Tiers'}
-          </Button>
-        </div>
-      )}
-
-      {/* Bottom Profile Identity card */}
-      <div className="border-t-2 border-[var(--border-main)] p-3 bg-[var(--card-bg)]">
+      {/* Bottom Profile Identity card (Always pinned to bottom) */}
+      <div className="border-t-2 border-[var(--border-main)] p-3 bg-[var(--card-bg)] shrink-0 sticky bottom-0 z-20 shadow-paper-md">
         <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
           <div 
             className="flex items-center gap-2 cursor-pointer min-w-0"

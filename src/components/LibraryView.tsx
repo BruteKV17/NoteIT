@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { 
   Grid, 
   List, 
@@ -95,8 +95,19 @@ export default function LibraryView({
     }
   }, [subjects]);
 
-  // Subject Dropdown State
+  // Subject Dropdown State & Click-Outside Ref
   const [showSubjectDropdown, setShowSubjectDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowSubjectDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Subject Creation Modal
   const [showCreateSubjectModal, setShowCreateSubjectModal] = useState(false);
@@ -110,12 +121,10 @@ export default function LibraryView({
   const [newLectureTitle, setNewLectureTitle] = useState('');
   const [subjectSearch, setSubjectSearch] = useState('');
 
-  // Selected Node Detail Side Panel (defaults to active/first lecture if available)
+  // Selected Node Detail Slide-Over Drawer
   const [selectedLectureDetail, setSelectedLectureDetail] = useState<Lecture | null>(null);
 
   // Academic Saved Tab States
-  const [renamingLectureId, setRenamingLectureId] = useState<string | null>(null);
-  const [renamingTitle, setRenamingTitle] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -125,11 +134,6 @@ export default function LibraryView({
   const [newTitle, setNewTitle] = useState('');
   const [newSubject, setNewSubject] = useState('Computer Science');
   const [newType, setNewType] = useState<'recording' | 'pdf' | 'ppt' | 'text'>('pdf');
-
-  // Resource Generation States
-  const [generatingLectureId, setGeneratingLectureId] = useState<string | null>(null);
-  const [generationStep, setGenerationStep] = useState<number>(0);
-  const [generationError, setGenerationError] = useState<{ message: string; code?: string; provider?: string } | null>(null);
 
   // Folder Organization
   const { 
@@ -221,13 +225,6 @@ export default function LibraryView({
     }));
   }, [currentSubject, lectures]);
 
-  // Set default selected lecture detail to current active lecture
-  const activeLectureDetail = useMemo(() => {
-    if (selectedLectureDetail) return selectedLectureDetail;
-    if (currentSubjectLectures.length > 0) return currentSubjectLectures[currentSubjectLectures.length - 2] || currentSubjectLectures[0];
-    return null;
-  }, [selectedLectureDetail, currentSubjectLectures]);
-
   // Calculate subject progress
   const subjectProgress = useMemo(() => {
     if (!currentSubjectLectures.length) return 0;
@@ -300,17 +297,6 @@ export default function LibraryView({
     setNewLectureTitle('');
     setShowCreateLectureModal(false);
     setActivePage('lecture-capture');
-  };
-
-  // Toggle Lecture Reviewed state
-  const handleToggleReviewed = async (lecture: Lecture) => {
-    const updatedReviewed = !lecture.reviewed;
-    if (onUpdateLecture) {
-      await onUpdateLecture(lecture.id, { reviewed: updatedReviewed });
-    }
-    if (selectedLectureDetail?.id === lecture.id) {
-      setSelectedLectureDetail(prev => prev ? { ...prev, reviewed: updatedReviewed } : null);
-    }
   };
 
   // Saved tab file upload handler
@@ -389,10 +375,10 @@ export default function LibraryView({
         
         {/* Left: Breadcrumbs & Subject Selector Dropdown */}
         <div className="flex items-center gap-4 font-bold uppercase tracking-wide">
-          <span className="text-black/60 dark:text-white/60 text-sm">Library</span>
+          <span className="text-black dark:text-white text-sm font-black">Library</span>
           <ChevronRight className="w-5 h-5 text-black dark:text-white stroke-[3]" />
           
-          <div className="relative">
+          <div className="relative" ref={dropdownRef}>
             <button 
               onClick={() => setShowSubjectDropdown(!showSubjectDropdown)}
               className="flex items-center gap-2 bg-[#FFC107] text-black px-4 py-2 brutal-border font-black text-base hover:bg-[#FFD54F] transition-colors"
@@ -401,10 +387,10 @@ export default function LibraryView({
               <ChevronDown className="w-5 h-5 stroke-[3]" />
             </button>
 
-            {/* Subject Selector Dropdown */}
+            {/* Subject Selector Dropdown with Outside Click Auto-Close */}
             {showSubjectDropdown && (
               <div className="absolute left-0 top-full mt-2 w-64 bg-white dark:bg-[#161B22] border-4 border-black shadow-[6px_6px_0px_#000] z-50 p-2 flex flex-col gap-1">
-                <div className="text-[10px] font-black uppercase text-black/50 dark:text-white/50 px-2 py-1">
+                <div className="text-[10px] font-black uppercase text-black/70 dark:text-white/70 px-2 py-1">
                   Active Subjects ({subjects.length}/5)
                 </div>
                 {subjects.map((sub) => (
@@ -417,7 +403,7 @@ export default function LibraryView({
                     className={`w-full text-left px-3 py-2 text-xs font-black uppercase flex items-center justify-between border-2 transition-all ${
                       selectedSubjectId === sub.id
                         ? 'bg-[#FFC107] text-black border-black shadow-[2px_2px_0px_#000]'
-                        : 'border-transparent hover:border-black hover:bg-[#F4F1EA] dark:hover:bg-[#21262D]'
+                        : 'border-transparent text-black dark:text-white hover:border-black hover:bg-[#F4F1EA] dark:hover:bg-[#21262D]'
                     }`}
                   >
                     <span>{sub.name}</span>
@@ -449,7 +435,7 @@ export default function LibraryView({
               className={`px-3 py-1.5 font-black text-xs uppercase transition-all ${
                 libraryTab === 'map'
                   ? 'bg-[#FFC107] text-black border-2 border-black shadow-[2px_2px_0px_#000]'
-                  : 'text-black/70 dark:text-white/70 hover:text-black'
+                  : 'text-black dark:text-white hover:bg-[#FFC107] hover:text-black'
               }`}
             >
               SUBJECT MAP
@@ -459,7 +445,7 @@ export default function LibraryView({
               className={`px-3 py-1.5 font-black text-xs uppercase transition-all ${
                 libraryTab === 'saved'
                   ? 'bg-[#FFC107] text-black border-2 border-black shadow-[2px_2px_0px_#000]'
-                  : 'text-black/70 dark:text-white/70 hover:text-black'
+                  : 'text-black dark:text-white hover:bg-[#FFC107] hover:text-black'
               }`}
             >
               ACADEMIC SAVED
@@ -470,20 +456,20 @@ export default function LibraryView({
         {/* Center Search Bar */}
         <div className="flex items-center flex-1 max-w-md w-full">
           <div className="relative w-full">
-            <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-black font-black stroke-[3]" />
+            <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-black dark:text-white font-black stroke-[3]" />
             <input
               type="text"
               value={subjectSearch}
               onChange={(e) => setSubjectSearch(e.target.value)}
               placeholder="SEARCH LECTURES, NOTES, TOPICS..."
-              className="w-full bg-white dark:bg-[#161B22] border-4 border-black py-2.5 pl-12 pr-4 text-xs font-bold uppercase placeholder:text-black/40 dark:placeholder:text-white/40 focus:outline-none focus:ring-4 focus:ring-[#FFC107] shadow-[3px_3px_0px_#000]"
+              className="w-full bg-white dark:bg-[#161B22] border-4 border-black py-2.5 pl-12 pr-4 text-xs font-bold uppercase text-black dark:text-white placeholder:text-black/50 dark:placeholder:text-white/50 focus:outline-none focus:ring-4 focus:ring-[#FFC107] shadow-[3px_3px_0px_#000]"
             />
           </div>
         </div>
 
         {/* Right Progress Bar & Actions */}
         <div className="flex items-center gap-4">
-          <div className="hidden xl:flex items-center gap-3 bg-white dark:bg-[#161B22] px-4 py-2 brutal-border">
+          <div className="hidden xl:flex items-center gap-3 bg-white dark:bg-[#161B22] px-4 py-2 brutal-border text-black dark:text-white">
             <span className="text-xs font-black uppercase tracking-widest">Progress</span>
             <div className="w-24 h-4 bg-[#F4F1EA] dark:bg-[#21262D] border-2 border-black relative overflow-hidden">
               <div 
@@ -504,15 +490,15 @@ export default function LibraryView({
         </div>
       </header>
 
-      {/* MAIN CONTAINER */}
-      <main className="flex-1 flex overflow-hidden">
+      {/* MAIN FULL-WIDTH CONTAINER */}
+      <main className="flex-1 flex overflow-hidden relative">
 
-        {/* TAB 1: BAUHAUS SUBJECT MAP CANVAS VIEW */}
+        {/* TAB 1: BAUHAUS SUBJECT MAP CANVAS VIEW (Full Width 100%) */}
         {libraryTab === 'map' && (
-          <div className="flex-1 flex overflow-hidden relative">
+          <div className="flex-1 flex overflow-hidden relative w-full">
             
-            {/* MAP AREA CANVAS */}
-            <div className="flex-1 relative overflow-y-auto overflow-x-hidden bg-[#F4F1EA] dark:bg-[#0D1117]">
+            {/* MAP AREA CANVAS (Full Width) */}
+            <div className="flex-1 relative overflow-y-auto overflow-x-hidden w-full bg-[#F4F1EA] dark:bg-[#0D1117]">
               
               {/* Grid Background Overlay */}
               <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.08)_2px,transparent_2px),linear-gradient(90deg,rgba(0,0,0,0.08)_2px,transparent_2px)] dark:bg-[linear-gradient(rgba(255,255,255,0.05)_2px,transparent_2px),linear-gradient(90deg,rgba(255,255,255,0.05)_2px,transparent_2px)] bg-[size:40px_40px] pointer-events-none" />
@@ -533,7 +519,7 @@ export default function LibraryView({
 
                 {/* Module Landmark 01 */}
                 <div className="absolute top-[82%] right-[12%] text-right bg-white dark:bg-[#161B22] brutal-border p-4 transform rotate-3 z-10">
-                  <div className="text-[10px] font-black tracking-widest uppercase mb-1 border-b-2 border-black pb-1">
+                  <div className="text-[10px] font-black tracking-widest uppercase mb-1 border-b-2 border-black pb-1 text-black dark:text-white">
                     MODULE 01
                   </div>
                   <div className="text-3xl font-black uppercase tracking-tighter text-black dark:text-white">
@@ -555,7 +541,7 @@ export default function LibraryView({
                 <div className="relative w-full max-w-4xl flex flex-col items-center gap-28 z-10 my-auto">
 
                   {currentSubjectLectures.map((lec, idx) => {
-                    const isSelected = activeLectureDetail?.id === lec.id;
+                    const isSelected = selectedLectureDetail?.id === lec.id;
                     const isCompleted = lec.reviewed || lec.status === 'completed' || lec.status === 'generated';
                     const isRecording = lec.status === 'recording' || lec.status === 'transcribing';
 
@@ -569,11 +555,6 @@ export default function LibraryView({
                         onClick={() => setSelectedLectureDetail(lec)}
                         className={`relative group cursor-pointer ${alignmentClass} ${isSelected ? 'z-30 scale-105' : 'z-10'}`}
                       >
-                        {/* Selected Connection Line to Panel */}
-                        {isSelected && (
-                          <div className="absolute right-[-180px] top-1/2 h-2 w-[180px] bg-black pointer-events-none hidden lg:block z-0" />
-                        )}
-
                         {/* Node Status Badge Indicator */}
                         {isCompleted ? (
                           <div className="absolute -left-6 -top-6 w-12 h-12 bg-[#FFC107] text-black brutal-border flex items-center justify-center z-20">
@@ -645,29 +626,45 @@ export default function LibraryView({
               </div>
             </div>
 
-            {/* SIDE PANEL INSPECTOR (Right Side Details for Selected Lecture) */}
-            <aside className="w-96 bg-white dark:bg-[#161B22] border-l-4 border-black flex flex-col z-30 shadow-2xl">
-              
-              {activeLectureDetail ? (
-                <>
+            {/* SLIDE-OVER INSPECTION DRAWER (Triggered when node is clicked) */}
+            {selectedLectureDetail && (
+              <div className="fixed inset-0 z-50 overflow-hidden flex justify-end">
+                {/* Backdrop Overlay */}
+                <div 
+                  onClick={() => setSelectedLectureDetail(null)} 
+                  className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
+                />
+                
+                {/* Slide-over Drawer Panel */}
+                <aside className="relative w-96 max-w-full bg-white dark:bg-[#161B22] border-l-4 border-black flex flex-col shadow-2xl z-50 h-full overflow-y-auto animate-in slide-in-from-right duration-300">
+                  
                   {/* Panel Header */}
                   <div className="p-6 border-b-4 border-black bg-white dark:bg-[#161B22] relative">
+                    <button
+                      onClick={() => setSelectedLectureDetail(null)}
+                      className="absolute top-4 right-4 p-1.5 bg-black text-white hover:bg-[#FFC107] hover:text-black border-2 border-black font-black transition-colors"
+                      title="Close Drawer"
+                    >
+                      <X className="w-5 h-5 stroke-[3]" />
+                    </button>
+
                     <div className="inline-flex items-center gap-2 bg-black text-white px-3 py-1 text-xs font-black uppercase tracking-widest mb-3 border-2 border-black">
                       <Play className="w-3.5 h-3.5 text-[#FFC107] fill-[#FFC107]" />
-                      LECTURE {activeLectureDetail.lectureNumber < 10 ? `0${activeLectureDetail.lectureNumber}` : activeLectureDetail.lectureNumber}
+                      LECTURE {selectedLectureDetail.lectureNumber < 10 ? `0${selectedLectureDetail.lectureNumber}` : selectedLectureDetail.lectureNumber}
                     </div>
 
-                    <h2 className="text-2xl font-black uppercase leading-none mb-4 text-black dark:text-white">
-                      {activeLectureDetail.title}
+                    <h2 className="text-2xl font-black uppercase leading-none mb-4 text-black dark:text-white pr-8">
+                      {selectedLectureDetail.title}
                     </h2>
 
-                    <p className="text-xs font-semibold leading-relaxed mb-6 border-l-4 border-black pl-3 text-[#1E293B] dark:text-[#E2E8F0] line-clamp-3">
-                      {activeLectureDetail.transcript || "Exploration of tree data structures, search algorithms, and cognitive notes generation."}
+                    <p className="text-xs font-semibold leading-relaxed mb-6 border-l-4 border-black pl-3 text-[#1E293B] dark:text-[#E2E8F0]">
+                      {selectedLectureDetail.transcript || "Exploration of tree data structures, search algorithms, and cognitive notes generation."}
                     </p>
 
                     <button
                       onClick={() => {
-                        if (setActiveLectureId) setActiveLectureId(activeLectureDetail.id);
+                        if (setActiveLectureId) setActiveLectureId(selectedLectureDetail.id);
+                        setSelectedLectureDetail(null);
                         setActivePage('knowledge-studio');
                       }}
                       className="w-full bg-[#FFC107] text-black font-black uppercase text-sm py-3.5 brutal-border flex items-center justify-center gap-2 hover:bg-[#FFD54F] transition-transform"
@@ -678,7 +675,7 @@ export default function LibraryView({
                   </div>
 
                   {/* Panel Body Resources */}
-                  <div className="flex-1 p-6 overflow-y-auto bg-[#F4F1EA] dark:bg-[#0D1117] flex flex-col gap-4">
+                  <div className="flex-1 p-6 bg-[#F4F1EA] dark:bg-[#0D1117] flex flex-col gap-4">
                     <h3 className="text-xs font-black uppercase tracking-widest border-b-4 border-black pb-1 inline-block text-black dark:text-white">
                       RESOURCES & AI ASSETS
                     </h3>
@@ -686,7 +683,8 @@ export default function LibraryView({
                     {/* Resource 1: Structured Notes */}
                     <button
                       onClick={() => {
-                        if (setActiveLectureId) setActiveLectureId(activeLectureDetail.id);
+                        if (setActiveLectureId) setActiveLectureId(selectedLectureDetail.id);
+                        setSelectedLectureDetail(null);
                         setActivePage('knowledge-studio');
                       }}
                       className="w-full flex items-center p-3.5 bg-white dark:bg-[#161B22] brutal-border hover:bg-[#FFC107] hover:text-black transition-colors group text-left"
@@ -696,7 +694,7 @@ export default function LibraryView({
                       </div>
                       <div className="flex-1">
                         <h4 className="text-xs font-black uppercase text-black dark:text-white group-hover:text-black">Structured Notes</h4>
-                        <p className="text-[11px] font-bold text-[#475569] dark:text-[#CBD5E1] group-hover:text-black">Definitions & algorithms</p>
+                        <p className="text-[11px] font-extrabold text-[#475569] dark:text-[#F1F5F9] group-hover:text-black">Definitions & algorithms</p>
                       </div>
                       <ArrowRight className="w-4 h-4 stroke-[3] group-hover:translate-x-1 transition-transform" />
                     </button>
@@ -704,7 +702,8 @@ export default function LibraryView({
                     {/* Resource 2: Executive Summary */}
                     <button
                       onClick={() => {
-                        if (setActiveLectureId) setActiveLectureId(activeLectureDetail.id);
+                        if (setActiveLectureId) setActiveLectureId(selectedLectureDetail.id);
+                        setSelectedLectureDetail(null);
                         setActivePage('knowledge-studio');
                       }}
                       className="w-full flex items-center p-3.5 bg-white dark:bg-[#161B22] brutal-border hover:bg-[#FFC107] hover:text-black transition-colors group text-left"
@@ -714,7 +713,7 @@ export default function LibraryView({
                       </div>
                       <div className="flex-1">
                         <h4 className="text-xs font-black uppercase text-black dark:text-white group-hover:text-black">Executive Summary</h4>
-                        <p className="text-[11px] font-bold text-[#475569] dark:text-[#CBD5E1] group-hover:text-black">2-minute revision read</p>
+                        <p className="text-[11px] font-extrabold text-[#475569] dark:text-[#F1F5F9] group-hover:text-black">2-minute revision read</p>
                       </div>
                       <ArrowRight className="w-4 h-4 stroke-[3] group-hover:translate-x-1 transition-transform" />
                     </button>
@@ -722,7 +721,8 @@ export default function LibraryView({
                     {/* Resource 3: Flashcards */}
                     <button
                       onClick={() => {
-                        if (setActiveLectureId) setActiveLectureId(activeLectureDetail.id);
+                        if (setActiveLectureId) setActiveLectureId(selectedLectureDetail.id);
+                        setSelectedLectureDetail(null);
                         setActivePage('quiz-mode');
                       }}
                       className="w-full flex items-center p-3.5 bg-white dark:bg-[#161B22] brutal-border hover:bg-[#FFC107] hover:text-black transition-colors group text-left"
@@ -732,7 +732,7 @@ export default function LibraryView({
                       </div>
                       <div className="flex-1">
                         <h4 className="text-xs font-black uppercase text-black dark:text-white group-hover:text-black">Flashcards Deck</h4>
-                        <p className="text-[11px] font-bold text-[#475569] dark:text-[#CBD5E1] group-hover:text-black">24 cards generated</p>
+                        <p className="text-[11px] font-extrabold text-[#475569] dark:text-[#F1F5F9] group-hover:text-black">24 cards generated</p>
                       </div>
                       <ArrowRight className="w-4 h-4 stroke-[3] group-hover:translate-x-1 transition-transform" />
                     </button>
@@ -740,7 +740,8 @@ export default function LibraryView({
                     {/* Resource 4: Practice Quiz */}
                     <button
                       onClick={() => {
-                        if (setActiveLectureId) setActiveLectureId(activeLectureDetail.id);
+                        if (setActiveLectureId) setActiveLectureId(selectedLectureDetail.id);
+                        setSelectedLectureDetail(null);
                         setActivePage('quiz-mode');
                       }}
                       className="w-full flex items-center p-3.5 bg-white dark:bg-[#161B22] brutal-border hover:bg-[#FFC107] hover:text-black transition-colors group text-left"
@@ -750,25 +751,22 @@ export default function LibraryView({
                       </div>
                       <div className="flex-1">
                         <h4 className="text-xs font-black uppercase text-black dark:text-white group-hover:text-black">Practice Quiz</h4>
-                        <p className="text-[11px] font-bold text-[#475569] dark:text-[#CBD5E1] group-hover:text-black">10 questions</p>
+                        <p className="text-[11px] font-extrabold text-[#475569] dark:text-[#F1F5F9] group-hover:text-black">10 questions</p>
                       </div>
                       <ArrowRight className="w-4 h-4 stroke-[3] group-hover:translate-x-1 transition-transform" />
                     </button>
                   </div>
-                </>
-              ) : (
-                <div className="p-8 text-center my-auto">
-                  <p className="text-xs font-black uppercase text-black/60 dark:text-white/60">Select a lecture node from the map to inspect details.</p>
-                </div>
-              )}
 
-            </aside>
+                </aside>
+              </div>
+            )}
+
           </div>
         )}
 
         {/* TAB 2: ACADEMIC SAVED SECTION */}
         {libraryTab === 'saved' && (
-          <div className="flex-1 p-8 overflow-y-auto bg-[#F4F1EA] dark:bg-[#0D1117] flex flex-col gap-6">
+          <div className="flex-1 p-8 overflow-y-auto bg-[#F4F1EA] dark:bg-[#0D1117] flex flex-col gap-6 w-full">
             
             {/* Folder Bar */}
             <div className="bg-white dark:bg-[#161B22] p-4 brutal-border flex items-center justify-between gap-4">
@@ -816,18 +814,18 @@ export default function LibraryView({
                       <span className="text-[10px] font-black uppercase px-2 py-0.5 bg-[#FFC107] text-black border border-black">
                         {lec.subject || 'GENERAL'}
                       </span>
-                      <button onClick={() => onDeleteLecture(lec.id)} className="text-black/60 dark:text-white/60 hover:text-[#EF4444]">
+                      <button onClick={() => onDeleteLecture(lec.id)} className="text-black/70 dark:text-white/70 hover:text-[#EF4444]">
                         <Trash2 className="w-4 h-4 stroke-[2.5]" />
                       </button>
                     </div>
                     <h4 className="text-sm font-black uppercase mb-2 text-black dark:text-white">{lec.title}</h4>
-                    <p className="text-xs font-medium text-black/70 dark:text-white/70 line-clamp-3 mb-4">
+                    <p className="text-xs font-bold text-[#334155] dark:text-[#CBD5E1] line-clamp-3 mb-4">
                       {lec.transcript || 'No transcript text available.'}
                     </p>
                   </div>
 
                   <div className="flex items-center justify-between pt-3 border-t-2 border-black">
-                    <span className="text-[10px] font-bold uppercase text-black/60 dark:text-white/60">{lec.addedAt}</span>
+                    <span className="text-[10px] font-bold uppercase text-black/70 dark:text-white/70">{lec.addedAt}</span>
                     <button
                       onClick={() => {
                         if (setActiveLectureId) setActiveLectureId(lec.id);
@@ -860,30 +858,30 @@ export default function LibraryView({
 
             <form onSubmit={handleCreateSubjectSubmit} className="flex flex-col gap-4">
               <div>
-                <label className="text-xs font-black uppercase block mb-1">Subject Name *</label>
+                <label className="text-xs font-black uppercase block mb-1 text-black dark:text-white">Subject Name *</label>
                 <input
                   type="text"
                   required
                   value={newSubName}
                   onChange={(e) => setNewSubName(e.target.value)}
                   placeholder="e.g. DATA STRUCTURES & ALGORITHMS"
-                  className="w-full bg-[#F4F1EA] dark:bg-[#0D1117] border-2 border-black p-2.5 text-xs font-bold uppercase focus:outline-none"
+                  className="w-full bg-[#F4F1EA] dark:bg-[#0D1117] border-2 border-black p-2.5 text-xs font-bold uppercase text-black dark:text-white focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-black uppercase block mb-1">Subject Code (Optional)</label>
+                <label className="text-xs font-black uppercase block mb-1 text-black dark:text-white">Subject Code (Optional)</label>
                 <input
                   type="text"
                   value={newSubCode}
                   onChange={(e) => setNewSubCode(e.target.value)}
                   placeholder="e.g. CS201"
-                  className="w-full bg-[#F4F1EA] dark:bg-[#0D1117] border-2 border-black p-2.5 text-xs font-bold uppercase focus:outline-none"
+                  className="w-full bg-[#F4F1EA] dark:bg-[#0D1117] border-2 border-black p-2.5 text-xs font-bold uppercase text-black dark:text-white focus:outline-none"
                 />
               </div>
 
               <div className="flex justify-end gap-3 mt-4 pt-3 border-t-2 border-black">
-                <button type="button" onClick={() => setShowCreateSubjectModal(false)} className="px-4 py-2 bg-[#F4F1EA] dark:bg-[#21262D] border-2 border-black font-black text-xs uppercase">
+                <button type="button" onClick={() => setShowCreateSubjectModal(false)} className="px-4 py-2 bg-[#F4F1EA] dark:bg-[#21262D] text-black dark:text-white border-2 border-black font-black text-xs uppercase">
                   CANCEL
                 </button>
                 <button type="submit" className="px-5 py-2 bg-[#FFC107] text-black font-black text-xs uppercase brutal-border">
@@ -906,19 +904,19 @@ export default function LibraryView({
 
             <form onSubmit={handleCreateLectureInSubject} className="flex flex-col gap-4">
               <div>
-                <label className="text-xs font-black uppercase block mb-1">Lecture Topic / Title *</label>
+                <label className="text-xs font-black uppercase block mb-1 text-black dark:text-white">Lecture Topic / Title *</label>
                 <input
                   type="text"
                   required
                   value={newLectureTitle}
                   onChange={(e) => setNewLectureTitle(e.target.value)}
                   placeholder="e.g. BINARY SEARCH TREES — PART 1"
-                  className="w-full bg-[#F4F1EA] dark:bg-[#0D1117] border-2 border-black p-2.5 text-xs font-bold uppercase focus:outline-none"
+                  className="w-full bg-[#F4F1EA] dark:bg-[#0D1117] border-2 border-black p-2.5 text-xs font-bold uppercase text-black dark:text-white focus:outline-none"
                 />
               </div>
 
               <div className="flex justify-end gap-3 mt-4 pt-3 border-t-2 border-black">
-                <button type="button" onClick={() => setShowCreateLectureModal(false)} className="px-4 py-2 bg-[#F4F1EA] dark:bg-[#21262D] border-2 border-black font-black text-xs uppercase">
+                <button type="button" onClick={() => setShowCreateLectureModal(false)} className="px-4 py-2 bg-[#F4F1EA] dark:bg-[#21262D] text-black dark:text-white border-2 border-black font-black text-xs uppercase">
                   CANCEL
                 </button>
                 <button type="submit" className="px-5 py-2 bg-[#FFC107] text-black font-black text-xs uppercase brutal-border flex items-center gap-2">
