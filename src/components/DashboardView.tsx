@@ -58,13 +58,14 @@ export default function DashboardView({
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-16 bg-grid-paper p-4 md:p-8 select-none">
       
-      {/* 1. BAUHAUS EDITORIAL HERO CALLOUT BANNER (Matching Stitch Mockup 3) */}
-      <div className="relative rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] p-6 md:p-10 shadow-paper-lg flex flex-col justify-between overflow-hidden">
+      {/* 1. BAUHAUS EDITORIAL HERO CALLOUT BANNER WITH CUTE 3D MASCOT */}
+      <div className="relative rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] p-6 md:p-10 shadow-paper-lg flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden">
         
         {/* Yellow Decorative Callout Accent Box */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-[#FFC400] opacity-15 rotate-12 -translate-y-8 translate-x-8 border-2 border-[var(--border-main)] pointer-events-none" />
+        <div className="absolute top-0 right-0 w-48 h-48 bg-[#FFC400] opacity-15 rotate-12 -translate-y-8 translate-x-8 border-2 border-[var(--border-main)] pointer-events-none" />
 
-        <div className="relative z-10 max-w-3xl space-y-4">
+        {/* Left Side: Content & Actions */}
+        <div className="relative z-10 max-w-2xl space-y-4">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <Badge variant="yellow" size="md" icon={<Sparkles className="h-3.5 w-3.5" />}>
               NOTE-IT AI SUITE • CORE
@@ -104,6 +105,20 @@ export default function DashboardView({
             </Button>
           </div>
         </div>
+
+        {/* Right Side: Uploaded 3D Blue Headphones Mascot */}
+        <div className="relative z-10 shrink-0 mt-4 md:mt-0 flex items-center justify-center">
+          <div className="relative group">
+            {/* Ambient Yellow Glow Accent */}
+            <div className="absolute -inset-4 rounded-full bg-[#FFC400]/25 blur-2xl group-hover:bg-[#FFC400]/45 transition-all pointer-events-none" />
+            <img
+              src="/mascots/mascot-hero-blue.png"
+              alt="NoteIT AI Mascot"
+              className="w-48 h-48 sm:w-60 sm:h-60 lg:w-72 lg:h-72 object-contain drop-shadow-[0_12px_24px_rgba(0,0,0,0.45)] transform hover:scale-105 transition-transform duration-300 pointer-events-none"
+            />
+          </div>
+        </div>
+
       </div>
 
 
