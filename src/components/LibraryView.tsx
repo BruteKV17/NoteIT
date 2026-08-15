@@ -429,7 +429,7 @@ export default function LibraryView({
           </div>
 
           {/* DUAL TAB SWITCHER */}
-          <div className="hidden sm:flex items-center gap-1 border-2 border-black p-0.5 bg-[#F4F1EA] dark:bg-[#0D1117]">
+          <div className="flex items-center gap-1 border-2 border-black p-0.5 bg-[#F4F1EA] dark:bg-[#0D1117]">
             <button
               onClick={() => setLibraryTab('map')}
               className={`px-3 py-1.5 font-black text-xs uppercase transition-all ${
@@ -518,35 +518,36 @@ export default function LibraryView({
                 </svg>
 
                 {/* Module Landmark 01 */}
-                <div className="absolute top-[82%] right-[12%] text-right bg-white dark:bg-[#161B22] brutal-border p-4 transform rotate-3 z-10">
-                  <div className="text-[10px] font-black tracking-widest uppercase mb-1 border-b-2 border-black pb-1 text-black dark:text-white">
+                {/* Module Landmark 01 */}
+                <div className="absolute top-[82%] right-2 sm:right-[12%] text-right bg-white dark:bg-[#161B22] brutal-border p-2 sm:p-4 transform rotate-3 z-10 max-w-[70vw] sm:max-w-none">
+                  <div className="text-[9px] sm:text-[10px] font-black tracking-widest uppercase mb-1 border-b-2 border-black pb-1 text-black dark:text-white">
                     MODULE 01
                   </div>
-                  <div className="text-3xl font-black uppercase tracking-tighter text-black dark:text-white">
+                  <div className="text-sm sm:text-3xl font-black uppercase tracking-tighter text-black dark:text-white">
                     FOUNDATIONS & ARRAYS
                   </div>
                 </div>
 
                 {/* Module Landmark 04 */}
-                <div className="absolute top-[38%] left-[10%] bg-[#FFC107] text-black brutal-border p-4 transform -rotate-3 z-10">
-                  <div className="text-[10px] font-black tracking-widest uppercase mb-1 border-b-2 border-black pb-1">
+                <div className="absolute top-[38%] left-2 sm:left-[10%] bg-[#FFC107] text-black brutal-border p-2 sm:p-4 transform -rotate-3 z-10 max-w-[70vw] sm:max-w-none">
+                  <div className="text-[9px] sm:text-[10px] font-black tracking-widest uppercase mb-1 border-b-2 border-black pb-1">
                     MODULE 04
                   </div>
-                  <div className="text-3xl font-black uppercase tracking-tighter mt-1">
+                  <div className="text-sm sm:text-3xl font-black uppercase tracking-tighter mt-1">
                     TREES & GRAPHS
                   </div>
                 </div>
 
                 {/* Lecture Nodes Container */}
-                <div className="relative w-full max-w-4xl flex flex-col items-center gap-28 z-10 my-auto">
+                <div className="relative w-full max-w-4xl flex flex-col items-center gap-16 sm:gap-28 z-10 my-auto px-4">
 
                   {currentSubjectLectures.map((lec, idx) => {
                     const isSelected = selectedLectureDetail?.id === lec.id;
                     const isCompleted = lec.reviewed || lec.status === 'completed' || lec.status === 'generated';
                     const isRecording = lec.status === 'recording' || lec.status === 'transcribing';
 
-                    // Node Offset positioning
-                    const alignments = ['ml-[-220px]', 'mr-[-280px]', 'ml-[-120px]', 'mr-[-180px]'];
+                    // Responsive Node Offset positioning (Centered on mobile, offset on desktop)
+                    const alignments = ['sm:ml-[-220px] ml-0', 'sm:mr-[-280px] mr-0', 'sm:ml-[-120px] ml-0', 'sm:mr-[-180px] mr-0'];
                     const alignmentClass = alignments[idx % alignments.length];
 
                     return (
@@ -557,21 +558,21 @@ export default function LibraryView({
                       >
                         {/* Node Status Badge Indicator */}
                         {isCompleted ? (
-                          <div className="absolute -left-6 -top-6 w-12 h-12 bg-[#FFC107] text-black brutal-border flex items-center justify-center z-20">
-                            <Check className="w-7 h-7 stroke-[4]" />
+                          <div className="absolute -left-4 -top-4 sm:-left-6 sm:-top-6 w-10 h-10 sm:w-12 sm:h-12 bg-[#FFC107] text-black brutal-border flex items-center justify-center z-20">
+                            <Check className="w-5 h-5 sm:w-7 sm:h-7 stroke-[4]" />
                           </div>
                         ) : isRecording ? (
-                          <div className="absolute -left-8 top-1/2 -translate-y-1/2 w-16 h-16 bg-[#FFC107] brutal-border rounded-full flex items-center justify-center animate-pulse z-20">
-                            <div className="w-6 h-6 bg-black rounded-full" />
+                          <div className="absolute -left-6 top-1/2 -translate-y-1/2 w-12 h-12 sm:w-16 sm:h-16 bg-[#FFC107] brutal-border rounded-full flex items-center justify-center animate-pulse z-20">
+                            <div className="w-4 h-4 sm:w-6 sm:h-6 bg-black rounded-full" />
                           </div>
                         ) : (
-                          <div className="absolute -left-6 -top-6 w-12 h-12 bg-white dark:bg-[#21262D] text-black dark:text-white brutal-border flex items-center justify-center z-20">
-                            <Lock className="w-5 h-5 stroke-[3]" />
+                          <div className="absolute -left-4 -top-4 sm:-left-6 sm:-top-6 w-10 h-10 sm:w-12 sm:h-12 bg-white dark:bg-[#21262D] text-black dark:text-white brutal-border flex items-center justify-center z-20">
+                            <Lock className="w-4 h-4 sm:w-5 sm:h-5 stroke-[3]" />
                           </div>
                         )}
 
                         {/* Lecture Node Card */}
-                        <div className={`bg-white dark:bg-[#161B22] brutal-border p-6 w-72 transition-transform ${
+                        <div className={`bg-white dark:bg-[#161B22] brutal-border p-4 sm:p-6 w-64 sm:w-72 max-w-[85vw] transition-transform ${
                           isSelected 
                             ? 'shadow-[12px_12px_0px_#000] rotate-0 bg-[#FFC107]/20 border-black' 
                             : idx % 2 === 0 ? 'transform -rotate-2 hover:rotate-0' : 'transform rotate-2 hover:rotate-0'
@@ -636,7 +637,7 @@ export default function LibraryView({
                 />
                 
                 {/* Slide-over Drawer Panel */}
-                <aside className="relative w-96 max-w-full bg-white dark:bg-[#161B22] border-l-4 border-black flex flex-col shadow-2xl z-50 h-full overflow-y-auto animate-in slide-in-from-right duration-300">
+                <aside className="relative w-full sm:w-96 max-w-full bg-white dark:bg-[#161B22] border-l-4 border-black flex flex-col shadow-2xl z-50 h-full overflow-y-auto animate-in slide-in-from-right duration-300">
                   
                   {/* Panel Header */}
                   <div className="p-6 border-b-4 border-black bg-white dark:bg-[#161B22] relative">
