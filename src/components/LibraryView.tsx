@@ -165,54 +165,6 @@ export default function LibraryView({
       return false;
     });
 
-    // If no matching lectures in Firestore yet, provide subject-specific sample lectures
-    if (matched.length === 0) {
-      const sName = currentSubject.name.toUpperCase();
-      let sampleTopics = [
-        { title: `Intro to ${currentSubject.name}`, desc: `Fundamental principles, core definitions, and scope of ${currentSubject.name}.` },
-        { title: `Core Concepts & Architecture`, desc: `Detailed exploration of foundational models and key structural elements.` },
-        { title: `Advanced Topics & Problem Solving`, desc: `Analytical methods, algorithmic approaches, and practical implementations.` },
-        { title: `Synthesis & Exam Preparation`, desc: `Comprehensive revision, high-yield practice questions, and summary takeaways.` }
-      ];
-
-      if (sName.includes('DATA STRUCTURE') || sName.includes('CS201')) {
-        sampleTopics = [
-          { title: 'Intro to Data Structures', desc: 'Arrays, linked lists, and memory allocation fundamentals.' },
-          { title: 'Heaps & Priority Queues', desc: 'Binary tree representations and heapify algorithms.' },
-          { title: 'Binary Search Trees', desc: 'Tree traversal, insertion, and deletion operations with O(log n) complexity.' },
-          { title: 'AVL Trees & Balancing', desc: 'Self-balancing trees, rotations, and height invariance proofs.' }
-        ];
-      } else if (sName.includes('OPERATING') || sName.includes('CS302')) {
-        sampleTopics = [
-          { title: 'Process & Thread Management', desc: 'Process control blocks, context switching, and thread execution models.' },
-          { title: 'CPU Scheduling Algorithms', desc: 'Round Robin, FCFS, Priority, and Multi-level Feedback Queue scheduling.' },
-          { title: 'Virtual Memory & Paging', desc: 'Page replacement policy, TLB, demand paging, and thrashing prevention.' },
-          { title: 'Synchronization & Deadlocks', desc: 'Mutex locks, semaphores, Banker algorithm, and deadlock detection.' }
-        ];
-      } else if (sName.includes('LINEAR') || sName.includes('MATH')) {
-        sampleTopics = [
-          { title: 'Vector Spaces & Subspaces', desc: 'Linear independence, basis, dimension, and vector transformations.' },
-          { title: 'Matrix Factorization & Systems', desc: 'Gaussian elimination, LU decomposition, and system solving.' },
-          { title: 'Eigenvalues & Eigenvectors', desc: 'Characteristic polynomials, diagonalization, and eigenspaces.' },
-          { title: 'Orthogonality & SVD', desc: 'Gram-Schmidt process, least squares, and Singular Value Decomposition.' }
-        ];
-      }
-
-      return sampleTopics.map((topic, idx) => ({
-        id: `sample-${currentSubject.id}-${idx + 1}`,
-        title: topic.title,
-        subject: currentSubject.name,
-        subjectId: currentSubject.id,
-        lectureNumber: idx === 0 ? 1 : idx === 1 ? 5 : idx === 2 ? 10 : 12,
-        status: idx < 3 ? 'completed' : 'transcribing',
-        reviewed: idx < 3,
-        addedAt: idx === 0 ? 'Yesterday' : idx === 1 ? '3 days ago' : idx === 2 ? 'Today' : 'Just now',
-        duration: idx === 0 ? '45m' : idx === 1 ? '50m' : idx === 2 ? '52m' : '40m',
-        type: 'recording',
-        transcript: topic.desc
-      })) as Lecture[];
-    }
-
     return matched.map((l, index) => ({
       ...l,
       lectureNumber: l.lectureNumber || (index + 1),
@@ -501,140 +453,147 @@ export default function LibraryView({
               {/* Path Container */}
               <div className="relative min-h-[1400px] w-full flex flex-col items-center py-16 pb-40">
 
-                {/* SVG Animated Connection Line */}
-                <svg className="absolute top-0 w-full h-full pointer-events-none z-0" preserveAspectRatio="none" viewBox="0 0 1000 1800">
-                  <path 
-                    className="path-line-bauhaus" 
-                    d="M 500,1800 L 400,1400 L 600,1000 L 400,600 L 600,200 L 500,0" 
-                    fill="none" 
-                    stroke="#000000" 
-                    strokeWidth="8"
-                  />
-                </svg>
-
-                {/* Module Landmark 01 */}
-                {/* Module Landmark 01 */}
-                <div className="absolute top-[82%] right-2 sm:right-[12%] text-right bg-white dark:bg-[#161B22] brutal-border p-2 sm:p-4 transform rotate-3 z-10 max-w-[70vw] sm:max-w-none">
-                  <div className="text-[9px] sm:text-[10px] font-black tracking-widest uppercase mb-1 border-b-2 border-black pb-1 text-black dark:text-white">
-                    MODULE 01
-                  </div>
-                  <div className="text-sm sm:text-3xl font-black uppercase tracking-tighter text-black dark:text-white">
-                    FOUNDATIONS & ARRAYS
-                  </div>
-                </div>
-
-                {/* Module Landmark 04 */}
-                <div className="absolute top-[38%] left-2 sm:left-[10%] bg-[#FFC107] text-black brutal-border p-2 sm:p-4 transform -rotate-3 z-10 max-w-[70vw] sm:max-w-none">
-                  <div className="text-[9px] sm:text-[10px] font-black tracking-widest uppercase mb-1 border-b-2 border-black pb-1">
-                    MODULE 04
-                  </div>
-                  <div className="text-sm sm:text-3xl font-black uppercase tracking-tighter mt-1">
-                    TREES & GRAPHS
-                  </div>
-                </div>
-
-                {/* Lecture Nodes Container */}
-                <div className="relative w-full max-w-4xl flex flex-col items-center gap-16 sm:gap-28 z-10 my-auto px-4">
-
-                  {currentSubjectLectures.map((lec, idx) => {
-                    const isSelected = selectedLectureDetail?.id === lec.id;
-                    const isCompleted = lec.reviewed || lec.status === 'completed' || lec.status === 'generated';
-                    const isRecording = lec.status === 'recording' || lec.status === 'transcribing';
-
-                    // Responsive Node Offset positioning (Centered on mobile, offset on desktop)
-                    const alignments = ['sm:ml-[-220px] ml-0', 'sm:mr-[-280px] mr-0', 'sm:ml-[-120px] ml-0', 'sm:mr-[-180px] mr-0'];
-                    const alignmentClass = alignments[idx % alignments.length];
-
-                    return (
-                      <div
-                        key={lec.id}
-                        onClick={() => setSelectedLectureDetail(lec)}
-                        className={`relative group cursor-pointer ${alignmentClass} ${isSelected ? 'z-30 scale-105' : 'z-10'}`}
+                {currentSubjectLectures.length === 0 ? (
+                  /* EMPTY STATE ON SQUARE GRID MAP PAGE */
+                  <div className="relative z-20 flex flex-col items-center justify-center my-auto py-24 text-center px-4">
+                    <div className="bg-white dark:bg-[#161B22] brutal-border p-8 max-w-md w-full flex flex-col items-center space-y-4 shadow-[8px_8px_0px_#000]">
+                      <div className="w-16 h-16 bg-[#FFC107] border-2 border-black flex items-center justify-center rounded-full shadow-[3px_3px_0px_#000]">
+                        <BookOpen className="w-8 h-8 text-black stroke-[3]" />
+                      </div>
+                      <div className="space-y-1">
+                        <h3 className="text-xl font-black uppercase text-black dark:text-white">
+                          EMPTY SUBJECT MAP
+                        </h3>
+                        <p className="text-xs font-bold text-[#64748B] dark:text-[#94A3B8]">
+                          No lectures added for {currentSubject?.name || 'this subject'} yet. Record or upload a course material to populate your map!
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setShowCreateLectureModal(true)}
+                        className="bg-[#FFC107] text-black font-black uppercase text-xs px-6 py-3 brutal-border flex items-center gap-2 hover:bg-[#FFD54F] transition-transform cursor-pointer"
                       >
-                        {/* Node Status Badge Indicator */}
-                        {isCompleted ? (
-                          <div className="absolute -left-4 -top-4 sm:-left-6 sm:-top-6 w-10 h-10 sm:w-12 sm:h-12 bg-[#FFC107] text-black brutal-border flex items-center justify-center z-20">
-                            <Check className="w-5 h-5 sm:w-7 sm:h-7 stroke-[4]" />
-                          </div>
-                        ) : isRecording ? (
-                          <div className="absolute -left-6 top-1/2 -translate-y-1/2 w-12 h-12 sm:w-16 sm:h-16 bg-[#FFC107] brutal-border rounded-full flex items-center justify-center animate-pulse z-20">
-                            <div className="w-4 h-4 sm:w-6 sm:h-6 bg-black rounded-full" />
-                          </div>
-                        ) : (
-                          <div className="absolute -left-4 -top-4 sm:-left-6 sm:-top-6 w-10 h-10 sm:w-12 sm:h-12 bg-white dark:bg-[#21262D] text-black dark:text-white brutal-border flex items-center justify-center z-20">
-                            <Lock className="w-4 h-4 sm:w-5 sm:h-5 stroke-[3]" />
-                          </div>
-                        )}
+                        <Plus className="w-4 h-4 stroke-[3]" />
+                        + ADD YOUR FIRST LECTURE
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* SVG Animated Connection Line */}
+                    <svg className="absolute top-0 w-full h-full pointer-events-none z-0" preserveAspectRatio="none" viewBox="0 0 1000 1800">
+                      <path 
+                        className="path-line-bauhaus" 
+                        d="M 500,1800 L 400,1400 L 600,1000 L 400,600 L 600,200 L 500,0" 
+                        fill="none" 
+                        stroke="#000000" 
+                        strokeWidth="8"
+                      />
+                    </svg>
 
-                        {/* Lecture Node Card */}
-                        <div className={`bg-white dark:bg-[#161B22] brutal-border p-4 sm:p-6 w-64 sm:w-72 max-w-[85vw] transition-transform ${
-                          isSelected 
-                            ? 'shadow-[12px_12px_0px_#000] rotate-0 bg-[#FFC107]/20 border-black' 
-                            : idx % 2 === 0 ? 'transform -rotate-2 hover:rotate-0' : 'transform rotate-2 hover:rotate-0'
-                        }`}>
-                          <div className="flex justify-between items-center mb-3 border-b-4 border-black pb-2">
-                            <p className="text-xs font-black uppercase tracking-widest bg-[#FFC107] text-black px-2 py-0.5 border-2 border-black">
-                              LECTURE {lec.lectureNumber < 10 ? `0${lec.lectureNumber}` : lec.lectureNumber}
-                            </p>
-                            <div className="flex items-center gap-1">
-                              <span className="text-xs font-extrabold flex items-center gap-1 border-2 border-black px-2 py-0.5 bg-black text-white dark:bg-[#FFC107] dark:text-black">
-                                <Timer className="w-3.5 h-3.5" /> {lec.duration || '45m'}
-                              </span>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (window.confirm(`Are you sure you want to delete lecture "${lec.title}"?`)) {
-                                    onDeleteLecture(lec.id);
-                                    if (selectedLectureDetail?.id === lec.id) {
-                                      setSelectedLectureDetail(null);
-                                    }
-                                  }
-                                }}
-                                title="Delete Lecture"
-                                className="p-1 bg-[#EF4444] text-white border-2 border-black hover:bg-red-700 transition-colors"
-                              >
-                                <Trash2 className="w-3.5 h-3.5 stroke-[3]" />
-                              </button>
+                    {/* Lecture Nodes Container */}
+                    <div className="relative w-full max-w-4xl flex flex-col items-center gap-16 sm:gap-28 z-10 my-auto px-4">
+
+                      {currentSubjectLectures.map((lec, idx) => {
+                        const isSelected = selectedLectureDetail?.id === lec.id;
+                        const isCompleted = lec.reviewed || lec.status === 'completed' || lec.status === 'generated';
+                        const isRecording = lec.status === 'recording' || lec.status === 'transcribing';
+
+                        // Responsive Node Offset positioning (Centered on mobile, offset on desktop)
+                        const alignments = ['sm:ml-[-220px] ml-0', 'sm:mr-[-280px] mr-0', 'sm:ml-[-120px] ml-0', 'sm:mr-[-180px] mr-0'];
+                        const alignmentClass = alignments[idx % alignments.length];
+
+                        return (
+                          <div
+                            key={lec.id}
+                            onClick={() => setSelectedLectureDetail(lec)}
+                            className={`relative group cursor-pointer ${alignmentClass} ${isSelected ? 'z-30 scale-105' : 'z-10'}`}
+                          >
+                            {/* Node Status Badge Indicator */}
+                            {isCompleted ? (
+                              <div className="absolute -left-4 -top-4 sm:-left-6 sm:-top-6 w-10 h-10 sm:w-12 sm:h-12 bg-[#FFC107] text-black brutal-border flex items-center justify-center z-20">
+                                <Check className="w-5 h-5 sm:w-7 sm:h-7 stroke-[4]" />
+                              </div>
+                            ) : isRecording ? (
+                              <div className="absolute -left-6 top-1/2 -translate-y-1/2 w-12 h-12 sm:w-16 sm:h-16 bg-[#FFC107] brutal-border rounded-full flex items-center justify-center animate-pulse z-20">
+                                <div className="w-4 h-4 sm:w-6 sm:h-6 bg-black rounded-full" />
+                              </div>
+                            ) : (
+                              <div className="absolute -left-4 -top-4 sm:-left-6 sm:-top-6 w-10 h-10 sm:w-12 sm:h-12 bg-white dark:bg-[#21262D] text-black dark:text-white brutal-border flex items-center justify-center z-20">
+                                <Lock className="w-4 h-4 sm:w-5 sm:h-5 stroke-[3]" />
+                              </div>
+                            )}
+
+                            {/* Lecture Node Card */}
+                            <div className={`bg-white dark:bg-[#161B22] brutal-border p-4 sm:p-6 w-64 sm:w-72 max-w-[85vw] transition-transform ${
+                              isSelected 
+                                ? 'shadow-[12px_12px_0px_#000] rotate-0 bg-[#FFC107]/20 border-black' 
+                                : idx % 2 === 0 ? 'transform -rotate-2 hover:rotate-0' : 'transform rotate-2 hover:rotate-0'
+                            }`}>
+                              <div className="flex justify-between items-center mb-3 border-b-4 border-black pb-2">
+                                <p className="text-xs font-black uppercase tracking-widest bg-[#FFC107] text-black px-2 py-0.5 border-2 border-black">
+                                  LECTURE {lec.lectureNumber < 10 ? `0${lec.lectureNumber}` : lec.lectureNumber}
+                                </p>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-xs font-extrabold flex items-center gap-1 border-2 border-black px-2 py-0.5 bg-black text-white dark:bg-[#FFC107] dark:text-black">
+                                    <Timer className="w-3.5 h-3.5" /> {lec.duration || '45m'}
+                                  </span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (window.confirm(`Are you sure you want to delete lecture "${lec.title}"?`)) {
+                                        onDeleteLecture(lec.id);
+                                        if (selectedLectureDetail?.id === lec.id) {
+                                          setSelectedLectureDetail(null);
+                                        }
+                                      }
+                                    }}
+                                    title="Delete Lecture"
+                                    className="p-1 bg-[#EF4444] text-white border-2 border-black hover:bg-red-700 transition-colors"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5 stroke-[3]" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              <h3 className="text-base font-black uppercase leading-tight mb-4 text-black dark:text-white">
+                                {lec.title}
+                              </h3>
+
+                              <div className="inline-flex items-center gap-2 bg-[#FFC107] text-black border-2 border-black px-3 py-1 font-black text-xs uppercase shadow-[2px_2px_0px_#000]">
+                                <Sparkles className="w-3.5 h-3.5 text-black" />
+                                <span>{isCompleted ? 'Synthesized' : isRecording ? 'Processing...' : 'Not Started'}</span>
+                              </div>
                             </div>
                           </div>
+                        );
+                      })}
 
-                          <h3 className="text-base font-black uppercase leading-tight mb-4 text-black dark:text-white">
-                            {lec.title}
-                          </h3>
+                      {/* End Node with Mascot Avatar & Add Button */}
+                      <div className="relative mt-16 flex flex-col items-center z-20">
+                        <div 
+                          onClick={() => setShowCreateLectureModal(true)}
+                          className="w-20 h-20 bg-white dark:bg-[#161B22] brutal-border rounded-full flex items-center justify-center mb-4 hover:bg-[#FFC107] transition-colors cursor-pointer group"
+                        >
+                          <Plus className="w-8 h-8 text-black dark:text-white group-hover:text-black stroke-[4] group-hover:scale-125 transition-transform" />
+                        </div>
 
-                          <div className="inline-flex items-center gap-2 bg-[#FFC107] text-black border-2 border-black px-3 py-1 font-black text-xs uppercase shadow-[2px_2px_0px_#000]">
-                            <Sparkles className="w-3.5 h-3.5 text-black" />
-                            <span>{isCompleted ? 'Synthesized' : isRecording ? 'Processing...' : 'Not Started'}</span>
+                        <div className="p-2 bg-[#FFC107] brutal-border transform rotate-6 flex items-center gap-3">
+                          <img 
+                            src="/mascots/mascot-owl.jpg" 
+                            alt="Mascot" 
+                            className="w-20 h-20 object-cover border-2 border-black grayscale contrast-125"
+                            onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                          />
+                          <div className="text-black pr-2">
+                            <div className="text-xs font-black uppercase">Scholar Owl</div>
+                            <div className="text-[10px] font-bold">"Click + to add Lecture {currentSubjectLectures.length + 1}!"</div>
                           </div>
                         </div>
                       </div>
-                    );
-                  })}
 
-                  {/* End Node with Mascot Avatar & Add Button */}
-                  <div className="relative mt-16 flex flex-col items-center z-20">
-                    <div 
-                      onClick={() => setShowCreateLectureModal(true)}
-                      className="w-20 h-20 bg-white dark:bg-[#161B22] brutal-border rounded-full flex items-center justify-center mb-4 hover:bg-[#FFC107] transition-colors cursor-pointer group"
-                    >
-                      <Plus className="w-8 h-8 text-black dark:text-white group-hover:text-black stroke-[4] group-hover:scale-125 transition-transform" />
                     </div>
-
-                    <div className="p-2 bg-[#FFC107] brutal-border transform rotate-6 flex items-center gap-3">
-                      <img 
-                        src="/mascots/mascot-owl.jpg" 
-                        alt="Mascot" 
-                        className="w-20 h-20 object-cover border-2 border-black grayscale contrast-125"
-                        onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                      />
-                      <div className="text-black pr-2">
-                        <div className="text-xs font-black uppercase">Scholar Owl</div>
-                        <div className="text-[10px] font-bold">"Click + to add Lecture {currentSubjectLectures.length + 1}!"</div>
-                      </div>
-                    </div>
-                  </div>
-
-                </div>
+                  </>
+                )}
 
               </div>
             </div>
