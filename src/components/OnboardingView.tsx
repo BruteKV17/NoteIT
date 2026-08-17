@@ -363,7 +363,7 @@ export default function OnboardingView({
   return (
     <div className="min-h-screen w-screen flex items-center justify-center p-4 relative overflow-y-auto font-sans bg-grid-paper text-[#111111] select-none">
       
-      <div className={`w-full transition-all duration-300 ${step === 4 ? 'max-w-6xl' : 'max-w-md'} p-4 sm:p-6 relative z-10`}>
+      <div className={`w-full transition-all duration-300 ${step === 4 ? 'max-w-7xl' : 'max-w-md'} p-4 sm:p-6 relative z-10`}>
         <header className="text-center mb-8 space-y-3">
           <div className="inline-flex h-12 w-12 items-center justify-center rounded-[6px] bg-[#FFC400] text-[#111111] border-2 border-[#111111] shadow-paper-sm">
             <GraduationCap className="h-6 w-6 text-[#111111]" />
@@ -543,7 +543,7 @@ export default function OnboardingView({
             {step === 4 && (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start text-left animate-fade-in">
                 
-                {/* LEFT SIDE: API KEY FILLING SECTION */}
+                {/* LEFT SIDE: 2 SEPARATE CARDS (AI SELECTION & API KEY INPUT) */}
                 <div className="lg:col-span-5 space-y-4">
                   <div className="border-b border-[#111111]/15 pb-2 mb-2">
                     <h3 className="text-sm font-black text-[#111111]">Configure Your AI Provider</h3>
@@ -552,237 +552,281 @@ export default function OnboardingView({
                     </p>
                   </div>
 
-                  {/* Searchable Dropdown */}
-                  <div className="space-y-1.5 relative">
-                    <label className="text-[10px] font-mono font-extrabold uppercase tracking-wider text-[#111111] block">
-                      Select Provider *
-                    </label>
-                    <div className="relative">
-                      <button
-                        type="button"
-                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                        className="w-full flex items-center justify-between rounded-xl border-2 border-[#111111] bg-white px-4 py-3 text-xs font-bold text-[#111111] shadow-paper-xs outline-none cursor-pointer transition-all hover:bg-[#F9F9F9]"
-                      >
-                        <span className="font-extrabold">{PROVIDER_METADATA[selectedProvider]?.name || 'Choose Provider...'}</span>
-                        <ChevronDown className="h-4 w-4 text-[#111111] stroke-[2.5]" />
-                      </button>
+                  {/* SEPARATE CARD 1: AI SELECTION & MODEL DETAILS */}
+                  <div className="p-4 sm:p-5 rounded-2xl border-2 border-black dark:border-slate-700 bg-white dark:bg-[#1E293B] space-y-4 shadow-paper-xs">
+                    <div className="flex items-center gap-2 border-b border-[#CBD5E1] dark:border-slate-700 pb-2">
+                      <span className="w-5 h-5 rounded-full bg-[#2563EB] text-white text-[10px] font-mono font-black inline-flex items-center justify-center">1</span>
+                      <h4 className="text-xs font-black uppercase text-black dark:text-white tracking-wide">
+                        Select AI Provider & Model
+                      </h4>
+                    </div>
 
-                      {isDropdownOpen && (
-                        <div className="absolute z-50 mt-1.5 w-full rounded-xl border-2 border-[#111111] bg-white text-[#111111] shadow-2xl p-2.5 space-y-2">
-                          <div className="relative">
-                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#555555]" />
-                            <input
-                              type="text"
-                              value={searchQuery}
-                              onChange={(e) => setSearchQuery(e.target.value)}
-                              placeholder="Search providers..."
-                              className="w-full rounded-lg border-2 border-[#111111] bg-[#F9F9F9] pl-8 pr-3 py-1.5 text-xs font-medium text-[#111111] placeholder-[#666666] outline-none"
-                            />
+                    {/* Searchable Dropdown */}
+                    <div className="space-y-1.5 relative">
+                      <label className="text-[10px] font-mono font-extrabold uppercase tracking-wider text-[#111111] dark:text-slate-300 block">
+                        Select Provider *
+                      </label>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                          className="w-full flex items-center justify-between rounded-xl border-2 border-[#111111] bg-[#F8FAFC] dark:bg-[#0D1117] px-4 py-3 text-xs font-bold text-[#111111] dark:text-white shadow-paper-xs outline-none cursor-pointer transition-all hover:bg-white"
+                        >
+                          <span className="font-extrabold">{PROVIDER_METADATA[selectedProvider]?.name || 'Choose Provider...'}</span>
+                          <ChevronDown className="h-4 w-4 text-[#111111] dark:text-white stroke-[2.5]" />
+                        </button>
+
+                        {isDropdownOpen && (
+                          <div className="absolute z-50 mt-1.5 w-full rounded-xl border-2 border-[#111111] bg-white text-[#111111] shadow-2xl p-2.5 space-y-2">
+                            <div className="relative">
+                              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#555555]" />
+                              <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Search providers..."
+                                className="w-full rounded-lg border-2 border-[#111111] bg-[#F9F9F9] pl-8 pr-3 py-1.5 text-xs font-medium text-[#111111] placeholder-[#666666] outline-none"
+                              />
+                            </div>
+                            <div className="max-h-48 overflow-y-auto space-y-0.5">
+                              {Object.entries(PROVIDER_METADATA)
+                                .filter(([_, meta]) => meta.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                                .map(([key, meta]) => (
+                                  <button
+                                    key={key}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedProvider(key);
+                                      setSelectedModel(meta.defaultModel);
+                                      setIsDropdownOpen(false);
+                                      setSearchQuery('');
+                                    }}
+                                    className={`w-full text-left px-3 py-2 rounded-lg text-xs flex items-center justify-between cursor-pointer transition-colors ${
+                                      selectedProvider === key
+                                        ? 'bg-[#FFC400]/25 text-[#111111] font-black border border-[#111111]'
+                                        : 'text-[#111111] hover:bg-[#F6F2EA] font-semibold'
+                                    }`}
+                                  >
+                                    <span>{meta.name}</span>
+                                    {selectedProvider === key && <Check className="h-3.5 w-3.5 stroke-[3] text-[#111111]" />}
+                                  </button>
+                                ))}
+                            </div>
                           </div>
-                          <div className="max-h-48 overflow-y-auto space-y-0.5">
-                            {Object.entries(PROVIDER_METADATA)
-                              .filter(([_, meta]) => meta.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                              .map(([key, meta]) => (
-                                <button
-                                  key={key}
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedProvider(key);
-                                    setSelectedModel(meta.defaultModel);
-                                    setIsDropdownOpen(false);
-                                    setSearchQuery('');
-                                  }}
-                                  className={`w-full text-left px-3 py-2 rounded-lg text-xs flex items-center justify-between cursor-pointer transition-colors ${
-                                    selectedProvider === key
-                                      ? 'bg-[#FFC400]/25 text-[#111111] font-black border border-[#111111]'
-                                      : 'text-[#111111] hover:bg-[#F6F2EA] font-semibold'
-                                  }`}
-                                >
-                                  <span>{meta.name}</span>
-                                  {selectedProvider === key && <Check className="h-3.5 w-3.5 stroke-[3] text-[#111111]" />}
-                                </button>
-                              ))}
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Selected Provider Details Sub-Card */}
+                    <div className="p-3.5 rounded-xl border-2 border-black dark:border-slate-700 bg-[#F8FAFC] dark:bg-[#0D1117] space-y-3 shadow-sm">
+                      <div>
+                        <h4 className="text-xs font-black text-[#1D4ED8] dark:text-[#60A5FA] uppercase tracking-wide">
+                          {PROVIDER_METADATA[selectedProvider]?.name}
+                        </h4>
+                        <p className="text-xs text-[#334155] dark:text-[#CBD5E1] font-bold mt-1 leading-relaxed">
+                          {PROVIDER_METADATA[selectedProvider]?.description}
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                        <div className="space-y-1">
+                          <span className="text-[10px] uppercase font-mono font-black text-[#475569] dark:text-[#94A3B8] tracking-wider block">
+                            Default Model
+                          </span>
+                          <div className="font-mono text-xs font-black text-white dark:text-[#FFC400] bg-[#0F172A] dark:bg-[#161B22] px-2.5 py-1.5 rounded-md border-2 border-black dark:border-amber-400/60 block w-full text-center truncate shadow-sm">
+                            {PROVIDER_METADATA[selectedProvider]?.defaultModel}
                           </div>
                         </div>
-                      )}
+                        
+                        <div className="space-y-1">
+                          <span className="text-[10px] uppercase font-mono font-black text-[#475569] dark:text-[#94A3B8] tracking-wider block">
+                            Choose Model
+                          </span>
+                          <select
+                            value={selectedModel}
+                            onChange={(e) => setSelectedModel(e.target.value)}
+                            className="w-full rounded-md border-2 border-black dark:border-amber-400/60 p-1.5 px-2 text-xs font-mono font-black bg-[#0F172A] dark:bg-[#161B22] text-white dark:text-[#FFC400] cursor-pointer focus:border-[#2F6BFF] outline-none truncate shadow-sm"
+                          >
+                            {PROVIDER_METADATA[selectedProvider]?.models.map(m => (
+                              <option key={m} value={m} className="bg-[#0F172A] text-white">{m}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2.5 pt-2 border-t border-[#CBD5E1] dark:border-slate-700">
+                        <a
+                          href={PROVIDER_METADATA[selectedProvider]?.getKeyLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-[11px] font-black text-[#1D4ED8] dark:text-[#60A5FA] hover:underline"
+                        >
+                          Get API Key <ExternalLink className="h-3 w-3" />
+                        </a>
+                        <span className="text-[#94A3B8]">•</span>
+                        <a
+                          href={PROVIDER_METADATA[selectedProvider]?.docLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-[11px] font-black text-[#334155] dark:text-[#E2E8F0] hover:underline"
+                        >
+                          Documentation <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Selected Provider Details */}
-                  <div className="p-4 rounded-xl border-2 border-black dark:border-slate-700 bg-[#F8FAFC] dark:bg-[#1E293B] space-y-3.5 shadow-paper-xs">
-                    <div>
-                      <h4 className="text-xs font-black text-[#1D4ED8] dark:text-[#60A5FA] uppercase tracking-wide">
-                        {PROVIDER_METADATA[selectedProvider]?.name}
+                  {/* SEPARATE CARD 2: API KEY INPUT & ENCRYPTION NOTICE */}
+                  <div className="p-4 sm:p-5 rounded-2xl border-2 border-black dark:border-slate-700 bg-white dark:bg-[#1E293B] space-y-4 shadow-paper-xs">
+                    <div className="flex items-center gap-2 border-b border-[#CBD5E1] dark:border-slate-700 pb-2">
+                      <span className="w-5 h-5 rounded-full bg-[#2563EB] text-white text-[10px] font-mono font-black inline-flex items-center justify-center">2</span>
+                      <h4 className="text-xs font-black uppercase text-black dark:text-white tracking-wide">
+                        Enter Secret API Key
                       </h4>
-                      <p className="text-xs text-[#334155] dark:text-[#CBD5E1] font-bold mt-1 leading-relaxed">
-                        {PROVIDER_METADATA[selectedProvider]?.description}
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-mono font-extrabold uppercase tracking-wider text-[#111111] dark:text-slate-300 block">
+                        API Key *
+                      </label>
+                      <input
+                        type="password"
+                        required
+                        value={apiKey}
+                        onChange={(e) => setApiKey(e.target.value)}
+                        placeholder={`Paste secret API key for ${PROVIDER_METADATA[selectedProvider]?.name}`}
+                        className="w-full rounded-xl border-2 border-[#111111] bg-[#F8FAFC] dark:bg-[#0D1117] px-4 py-3 text-xs font-mono font-bold text-[#111111] dark:text-white placeholder-[#777777] outline-none focus:border-[#2F6BFF] focus:bg-white transition-all"
+                      />
+                    </div>
+
+                    <div className="rounded-xl bg-[#EFF6FF] dark:bg-[#0F172A] border-2 border-[#3B82F6] p-3 flex gap-2.5 items-center shadow-sm">
+                      <Lock className="h-4 w-4 text-[#1D4ED8] dark:text-[#60A5FA] shrink-0" />
+                      <p className="text-[11px] font-bold leading-relaxed text-[#1E3A8A] dark:text-[#93C5FD]">
+                        Encrypted server-side using AES-256-GCM. Never exposed to the browser.
                       </p>
                     </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                      <div className="space-y-1">
-                        <span className="text-[10px] uppercase font-mono font-black text-[#475569] dark:text-[#94A3B8] tracking-wider block">
-                          Default Model
-                        </span>
-                        <div className="font-mono text-xs font-black text-white dark:text-[#FFC400] bg-[#0F172A] dark:bg-[#0D1117] px-3 py-1.5 rounded-md border-2 border-black dark:border-amber-400/60 block w-full text-center truncate shadow-sm">
-                          {PROVIDER_METADATA[selectedProvider]?.defaultModel}
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-1">
-                        <span className="text-[10px] uppercase font-mono font-black text-[#475569] dark:text-[#94A3B8] tracking-wider block">
-                          Choose Model
-                        </span>
-                        <select
-                          value={selectedModel}
-                          onChange={(e) => setSelectedModel(e.target.value)}
-                          className="w-full rounded-md border-2 border-black dark:border-amber-400/60 p-1.5 px-2.5 text-xs font-mono font-black bg-[#0F172A] dark:bg-[#0D1117] text-white dark:text-[#FFC400] cursor-pointer focus:border-[#2F6BFF] outline-none truncate shadow-sm"
-                        >
-                          {PROVIDER_METADATA[selectedProvider]?.models.map(m => (
-                            <option key={m} value={m} className="bg-[#0F172A] text-white">{m}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2.5 pt-2 border-t border-[#CBD5E1] dark:border-slate-700">
-                      <a
-                        href={PROVIDER_METADATA[selectedProvider]?.getKeyLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-[11px] font-black text-[#1D4ED8] dark:text-[#60A5FA] hover:underline"
-                      >
-                        Get API Key <ExternalLink className="h-3 w-3" />
-                      </a>
-                      <span className="text-[#94A3B8]">•</span>
-                      <a
-                        href={PROVIDER_METADATA[selectedProvider]?.docLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-[11px] font-black text-[#334155] dark:text-[#E2E8F0] hover:underline"
-                      >
-                        Documentation <ExternalLink className="h-3 w-3" />
-                      </a>
-                    </div>
-                  </div>
-
-                  {/* API Key Input */}
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-mono font-extrabold uppercase tracking-wider text-[#111111] block">
-                      API Key *
-                    </label>
-                    <input
-                      type="password"
-                      required
-                      value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
-                      placeholder={`Paste your secret API key for ${PROVIDER_METADATA[selectedProvider]?.name}`}
-                      className="w-full rounded-xl border-2 border-[#111111] bg-white px-4 py-3 text-xs font-mono font-bold text-[#111111] placeholder-[#777777] outline-none focus:border-[#2F6BFF] transition-all"
-                    />
-                  </div>
-
-                  <div className="rounded-xl bg-[#EFF6FF] border-2 border-[#3B82F6] p-3.5 mt-2 flex gap-2.5 items-center shadow-paper-xs">
-                    <Lock className="h-4 w-4 text-[#1D4ED8] shrink-0" />
-                    <p className="text-xs font-medium leading-relaxed text-[#1E3A8A]">
-                      Your key is securely encrypted server-side using AES-256-GCM and is never transmitted or exposed to the frontend.
-                    </p>
                   </div>
                 </div>
 
-                {/* RIGHT SIDE: ALL 4 STEP PHOTOS SEPARATELY & GOOD SIZED */}
-                <div className="lg:col-span-7 space-y-4 rounded-2xl border-2 border-black dark:border-slate-700 bg-[#F8FAFC] dark:bg-[#1E293B] p-4 sm:p-5 shadow-paper-xs max-h-[720px] overflow-y-auto pr-2 custom-scrollbar">
-                  <div className="flex items-center justify-between border-b border-[#CBD5E1] dark:border-slate-700 pb-3">
+                {/* RIGHT SIDE: 4 INDIVIDUAL SEPARATE STEP CARDS STACKED VERTICALLY */}
+                <div className="lg:col-span-7 space-y-5 max-h-[82vh] overflow-y-auto pr-2 custom-scrollbar">
+                  <div className="flex items-center justify-between border-b-2 border-black dark:border-slate-700 pb-3">
                     <div className="flex items-center gap-2.5">
                       <div className="p-2 bg-[#2563EB] text-white rounded-xl border border-black shadow-sm">
                         <Key className="h-5 w-5 stroke-[2.5]" />
                       </div>
                       <div>
                         <h3 className="text-sm font-black uppercase text-black dark:text-white tracking-wide">How to Get Your API Key</h3>
-                        <p className="text-xs font-bold text-slate-600 dark:text-slate-400">4 step visual roadmap — good-sized & easy to see</p>
+                        <p className="text-xs font-bold text-slate-600 dark:text-slate-400">4 individual step cards — large & 100% visible</p>
                       </div>
                     </div>
                     <span className="px-2.5 py-1 bg-[#FFC400] text-black border border-black text-xs font-mono font-black rounded-lg uppercase shadow-sm">
-                      4 Step Guide
+                      4 Step Cards
                     </span>
                   </div>
 
-                  {/* 4 SEPARATE LARGE CARDS SHOWCASING THE PHOTOS */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* STEP 1 */}
-                    <div 
-                      onClick={() => setSelectedGuideImage('/guides/api-key/step1.jpg')}
-                      className="rounded-xl border-2 border-black dark:border-slate-700 bg-white dark:bg-[#0D1117] p-3 space-y-2 shadow-sm hover:border-[#2563EB] transition-all cursor-pointer group flex flex-col justify-between"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="px-2.5 py-0.5 bg-[#2563EB] text-white text-[10px] font-mono font-black rounded-md border border-black">
+                  {/* SEPARATE STEP CARD 1 */}
+                  <div 
+                    onClick={() => setSelectedGuideImage('/guides/api-key/step1.jpg')}
+                    className="p-4 sm:p-5 rounded-2xl border-2 border-black dark:border-slate-700 bg-white dark:bg-[#1E293B] space-y-3 shadow-paper-xs hover:border-[#2563EB] transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2.5 py-1 bg-[#2563EB] text-white text-xs font-mono font-black rounded-md border border-black shadow-sm">
                           STEP 1
                         </span>
-                        <span className="text-[10px] font-mono font-bold text-slate-500 group-hover:text-[#2563EB]">Click to Expand 🔍</span>
+                        <h4 className="text-xs font-black uppercase text-black dark:text-white tracking-wide">
+                          Click "Get API Key" on Left Card
+                        </h4>
                       </div>
-                      <div className="rounded-lg border-2 border-black dark:border-slate-800 overflow-hidden bg-slate-950 h-44 sm:h-48 flex items-center justify-center p-1">
-                        <img src="/guides/api-key/step1.jpg" alt="Step 1" className="w-full h-full object-contain group-hover:scale-103 transition-transform" />
-                      </div>
-                      <p className="text-xs font-bold text-slate-900 dark:text-slate-100 leading-snug">
-                        1. Click <strong className="text-[#2563EB]">"Get API Key"</strong> under Provider Details on the left form.
-                      </p>
+                      <span className="text-xs font-mono font-bold text-slate-500 group-hover:text-[#2563EB]">Expand Fullscreen 🔍</span>
                     </div>
 
-                    {/* STEP 2 */}
-                    <div 
-                      onClick={() => setSelectedGuideImage('/guides/api-key/step2.png')}
-                      className="rounded-xl border-2 border-black dark:border-slate-700 bg-white dark:bg-[#0D1117] p-3 space-y-2 shadow-sm hover:border-[#2563EB] transition-all cursor-pointer group flex flex-col justify-between"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="px-2.5 py-0.5 bg-[#2563EB] text-white text-[10px] font-mono font-black rounded-md border border-black">
+                    <div className="rounded-xl border-2 border-black dark:border-slate-800 overflow-hidden bg-slate-950 h-64 sm:h-72 w-full flex items-center justify-center p-2">
+                      <img src="/guides/api-key/step1.jpg" alt="Step 1" className="w-full h-full object-contain group-hover:scale-102 transition-transform" />
+                    </div>
+
+                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-relaxed bg-[#F8FAFC] dark:bg-[#0D1117] p-3 rounded-xl border border-slate-300 dark:border-slate-800">
+                      Look at <strong className="text-[#2563EB]">Card 1 on the left side</strong> under Provider Details and click the blue <strong className="text-[#2563EB]">"Get API Key"</strong> link. This will open Google AI Studio in a new tab.
+                    </p>
+                  </div>
+
+                  {/* SEPARATE STEP CARD 2 */}
+                  <div 
+                    onClick={() => setSelectedGuideImage('/guides/api-key/step2.png')}
+                    className="p-4 sm:p-5 rounded-2xl border-2 border-black dark:border-slate-700 bg-white dark:bg-[#1E293B] space-y-3 shadow-paper-xs hover:border-[#2563EB] transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2.5 py-1 bg-[#2563EB] text-white text-xs font-mono font-black rounded-md border border-black shadow-sm">
                           STEP 2
                         </span>
-                        <span className="text-[10px] font-mono font-bold text-slate-500 group-hover:text-[#2563EB]">Click to Expand 🔍</span>
+                        <h4 className="text-xs font-black uppercase text-black dark:text-white tracking-wide">
+                          Click "Create API key" in Google AI Studio
+                        </h4>
                       </div>
-                      <div className="rounded-lg border-2 border-black dark:border-slate-800 overflow-hidden bg-slate-950 h-44 sm:h-48 flex items-center justify-center p-1">
-                        <img src="/guides/api-key/step2.png" alt="Step 2" className="w-full h-full object-contain group-hover:scale-103 transition-transform" />
-                      </div>
-                      <p className="text-xs font-bold text-slate-900 dark:text-slate-100 leading-snug">
-                        2. On Google AI Studio, click <strong className="text-[#2563EB]">"Create API key"</strong> button.
-                      </p>
+                      <span className="text-xs font-mono font-bold text-slate-500 group-hover:text-[#2563EB]">Expand Fullscreen 🔍</span>
                     </div>
 
-                    {/* STEP 3 */}
-                    <div 
-                      onClick={() => setSelectedGuideImage('/guides/api-key/step3.png')}
-                      className="rounded-xl border-2 border-black dark:border-slate-700 bg-white dark:bg-[#0D1117] p-3 space-y-2 shadow-sm hover:border-[#2563EB] transition-all cursor-pointer group flex flex-col justify-between"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="px-2.5 py-0.5 bg-[#2563EB] text-white text-[10px] font-mono font-black rounded-md border border-black">
+                    <div className="rounded-xl border-2 border-black dark:border-slate-800 overflow-hidden bg-slate-950 h-64 sm:h-72 w-full flex items-center justify-center p-2">
+                      <img src="/guides/api-key/step2.png" alt="Step 2" className="w-full h-full object-contain group-hover:scale-102 transition-transform" />
+                    </div>
+
+                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-relaxed bg-[#F8FAFC] dark:bg-[#0D1117] p-3 rounded-xl border border-slate-300 dark:border-slate-800">
+                      In your Google AI Studio dashboard, look for the blue <strong className="text-[#2563EB]">"Create API key"</strong> button in the top header and click it.
+                    </p>
+                  </div>
+
+                  {/* SEPARATE STEP CARD 3 */}
+                  <div 
+                    onClick={() => setSelectedGuideImage('/guides/api-key/step3.png')}
+                    className="p-4 sm:p-5 rounded-2xl border-2 border-black dark:border-slate-700 bg-white dark:bg-[#1E293B] space-y-3 shadow-paper-xs hover:border-[#2563EB] transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2.5 py-1 bg-[#2563EB] text-white text-xs font-mono font-black rounded-md border border-black shadow-sm">
                           STEP 3
                         </span>
-                        <span className="text-[10px] font-mono font-bold text-slate-500 group-hover:text-[#2563EB]">Click to Expand 🔍</span>
+                        <h4 className="text-xs font-black uppercase text-black dark:text-white tracking-wide">
+                          Confirm Project & Click "Create key"
+                        </h4>
                       </div>
-                      <div className="rounded-lg border-2 border-black dark:border-slate-800 overflow-hidden bg-slate-950 h-44 sm:h-48 flex items-center justify-center p-1">
-                        <img src="/guides/api-key/step3.png" alt="Step 3" className="w-full h-full object-contain group-hover:scale-103 transition-transform" />
-                      </div>
-                      <p className="text-xs font-bold text-slate-900 dark:text-slate-100 leading-snug">
-                        3. Enter key name & click blue <strong className="text-[#2563EB]">"Create key"</strong> button.
-                      </p>
+                      <span className="text-xs font-mono font-bold text-slate-500 group-hover:text-[#2563EB]">Expand Fullscreen 🔍</span>
                     </div>
 
-                    {/* STEP 4 */}
-                    <div 
-                      onClick={() => setSelectedGuideImage('/guides/api-key/step4.png')}
-                      className="rounded-xl border-2 border-black dark:border-slate-700 bg-white dark:bg-[#0D1117] p-3 space-y-2 shadow-sm hover:border-[#2563EB] transition-all cursor-pointer group flex flex-col justify-between"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="px-2.5 py-0.5 bg-[#2563EB] text-white text-[10px] font-mono font-black rounded-md border border-black">
+                    <div className="rounded-xl border-2 border-black dark:border-slate-800 overflow-hidden bg-slate-950 h-64 sm:h-72 w-full flex items-center justify-center p-2">
+                      <img src="/guides/api-key/step3.png" alt="Step 3" className="w-full h-full object-contain group-hover:scale-102 transition-transform" />
+                    </div>
+
+                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-relaxed bg-[#F8FAFC] dark:bg-[#0D1117] p-3 rounded-xl border border-slate-300 dark:border-slate-800">
+                      In the key creation popup, type a key name (e.g. NoteIT AI Key), select your project, and click the blue <strong className="text-[#2563EB]">"Create key"</strong> button.
+                    </p>
+                  </div>
+
+                  {/* SEPARATE STEP CARD 4 */}
+                  <div 
+                    onClick={() => setSelectedGuideImage('/guides/api-key/step4.png')}
+                    className="p-4 sm:p-5 rounded-2xl border-2 border-black dark:border-slate-700 bg-white dark:bg-[#1E293B] space-y-3 shadow-paper-xs hover:border-[#2563EB] transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2.5 py-1 bg-[#2563EB] text-white text-xs font-mono font-black rounded-md border border-black shadow-sm">
                           STEP 4
                         </span>
-                        <span className="text-[10px] font-mono font-bold text-slate-500 group-hover:text-[#2563EB]">Click to Expand 🔍</span>
+                        <h4 className="text-xs font-black uppercase text-black dark:text-white tracking-wide">
+                          Click "Copy key" & Paste on Left
+                        </h4>
                       </div>
-                      <div className="rounded-lg border-2 border-black dark:border-slate-800 overflow-hidden bg-slate-950 h-44 sm:h-48 flex items-center justify-center p-1">
-                        <img src="/guides/api-key/step4.png" alt="Step 4" className="w-full h-full object-contain group-hover:scale-103 transition-transform" />
-                      </div>
-                      <p className="text-xs font-bold text-slate-900 dark:text-slate-100 leading-snug">
-                        4. Click <strong className="text-[#2563EB]">"Copy key"</strong> & paste into the left form!
-                      </p>
+                      <span className="text-xs font-mono font-bold text-slate-500 group-hover:text-[#2563EB]">Expand Fullscreen 🔍</span>
                     </div>
+
+                    <div className="rounded-xl border-2 border-black dark:border-slate-800 overflow-hidden bg-slate-950 h-64 sm:h-72 w-full flex items-center justify-center p-2">
+                      <img src="/guides/api-key/step4.png" alt="Step 4" className="w-full h-full object-contain group-hover:scale-102 transition-transform" />
+                    </div>
+
+                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-relaxed bg-[#F8FAFC] dark:bg-[#0D1117] p-3 rounded-xl border border-slate-300 dark:border-slate-800">
+                      Click the blue <strong className="text-[#2563EB]">"Copy key"</strong> button to copy your secret key to clipboard, return to NoteIT AI, paste it into <strong className="text-[#2563EB]">Card 2 on the left</strong>, and click <strong className="text-[#2563EB]">"Complete Setup"</strong>!
+                    </p>
                   </div>
 
                   <div className="p-3 bg-amber-500/10 rounded-xl border border-amber-400/50 flex items-center gap-2 text-xs font-mono font-bold text-amber-900 dark:text-amber-300">
