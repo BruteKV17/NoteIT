@@ -2643,11 +2643,6 @@ export default function LectureCaptureView({
                       fallbackImg="/mascots/mascot-celebrate.png"
                       className="w-48 h-48 sm:w-60 sm:h-60 group-hover:scale-105 transition-transform"
                     />
-
-                    <div className="mt-2 px-3.5 py-1.5 rounded-full bg-[#FF4D4D] border-2 border-[#111111] text-white text-[10px] font-mono font-black uppercase tracking-wider flex items-center gap-2 shadow-paper-xs">
-                      <span className="h-2 w-2 rounded-full bg-white animate-ping" />
-                      <span>RECORDING LIVE • CLICK MASCOT TO STOP</span>
-                    </div>
                   </div>
                 ) : (
                   <button
@@ -2671,19 +2666,6 @@ export default function LectureCaptureView({
                   <Clock className="h-5 w-5 text-[var(--text-primary)]" />
                   <span>{formatTimerDisplay(seconds)}</span>
                 </div>
-
-                {isRecording && (
-                  <button
-                    type="button"
-                    onClick={() => setAutoDimEnabled(!autoDimEnabled)}
-                    className={`mt-1 px-3 py-1 rounded-full border-2 border-[var(--border-main)] font-mono text-[10px] font-extrabold transition-all shadow-paper-xs inline-flex items-center gap-1.5 cursor-pointer ${
-                      autoDimEnabled ? 'bg-[#111111] text-[#FFC400]' : 'bg-[var(--card-bg)] text-[var(--text-secondary)]'
-                    }`}
-                  >
-                    <span>🌙</span>
-                    <span>{autoDimEnabled ? 'AUTO-DIM: ON (Fades when untouched)' : 'AUTO-DIM: OFF'}</span>
-                  </button>
-                )}
               </div>
 
               {/* Action buttons controls Row */}
