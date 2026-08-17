@@ -91,7 +91,7 @@ export default function LectureCaptureView({
   
   // Hook up user subjects from Academic Library
   const { subjects } = useSubjects(auth.currentUser?.uid);
-  const [captureDestination, setCaptureDestination] = useState<'map' | 'saved'>('map');
+  const [captureDestination, setCaptureDestination] = useState<'map' | 'saved' | null>(null);
 
   // Lecture Metadata inputs
   const [lectureTitle, setLectureTitle] = useState('');
@@ -514,6 +514,11 @@ export default function LectureCaptureView({
     setLiveTranscript('');
     accumulatedTranscriptRef.current = '';
     liveTranscriptRef.current = '';
+    
+    if (!captureDestination) {
+      setCaptureDestination('map');
+      if (subjects.length > 0) setLectureSubject(subjects[0].name);
+    }
     
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -2543,51 +2548,53 @@ export default function LectureCaptureView({
                     className="w-full rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] text-xs font-mono font-bold p-3 outline-none shadow-paper-sm disabled:bg-[var(--panel-bg)] disabled:cursor-not-allowed"
                   />
                 </div>
-                {/* 1. Destination Section Selector */}
-                <div>
-                  <label className="block text-xs font-mono font-extrabold text-[var(--text-primary)] uppercase tracking-wider mb-1.5">
-                    1. LIBRARY SECTION
-                  </label>
-                  <div className="grid grid-cols-2 gap-2 p-1 rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--panel-bg)]">
-                    <button
-                      type="button"
-                      disabled={isRecording}
-                      onClick={() => {
-                        setCaptureDestination('map');
-                        if (subjects.length > 0) setLectureSubject(subjects[0].name);
-                      }}
-                      className={`py-2 px-3 rounded-[4px] text-xs font-mono font-extrabold transition-all flex items-center justify-center gap-1.5 ${
-                        captureDestination === 'map'
-                          ? 'bg-[#FFC400] text-[#111111] shadow-paper-sm border border-black'
-                          : 'text-[var(--text-primary)] opacity-70 hover:opacity-100 hover:bg-[var(--card-bg)]'
-                      }`}
-                    >
-                      <span>🗺️</span> SUBJECT MAP
-                    </button>
-                    <button
-                      type="button"
-                      disabled={isRecording}
-                      onClick={() => {
-                        setCaptureDestination('saved');
-                        setLectureSubject('General');
-                      }}
-                      className={`py-2 px-3 rounded-[4px] text-xs font-mono font-extrabold transition-all flex items-center justify-center gap-1.5 ${
-                        captureDestination === 'saved'
-                          ? 'bg-[#FFC400] text-[#111111] shadow-paper-sm border border-black'
-                          : 'text-[var(--text-primary)] opacity-70 hover:opacity-100 hover:bg-[var(--card-bg)]'
-                      }`}
-                    >
-                      <span>📁</span> ACADEMIC SAVED
-                    </button>
+                {/* Destination Selector vs Active Selection Display */}
+                {captureDestination === null ? (
+                  <div>
+                    <label className="block text-xs font-mono font-extrabold text-[var(--text-primary)] uppercase tracking-wider mb-1.5">
+                      SELECT DESTINATION
+                    </label>
+                    <div className="grid grid-cols-2 gap-2 p-1 rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--panel-bg)]">
+                      <button
+                        type="button"
+                        disabled={isRecording}
+                        onClick={() => {
+                          setCaptureDestination('map');
+                          if (subjects.length > 0) setLectureSubject(subjects[0].name);
+                        }}
+                        className="py-2.5 px-3 rounded-[4px] text-xs font-mono font-extrabold transition-all flex items-center justify-center gap-1.5 bg-[var(--card-bg)] text-[var(--text-primary)] border-2 border-[var(--border-main)] hover:bg-[#FFC400] hover:text-black hover:border-black shadow-paper-xs cursor-pointer"
+                      >
+                        <span>🗺️</span> SUBJECT MAP
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isRecording}
+                        onClick={() => {
+                          setCaptureDestination('saved');
+                          setLectureSubject('General');
+                        }}
+                        className="py-2.5 px-3 rounded-[4px] text-xs font-mono font-extrabold transition-all flex items-center justify-center gap-1.5 bg-[var(--card-bg)] text-[var(--text-primary)] border-2 border-[var(--border-main)] hover:bg-[#FFC400] hover:text-black hover:border-black shadow-paper-xs cursor-pointer"
+                      >
+                        <span>📁</span> ACADEMIC SAVED
+                      </button>
+                    </div>
                   </div>
-                </div>
-
-                {/* 2. Subject Selection Dropdown */}
-                <div>
-                  <label className="block text-xs font-mono font-extrabold text-[var(--text-primary)] uppercase tracking-wider mb-1">
-                    2. {captureDestination === 'map' ? 'SELECT SUBJECT MAP' : 'SELECT CATEGORY'}
-                  </label>
-                  {captureDestination === 'map' ? (
+                ) : captureDestination === 'map' ? (
+                  /* Choice buttons disappear -> Subject selection appears directly */
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-mono font-extrabold text-[var(--text-primary)] uppercase tracking-wider">
+                        SELECT SUBJECT MAP
+                      </label>
+                      <button
+                        type="button"
+                        disabled={isRecording}
+                        onClick={() => setCaptureDestination(null)}
+                        className="text-[10px] font-mono font-extrabold text-amber-500 hover:underline cursor-pointer"
+                      >
+                        Change
+                      </button>
+                    </div>
                     <select
                       disabled={isRecording}
                       value={lectureSubject}
@@ -2601,24 +2608,24 @@ export default function LectureCaptureView({
                         </option>
                       ))}
                     </select>
-                  ) : (
-                    <select
+                  </div>
+                ) : (
+                  /* Choice buttons disappear -> Academic saved selected, nothing else appears */
+                  <div className="flex items-center justify-between p-2.5 rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--panel-bg)]">
+                    <div className="flex items-center gap-2 text-xs font-mono font-extrabold text-[var(--text-primary)]">
+                      <span className="text-base">📁</span>
+                      <span>DESTINATION: ACADEMIC SAVED</span>
+                    </div>
+                    <button
+                      type="button"
                       disabled={isRecording}
-                      value={lectureSubject}
-                      onChange={(e) => setLectureSubject(e.target.value)}
-                      style={{ color: 'var(--text-primary)' }}
-                      className="w-full rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] text-xs font-mono font-bold p-3 outline-none shadow-paper-sm disabled:bg-[var(--panel-bg)] disabled:cursor-not-allowed cursor-pointer"
+                      onClick={() => setCaptureDestination(null)}
+                      className="text-[10px] font-mono font-extrabold text-amber-500 hover:underline cursor-pointer"
                     >
-                      <option value="General" className="bg-[var(--card-bg)] text-[var(--text-primary)] font-bold">General Academic Saved</option>
-                      <option value="Computer Science" className="bg-[var(--card-bg)] text-[var(--text-primary)] font-bold">Computer Science</option>
-                      <option value="Physics" className="bg-[var(--card-bg)] text-[var(--text-primary)] font-bold">Physics</option>
-                      <option value="Chemistry" className="bg-[var(--card-bg)] text-[var(--text-primary)] font-bold">Chemistry</option>
-                      <option value="Mathematics" className="bg-[var(--card-bg)] text-[var(--text-primary)] font-bold">Mathematics</option>
-                      <option value="Philosophy" className="bg-[var(--card-bg)] text-[var(--text-primary)] font-bold">Philosophy</option>
-                      <option value="Economics" className="bg-[var(--card-bg)] text-[var(--text-primary)] font-bold">Economics</option>
-                    </select>
-                  )}
-                </div>
+                      Change
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Dynamic mascot video / microphone container */}
