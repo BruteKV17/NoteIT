@@ -638,12 +638,12 @@ export default function LibraryView({
                         onClick={() => {
                           if (setActiveLectureId) setActiveLectureId(selectedLectureDetail.id);
                           setSelectedLectureDetail(null);
-                          setActivePage('knowledge-studio');
+                          setActivePage('lecture-capture');
                         }}
                         className="w-full bg-[#FFC107] text-black font-black uppercase text-sm py-3.5 brutal-border flex items-center justify-center gap-2 hover:bg-[#FFD54F] transition-transform cursor-pointer"
                       >
                         <BookOpen className="w-5 h-5 stroke-[3]" />
-                        OPEN NOTES & STUDIO
+                        OPEN LECTURE NOTES
                       </button>
 
                       <button
@@ -672,7 +672,7 @@ export default function LibraryView({
                       onClick={() => {
                         if (setActiveLectureId) setActiveLectureId(selectedLectureDetail.id);
                         setSelectedLectureDetail(null);
-                        setActivePage('knowledge-studio');
+                        setActivePage('lecture-capture');
                       }}
                       className="w-full flex items-center p-3.5 bg-white dark:bg-[#161B22] brutal-border hover:bg-[#FFC107] hover:text-black transition-colors group text-left"
                     >
@@ -691,7 +691,7 @@ export default function LibraryView({
                       onClick={() => {
                         if (setActiveLectureId) setActiveLectureId(selectedLectureDetail.id);
                         setSelectedLectureDetail(null);
-                        setActivePage('knowledge-studio');
+                        setActivePage('lecture-capture');
                       }}
                       className="w-full flex items-center p-3.5 bg-white dark:bg-[#161B22] brutal-border hover:bg-[#FFC107] hover:text-black transition-colors group text-left"
                     >
@@ -824,11 +824,11 @@ export default function LibraryView({
                     <button
                       onClick={() => {
                         if (setActiveLectureId) setActiveLectureId(lec.id);
-                        setActivePage('knowledge-studio');
+                        setActivePage('lecture-capture');
                       }}
                       className="text-xs font-black uppercase text-black dark:text-white hover:text-[#FFC107] flex items-center gap-1"
                     >
-                      OPEN STUDIO <ArrowRight className="w-3.5 h-3.5 stroke-[3]" />
+                      OPEN LECTURE NOTES <ArrowRight className="w-3.5 h-3.5 stroke-[3]" />
                     </button>
                   </div>
                 </div>

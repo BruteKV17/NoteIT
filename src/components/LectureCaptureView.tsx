@@ -97,6 +97,18 @@ export default function LectureCaptureView({
   const [lectureTitle, setLectureTitle] = useState('');
   const [lectureSubject, setLectureSubject] = useState('Data Structures');
 
+  // Auto-sync active lecture details when opened from Academic Library
+  useEffect(() => {
+    if (!activeLectureId || !lectures || lectures.length === 0) return;
+    const match = lectures.find((l: any) => l.id === activeLectureId);
+    if (match) {
+      if (match.title) setLectureTitle(match.title);
+      if (match.subject) setLectureSubject(match.subject);
+      if (match.transcript) setLiveTranscript(match.transcript);
+      setCaptureDestination('map');
+    }
+  }, [activeLectureId, lectures]);
+
   useEffect(() => {
     if (captureDestination === 'map' && subjects.length > 0) {
       if (!subjects.some(s => s.name.toLowerCase() === lectureSubject.toLowerCase())) {
