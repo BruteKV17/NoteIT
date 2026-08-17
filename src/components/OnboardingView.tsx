@@ -361,25 +361,12 @@ export default function OnboardingView({
   const isDark = theme === 'dark';
 
   return (
-    <div className="min-h-screen w-screen flex items-center justify-center p-4 relative overflow-y-auto font-sans bg-grid-paper text-[#111111] select-none">
+    <div className="h-screen w-screen flex items-center justify-center p-3 sm:p-4 relative overflow-hidden font-sans bg-grid-paper text-[#111111] select-none">
       
-      <div className={`w-full transition-all duration-300 ${step === 4 ? 'max-w-7xl' : 'max-w-md'} p-4 sm:p-6 relative z-10`}>
-        <header className="text-center mb-8 space-y-3">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-[6px] bg-[#FFC400] text-[#111111] border-2 border-[#111111] shadow-paper-sm">
-            <GraduationCap className="h-6 w-6 text-[#111111]" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-heading font-extrabold tracking-tight uppercase text-[#111111]">
-              WELCOME TO NOTEIT AI
-            </h2>
-            <p className="text-xs font-mono text-[#666666] mt-1.5 leading-relaxed max-w-xs mx-auto">
-              Let's set up your cognitive scholar workspace in a few simple steps.
-            </p>
-          </div>
-        </header>
+      <div className={`w-full h-full max-h-[96vh] flex flex-col justify-between transition-all duration-300 ${step === 4 ? 'max-w-7xl' : 'max-w-md'} relative z-10`}>
 
         {/* Main Card */}
-        <div className="rounded-[6px] border-2 border-[#111111] bg-white p-6 md:p-8 space-y-6 shadow-paper-lg">
+        <div className="rounded-2xl border-2 border-[#111111] bg-white dark:bg-[#161B22] p-4 sm:p-5 shadow-paper-lg h-full flex flex-col justify-between overflow-hidden flex-1">
           {/* Step Progress Indicator */}
           <div className="flex items-center justify-between mb-6">
             {[1, 2, 3, 4].map((s) => (
@@ -408,7 +395,7 @@ export default function OnboardingView({
           )}
 
           {/* Form */}
-          <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
+          <form onSubmit={(e) => e.preventDefault()} className="flex-1 flex flex-col justify-between overflow-hidden space-y-3 mt-2">
             
             {step === 1 && (
               <div className="space-y-4 animate-fade-in text-left">
@@ -541,13 +528,13 @@ export default function OnboardingView({
             )}
 
             {step === 4 && (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start text-left animate-fade-in">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start text-left animate-fade-in flex-1 overflow-hidden min-h-0">
                 
                 {/* LEFT SIDE: 2 SEPARATE CARDS (AI SELECTION & API KEY INPUT) */}
-                <div className="lg:col-span-5 space-y-4">
-                  <div className="border-b border-[#111111]/15 pb-2 mb-2">
-                    <h3 className="text-sm font-black text-[#111111]">Configure Your AI Provider</h3>
-                    <p className="text-xs text-[#333333] font-medium mt-0.5 leading-relaxed">
+                <div className="lg:col-span-5 space-y-3 overflow-y-auto max-h-[66vh] pr-1.5 custom-scrollbar">
+                  <div className="border-b border-[#111111]/15 pb-1.5 mb-1">
+                    <h3 className="text-xs sm:text-sm font-black text-[#111111] dark:text-white">Configure Your AI Provider</h3>
+                    <p className="text-[11px] text-[#333333] dark:text-slate-400 font-medium mt-0.5 leading-tight">
                       Bring Your Own Key (BYOK) - connect and validate your preferred LLM provider.
                     </p>
                   </div>
@@ -709,18 +696,18 @@ export default function OnboardingView({
                 </div>
 
                 {/* RIGHT SIDE: 4 INDIVIDUAL SEPARATE STEP CARDS STACKED VERTICALLY */}
-                <div className="lg:col-span-7 space-y-5 max-h-[82vh] overflow-y-auto pr-2 custom-scrollbar">
-                  <div className="flex items-center justify-between border-b-2 border-black dark:border-slate-700 pb-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="p-2 bg-[#2563EB] text-white rounded-xl border border-black shadow-sm">
-                        <Key className="h-5 w-5 stroke-[2.5]" />
+                <div className="lg:col-span-7 space-y-4 max-h-[66vh] overflow-y-auto pr-1.5 custom-scrollbar">
+                  <div className="flex items-center justify-between border-b-2 border-black dark:border-slate-700 pb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 bg-[#2563EB] text-white rounded-lg border border-black shadow-sm">
+                        <Key className="h-4 w-4 stroke-[2.5]" />
                       </div>
                       <div>
-                        <h3 className="text-sm font-black uppercase text-black dark:text-white tracking-wide">How to Get Your API Key</h3>
-                        <p className="text-xs font-bold text-slate-600 dark:text-slate-400">4 individual step cards — large & 100% visible</p>
+                        <h3 className="text-xs font-black uppercase text-black dark:text-white tracking-wide">How to Get Your API Key</h3>
+                        <p className="text-[11px] font-bold text-slate-600 dark:text-slate-400">4 individual step cards — large & 100% visible</p>
                       </div>
                     </div>
-                    <span className="px-2.5 py-1 bg-[#FFC400] text-black border border-black text-xs font-mono font-black rounded-lg uppercase shadow-sm">
+                    <span className="px-2 py-0.5 bg-[#FFC400] text-black border border-black text-[10px] font-mono font-black rounded uppercase shadow-sm">
                       4 Step Cards
                     </span>
                   </div>
@@ -839,7 +826,7 @@ export default function OnboardingView({
             )}
 
             {/* Buttons Navigation bar */}
-            <div className="flex gap-3 pt-4 border-t border-[#111111]/15">
+            <div className="flex gap-3 pt-3 border-t border-[#111111]/15 mt-auto shrink-0">
               {step > 1 && (
                 <button
                   type="button"
