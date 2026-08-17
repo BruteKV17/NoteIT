@@ -13,7 +13,8 @@ import {
   ExternalLink,
   Lock,
   Key,
-  Lightbulb
+  Lightbulb,
+  X
 } from 'lucide-react';
 import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebaseConfig';
@@ -152,7 +153,7 @@ export default function OnboardingView({
   const [selectedModel, setSelectedModel] = useState('gemini-3.6-flash');
   const [searchQuery, setSearchQuery] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [guideStep, setGuideStep] = useState<number>(1);
+  const [selectedGuideImage, setSelectedGuideImage] = useState<string | null>(null);
   const [isValidatingKey, setIsValidatingKey] = useState(false);
   const [validationSuccess, setValidationSuccess] = useState(false);
 
@@ -688,100 +689,105 @@ export default function OnboardingView({
                   </div>
                 </div>
 
-                {/* RIGHT SIDE: STEP-BY-STEP VISUAL GUIDE */}
-                <div className="lg:col-span-6 space-y-4 rounded-xl border-2 border-black dark:border-slate-700 bg-[#F8FAFC] dark:bg-[#1E293B] p-4 shadow-paper-xs">
-                  <div className="flex items-center justify-between border-b border-[#CBD5E1] dark:border-slate-700 pb-3">
+                {/* RIGHT SIDE: ALL 4 STEP PHOTOS VISIBLE AT ONCE IN 2x2 GRID */}
+                <div className="lg:col-span-6 space-y-3 rounded-xl border-2 border-black dark:border-slate-700 bg-[#F8FAFC] dark:bg-[#1E293B] p-4 shadow-paper-xs">
+                  <div className="flex items-center justify-between border-b border-[#CBD5E1] dark:border-slate-700 pb-2">
                     <div className="flex items-center gap-2">
                       <div className="p-1.5 bg-[#2563EB] text-white rounded-lg border border-black shadow-sm">
                         <Key className="h-4 w-4 stroke-[2.5]" />
                       </div>
                       <div>
                         <h3 className="text-xs font-black uppercase text-black dark:text-white tracking-wide">How to Get Your API Key</h3>
-                        <p className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Step-by-step visual guide for {PROVIDER_METADATA[selectedProvider]?.name || 'Google Gemini'}</p>
+                        <p className="text-[11px] font-bold text-slate-600 dark:text-slate-400">All 4 steps visible at once for easy setup</p>
                       </div>
                     </div>
                     <span className="px-2 py-0.5 bg-[#FFC400] text-black border border-black text-[10px] font-mono font-black rounded uppercase">
-                      Step {guideStep} of 5
+                      4 Steps Guide
                     </span>
                   </div>
 
-                  {/* STEP INDICATOR TABS */}
-                  <div className="flex items-center gap-1 overflow-x-auto pb-1">
-                    {[1, 2, 3, 4, 5].map((sNum) => (
-                      <button
-                        key={sNum}
-                        type="button"
-                        onClick={() => setGuideStep(sNum)}
-                        className={`flex-1 min-w-[52px] py-1.5 px-2 rounded-md border border-black font-mono text-[10px] font-black uppercase text-center cursor-pointer transition-all ${
-                          guideStep === sNum
-                            ? 'bg-[#2563EB] text-white shadow-paper-xs scale-105'
-                            : 'bg-white dark:bg-[#0D1117] text-black dark:text-white hover:bg-slate-100'
-                        }`}
-                      >
-                        Step {sNum}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* STEP IMAGE PREVIEW CARD */}
-                  <div className="relative rounded-lg border-2 border-black dark:border-slate-700 overflow-hidden bg-black shadow-md">
-                    <img
-                      src={
-                        guideStep === 1 ? '/guides/api-key/step1.jpg' :
-                        guideStep === 2 ? '/guides/api-key/step2.png' :
-                        guideStep === 3 ? '/guides/api-key/step3.png' :
-                        guideStep === 4 ? '/guides/api-key/step4.png' :
-                        '/guides/api-key/step5.jpg'
-                      }
-                      alt={`Step ${guideStep} Guide`}
-                      className="w-full h-48 sm:h-56 object-cover object-top border-b border-black"
-                    />
-                  </div>
-
-                  {/* STEP DESCRIPTION BOX */}
-                  <div className="p-3 bg-white dark:bg-[#0D1117] rounded-lg border-2 border-black dark:border-slate-700 space-y-1.5 text-left">
-                    <h4 className="text-xs font-black uppercase text-[#2563EB] dark:text-[#60A5FA] flex items-center gap-1.5">
-                      <span className="w-5 h-5 rounded-full bg-[#2563EB] text-white text-[10px] font-mono font-bold inline-flex items-center justify-center">
-                        {guideStep}
-                      </span>
-                      <span>
-                        {guideStep === 1 && 'Click on "Get API Key"'}
-                        {guideStep === 2 && 'Click on "Create API key"'}
-                        {guideStep === 3 && 'Confirm Project & Click "Create key"'}
-                        {guideStep === 4 && 'Click on "Copy key"'}
-                        {guideStep === 5 && 'Paste API Key & Complete Setup'}
-                      </span>
-                    </h4>
-                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-relaxed pl-6">
-                      {guideStep === 1 && 'Look under Provider Details on the left and click the "Get API Key" link to open Google AI Studio.'}
-                      {guideStep === 2 && 'In Google AI Studio dashboard, look for the "Create API key" button at top right and click it.'}
-                      {guideStep === 3 && 'Enter a name for your key (e.g. NoteIT Key), select your project, and click "Create key".'}
-                      {guideStep === 4 && 'Click the blue "Copy key" button to copy your generated secret key to clipboard.'}
-                      {guideStep === 5 && 'Return here, paste your API key into the "API Key *" field on the left, and click "Complete Setup"!'}
-                    </p>
-                  </div>
-
-                  {/* STEP NAVIGATION BUTTONS */}
-                  <div className="flex items-center justify-between pt-1">
-                    <button
-                      type="button"
-                      disabled={guideStep === 1}
-                      onClick={() => setGuideStep(prev => Math.max(1, prev - 1))}
-                      className="px-3 py-1.5 rounded-md border border-black bg-white dark:bg-[#0D1117] text-black dark:text-white font-mono text-[10px] font-black uppercase disabled:opacity-40 cursor-pointer hover:bg-slate-100"
+                  {/* 2x2 GRID SHOWCASING ALL 4 STEP IMAGES SIMULTANEOUSLY */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* STEP 1 */}
+                    <div 
+                      onClick={() => setSelectedGuideImage('/guides/api-key/step1.jpg')}
+                      className="rounded-lg border-2 border-black dark:border-slate-700 bg-white dark:bg-[#0D1117] p-2 space-y-1.5 shadow-sm hover:border-[#2563EB] transition-all cursor-pointer group"
                     >
-                      ← Prev Step
-                    </button>
-                    <span className="text-[10px] font-mono font-bold text-slate-500 hidden sm:inline">
-                      Tip: Follow all 5 steps to generate key
-                    </span>
-                    <button
-                      type="button"
-                      disabled={guideStep === 5}
-                      onClick={() => setGuideStep(prev => Math.min(5, prev + 1))}
-                      className="px-3 py-1.5 rounded-md border border-black bg-[#2563EB] text-white font-mono text-[10px] font-black uppercase disabled:opacity-40 cursor-pointer hover:bg-blue-700"
+                      <div className="flex items-center justify-between">
+                        <span className="px-2 py-0.5 bg-[#2563EB] text-white text-[9px] font-mono font-black rounded border border-black">
+                          STEP 1
+                        </span>
+                        <span className="text-[9px] font-mono font-bold text-slate-500 group-hover:text-[#2563EB]">Zoom 🔍</span>
+                      </div>
+                      <div className="rounded border border-slate-300 dark:border-slate-700 overflow-hidden bg-black h-28">
+                        <img src="/guides/api-key/step1.jpg" alt="Step 1" className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform" />
+                      </div>
+                      <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200 leading-tight">
+                        1. Click <strong className="text-[#2563EB]">"Get API Key"</strong> on left.
+                      </p>
+                    </div>
+
+                    {/* STEP 2 */}
+                    <div 
+                      onClick={() => setSelectedGuideImage('/guides/api-key/step2.png')}
+                      className="rounded-lg border-2 border-black dark:border-slate-700 bg-white dark:bg-[#0D1117] p-2 space-y-1.5 shadow-sm hover:border-[#2563EB] transition-all cursor-pointer group"
                     >
-                      Next Step →
-                    </button>
+                      <div className="flex items-center justify-between">
+                        <span className="px-2 py-0.5 bg-[#2563EB] text-white text-[9px] font-mono font-black rounded border border-black">
+                          STEP 2
+                        </span>
+                        <span className="text-[9px] font-mono font-bold text-slate-500 group-hover:text-[#2563EB]">Zoom 🔍</span>
+                      </div>
+                      <div className="rounded border border-slate-300 dark:border-slate-700 overflow-hidden bg-black h-28">
+                        <img src="/guides/api-key/step2.png" alt="Step 2" className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform" />
+                      </div>
+                      <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200 leading-tight">
+                        2. Click <strong className="text-[#2563EB]">"Create API key"</strong> button.
+                      </p>
+                    </div>
+
+                    {/* STEP 3 */}
+                    <div 
+                      onClick={() => setSelectedGuideImage('/guides/api-key/step3.png')}
+                      className="rounded-lg border-2 border-black dark:border-slate-700 bg-white dark:bg-[#0D1117] p-2 space-y-1.5 shadow-sm hover:border-[#2563EB] transition-all cursor-pointer group"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="px-2 py-0.5 bg-[#2563EB] text-white text-[9px] font-mono font-black rounded border border-black">
+                          STEP 3
+                        </span>
+                        <span className="text-[9px] font-mono font-bold text-slate-500 group-hover:text-[#2563EB]">Zoom 🔍</span>
+                      </div>
+                      <div className="rounded border border-slate-300 dark:border-slate-700 overflow-hidden bg-black h-28">
+                        <img src="/guides/api-key/step3.png" alt="Step 3" className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform" />
+                      </div>
+                      <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200 leading-tight">
+                        3. Name key & click <strong className="text-[#2563EB]">"Create key"</strong>.
+                      </p>
+                    </div>
+
+                    {/* STEP 4 */}
+                    <div 
+                      onClick={() => setSelectedGuideImage('/guides/api-key/step4.png')}
+                      className="rounded-lg border-2 border-black dark:border-slate-700 bg-white dark:bg-[#0D1117] p-2 space-y-1.5 shadow-sm hover:border-[#2563EB] transition-all cursor-pointer group"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="px-2 py-0.5 bg-[#2563EB] text-white text-[9px] font-mono font-black rounded border border-black">
+                          STEP 4
+                        </span>
+                        <span className="text-[9px] font-mono font-bold text-slate-500 group-hover:text-[#2563EB]">Zoom 🔍</span>
+                      </div>
+                      <div className="rounded border border-slate-300 dark:border-slate-700 overflow-hidden bg-black h-28">
+                        <img src="/guides/api-key/step4.png" alt="Step 4" className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform" />
+                      </div>
+                      <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200 leading-tight">
+                        4. Click <strong className="text-[#2563EB]">"Copy key"</strong> & paste into left form!
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-2 bg-amber-500/10 rounded-lg border border-amber-400/50 flex items-center gap-2 text-[11px] font-mono font-bold text-amber-900 dark:text-amber-300">
+                    <Lightbulb className="h-4 w-4 text-amber-500 shrink-0" />
+                    <span>Click any image above to view high-res full size!</span>
                   </div>
                 </div>
 
@@ -850,6 +856,24 @@ export default function OnboardingView({
           </form>
         </div>
       </div>
+    {/* IMAGE LIGHTBOX MODAL */}
+    {selectedGuideImage && (
+      <div 
+        onClick={() => setSelectedGuideImage(null)}
+        className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 cursor-pointer"
+      >
+        <div className="relative max-w-4xl w-full bg-white dark:bg-[#161B22] p-2 rounded-xl border-2 border-black shadow-2xl">
+          <button 
+            onClick={() => setSelectedGuideImage(null)}
+            className="absolute -top-3 -right-3 p-1.5 bg-black text-white rounded-full border-2 border-white font-black hover:bg-red-500 cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+          <img src={selectedGuideImage} alt="Expanded Step Guide" className="w-full max-h-[85vh] object-contain rounded-lg" />
+        </div>
+      </div>
+    )}
+
     </div>
   );
 }
