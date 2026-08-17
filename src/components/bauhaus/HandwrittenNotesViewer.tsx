@@ -288,11 +288,14 @@ export const HandwrittenNotesViewer: React.FC<HandwrittenNotesViewerProps> = ({
                       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-center">
                         {Array.isArray(item.content) && item.content.map((step: string, sIdx: number) => (
                           <React.Fragment key={sIdx}>
-                            <div className="p-3 bg-white rounded border-2 border-[#2563EB] shadow-sm font-bold text-base text-[#0F294A] flex-1">
+                            <div 
+                              className="p-3.5 bg-white rounded-md border-2 border-[#2563EB] shadow-sm font-extrabold text-base flex-1 text-center"
+                              style={{ backgroundColor: '#FFFFFF', color: '#0F294A' }}
+                            >
                               {step}
                             </div>
                             {sIdx < item.content.length - 1 && (
-                              <span className="text-2xl font-extrabold text-[#2563EB] sm:rotate-0 rotate-90">➔</span>
+                              <span className="text-2xl font-extrabold text-[#2563EB] sm:rotate-0 rotate-90" style={{ color: '#2563EB' }}>➔</span>
                             )}
                           </React.Fragment>
                         ))}

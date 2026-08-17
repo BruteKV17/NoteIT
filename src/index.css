@@ -413,3 +413,70 @@
     color: #FFFFFF !important;
   }
 }
+
+/* ==========================================================================
+   PERMANENT WHITE A4 HANDWRITTEN PAPER & HIGH-CONTRAST INK OVERRIDES
+   ========================================================================== */
+[data-theme="dark"] .handwritten-workspace .a4-page,
+.dark .handwritten-workspace .a4-page,
+[data-theme="dark"] .a4-page,
+.dark .a4-page,
+.a4-page {
+  background-color: #FFFFFF !important;
+  color: #0F294A !important;
+}
+
+[data-theme="dark"] .a4-page *,
+.dark .a4-page * {
+  color: #0F294A;
+}
+
+[data-theme="dark"] .a4-page [class*="bg-white"],
+.dark .a4-page [class*="bg-white"],
+[data-theme="dark"] .a4-page .bg-white,
+.dark .a4-page .bg-white,
+.a4-page .bg-white {
+  background-color: #FFFFFF !important;
+  color: #0F294A !important;
+}
+
+[data-theme="dark"] .a4-page [class*="bg-slate-50"],
+.dark .a4-page .bg-slate-50,
+[data-theme="dark"] .a4-page [class*="bg-[#F8FAFC]"],
+.dark .a4-page [class*="bg-[#F8FAFC]"],
+.a4-page .bg-[#F8FAFC] {
+  background-color: #F8FAFC !important;
+  color: #0F294A !important;
+}
+
+[data-theme="dark"] .a4-page [class*="bg-blue-50"],
+.dark .a4-page .bg-blue-50,
+[data-theme="dark"] .a4-page [class*="bg-[#F1F5F9]"],
+.dark .a4-page [class*="bg-[#F1F5F9]"],
+.a4-page .bg-[#F1F5F9] {
+  background-color: #F1F5F9 !important;
+  color: #0F294A !important;
+}
+
+[data-theme="dark"] .a4-page [class*="bg-blue-100"],
+.dark .a4-page .bg-blue-100,
+.a4-page .bg-blue-100 {
+  background-color: #DBEAFE !important;
+  color: #1E3A8A !important;
+}
+
+[data-theme="dark"] .a4-page [class*="bg-amber-100"],
+.dark .a4-page .bg-amber-100,
+.a4-page .bg-amber-100 {
+  background-color: #FEF3C7 !important;
+  color: #92400E !important;
+}
+
+[data-theme="dark"] .a4-page [class*="bg-[#FFD54F]"],
+.dark .a4-page .bg-[#FFD54F],
+[data-theme="dark"] .a4-page [class*="bg-[#FEF08A]"],
+.dark .a4-page .bg-[#FEF08A],
+.a4-page .bg-[#FFD54F] {
+  background-color: #FFD54F !important;
+  color: #0F294A !important;
+}
