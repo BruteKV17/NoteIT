@@ -42,27 +42,111 @@ export default function ChromaKeyVideo({
         const height = canvas.height;
 
         ctx.clearRect(0, 0, width, height);
-
-        // Draw video centered on canvas
         ctx.drawImage(video, 0, 0, width, height);
 
-        // Real-Time Green Screen Chroma Key Removal
-        const frame = ctx.getImageData(0, 0, width, height);
-        const data = frame.data;
-        const len = data.length;
+        const imgData = ctx.getImageData(0, 0, width, height);
+        const data = imgData.data;
+        const totalPixels = width * height;
 
-        for (let i = 0; i < len; i += 4) {
-          const r = data[i];
-          const g = data[i + 1];
-          const b = data[i + 2];
+        const visited = new Uint8Array(totalPixels);
+        const queue = new Int32Array(totalPixels);
+        let head = 0;
+        let tail = 0;
 
-          // Detect green screen background
-          if (g > 65 && g > r * 1.12 && g > b * 1.08) {
-            data[i + 3] = 0; // Set pixel to 100% transparent
+        // Background color detection (Green screen OR White/Light-grey background)
+        const isBackgroundPixel = (r: number, g: number, b: number): boolean => {
+          // Green screen check
+          if ((g > 65 && g > r * 1.12 && g > b * 1.08) || (g - r > 25 && g - b > 25)) {
+            return true;
+          }
+          // White / Light grey background check
+          const maxDiff = Math.max(Math.abs(r - g), Math.abs(g - b), Math.abs(r - b));
+          if (r > 200 && g > 200 && b > 200 && maxDiff < 35) {
+            return true;
+          }
+          return false;
+        };
+
+        // Seed all 4 outer borders of the video frame
+        for (let x = 0; x < width; x++) {
+          // Top border
+          let idxTop = x;
+          let pTop = idxTop * 4;
+          if (isBackgroundPixel(data[pTop], data[pTop + 1], data[pTop + 2])) {
+            visited[idxTop] = 1;
+            queue[tail++] = idxTop;
+          }
+          // Bottom border
+          let idxBot = (height - 1) * width + x;
+          let pBot = idxBot * 4;
+          if (!visited[idxBot] && isBackgroundPixel(data[pBot], data[pBot + 1], data[pBot + 2])) {
+            visited[idxBot] = 1;
+            queue[tail++] = idxBot;
           }
         }
 
-        ctx.putImageData(frame, 0, 0);
+        for (let y = 0; y < height; y++) {
+          // Left border
+          let idxLeft = y * width;
+          let pLeft = idxLeft * 4;
+          if (!visited[idxLeft] && isBackgroundPixel(data[pLeft], data[pLeft + 1], data[pLeft + 2])) {
+            visited[idxLeft] = 1;
+            queue[tail++] = idxLeft;
+          }
+          // Right border
+          let idxRight = y * width + (width - 1);
+          let pRight = idxRight * 4;
+          if (!visited[idxRight] && isBackgroundPixel(data[pRight], data[pRight + 1], data[pRight + 2])) {
+            visited[idxRight] = 1;
+            queue[tail++] = idxRight;
+          }
+        }
+
+        // BFS Flood fill to remove outer background while preserving internal features
+        while (head < tail) {
+          const curr = queue[head++];
+          const p = curr * 4;
+
+          data[p + 3] = 0; // Transparent
+
+          const cx = curr % width;
+          const cy = (curr / width) | 0;
+
+          if (cx > 0) {
+            const n = curr - 1;
+            if (!visited[n]) {
+              visited[n] = 1;
+              const np = n * 4;
+              if (isBackgroundPixel(data[np], data[np + 1], data[np + 2])) queue[tail++] = n;
+            }
+          }
+          if (cx < width - 1) {
+            const n = curr + 1;
+            if (!visited[n]) {
+              visited[n] = 1;
+              const np = n * 4;
+              if (isBackgroundPixel(data[np], data[np + 1], data[np + 2])) queue[tail++] = n;
+            }
+          }
+          if (cy > 0) {
+            const n = curr - width;
+            if (!visited[n]) {
+              visited[n] = 1;
+              const np = n * 4;
+              if (isBackgroundPixel(data[np], data[np + 1], data[np + 2])) queue[tail++] = n;
+            }
+          }
+          if (cy < height - 1) {
+            const n = curr + width;
+            if (!visited[n]) {
+              visited[n] = 1;
+              const np = n * 4;
+              if (isBackgroundPixel(data[np], data[np + 1], data[np + 2])) queue[tail++] = n;
+            }
+          }
+        }
+
+        ctx.putImageData(imgData, 0, 0);
       }
 
       animationFrameRef.current = requestAnimationFrame(renderFrame);
@@ -95,7 +179,7 @@ export default function ChromaKeyVideo({
         {fallbackSrc && <source src={fallbackSrc} type="video/mp4" />}
       </video>
 
-      {/* Real-time Chroma Key Canvas (Transparent, no border, no circular frame) */}
+      {/* Real-time Chroma Key Canvas (Transparent, borderless) */}
       <canvas
         ref={canvasRef}
         width={360}
@@ -117,3 +201,4 @@ export default function ChromaKeyVideo({
     </div>
   );
 }
+
