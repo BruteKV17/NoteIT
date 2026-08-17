@@ -602,48 +602,48 @@ export default function OnboardingView({
                 </div>
 
                 {/* Selected Provider Details */}
-                <div className="p-4 rounded-xl border-2 border-[#111111] bg-[#F8FAFC] space-y-3.5 shadow-paper-xs">
+                <div className="p-4 rounded-xl border-2 border-black dark:border-slate-700 bg-[#F8FAFC] dark:bg-[#1E293B] space-y-3.5 shadow-paper-xs">
                   <div>
-                    <h4 className="text-xs font-extrabold text-[#1E3A8A] uppercase tracking-wide">
+                    <h4 className="text-xs font-black text-[#1D4ED8] dark:text-[#60A5FA] uppercase tracking-wide">
                       {PROVIDER_METADATA[selectedProvider]?.name}
                     </h4>
-                    <p className="text-xs text-[#334155] font-medium mt-1 leading-relaxed">
+                    <p className="text-xs text-[#334155] dark:text-[#CBD5E1] font-bold mt-1 leading-relaxed">
                       {PROVIDER_METADATA[selectedProvider]?.description}
                     </p>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                     <div className="space-y-1">
-                      <span className="text-[10px] uppercase font-mono font-extrabold text-[#475569] tracking-wider block">
+                      <span className="text-[10px] uppercase font-mono font-black text-[#475569] dark:text-[#94A3B8] tracking-wider block">
                         Default Model
                       </span>
-                      <div className="font-mono text-xs font-extrabold text-[#0F172A] bg-white px-2.5 py-1 rounded-md border-2 border-[#94A3B8] inline-block shadow-sm">
+                      <div className="font-mono text-xs font-black text-white dark:text-[#FFC400] bg-[#0F172A] dark:bg-[#0D1117] px-3 py-1.5 rounded-md border-2 border-black dark:border-amber-400/60 block w-full text-center truncate shadow-sm">
                         {PROVIDER_METADATA[selectedProvider]?.defaultModel}
                       </div>
                     </div>
                     
                     <div className="space-y-1">
-                      <span className="text-[10px] uppercase font-mono font-extrabold text-[#475569] tracking-wider block">
+                      <span className="text-[10px] uppercase font-mono font-black text-[#475569] dark:text-[#94A3B8] tracking-wider block">
                         Choose Model
                       </span>
                       <select
                         value={selectedModel}
                         onChange={(e) => setSelectedModel(e.target.value)}
-                        className="w-full rounded-lg border-2 border-[#111111] p-1.5 px-2.5 text-xs font-mono font-bold bg-white text-[#0F172A] cursor-pointer focus:border-[#2F6BFF] outline-none"
+                        className="w-full rounded-md border-2 border-black dark:border-amber-400/60 p-1.5 px-2.5 text-xs font-mono font-black bg-[#0F172A] dark:bg-[#0D1117] text-white dark:text-[#FFC400] cursor-pointer focus:border-[#2F6BFF] outline-none truncate shadow-sm"
                       >
                         {PROVIDER_METADATA[selectedProvider]?.models.map(m => (
-                          <option key={m} value={m}>{m}</option>
+                          <option key={m} value={m} className="bg-[#0F172A] text-white">{m}</option>
                         ))}
                       </select>
                     </div>
                   </div>
 
-                  <div className="flex gap-2.5 pt-2 border-t border-[#CBD5E1]">
+                  <div className="flex gap-2.5 pt-2 border-t border-[#CBD5E1] dark:border-slate-700">
                     <a
                       href={PROVIDER_METADATA[selectedProvider]?.getKeyLink}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#1D4ED8] hover:text-[#1E40AF] underline"
+                      className="inline-flex items-center gap-1 text-[11px] font-black text-[#1D4ED8] dark:text-[#60A5FA] hover:underline"
                     >
                       Get API Key <ExternalLink className="h-3 w-3" />
                     </a>
@@ -652,7 +652,7 @@ export default function OnboardingView({
                       href={PROVIDER_METADATA[selectedProvider]?.docLink}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#334155] hover:text-[#0F172A] underline"
+                      className="inline-flex items-center gap-1 text-[11px] font-black text-[#334155] dark:text-[#E2E8F0] hover:underline"
                     >
                       Documentation <ExternalLink className="h-3 w-3" />
                     </a>
