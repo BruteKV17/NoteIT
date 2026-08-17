@@ -11,7 +11,9 @@ import {
   Search,
   Check,
   ExternalLink,
-  Lock
+  Lock,
+  Key,
+  Lightbulb
 } from 'lucide-react';
 import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebaseConfig';
@@ -150,6 +152,7 @@ export default function OnboardingView({
   const [selectedModel, setSelectedModel] = useState('gemini-3.6-flash');
   const [searchQuery, setSearchQuery] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [guideStep, setGuideStep] = useState<number>(1);
   const [isValidatingKey, setIsValidatingKey] = useState(false);
   const [validationSuccess, setValidationSuccess] = useState(false);
 
@@ -359,7 +362,7 @@ export default function OnboardingView({
   return (
     <div className="min-h-screen w-screen flex items-center justify-center p-4 relative overflow-y-auto font-sans bg-grid-paper text-[#111111] select-none">
       
-      <div className="w-full max-w-md p-6 relative z-10">
+      <div className={`w-full transition-all duration-300 ${step === 4 ? 'max-w-5xl' : 'max-w-md'} p-4 sm:p-6 relative z-10`}>
         <header className="text-center mb-8 space-y-3">
           <div className="inline-flex h-12 w-12 items-center justify-center rounded-[6px] bg-[#FFC400] text-[#111111] border-2 border-[#111111] shadow-paper-sm">
             <GraduationCap className="h-6 w-6 text-[#111111]" />
@@ -537,149 +540,251 @@ export default function OnboardingView({
             )}
 
             {step === 4 && (
-              <div className="space-y-4 animate-fade-in text-left">
-                <div className="border-b border-[#111111]/15 pb-2 mb-2">
-                  <h3 className="text-sm font-black text-[#111111]">Configure Your AI Provider</h3>
-                  <p className="text-xs text-[#333333] font-medium mt-0.5 leading-relaxed">
-                    Bring Your Own Key (BYOK) - connect and validate your preferred LLM provider.
-                  </p>
-                </div>
-
-                {/* Searchable Dropdown */}
-                <div className="space-y-1.5 relative">
-                  <label className="text-[10px] font-mono font-extrabold uppercase tracking-wider text-[#111111] block">
-                    Select Provider *
-                  </label>
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                      className="w-full flex items-center justify-between rounded-xl border-2 border-[#111111] bg-white px-4 py-3 text-xs font-bold text-[#111111] shadow-paper-xs outline-none cursor-pointer transition-all hover:bg-[#F9F9F9]"
-                    >
-                      <span className="font-extrabold">{PROVIDER_METADATA[selectedProvider]?.name || 'Choose Provider...'}</span>
-                      <ChevronDown className="h-4 w-4 text-[#111111] stroke-[2.5]" />
-                    </button>
-
-                    {isDropdownOpen && (
-                      <div className="absolute z-50 mt-1.5 w-full rounded-xl border-2 border-[#111111] bg-white text-[#111111] shadow-2xl p-2.5 space-y-2">
-                        <div className="relative">
-                          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#555555]" />
-                          <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search providers..."
-                            className="w-full rounded-lg border-2 border-[#111111] bg-[#F9F9F9] pl-8 pr-3 py-1.5 text-xs font-medium text-[#111111] placeholder-[#666666] outline-none"
-                          />
-                        </div>
-                        <div className="max-h-48 overflow-y-auto space-y-0.5">
-                          {Object.entries(PROVIDER_METADATA)
-                            .filter(([_, meta]) => meta.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                            .map(([key, meta]) => (
-                              <button
-                                key={key}
-                                type="button"
-                                onClick={() => {
-                                  setSelectedProvider(key);
-                                  setSelectedModel(meta.defaultModel);
-                                  setIsDropdownOpen(false);
-                                  setSearchQuery('');
-                                }}
-                                className={`w-full text-left px-3 py-2 rounded-lg text-xs flex items-center justify-between cursor-pointer transition-colors ${
-                                  selectedProvider === key
-                                    ? 'bg-[#FFC400]/25 text-[#111111] font-black border border-[#111111]'
-                                    : 'text-[#111111] hover:bg-[#F6F2EA] font-semibold'
-                                }`}
-                              >
-                                <span>{meta.name}</span>
-                                {selectedProvider === key && <Check className="h-3.5 w-3.5 stroke-[3] text-[#111111]" />}
-                              </button>
-                            ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Selected Provider Details */}
-                <div className="p-4 rounded-xl border-2 border-black dark:border-slate-700 bg-[#F8FAFC] dark:bg-[#1E293B] space-y-3.5 shadow-paper-xs">
-                  <div>
-                    <h4 className="text-xs font-black text-[#1D4ED8] dark:text-[#60A5FA] uppercase tracking-wide">
-                      {PROVIDER_METADATA[selectedProvider]?.name}
-                    </h4>
-                    <p className="text-xs text-[#334155] dark:text-[#CBD5E1] font-bold mt-1 leading-relaxed">
-                      {PROVIDER_METADATA[selectedProvider]?.description}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start text-left animate-fade-in">
+                
+                {/* LEFT SIDE: API KEY FILLING SECTION */}
+                <div className="lg:col-span-6 space-y-4">
+                  <div className="border-b border-[#111111]/15 pb-2 mb-2">
+                    <h3 className="text-sm font-black text-[#111111]">Configure Your AI Provider</h3>
+                    <p className="text-xs text-[#333333] font-medium mt-0.5 leading-relaxed">
+                      Bring Your Own Key (BYOK) - connect and validate your preferred LLM provider.
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                    <div className="space-y-1">
-                      <span className="text-[10px] uppercase font-mono font-black text-[#475569] dark:text-[#94A3B8] tracking-wider block">
-                        Default Model
-                      </span>
-                      <div className="font-mono text-xs font-black text-white dark:text-[#FFC400] bg-[#0F172A] dark:bg-[#0D1117] px-3 py-1.5 rounded-md border-2 border-black dark:border-amber-400/60 block w-full text-center truncate shadow-sm">
-                        {PROVIDER_METADATA[selectedProvider]?.defaultModel}
+                  {/* Searchable Dropdown */}
+                  <div className="space-y-1.5 relative">
+                    <label className="text-[10px] font-mono font-extrabold uppercase tracking-wider text-[#111111] block">
+                      Select Provider *
+                    </label>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                        className="w-full flex items-center justify-between rounded-xl border-2 border-[#111111] bg-white px-4 py-3 text-xs font-bold text-[#111111] shadow-paper-xs outline-none cursor-pointer transition-all hover:bg-[#F9F9F9]"
+                      >
+                        <span className="font-extrabold">{PROVIDER_METADATA[selectedProvider]?.name || 'Choose Provider...'}</span>
+                        <ChevronDown className="h-4 w-4 text-[#111111] stroke-[2.5]" />
+                      </button>
+
+                      {isDropdownOpen && (
+                        <div className="absolute z-50 mt-1.5 w-full rounded-xl border-2 border-[#111111] bg-white text-[#111111] shadow-2xl p-2.5 space-y-2">
+                          <div className="relative">
+                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#555555]" />
+                            <input
+                              type="text"
+                              value={searchQuery}
+                              onChange={(e) => setSearchQuery(e.target.value)}
+                              placeholder="Search providers..."
+                              className="w-full rounded-lg border-2 border-[#111111] bg-[#F9F9F9] pl-8 pr-3 py-1.5 text-xs font-medium text-[#111111] placeholder-[#666666] outline-none"
+                            />
+                          </div>
+                          <div className="max-h-48 overflow-y-auto space-y-0.5">
+                            {Object.entries(PROVIDER_METADATA)
+                              .filter(([_, meta]) => meta.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                              .map(([key, meta]) => (
+                                <button
+                                  key={key}
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedProvider(key);
+                                    setSelectedModel(meta.defaultModel);
+                                    setIsDropdownOpen(false);
+                                    setSearchQuery('');
+                                  }}
+                                  className={`w-full text-left px-3 py-2 rounded-lg text-xs flex items-center justify-between cursor-pointer transition-colors ${
+                                    selectedProvider === key
+                                      ? 'bg-[#FFC400]/25 text-[#111111] font-black border border-[#111111]'
+                                      : 'text-[#111111] hover:bg-[#F6F2EA] font-semibold'
+                                  }`}
+                                >
+                                  <span>{meta.name}</span>
+                                  {selectedProvider === key && <Check className="h-3.5 w-3.5 stroke-[3] text-[#111111]" />}
+                                </button>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Selected Provider Details */}
+                  <div className="p-4 rounded-xl border-2 border-black dark:border-slate-700 bg-[#F8FAFC] dark:bg-[#1E293B] space-y-3.5 shadow-paper-xs">
+                    <div>
+                      <h4 className="text-xs font-black text-[#1D4ED8] dark:text-[#60A5FA] uppercase tracking-wide">
+                        {PROVIDER_METADATA[selectedProvider]?.name}
+                      </h4>
+                      <p className="text-xs text-[#334155] dark:text-[#CBD5E1] font-bold mt-1 leading-relaxed">
+                        {PROVIDER_METADATA[selectedProvider]?.description}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      <div className="space-y-1">
+                        <span className="text-[10px] uppercase font-mono font-black text-[#475569] dark:text-[#94A3B8] tracking-wider block">
+                          Default Model
+                        </span>
+                        <div className="font-mono text-xs font-black text-white dark:text-[#FFC400] bg-[#0F172A] dark:bg-[#0D1117] px-3 py-1.5 rounded-md border-2 border-black dark:border-amber-400/60 block w-full text-center truncate shadow-sm">
+                          {PROVIDER_METADATA[selectedProvider]?.defaultModel}
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <span className="text-[10px] uppercase font-mono font-black text-[#475569] dark:text-[#94A3B8] tracking-wider block">
+                          Choose Model
+                        </span>
+                        <select
+                          value={selectedModel}
+                          onChange={(e) => setSelectedModel(e.target.value)}
+                          className="w-full rounded-md border-2 border-black dark:border-amber-400/60 p-1.5 px-2.5 text-xs font-mono font-black bg-[#0F172A] dark:bg-[#0D1117] text-white dark:text-[#FFC400] cursor-pointer focus:border-[#2F6BFF] outline-none truncate shadow-sm"
+                        >
+                          {PROVIDER_METADATA[selectedProvider]?.models.map(m => (
+                            <option key={m} value={m} className="bg-[#0F172A] text-white">{m}</option>
+                          ))}
+                        </select>
                       </div>
                     </div>
-                    
-                    <div className="space-y-1">
-                      <span className="text-[10px] uppercase font-mono font-black text-[#475569] dark:text-[#94A3B8] tracking-wider block">
-                        Choose Model
-                      </span>
-                      <select
-                        value={selectedModel}
-                        onChange={(e) => setSelectedModel(e.target.value)}
-                        className="w-full rounded-md border-2 border-black dark:border-amber-400/60 p-1.5 px-2.5 text-xs font-mono font-black bg-[#0F172A] dark:bg-[#0D1117] text-white dark:text-[#FFC400] cursor-pointer focus:border-[#2F6BFF] outline-none truncate shadow-sm"
+
+                    <div className="flex gap-2.5 pt-2 border-t border-[#CBD5E1] dark:border-slate-700">
+                      <a
+                        href={PROVIDER_METADATA[selectedProvider]?.getKeyLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[11px] font-black text-[#1D4ED8] dark:text-[#60A5FA] hover:underline"
                       >
-                        {PROVIDER_METADATA[selectedProvider]?.models.map(m => (
-                          <option key={m} value={m} className="bg-[#0F172A] text-white">{m}</option>
-                        ))}
-                      </select>
+                        Get API Key <ExternalLink className="h-3 w-3" />
+                      </a>
+                      <span className="text-[#94A3B8]">•</span>
+                      <a
+                        href={PROVIDER_METADATA[selectedProvider]?.docLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[11px] font-black text-[#334155] dark:text-[#E2E8F0] hover:underline"
+                      >
+                        Documentation <ExternalLink className="h-3 w-3" />
+                      </a>
                     </div>
                   </div>
 
-                  <div className="flex gap-2.5 pt-2 border-t border-[#CBD5E1] dark:border-slate-700">
-                    <a
-                      href={PROVIDER_METADATA[selectedProvider]?.getKeyLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-[11px] font-black text-[#1D4ED8] dark:text-[#60A5FA] hover:underline"
-                    >
-                      Get API Key <ExternalLink className="h-3 w-3" />
-                    </a>
-                    <span className="text-[#94A3B8]">•</span>
-                    <a
-                      href={PROVIDER_METADATA[selectedProvider]?.docLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-[11px] font-black text-[#334155] dark:text-[#E2E8F0] hover:underline"
-                    >
-                      Documentation <ExternalLink className="h-3 w-3" />
-                    </a>
+                  {/* API Key Input */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-mono font-extrabold uppercase tracking-wider text-[#111111] block">
+                      API Key *
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      placeholder={`Paste your secret API key for ${PROVIDER_METADATA[selectedProvider]?.name}`}
+                      className="w-full rounded-xl border-2 border-[#111111] bg-white px-4 py-3 text-xs font-mono font-bold text-[#111111] placeholder-[#777777] outline-none focus:border-[#2F6BFF] transition-all"
+                    />
+                  </div>
+
+                  <div className="rounded-xl bg-[#EFF6FF] border-2 border-[#3B82F6] p-3.5 mt-2 flex gap-2.5 items-center shadow-paper-xs">
+                    <Lock className="h-4 w-4 text-[#1D4ED8] shrink-0" />
+                    <p className="text-xs font-medium leading-relaxed text-[#1E3A8A]">
+                      Your key is securely encrypted server-side using AES-256-GCM and is never transmitted or exposed to the frontend.
+                    </p>
                   </div>
                 </div>
 
-                {/* API Key Input */}
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-mono font-extrabold uppercase tracking-wider text-[#111111] block">
-                    API Key *
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
-                    placeholder={`Paste your secret API key for ${PROVIDER_METADATA[selectedProvider]?.name}`}
-                    className="w-full rounded-xl border-2 border-[#111111] bg-white px-4 py-3 text-xs font-mono font-bold text-[#111111] placeholder-[#777777] outline-none focus:border-[#2F6BFF] transition-all"
-                  />
+                {/* RIGHT SIDE: STEP-BY-STEP VISUAL GUIDE */}
+                <div className="lg:col-span-6 space-y-4 rounded-xl border-2 border-black dark:border-slate-700 bg-[#F8FAFC] dark:bg-[#1E293B] p-4 shadow-paper-xs">
+                  <div className="flex items-center justify-between border-b border-[#CBD5E1] dark:border-slate-700 pb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 bg-[#2563EB] text-white rounded-lg border border-black shadow-sm">
+                        <Key className="h-4 w-4 stroke-[2.5]" />
+                      </div>
+                      <div>
+                        <h3 className="text-xs font-black uppercase text-black dark:text-white tracking-wide">How to Get Your API Key</h3>
+                        <p className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Step-by-step visual guide for {PROVIDER_METADATA[selectedProvider]?.name || 'Google Gemini'}</p>
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 bg-[#FFC400] text-black border border-black text-[10px] font-mono font-black rounded uppercase">
+                      Step {guideStep} of 5
+                    </span>
+                  </div>
+
+                  {/* STEP INDICATOR TABS */}
+                  <div className="flex items-center gap-1 overflow-x-auto pb-1">
+                    {[1, 2, 3, 4, 5].map((sNum) => (
+                      <button
+                        key={sNum}
+                        type="button"
+                        onClick={() => setGuideStep(sNum)}
+                        className={`flex-1 min-w-[52px] py-1.5 px-2 rounded-md border border-black font-mono text-[10px] font-black uppercase text-center cursor-pointer transition-all ${
+                          guideStep === sNum
+                            ? 'bg-[#2563EB] text-white shadow-paper-xs scale-105'
+                            : 'bg-white dark:bg-[#0D1117] text-black dark:text-white hover:bg-slate-100'
+                        }`}
+                      >
+                        Step {sNum}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* STEP IMAGE PREVIEW CARD */}
+                  <div className="relative rounded-lg border-2 border-black dark:border-slate-700 overflow-hidden bg-black shadow-md">
+                    <img
+                      src={
+                        guideStep === 1 ? '/guides/api-key/step1.jpg' :
+                        guideStep === 2 ? '/guides/api-key/step2.png' :
+                        guideStep === 3 ? '/guides/api-key/step3.png' :
+                        guideStep === 4 ? '/guides/api-key/step4.png' :
+                        '/guides/api-key/step5.jpg'
+                      }
+                      alt={`Step ${guideStep} Guide`}
+                      className="w-full h-48 sm:h-56 object-cover object-top border-b border-black"
+                    />
+                  </div>
+
+                  {/* STEP DESCRIPTION BOX */}
+                  <div className="p-3 bg-white dark:bg-[#0D1117] rounded-lg border-2 border-black dark:border-slate-700 space-y-1.5 text-left">
+                    <h4 className="text-xs font-black uppercase text-[#2563EB] dark:text-[#60A5FA] flex items-center gap-1.5">
+                      <span className="w-5 h-5 rounded-full bg-[#2563EB] text-white text-[10px] font-mono font-bold inline-flex items-center justify-center">
+                        {guideStep}
+                      </span>
+                      <span>
+                        {guideStep === 1 && 'Click on "Get API Key"'}
+                        {guideStep === 2 && 'Click on "Create API key"'}
+                        {guideStep === 3 && 'Confirm Project & Click "Create key"'}
+                        {guideStep === 4 && 'Click on "Copy key"'}
+                        {guideStep === 5 && 'Paste API Key & Complete Setup'}
+                      </span>
+                    </h4>
+                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-relaxed pl-6">
+                      {guideStep === 1 && 'Look under Provider Details on the left and click the "Get API Key" link to open Google AI Studio.'}
+                      {guideStep === 2 && 'In Google AI Studio dashboard, look for the "Create API key" button at top right and click it.'}
+                      {guideStep === 3 && 'Enter a name for your key (e.g. NoteIT Key), select your project, and click "Create key".'}
+                      {guideStep === 4 && 'Click the blue "Copy key" button to copy your generated secret key to clipboard.'}
+                      {guideStep === 5 && 'Return here, paste your API key into the "API Key *" field on the left, and click "Complete Setup"!'}
+                    </p>
+                  </div>
+
+                  {/* STEP NAVIGATION BUTTONS */}
+                  <div className="flex items-center justify-between pt-1">
+                    <button
+                      type="button"
+                      disabled={guideStep === 1}
+                      onClick={() => setGuideStep(prev => Math.max(1, prev - 1))}
+                      className="px-3 py-1.5 rounded-md border border-black bg-white dark:bg-[#0D1117] text-black dark:text-white font-mono text-[10px] font-black uppercase disabled:opacity-40 cursor-pointer hover:bg-slate-100"
+                    >
+                      ← Prev Step
+                    </button>
+                    <span className="text-[10px] font-mono font-bold text-slate-500 hidden sm:inline">
+                      Tip: Follow all 5 steps to generate key
+                    </span>
+                    <button
+                      type="button"
+                      disabled={guideStep === 5}
+                      onClick={() => setGuideStep(prev => Math.min(5, prev + 1))}
+                      className="px-3 py-1.5 rounded-md border border-black bg-[#2563EB] text-white font-mono text-[10px] font-black uppercase disabled:opacity-40 cursor-pointer hover:bg-blue-700"
+                    >
+                      Next Step →
+                    </button>
+                  </div>
                 </div>
 
-                <div className="rounded-xl bg-[#EFF6FF] border-2 border-[#3B82F6] p-3.5 mt-2 flex gap-2.5 items-center shadow-paper-xs">
-                  <Lock className="h-4 w-4 text-[#1D4ED8] shrink-0" />
-                  <p className="text-xs font-medium leading-relaxed text-[#1E3A8A]">
-                    Your key is securely encrypted server-side using AES-256-GCM and is never transmitted or exposed to the frontend.
-                  </p>
-                </div>
               </div>
             )}
 
