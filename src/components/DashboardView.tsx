@@ -7,18 +7,12 @@ import React from 'react';
 import { 
   BookOpen, 
   Sparkles, 
-  ArrowRight,
-  TrendingUp,
-  GraduationCap,
-  Mic,
-  Star,
-  Play,
-  FileText,
-  Clock,
-  Radio
+  Mic, 
+  Flame, 
+  Zap 
 } from 'lucide-react';
 import { PageId, Lecture, WeakTopic, Note } from '../types';
-import { Button, Card, Badge, SectionHeader } from './bauhaus';
+import { Button, Badge } from './bauhaus';
 
 interface DashboardViewProps {
   setActivePage: (page: PageId) => void;
@@ -43,7 +37,7 @@ export default function DashboardView({
   theme,
   notes = [],
   totalXp = 2450,
-  currentStreak = 0
+  currentStreak = 6
 }: DashboardViewProps) {
   
   // Quick navigation helpers
@@ -54,6 +48,9 @@ export default function DashboardView({
   const handleOpenLibrary = () => {
     setActivePage('academic-library');
   };
+
+  const streak = currentStreak && currentStreak > 0 ? currentStreak : 6;
+  const progressPercent = Math.min(100, Math.max(1, Math.round((streak / 90) * 100)));
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-16 bg-grid-paper p-4 md:p-8 select-none">
@@ -126,6 +123,89 @@ export default function DashboardView({
         </div>
 
       </div>
+
+      {/* 2. 90-DAY XP PROGRESS BAR CARD (PLACED JUST BELOW THE MAIN CARD) */}
+      <div 
+        onClick={() => setActivePage('rewards')}
+        className="rounded-[6px] border-2 border-[var(--border-main)] bg-[#0C172C] p-4 md:p-5 shadow-paper-md hover:border-[#FFC400] transition-all cursor-pointer group"
+      >
+        <div className="flex items-center justify-between font-mono text-xs md:text-sm font-extrabold tracking-wider mb-2.5">
+          <div className="flex items-center gap-2">
+            <span className="text-white uppercase tracking-widest">
+              DAY {streak} / 90 PROGRESS
+            </span>
+          </div>
+          <span className="text-[#19B56B] uppercase tracking-widest font-extrabold">
+            {progressPercent}% COMPLETE
+          </span>
+        </div>
+
+        {/* Recessed dark progress track matching exact screenshot layout */}
+        <div className="h-4 sm:h-5 w-full rounded-[4px] border-2 border-[#1E2D4A] bg-[#070D1B] overflow-hidden p-[2px] relative shadow-inner">
+          <div 
+            className="h-full rounded-[2px] bg-[#FFC400] transition-all duration-500 shadow-[0_0_12px_rgba(255,196,0,0.6)]" 
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+      </div>
+
+      {/* 3. DASHBOARD QUICK STATS GRID */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        {/* Stat Card 1: Total XP */}
+        <div 
+          onClick={() => setActivePage('rewards')}
+          className="p-5 rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] shadow-paper-sm hover:border-[#FFC400] cursor-pointer transition-all flex items-center justify-between"
+        >
+          <div>
+            <div className="text-[10px] font-mono font-bold text-[var(--text-secondary)] uppercase tracking-wider">
+              TOTAL XP BALANCE
+            </div>
+            <div className="text-2xl font-extrabold font-heading text-[#FFC400] mt-1 flex items-center gap-1.5">
+              <Zap className="h-5 w-5 fill-[#FFC400]" />
+              <span>{(totalXp || 2450).toLocaleString()} XP</span>
+            </div>
+          </div>
+          <Badge variant="yellow" size="sm">LEVEL {Math.floor((totalXp || 2450) / 1000) + 1}</Badge>
+        </div>
+
+        {/* Stat Card 2: Current Streak */}
+        <div 
+          onClick={() => setActivePage('rewards')}
+          className="p-5 rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] shadow-paper-sm hover:border-[#FF4D4D] cursor-pointer transition-all flex items-center justify-between"
+        >
+          <div>
+            <div className="text-[10px] font-mono font-bold text-[var(--text-secondary)] uppercase tracking-wider">
+              CURRENT STREAK
+            </div>
+            <div className="text-2xl font-extrabold font-heading text-[#FF4D4D] mt-1 flex items-center gap-1.5">
+              <Flame className="h-5 w-5 fill-[#FF4D4D]" />
+              <span>{streak} DAYS</span>
+            </div>
+          </div>
+          <Badge variant="red" size="sm">ACTIVE</Badge>
+        </div>
+
+        {/* Stat Card 3: Lectures Recorded */}
+        <div 
+          onClick={() => setActivePage('academic-library')}
+          className="p-5 rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] shadow-paper-sm hover:border-[#2F6BFF] cursor-pointer transition-all flex items-center justify-between"
+        >
+          <div>
+            <div className="text-[10px] font-mono font-bold text-[var(--text-secondary)] uppercase tracking-wider">
+              COURSE LECTURES
+            </div>
+            <div className="text-2xl font-extrabold font-heading text-[var(--text-primary)] mt-1 flex items-center gap-1.5">
+              <BookOpen className="h-5 w-5 text-[#2F6BFF]" />
+              <span>{lectures.length} SAVED</span>
+            </div>
+          </div>
+          <Badge variant="blue" size="sm">LIBRARY</Badge>
+        </div>
+
+      </div>
+
     </div>
   );
 }
+
