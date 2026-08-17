@@ -45,15 +45,19 @@ import {
   Check,
   Mic,
   Compass,
-  BookMarked,
   ArrowRight,
-  Timer
+  Timer,
+  Share2,
+  Send,
+  UserCheck,
+  GripVertical
 } from 'lucide-react';
 import { PageId, Lecture, Folder, Subject } from '../types';
 import { generateResourcesFromTranscript } from '../services/gemini';
 import { useFolders } from '../hooks/useFolders';
 import { useSubjects } from '../hooks/useSubjects';
 import { auth } from '../firebaseConfig';
+import { shareLectureWithEmail } from '../services/shareService';
 
 interface LibraryViewProps {
   lectures: Lecture[];
@@ -146,13 +150,23 @@ export default function LibraryView({
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
 
+  // Peer-to-Peer Share Modal States
+  const [shareModalLecture, setShareModalLecture] = useState<Lecture | null>(null);
+  const [shareEmail, setShareEmail] = useState('');
+  const [isSharing, setIsSharing] = useState(false);
+  const [shareSuccessMsg, setShareSuccessMsg] = useState<string | null>(null);
+  const [shareErrorMsg, setShareErrorMsg] = useState<string | null>(null);
+
+  // Drag and drop reordering state
+  const [draggedLectureId, setDraggedLectureId] = useState<string | null>(null);
+
   // Active Subject Object
   const currentSubject = useMemo(() => {
     if (!selectedSubjectId && subjects.length > 0) return subjects[0];
     return subjects.find(s => s.id === selectedSubjectId) || subjects[0] || null;
   }, [selectedSubjectId, subjects]);
 
-  // Active Subject Lectures List
+  // Active Subject Lectures List (Sorted by lectureNumber)
   const currentSubjectLectures = useMemo(() => {
     if (!currentSubject) return [];
     
@@ -165,12 +179,66 @@ export default function LibraryView({
       return false;
     });
 
-    return matched.map((l, index) => ({
-      ...l,
-      lectureNumber: l.lectureNumber || (index + 1),
-      reviewed: l.reviewed || l.status === 'completed' || l.status === 'generated'
-    }));
+    return matched
+      .map((l, index) => ({
+        ...l,
+        lectureNumber: l.lectureNumber || (index + 1),
+        reviewed: l.reviewed || l.status === 'completed' || l.status === 'generated'
+      }))
+      .sort((a, b) => (a.lectureNumber || 0) - (b.lectureNumber || 0));
   }, [currentSubject, lectures]);
+
+  // Handle Drag & Drop reordering along the Subject Map path
+  const handleDropReorder = async (targetIndex: number) => {
+    if (!draggedLectureId) return;
+    const items = [...currentSubjectLectures];
+    const sourceIndex = items.findIndex(l => l.id === draggedLectureId);
+    if (sourceIndex === -1 || sourceIndex === targetIndex) {
+      setDraggedLectureId(null);
+      return;
+    }
+
+    // Reorder items in array
+    const [draggedItem] = items.splice(sourceIndex, 1);
+    items.splice(targetIndex, 0, draggedItem);
+
+    // Save updated sequence in Firestore for each lecture
+    for (let i = 0; i < items.length; i++) {
+      const lec = items[i];
+      const newSeq = i + 1;
+      if (onUpdateLecture) {
+        await onUpdateLecture(lec.id, { lectureNumber: newSeq, mapOrder: newSeq });
+      }
+    }
+    setDraggedLectureId(null);
+  };
+
+  // Handle Lecture Share submit
+  const handleShareSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!shareModalLecture || !shareEmail.trim()) return;
+    setIsSharing(true);
+    setShareSuccessMsg(null);
+    setShareErrorMsg(null);
+
+    try {
+      const res = await shareLectureWithEmail(shareModalLecture, shareEmail);
+      if (res.recipientFound) {
+        setShareSuccessMsg(`Notes shared with ${shareEmail} successfully!`);
+      } else {
+        setShareSuccessMsg(`Lecture shared! A claim invitation has been staged for ${shareEmail}.`);
+      }
+      setShareEmail('');
+      setTimeout(() => {
+        setShareModalLecture(null);
+        setShareSuccessMsg(null);
+      }, 2500);
+    } catch (err: any) {
+      setShareErrorMsg(err?.message || 'Failed to share notes.');
+    } finally {
+      setIsSharing(false);
+    }
+  };
 
   // Calculate subject progress
   const subjectProgress = useMemo(() => {
@@ -523,20 +591,63 @@ export default function LibraryView({
                               </div>
                             )}
 
-                            {/* Lecture Node Card */}
-                            <div className={`bg-white dark:bg-[#161B22] brutal-border p-4 sm:p-6 w-64 sm:w-72 max-w-[85vw] transition-transform ${
-                              isSelected 
-                                ? 'shadow-[12px_12px_0px_#000] rotate-0 bg-[#FFC107]/20 border-black' 
-                                : idx % 2 === 0 ? 'transform -rotate-2 hover:rotate-0' : 'transform rotate-2 hover:rotate-0'
-                            }`}>
+                            {/* Lecture Node Card (Parrot Green for Shared Notes, White/Dark for Regular) */}
+                            <div
+                              draggable={true}
+                              onDragStart={(e) => {
+                                e.stopPropagation();
+                                setDraggedLectureId(lec.id);
+                                e.dataTransfer.setData('text/plain', lec.id);
+                              }}
+                              onDragOver={(e) => {
+                                e.preventDefault();
+                              }}
+                              onDrop={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleDropReorder(idx);
+                              }}
+                              className={`brutal-border p-4 sm:p-6 w-64 sm:w-72 max-w-[85vw] transition-transform select-none cursor-grab active:cursor-grabbing ${
+                                lec.isShared
+                                  ? 'bg-[#10B981] text-black border-black shadow-[10px_10px_0px_#000]'
+                                  : isSelected
+                                    ? 'shadow-[12px_12px_0px_#000] rotate-0 bg-[#FFC107]/20 border-black bg-white dark:bg-[#161B22]'
+                                    : idx % 2 === 0
+                                      ? 'bg-white dark:bg-[#161B22] transform -rotate-2 hover:rotate-0'
+                                      : 'bg-white dark:bg-[#161B22] transform rotate-2 hover:rotate-0'
+                              }`}
+                            >
+                              {/* Shared Note Badge Header */}
+                              {lec.isShared && (
+                                <div className="mb-2.5 px-2 py-0.5 bg-black text-[#10B981] text-[9px] font-mono font-black uppercase tracking-wider border border-black flex items-center justify-between gap-1 shadow-paper-xs">
+                                  <span className="truncate">📥 SHARED BY: {lec.sharedByName || lec.sharedByEmail || 'Peer'}</span>
+                                </div>
+                              )}
+
                               <div className="flex justify-between items-center mb-3 border-b-4 border-black pb-2">
-                                <p className="text-xs font-black uppercase tracking-widest bg-[#FFC107] text-black px-2 py-0.5 border-2 border-black">
+                                <p className={`text-xs font-black uppercase tracking-widest px-2 py-0.5 border-2 border-black ${
+                                  lec.isShared ? 'bg-black text-[#10B981]' : 'bg-[#FFC107] text-black'
+                                }`}>
                                   LECTURE {lec.lectureNumber < 10 ? `0${lec.lectureNumber}` : lec.lectureNumber}
                                 </p>
                                 <div className="flex items-center gap-1">
                                   <span className="text-xs font-extrabold flex items-center gap-1 border-2 border-black px-2 py-0.5 bg-black text-white dark:bg-[#FFC107] dark:text-black">
                                     <Timer className="w-3.5 h-3.5" /> {lec.duration || '45m'}
                                   </span>
+                                  
+                                  {/* Share Button */}
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setShareModalLecture(lec);
+                                    }}
+                                    title="Share Lecture with Classmate"
+                                    className="p-1 bg-[#2563EB] text-white border-2 border-black hover:bg-blue-700 transition-colors"
+                                  >
+                                    <Share2 className="w-3.5 h-3.5 stroke-[3]" />
+                                  </button>
+
+                                  {/* Delete Button */}
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -555,14 +666,22 @@ export default function LibraryView({
                                 </div>
                               </div>
 
-                              <h3 className="text-base font-black uppercase leading-tight mb-4 text-black dark:text-white">
+                              <h3 className={`text-base font-black uppercase leading-tight mb-4 ${
+                                lec.isShared ? 'text-black font-black' : 'text-black dark:text-white'
+                              }`}>
                                 {lec.title}
                               </h3>
 
-                              <div className="inline-flex items-center gap-2 bg-[#FFC107] text-black border-2 border-black px-3 py-1 font-black text-xs uppercase shadow-[2px_2px_0px_#000]">
-                                <Sparkles className="w-3.5 h-3.5 text-black" />
-                                <span>{isCompleted ? 'Synthesized' : isRecording ? 'Processing...' : 'Not Started'}</span>
-                              </div>
+                              {lec.isShared ? (
+                                <div className="inline-flex items-center gap-1.5 bg-black text-[#10B981] border-2 border-black px-2.5 py-1 font-mono font-extrabold text-[10px] uppercase shadow-[2px_2px_0px_#000]">
+                                  <span>From: {lec.sharedByEmail}</span>
+                                </div>
+                              ) : (
+                                <div className="inline-flex items-center gap-2 bg-[#FFC107] text-black border-2 border-black px-3 py-1 font-black text-xs uppercase shadow-[2px_2px_0px_#000]">
+                                  <Sparkles className="w-3.5 h-3.5 text-black" />
+                                  <span>{isCompleted ? 'Synthesized' : isRecording ? 'Processing...' : 'Not Started'}</span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         );
@@ -644,6 +763,16 @@ export default function LibraryView({
                       >
                         <BookOpen className="w-5 h-5 stroke-[3]" />
                         OPEN LECTURE NOTES
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setShareModalLecture(selectedLectureDetail);
+                        }}
+                        className="w-full bg-[#2563EB] text-white font-black uppercase text-xs py-3 brutal-border flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors cursor-pointer"
+                      >
+                        <Share2 className="w-4 h-4 stroke-[3]" />
+                        SHARE LECTURE WITH CLASSMATE
                       </button>
 
                       <button
@@ -792,41 +921,70 @@ export default function LibraryView({
               </button>
             </div>
 
-            {/* Saved Lectures Grid */}
+            {/* Saved Lectures Grid (Parrot Green for Shared Notes) */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredSavedLectures.map((lec) => (
-                <div key={lec.id} className="bg-white dark:bg-[#161B22] brutal-border p-6 flex flex-col justify-between">
+                <div 
+                  key={lec.id} 
+                  className={`brutal-border p-6 flex flex-col justify-between ${
+                    lec.isShared 
+                      ? 'bg-[#10B981] text-black border-black shadow-[8px_8px_0px_#000]' 
+                      : 'bg-white dark:bg-[#161B22]'
+                  }`}
+                >
                   <div>
+                    {lec.isShared && (
+                      <div className="mb-2 px-2 py-0.5 bg-black text-[#10B981] text-[9px] font-mono font-black uppercase tracking-wider border border-black flex items-center justify-between">
+                        <span>📥 SHARED BY: {lec.sharedByName || lec.sharedByEmail || 'Peer'}</span>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] font-black uppercase px-2 py-0.5 bg-[#FFC107] text-black border border-black">
+                      <span className={`text-[10px] font-black uppercase px-2 py-0.5 border border-black ${
+                        lec.isShared ? 'bg-black text-[#10B981]' : 'bg-[#FFC107] text-black'
+                      }`}>
                         {lec.subject || 'GENERAL'}
                       </span>
-                      <button 
-                        onClick={() => {
-                          if (window.confirm(`Are you sure you want to delete "${lec.title}" completely?`)) {
-                            onDeleteLecture(lec.id);
-                          }
-                        }} 
-                        className="p-1 text-black/70 dark:text-white/70 hover:text-[#EF4444] hover:bg-red-500/10 rounded transition-colors"
-                        title="Delete Lecture"
-                      >
-                        <Trash2 className="w-4 h-4 stroke-[2.5]" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => setShareModalLecture(lec)}
+                          className="p-1 text-black hover:text-[#2563EB] transition-colors"
+                          title="Share Lecture with Classmate"
+                        >
+                          <Share2 className="w-4 h-4 stroke-[2.5]" />
+                        </button>
+                        <button 
+                          onClick={() => {
+                            if (window.confirm(`Are you sure you want to delete "${lec.title}" completely?`)) {
+                              onDeleteLecture(lec.id);
+                            }
+                          }} 
+                          className="p-1 text-black/70 dark:text-white/70 hover:text-[#EF4444] hover:bg-red-500/10 rounded transition-colors"
+                          title="Delete Lecture"
+                        >
+                          <Trash2 className="w-4 h-4 stroke-[2.5]" />
+                        </button>
+                      </div>
                     </div>
-                    <h4 className="text-sm font-black uppercase mb-2 text-black dark:text-white">{lec.title}</h4>
-                    <p className="text-xs font-bold text-[#334155] dark:text-[#CBD5E1] line-clamp-3 mb-4">
+                    <h4 className={`text-sm font-black uppercase mb-2 ${lec.isShared ? 'text-black font-black' : 'text-black dark:text-white'}`}>
+                      {lec.title}
+                    </h4>
+                    <p className={`text-xs font-bold line-clamp-3 mb-4 ${lec.isShared ? 'text-black/80' : 'text-[#334155] dark:text-[#CBD5E1]'}`}>
                       {lec.transcript || 'No transcript text available.'}
                     </p>
                   </div>
 
                   <div className="flex items-center justify-between pt-3 border-t-2 border-black">
-                    <span className="text-[10px] font-bold uppercase text-black/70 dark:text-white/70">{lec.addedAt}</span>
+                    <span className={`text-[10px] font-bold uppercase ${lec.isShared ? 'text-black/80' : 'text-black/70 dark:text-white/70'}`}>
+                      {lec.addedAt}
+                    </span>
                     <button
                       onClick={() => {
                         if (setActiveLectureId) setActiveLectureId(lec.id);
                         setActivePage('lecture-capture');
                       }}
-                      className="text-xs font-black uppercase text-black dark:text-white hover:text-[#FFC107] flex items-center gap-1"
+                      className={`text-xs font-black uppercase hover:text-[#FFC107] flex items-center gap-1 ${
+                        lec.isShared ? 'text-black' : 'text-black dark:text-white'
+                      }`}
                     >
                       OPEN LECTURE NOTES <ArrowRight className="w-3.5 h-3.5 stroke-[3]" />
                     </button>
@@ -920,6 +1078,90 @@ export default function LibraryView({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: SHARE LECTURE WITH CLASSMATE */}
+      {shareModalLecture && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#161B22] brutal-border max-w-md w-full p-6 relative shadow-[10px_10px_0px_#000]">
+            <div className="flex items-center justify-between mb-4 border-b-4 border-black pb-2">
+              <h3 className="text-base font-black uppercase text-black dark:text-white flex items-center gap-2">
+                <Share2 className="w-5 h-5 text-[#2563EB]" />
+                <span>SHARE LECTURE NOTES</span>
+              </h3>
+              <button 
+                onClick={() => {
+                  setShareModalLecture(null);
+                  setShareSuccessMsg(null);
+                  setShareErrorMsg(null);
+                }}
+                className="text-black dark:text-white hover:text-red-500"
+              >
+                <X className="w-5 h-5 stroke-[3]" />
+              </button>
+            </div>
+
+            {shareSuccessMsg ? (
+              <div className="p-4 bg-[#10B981]/20 border-2 border-black text-[#047857] dark:text-[#10B981] font-mono text-xs font-bold rounded space-y-2 text-center">
+                <CheckCircle className="w-8 h-8 mx-auto text-[#10B981]" />
+                <p className="font-extrabold uppercase">{shareSuccessMsg}</p>
+              </div>
+            ) : (
+              <form onSubmit={handleShareSubmit} className="flex flex-col gap-4">
+                <div className="p-3 bg-amber-500/10 border-2 border-black rounded text-xs font-mono font-bold text-black dark:text-white">
+                  Sharing: <strong className="uppercase">{shareModalLecture.title}</strong> ({shareModalLecture.subject || 'General'})
+                </div>
+
+                {shareErrorMsg && (
+                  <div className="text-xs font-bold text-red-500 bg-red-500/10 p-2 border border-red-500">
+                    {shareErrorMsg}
+                  </div>
+                )}
+
+                <div>
+                  <label className="text-xs font-black uppercase block mb-1 text-black dark:text-white">
+                    Classmate / Student Email *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={shareEmail}
+                    onChange={(e) => setShareEmail(e.target.value)}
+                    placeholder="student@university.edu"
+                    className="w-full brutal-border p-3 text-xs font-bold font-mono bg-white dark:bg-[#0D1117] text-black dark:text-white outline-none"
+                  />
+                </div>
+
+                <div className="flex gap-2 justify-end pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShareModalLecture(null)}
+                    className="px-4 py-2 font-black text-xs uppercase brutal-border bg-gray-200 dark:bg-[#21262D] text-black dark:text-white hover:bg-gray-300 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSharing}
+                    className="px-5 py-2 font-black text-xs uppercase brutal-border bg-[#2563EB] text-white hover:bg-blue-700 disabled:opacity-50 cursor-pointer flex items-center gap-2"
+                  >
+                    {isSharing ? (
+                      <>
+                        <RotateCw className="w-4 h-4 animate-spin" />
+                        <span>Sending...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4" />
+                        <span>Share Notes</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

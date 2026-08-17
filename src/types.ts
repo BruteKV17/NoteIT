@@ -146,6 +146,10 @@ export interface Lecture {
   lastGenerationProvider?: string;
   lastGenerationModel?: string;
   lastGeneratedAt?: any;
+  isShared?: boolean;
+  sharedByEmail?: string;
+  sharedByName?: string;
+  sharedAt?: any;
 }
 
 export interface WeakTopic {
