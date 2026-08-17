@@ -363,7 +363,7 @@ export default function OnboardingView({
   return (
     <div className="min-h-screen w-screen flex items-center justify-center p-4 relative overflow-y-auto font-sans bg-grid-paper text-[#111111] select-none">
       
-      <div className={`w-full transition-all duration-300 ${step === 4 ? 'max-w-5xl' : 'max-w-md'} p-4 sm:p-6 relative z-10`}>
+      <div className={`w-full transition-all duration-300 ${step === 4 ? 'max-w-6xl' : 'max-w-md'} p-4 sm:p-6 relative z-10`}>
         <header className="text-center mb-8 space-y-3">
           <div className="inline-flex h-12 w-12 items-center justify-center rounded-[6px] bg-[#FFC400] text-[#111111] border-2 border-[#111111] shadow-paper-sm">
             <GraduationCap className="h-6 w-6 text-[#111111]" />
@@ -544,7 +544,7 @@ export default function OnboardingView({
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start text-left animate-fade-in">
                 
                 {/* LEFT SIDE: API KEY FILLING SECTION */}
-                <div className="lg:col-span-6 space-y-4">
+                <div className="lg:col-span-5 space-y-4">
                   <div className="border-b border-[#111111]/15 pb-2 mb-2">
                     <h3 className="text-sm font-black text-[#111111]">Configure Your AI Provider</h3>
                     <p className="text-xs text-[#333333] font-medium mt-0.5 leading-relaxed">
@@ -689,105 +689,105 @@ export default function OnboardingView({
                   </div>
                 </div>
 
-                {/* RIGHT SIDE: ALL 4 STEP PHOTOS VISIBLE AT ONCE IN 2x2 GRID */}
-                <div className="lg:col-span-6 space-y-3 rounded-xl border-2 border-black dark:border-slate-700 bg-[#F8FAFC] dark:bg-[#1E293B] p-4 shadow-paper-xs">
-                  <div className="flex items-center justify-between border-b border-[#CBD5E1] dark:border-slate-700 pb-2">
-                    <div className="flex items-center gap-2">
-                      <div className="p-1.5 bg-[#2563EB] text-white rounded-lg border border-black shadow-sm">
-                        <Key className="h-4 w-4 stroke-[2.5]" />
+                {/* RIGHT SIDE: ALL 4 STEP PHOTOS SEPARATELY & GOOD SIZED */}
+                <div className="lg:col-span-7 space-y-4 rounded-2xl border-2 border-black dark:border-slate-700 bg-[#F8FAFC] dark:bg-[#1E293B] p-4 sm:p-5 shadow-paper-xs max-h-[720px] overflow-y-auto pr-2 custom-scrollbar">
+                  <div className="flex items-center justify-between border-b border-[#CBD5E1] dark:border-slate-700 pb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 bg-[#2563EB] text-white rounded-xl border border-black shadow-sm">
+                        <Key className="h-5 w-5 stroke-[2.5]" />
                       </div>
                       <div>
-                        <h3 className="text-xs font-black uppercase text-black dark:text-white tracking-wide">How to Get Your API Key</h3>
-                        <p className="text-[11px] font-bold text-slate-600 dark:text-slate-400">All 4 steps visible at once for easy setup</p>
+                        <h3 className="text-sm font-black uppercase text-black dark:text-white tracking-wide">How to Get Your API Key</h3>
+                        <p className="text-xs font-bold text-slate-600 dark:text-slate-400">4 step visual roadmap — good-sized & easy to see</p>
                       </div>
                     </div>
-                    <span className="px-2 py-0.5 bg-[#FFC400] text-black border border-black text-[10px] font-mono font-black rounded uppercase">
-                      4 Steps Guide
+                    <span className="px-2.5 py-1 bg-[#FFC400] text-black border border-black text-xs font-mono font-black rounded-lg uppercase shadow-sm">
+                      4 Step Guide
                     </span>
                   </div>
 
-                  {/* 2x2 GRID SHOWCASING ALL 4 STEP IMAGES SIMULTANEOUSLY */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* 4 SEPARATE LARGE CARDS SHOWCASING THE PHOTOS */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* STEP 1 */}
                     <div 
                       onClick={() => setSelectedGuideImage('/guides/api-key/step1.jpg')}
-                      className="rounded-lg border-2 border-black dark:border-slate-700 bg-white dark:bg-[#0D1117] p-2 space-y-1.5 shadow-sm hover:border-[#2563EB] transition-all cursor-pointer group"
+                      className="rounded-xl border-2 border-black dark:border-slate-700 bg-white dark:bg-[#0D1117] p-3 space-y-2 shadow-sm hover:border-[#2563EB] transition-all cursor-pointer group flex flex-col justify-between"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="px-2 py-0.5 bg-[#2563EB] text-white text-[9px] font-mono font-black rounded border border-black">
+                        <span className="px-2.5 py-0.5 bg-[#2563EB] text-white text-[10px] font-mono font-black rounded-md border border-black">
                           STEP 1
                         </span>
-                        <span className="text-[9px] font-mono font-bold text-slate-500 group-hover:text-[#2563EB]">Zoom 🔍</span>
+                        <span className="text-[10px] font-mono font-bold text-slate-500 group-hover:text-[#2563EB]">Click to Expand 🔍</span>
                       </div>
-                      <div className="rounded border border-slate-300 dark:border-slate-700 overflow-hidden bg-black h-28">
-                        <img src="/guides/api-key/step1.jpg" alt="Step 1" className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform" />
+                      <div className="rounded-lg border-2 border-black dark:border-slate-800 overflow-hidden bg-slate-950 h-44 sm:h-48 flex items-center justify-center p-1">
+                        <img src="/guides/api-key/step1.jpg" alt="Step 1" className="w-full h-full object-contain group-hover:scale-103 transition-transform" />
                       </div>
-                      <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200 leading-tight">
-                        1. Click <strong className="text-[#2563EB]">"Get API Key"</strong> on left.
+                      <p className="text-xs font-bold text-slate-900 dark:text-slate-100 leading-snug">
+                        1. Click <strong className="text-[#2563EB]">"Get API Key"</strong> under Provider Details on the left form.
                       </p>
                     </div>
 
                     {/* STEP 2 */}
                     <div 
                       onClick={() => setSelectedGuideImage('/guides/api-key/step2.png')}
-                      className="rounded-lg border-2 border-black dark:border-slate-700 bg-white dark:bg-[#0D1117] p-2 space-y-1.5 shadow-sm hover:border-[#2563EB] transition-all cursor-pointer group"
+                      className="rounded-xl border-2 border-black dark:border-slate-700 bg-white dark:bg-[#0D1117] p-3 space-y-2 shadow-sm hover:border-[#2563EB] transition-all cursor-pointer group flex flex-col justify-between"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="px-2 py-0.5 bg-[#2563EB] text-white text-[9px] font-mono font-black rounded border border-black">
+                        <span className="px-2.5 py-0.5 bg-[#2563EB] text-white text-[10px] font-mono font-black rounded-md border border-black">
                           STEP 2
                         </span>
-                        <span className="text-[9px] font-mono font-bold text-slate-500 group-hover:text-[#2563EB]">Zoom 🔍</span>
+                        <span className="text-[10px] font-mono font-bold text-slate-500 group-hover:text-[#2563EB]">Click to Expand 🔍</span>
                       </div>
-                      <div className="rounded border border-slate-300 dark:border-slate-700 overflow-hidden bg-black h-28">
-                        <img src="/guides/api-key/step2.png" alt="Step 2" className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform" />
+                      <div className="rounded-lg border-2 border-black dark:border-slate-800 overflow-hidden bg-slate-950 h-44 sm:h-48 flex items-center justify-center p-1">
+                        <img src="/guides/api-key/step2.png" alt="Step 2" className="w-full h-full object-contain group-hover:scale-103 transition-transform" />
                       </div>
-                      <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200 leading-tight">
-                        2. Click <strong className="text-[#2563EB]">"Create API key"</strong> button.
+                      <p className="text-xs font-bold text-slate-900 dark:text-slate-100 leading-snug">
+                        2. On Google AI Studio, click <strong className="text-[#2563EB]">"Create API key"</strong> button.
                       </p>
                     </div>
 
                     {/* STEP 3 */}
                     <div 
                       onClick={() => setSelectedGuideImage('/guides/api-key/step3.png')}
-                      className="rounded-lg border-2 border-black dark:border-slate-700 bg-white dark:bg-[#0D1117] p-2 space-y-1.5 shadow-sm hover:border-[#2563EB] transition-all cursor-pointer group"
+                      className="rounded-xl border-2 border-black dark:border-slate-700 bg-white dark:bg-[#0D1117] p-3 space-y-2 shadow-sm hover:border-[#2563EB] transition-all cursor-pointer group flex flex-col justify-between"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="px-2 py-0.5 bg-[#2563EB] text-white text-[9px] font-mono font-black rounded border border-black">
+                        <span className="px-2.5 py-0.5 bg-[#2563EB] text-white text-[10px] font-mono font-black rounded-md border border-black">
                           STEP 3
                         </span>
-                        <span className="text-[9px] font-mono font-bold text-slate-500 group-hover:text-[#2563EB]">Zoom 🔍</span>
+                        <span className="text-[10px] font-mono font-bold text-slate-500 group-hover:text-[#2563EB]">Click to Expand 🔍</span>
                       </div>
-                      <div className="rounded border border-slate-300 dark:border-slate-700 overflow-hidden bg-black h-28">
-                        <img src="/guides/api-key/step3.png" alt="Step 3" className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform" />
+                      <div className="rounded-lg border-2 border-black dark:border-slate-800 overflow-hidden bg-slate-950 h-44 sm:h-48 flex items-center justify-center p-1">
+                        <img src="/guides/api-key/step3.png" alt="Step 3" className="w-full h-full object-contain group-hover:scale-103 transition-transform" />
                       </div>
-                      <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200 leading-tight">
-                        3. Name key & click <strong className="text-[#2563EB]">"Create key"</strong>.
+                      <p className="text-xs font-bold text-slate-900 dark:text-slate-100 leading-snug">
+                        3. Enter key name & click blue <strong className="text-[#2563EB]">"Create key"</strong> button.
                       </p>
                     </div>
 
                     {/* STEP 4 */}
                     <div 
                       onClick={() => setSelectedGuideImage('/guides/api-key/step4.png')}
-                      className="rounded-lg border-2 border-black dark:border-slate-700 bg-white dark:bg-[#0D1117] p-2 space-y-1.5 shadow-sm hover:border-[#2563EB] transition-all cursor-pointer group"
+                      className="rounded-xl border-2 border-black dark:border-slate-700 bg-white dark:bg-[#0D1117] p-3 space-y-2 shadow-sm hover:border-[#2563EB] transition-all cursor-pointer group flex flex-col justify-between"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="px-2 py-0.5 bg-[#2563EB] text-white text-[9px] font-mono font-black rounded border border-black">
+                        <span className="px-2.5 py-0.5 bg-[#2563EB] text-white text-[10px] font-mono font-black rounded-md border border-black">
                           STEP 4
                         </span>
-                        <span className="text-[9px] font-mono font-bold text-slate-500 group-hover:text-[#2563EB]">Zoom 🔍</span>
+                        <span className="text-[10px] font-mono font-bold text-slate-500 group-hover:text-[#2563EB]">Click to Expand 🔍</span>
                       </div>
-                      <div className="rounded border border-slate-300 dark:border-slate-700 overflow-hidden bg-black h-28">
-                        <img src="/guides/api-key/step4.png" alt="Step 4" className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform" />
+                      <div className="rounded-lg border-2 border-black dark:border-slate-800 overflow-hidden bg-slate-950 h-44 sm:h-48 flex items-center justify-center p-1">
+                        <img src="/guides/api-key/step4.png" alt="Step 4" className="w-full h-full object-contain group-hover:scale-103 transition-transform" />
                       </div>
-                      <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200 leading-tight">
-                        4. Click <strong className="text-[#2563EB]">"Copy key"</strong> & paste into left form!
+                      <p className="text-xs font-bold text-slate-900 dark:text-slate-100 leading-snug">
+                        4. Click <strong className="text-[#2563EB]">"Copy key"</strong> & paste into the left form!
                       </p>
                     </div>
                   </div>
 
-                  <div className="p-2 bg-amber-500/10 rounded-lg border border-amber-400/50 flex items-center gap-2 text-[11px] font-mono font-bold text-amber-900 dark:text-amber-300">
+                  <div className="p-3 bg-amber-500/10 rounded-xl border border-amber-400/50 flex items-center gap-2 text-xs font-mono font-bold text-amber-900 dark:text-amber-300">
                     <Lightbulb className="h-4 w-4 text-amber-500 shrink-0" />
-                    <span>Click any image above to view high-res full size!</span>
+                    <span>Click any image above to open high-res full screen lightbox view!</span>
                   </div>
                 </div>
 
