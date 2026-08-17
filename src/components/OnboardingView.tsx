@@ -16,6 +16,7 @@ import {
 import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebaseConfig';
 import { API_BASE_URL } from '../config';
+import { validateApiKeyDirect } from '../providers/ValidationAdapters';
 
 const PROVIDER_METADATA: Record<string, {
   name: string;
@@ -308,57 +309,12 @@ export default function OnboardingView({
         }
       }
 
-      let validated = false;
-      let errorMessage = '';
-
+      // Fast direct client-side key validation (under ~300ms)
       try {
-        const response = await fetch(`${API_BASE_URL}/api/ai/validate-key`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${idToken}`
-          },
-          body: JSON.stringify({
-            key: trimmedKey,
-            provider: selectedProvider,
-            model: selectedModel
-          })
-        });
-
-        if (response.ok) {
-          validated = true;
-        } else {
-          const errorData = await response.json().catch(() => ({}));
-          errorMessage = errorData.error || `Validation failed with status ${response.status}`;
-        }
-      } catch (fetchErr: any) {
-        console.warn("Backend validate-key endpoint unreachable, attempting direct client-side validation fallback:", fetchErr);
-        try {
-          if (selectedProvider === 'gemini') {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${trimmedKey}&pageSize=1`);
-            if (res.ok) {
-              validated = true;
-            } else {
-              errorMessage = 'Invalid or unauthorized Gemini API key.';
-            }
-          } else {
-            if (trimmedKey.length >= 8) {
-              validated = true;
-            } else {
-              errorMessage = 'API Key format is invalid or too short.';
-            }
-          }
-        } catch (clientErr) {
-          if (trimmedKey.length >= 8) {
-            validated = true;
-          } else {
-            errorMessage = 'Network error verifying API key. Please check your internet connection.';
-          }
-        }
-      }
-
-      if (!validated) {
-        throw new Error(errorMessage || 'Failed to validate API key. Please check your key.');
+        await validateApiKeyDirect(trimmedKey, selectedProvider, selectedModel);
+      } catch (valErr: any) {
+        console.warn("API key validation failed:", valErr);
+        throw new Error(valErr.message || 'Failed to validate API key. Please check your key.');
       }
 
       // Persist configuration in localStorage

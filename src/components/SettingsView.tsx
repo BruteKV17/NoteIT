@@ -33,6 +33,7 @@ import { PageId, UserSettings } from '../types';
 import { auth } from '../firebaseConfig';
 import { API_BASE_URL } from '../config';
 import { MascotAvatarPicker } from './bauhaus/MascotAvatarPicker';
+import { validateApiKeyDirect } from '../providers/ValidationAdapters';
 
 const PROVIDER_METADATA: Record<string, {
   name: string;
@@ -344,25 +345,19 @@ export default function SettingsView({
     setRevalidating(true);
     setValidationError(null);
     try {
-      const currentUser = auth.currentUser;
-      if (!currentUser) return;
-      const idToken = await currentUser.getIdToken();
-      const res = await fetch(`${API_BASE_URL}/api/ai/revalidate`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${idToken}`
-        }
-      });
-      if (res.ok) {
-        triggerSaveNotification();
-        await fetchConfigStatus();
-      } else {
-        const errorData = await res.json().catch(() => ({}));
-        setValidationError(errorData.error || 'Failed to revalidate API key.');
+      const activeProvider = localStorage.getItem('noteit_active_ai_provider') || aiProvider || 'gemini';
+      const activeKey = localStorage.getItem(`noteit_${activeProvider}_api_key`) || import.meta.env.VITE_GEMINI_API_KEY || '';
+
+      if (!activeKey) {
+        throw new Error('No API key found to validate. Please enter an API key first.');
       }
+
+      await validateApiKeyDirect(activeKey, activeProvider, selectedModel);
+      triggerSaveNotification();
+      await fetchConfigStatus();
     } catch (err: any) {
       console.error('Error revalidating key:', err);
-      setValidationError('Failed to revalidate API key. Please check network connection.');
+      setValidationError(err.message || 'Failed to revalidate API key. Please check network connection.');
     } finally {
       setRevalidating(false);
     }

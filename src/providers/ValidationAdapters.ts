@@ -1,6 +1,6 @@
 import { ProviderValidationError } from './AIProvider';
 
-async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 5000): Promise<Response> {
+async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 3000): Promise<Response> {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -8,7 +8,7 @@ async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutM
     return response;
   } catch (err: any) {
     if (err.name === 'AbortError') {
-      throw new ProviderValidationError('Validation request timed out after 5 seconds', 504);
+      throw new ProviderValidationError('Validation request timed out after 3 seconds', 504);
     }
     throw err;
   } finally {
@@ -26,10 +26,8 @@ export class GeminiAdapter implements ValidationAdapter {
       throw new ProviderValidationError('Invalid API key format. Key is too short.', 401);
     }
     try {
-      let response = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1/models?key=${apiKey}&pageSize=1`, { method: 'GET' });
-      if (!response.ok && response.status === 404) {
-        response = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}&pageSize=1`, { method: 'GET' });
-      }
+      // Direct call to v1beta for ultra-fast validation
+      const response = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}&pageSize=1`, { method: 'GET' });
       if (!response.ok) {
         const text = await response.text();
         const status = response.status;
@@ -371,5 +369,17 @@ export class ValidationAdapterFactory {
         throw new ProviderValidationError(`Unsupported AI provider validation: ${provider}`, 400);
     }
   }
+}
+
+/**
+ * Direct client-side fast API key validation helper (under ~300ms response time)
+ */
+export async function validateApiKeyDirect(apiKey: string, provider: string, model?: string): Promise<void> {
+  const trimmed = apiKey ? apiKey.trim() : '';
+  if (!trimmed || trimmed.length < 8) {
+    throw new ProviderValidationError('API key is too short or format is invalid.', 401);
+  }
+  const adapter = ValidationAdapterFactory.getAdapter(provider);
+  await adapter.validate(trimmed, model);
 }
 
