@@ -641,23 +641,15 @@ export default function OnboardingView({
                         </div>
                       </div>
 
-                      <div className="flex gap-2.5 pt-2 border-t border-[#CBD5E1] dark:border-slate-700">
+                      <div className="pt-2 border-t border-[#CBD5E1] dark:border-slate-700">
                         <a
                           href={PROVIDER_METADATA[selectedProvider]?.getKeyLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-[11px] font-black text-[#1D4ED8] dark:text-[#60A5FA] hover:underline"
+                          className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border-2 border-black bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-mono font-black uppercase tracking-wider shadow-paper-xs hover:shadow-paper transition-all active:scale-98 cursor-pointer"
                         >
-                          Get API Key <ExternalLink className="h-3 w-3" />
-                        </a>
-                        <span className="text-[#94A3B8]">•</span>
-                        <a
-                          href={PROVIDER_METADATA[selectedProvider]?.docLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-[11px] font-black text-[#334155] dark:text-[#E2E8F0] hover:underline"
-                        >
-                          Documentation <ExternalLink className="h-3 w-3" />
+                          <span>Get {PROVIDER_METADATA[selectedProvider]?.name || 'Gemini'} API Key</span>
+                          <ExternalLink className="h-3.5 w-3.5 stroke-[2.5]" />
                         </a>
                       </div>
                     </div>
