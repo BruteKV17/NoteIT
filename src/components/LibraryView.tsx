@@ -576,9 +576,26 @@ export default function LibraryView({
                             <p className="text-xs font-black uppercase tracking-widest bg-[#FFC107] text-black px-2 py-0.5 border-2 border-black">
                               LECTURE {lec.lectureNumber < 10 ? `0${lec.lectureNumber}` : lec.lectureNumber}
                             </p>
-                            <span className="text-xs font-extrabold flex items-center gap-1 border-2 border-black px-2 py-0.5 bg-black text-white dark:bg-[#FFC107] dark:text-black">
-                              <Timer className="w-3.5 h-3.5" /> {lec.duration || '45m'}
-                            </span>
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs font-extrabold flex items-center gap-1 border-2 border-black px-2 py-0.5 bg-black text-white dark:bg-[#FFC107] dark:text-black">
+                                <Timer className="w-3.5 h-3.5" /> {lec.duration || '45m'}
+                              </span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (window.confirm(`Are you sure you want to delete lecture "${lec.title}"?`)) {
+                                    onDeleteLecture(lec.id);
+                                    if (selectedLectureDetail?.id === lec.id) {
+                                      setSelectedLectureDetail(null);
+                                    }
+                                  }
+                                }}
+                                title="Delete Lecture"
+                                className="p-1 bg-[#EF4444] text-white border-2 border-black hover:bg-red-700 transition-colors"
+                              >
+                                <Trash2 className="w-3.5 h-3.5 stroke-[3]" />
+                              </button>
+                            </div>
                           </div>
 
                           <h3 className="text-base font-black uppercase leading-tight mb-4 text-black dark:text-white">
@@ -657,17 +674,32 @@ export default function LibraryView({
                       {selectedLectureDetail.transcript || "Exploration of tree data structures, search algorithms, and cognitive notes generation."}
                     </p>
 
-                    <button
-                      onClick={() => {
-                        if (setActiveLectureId) setActiveLectureId(selectedLectureDetail.id);
-                        setSelectedLectureDetail(null);
-                        setActivePage('knowledge-studio');
-                      }}
-                      className="w-full bg-[#FFC107] text-black font-black uppercase text-sm py-3.5 brutal-border flex items-center justify-center gap-2 hover:bg-[#FFD54F] transition-transform"
-                    >
-                      <BookOpen className="w-5 h-5 stroke-[3]" />
-                      OPEN NOTES & STUDIO
-                    </button>
+                    <div className="flex flex-col gap-2">
+                      <button
+                        onClick={() => {
+                          if (setActiveLectureId) setActiveLectureId(selectedLectureDetail.id);
+                          setSelectedLectureDetail(null);
+                          setActivePage('knowledge-studio');
+                        }}
+                        className="w-full bg-[#FFC107] text-black font-black uppercase text-sm py-3.5 brutal-border flex items-center justify-center gap-2 hover:bg-[#FFD54F] transition-transform cursor-pointer"
+                      >
+                        <BookOpen className="w-5 h-5 stroke-[3]" />
+                        OPEN NOTES & STUDIO
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`Are you sure you want to delete "${selectedLectureDetail.title}" completely?`)) {
+                            onDeleteLecture(selectedLectureDetail.id);
+                            setSelectedLectureDetail(null);
+                          }
+                        }}
+                        className="w-full bg-[#EF4444] text-white font-black uppercase text-xs py-2.5 brutal-border flex items-center justify-center gap-2 hover:bg-red-700 transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-4 h-4 stroke-[3]" />
+                        DELETE LECTURE FULLY
+                      </button>
+                    </div>
                   </div>
 
                   {/* Panel Body Resources */}
@@ -810,7 +842,15 @@ export default function LibraryView({
                       <span className="text-[10px] font-black uppercase px-2 py-0.5 bg-[#FFC107] text-black border border-black">
                         {lec.subject || 'GENERAL'}
                       </span>
-                      <button onClick={() => onDeleteLecture(lec.id)} className="text-black/70 dark:text-white/70 hover:text-[#EF4444]">
+                      <button 
+                        onClick={() => {
+                          if (window.confirm(`Are you sure you want to delete "${lec.title}" completely?`)) {
+                            onDeleteLecture(lec.id);
+                          }
+                        }} 
+                        className="p-1 text-black/70 dark:text-white/70 hover:text-[#EF4444] hover:bg-red-500/10 rounded transition-colors"
+                        title="Delete Lecture"
+                      >
                         <Trash2 className="w-4 h-4 stroke-[2.5]" />
                       </button>
                     </div>

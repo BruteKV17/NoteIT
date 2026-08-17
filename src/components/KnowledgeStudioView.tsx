@@ -2528,58 +2528,77 @@ ${queryText}`;
             </div>
           )}
 
-          {/* Minimalist Add Source Dropdown Button */}
-          <div className="relative">
-            <button
-              onClick={() => setAddSourceDropdownOpen(!addSourceDropdownOpen)}
-              className="w-full flex items-center justify-between p-2.5 rounded-[6px] border-2 border-[#111111] bg-[#FFC400] text-[#111111] font-mono text-xs font-extrabold uppercase shadow-paper-sm hover:bg-[#ffe066] transition-colors cursor-pointer"
-            >
-              <span className="flex items-center gap-2">
-                <Plus className="h-4 w-4 text-[#111111]" />
-                <span>Add Source</span>
-              </span>
-              <ChevronDown className={`h-4 w-4 text-[#111111] transition-transform ${addSourceDropdownOpen ? 'rotate-180' : ''}`} />
-            </button>
-
-            {addSourceDropdownOpen && (
-              <div className="absolute left-0 right-0 mt-2 rounded-[6px] border-2 border-[#111111] bg-white p-1.5 shadow-paper-md space-y-1 z-30 font-mono text-xs font-bold uppercase text-[#111111]">
-                <button
-                  onClick={() => { setAddSourceDropdownOpen(false); fileInputRef.current?.click(); }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[4px] text-left hover:bg-[#FFC400] transition-colors cursor-pointer"
-                >
-                  <Upload className="h-4 w-4 text-[#111111] shrink-0" />
-                  <span>Upload Local File</span>
-                </button>
-                <button
-                  onClick={() => { setAddSourceDropdownOpen(false); setUrlType('website'); setShowUrlModal(true); }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[4px] text-left hover:bg-[#FFC400] transition-colors cursor-pointer"
-                >
-                  <Globe className="h-4 w-4 text-[#111111] shrink-0" />
-                  <span>Add Web URL</span>
-                </button>
-                <button
-                  onClick={() => { setAddSourceDropdownOpen(false); setUrlType('youtube'); setShowUrlModal(true); }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[4px] text-left hover:bg-[#FFC400] transition-colors cursor-pointer"
-                >
-                  <Youtube className="h-4 w-4 text-[#FF4D4D] shrink-0" />
-                  <span>Import YouTube</span>
-                </button>
-                <button
-                  onClick={() => { setAddSourceDropdownOpen(false); setShowDriveModal(true); }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[4px] text-left hover:bg-[#FFC400] transition-colors cursor-pointer"
-                >
-                  <HardDrive className="h-4 w-4 text-[#2F6BFF] shrink-0" />
-                  <span>Google Drive</span>
-                </button>
-              </div>
+          {/* Minimalist Add Source & Bulk Actions */}
+          <div className="space-y-2">
+            {selectedSourceIds.length > 0 && (
+              <button
+                onClick={async () => {
+                  if (window.confirm(`Delete ${selectedSourceIds.length} selected source(s) completely?`)) {
+                    for (const id of selectedSourceIds) {
+                      await handleDeleteSource(id);
+                    }
+                    setSelectedSourceIds([]);
+                  }
+                }}
+                className="w-full flex items-center justify-center gap-2 p-2 rounded-[6px] border-2 border-red-500 bg-red-500/10 text-red-500 font-mono text-xs font-extrabold uppercase hover:bg-red-500 hover:text-white transition-colors cursor-pointer"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span>Delete Selected ({selectedSourceIds.length})</span>
+              </button>
             )}
-            <input
-              type="file"
-              ref={fileInputRef}
-              className="hidden"
-              onChange={handleFileUpload}
-              accept=".pdf,.docx,.txt,.md,.pptx,.xlsx,.csv"
-            />
+
+            <div className="relative">
+              <button
+                onClick={() => setAddSourceDropdownOpen(!addSourceDropdownOpen)}
+                className="w-full flex items-center justify-between p-2.5 rounded-[6px] border-2 border-[#111111] bg-[#FFC400] text-[#111111] font-mono text-xs font-extrabold uppercase shadow-paper-sm hover:bg-[#ffe066] transition-colors cursor-pointer"
+              >
+                <span className="flex items-center gap-2">
+                  <Plus className="h-4 w-4 text-[#111111]" />
+                  <span>Add Source</span>
+                </span>
+                <ChevronDown className={`h-4 w-4 text-[#111111] transition-transform ${addSourceDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {addSourceDropdownOpen && (
+                <div className="absolute left-0 right-0 mt-2 rounded-[6px] border-2 border-[#111111] bg-white p-1.5 shadow-paper-md space-y-1 z-30 font-mono text-xs font-bold uppercase text-[#111111]">
+                  <button
+                    onClick={() => { setAddSourceDropdownOpen(false); fileInputRef.current?.click(); }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[4px] text-left hover:bg-[#FFC400] transition-colors cursor-pointer"
+                  >
+                    <Upload className="h-4 w-4 text-[#111111] shrink-0" />
+                    <span>Upload Local File</span>
+                  </button>
+                  <button
+                    onClick={() => { setAddSourceDropdownOpen(false); setUrlType('website'); setShowUrlModal(true); }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[4px] text-left hover:bg-[#FFC400] transition-colors cursor-pointer"
+                  >
+                    <Globe className="h-4 w-4 text-[#111111] shrink-0" />
+                    <span>Add Web URL</span>
+                  </button>
+                  <button
+                    onClick={() => { setAddSourceDropdownOpen(false); setUrlType('youtube'); setShowUrlModal(true); }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[4px] text-left hover:bg-[#FFC400] transition-colors cursor-pointer"
+                  >
+                    <Youtube className="h-4 w-4 text-[#FF4D4D] shrink-0" />
+                    <span>Import YouTube</span>
+                  </button>
+                  <button
+                    onClick={() => { setAddSourceDropdownOpen(false); setShowDriveModal(true); }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[4px] text-left hover:bg-[#FFC400] transition-colors cursor-pointer"
+                  >
+                    <HardDrive className="h-4 w-4 text-[#2F6BFF] shrink-0" />
+                    <span>Google Drive</span>
+                  </button>
+                </div>
+              )}
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                onChange={handleFileUpload}
+                accept=".pdf,.docx,.txt,.md,.pptx,.xlsx,.csv"
+              />
+            </div>
           </div>
 
           {/* Sources List Cards */}
@@ -2607,123 +2626,137 @@ ${queryText}`;
                           : 'border-gray-200 bg-white hover:border-gray-300'
                     }`}
                   >
-                    <div className="flex items-start gap-2.5">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => handleToggleSourceSelect(src.id)}
-                        className="mt-1 accent-indigo-500 cursor-pointer h-3.5 w-3.5"
-                      />
-                      <div className="flex-1 min-w-0" onClick={() => setActiveSourceId(src.id)}>
-                        <div className="flex items-center gap-1.5">
-                          {getSourceIcon(src.sourceType)}
-                          <span className="text-[11px] font-black uppercase tracking-wider text-neutral-500">
-                            {src.sourceType}
-                          </span>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleToggleSourceSelect(src.id)}
+                          className="mt-1 accent-indigo-500 cursor-pointer h-3.5 w-3.5 shrink-0"
+                        />
+                        <div className="flex-1 min-w-0" onClick={() => setActiveSourceId(src.id)}>
+                          <div className="flex items-center gap-1.5">
+                            {getSourceIcon(src.sourceType)}
+                            <span className="text-[11px] font-black uppercase tracking-wider text-neutral-500">
+                              {src.sourceType}
+                            </span>
+                          </div>
+                          <h4 className="text-[11.5px] font-extrabold truncate mt-1 leading-snug cursor-pointer hover:underline">
+                            {src.title}
+                          </h4>
                         </div>
-                        <h4 className="text-[11.5px] font-extrabold truncate mt-1 leading-snug cursor-pointer hover:underline">
-                          {src.title}
-                        </h4>
-                        
-                        {/* Interactive Status & Progress Display */}
-                        {(() => {
-                          const status = src.status || 'ready';
-                          switch (status) {
-                            case 'uploading':
-                              const uploadPct = src.progress || 10;
-                              return (
-                                <div className="space-y-1.5 mt-2 w-full">
-                                  <div className="flex justify-between items-center text-[9.5px] font-mono text-amber-500">
-                                    <span className="flex items-center gap-1">
-                                      <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-                                      Uploading...
-                                    </span>
-                                    <span>{uploadPct}%</span>
-                                  </div>
-                                  <div className="h-1.5 w-full rounded-full bg-neutral-900 overflow-hidden border border-neutral-800">
-                                    <div 
-                                      style={{ width: `${uploadPct}%` }} 
-                                      className="h-full bg-gradient-to-r from-amber-500 to-amber-300 rounded-full transition-all duration-300"
-                                    />
-                                  </div>
-                                </div>
-                              );
-                            case 'processing':
-                              return (
-                                <div className="flex items-center gap-1 mt-1 text-[9.5px] font-mono text-yellow-500">
-                                  <span className="h-1.5 w-1.5 rounded-full bg-yellow-500 animate-pulse" />
-                                  <span>Processing...</span>
-                                </div>
-                              );
-                            case 'indexing':
-                              return (
-                                <div className="flex items-center gap-1 mt-1 text-[9.5px] font-mono text-indigo-400">
-                                  <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-pulse" />
-                                  <span>Indexing...</span>
-                                </div>
-                              );
-                            case 'failed':
-                              return (
-                                <div className="flex flex-col gap-1.5 mt-1">
-                                  <div className="flex items-center gap-1 text-[9.5px] font-mono text-red-500">
-                                    <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-                                    <span>Failed ❌</span>
-                                  </div>
-                                  
-                                  {/* Auto Retry Buttons based on type */}
-                                  <div className="flex gap-2.5">
-                                    {src.type === 'document' && uploadingFiles[src.id] && (
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleRetryUpload(src.id);
-                                        }}
-                                        className="px-2 py-1 rounded bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-[9px] font-bold text-red-400 cursor-pointer focus:outline-none"
-                                      >
-                                        Retry Upload
-                                      </button>
-                                    )}
-                                    {src.type === 'document' && !uploadingFiles[src.id] && src.blobPath && (
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleRetryIngestionFromBlob(src.id, src.blobPath, src.title);
-                                        }}
-                                        className="px-2 py-1 rounded bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-[9px] font-bold text-red-400 cursor-pointer focus:outline-none"
-                                      >
-                                        Retry Ingestion
-                                      </button>
-                                    )}
-                                    {src.type === 'online' && src.url && (
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          if (src.sourceType === 'youtube' || src.sourceType === 'website') {
-                                            handleRetryUrlImport(src.id, src.url, src.sourceType);
-                                          } else {
-                                            handleRetryDriveImport(src.id, src.title);
-                                          }
-                                        }}
-                                        className="px-2 py-1 rounded bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-[9px] font-bold text-red-400 cursor-pointer focus:outline-none"
-                                      >
-                                        Retry Ingestion
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            case 'ready':
-                            case 'indexed':
-                            default:
-                              return (
-                                <span className="text-[9.5px] text-neutral-400 font-mono mt-0.5 block">
-                                  {src.size || 'Web Stream'} • <span className="text-emerald-500 font-bold">Ready ✓</span>
-                                </span>
-                              );
-                          }
-                        })()}
                       </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (window.confirm(`Delete content "${src.title}" completely?`)) {
+                            handleDeleteSource(src.id);
+                          }
+                        }}
+                        title="Delete Source / Content"
+                        className="p-1 text-neutral-400 hover:text-red-500 hover:bg-red-500/10 rounded transition-colors shrink-0 cursor-pointer"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
                     </div>
+
+                    {/* Interactive Status & Progress Display */}
+                    {(() => {
+                      const status = src.status || 'ready';
+                      switch (status) {
+                        case 'uploading':
+                          const uploadPct = src.progress || 10;
+                          return (
+                            <div className="space-y-1.5 mt-2 w-full">
+                              <div className="flex justify-between items-center text-[9.5px] font-mono text-amber-500">
+                                <span className="flex items-center gap-1">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                  Uploading...
+                                </span>
+                                <span>{uploadPct}%</span>
+                              </div>
+                              <div className="h-1.5 w-full rounded-full bg-neutral-900 overflow-hidden border border-neutral-800">
+                                <div 
+                                  style={{ width: `${uploadPct}%` }} 
+                                  className="h-full bg-gradient-to-r from-amber-500 to-amber-300 rounded-full transition-all duration-300"
+                                />
+                              </div>
+                            </div>
+                          );
+                        case 'processing':
+                          return (
+                            <div className="flex items-center gap-1 mt-1 text-[9.5px] font-mono text-yellow-500">
+                              <span className="h-1.5 w-1.5 rounded-full bg-yellow-500 animate-pulse" />
+                              <span>Processing...</span>
+                            </div>
+                          );
+                        case 'indexing':
+                          return (
+                            <div className="flex items-center gap-1 mt-1 text-[9.5px] font-mono text-indigo-400">
+                              <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                              <span>Indexing...</span>
+                            </div>
+                          );
+                        case 'failed':
+                          return (
+                            <div className="flex flex-col gap-1.5 mt-1">
+                              <div className="flex items-center gap-1 text-[9.5px] font-mono text-red-500">
+                                <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                                <span>Failed ❌</span>
+                              </div>
+                              
+                              {/* Auto Retry Buttons based on type */}
+                              <div className="flex gap-2.5">
+                                {src.type === 'document' && uploadingFiles[src.id] && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRetryUpload(src.id);
+                                    }}
+                                    className="px-2 py-1 rounded bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-[9px] font-bold text-red-400 cursor-pointer focus:outline-none"
+                                  >
+                                    Retry Upload
+                                  </button>
+                                )}
+                                {src.type === 'document' && !uploadingFiles[src.id] && src.blobPath && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRetryIngestionFromBlob(src.id, src.blobPath, src.title);
+                                    }}
+                                    className="px-2 py-1 rounded bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-[9px] font-bold text-red-400 cursor-pointer focus:outline-none"
+                                  >
+                                    Retry Ingestion
+                                  </button>
+                                )}
+                                {src.type === 'online' && src.url && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (src.sourceType === 'youtube' || src.sourceType === 'website') {
+                                        handleRetryUrlImport(src.id, src.url, src.sourceType);
+                                      } else {
+                                        handleRetryDriveImport(src.id, src.title);
+                                      }
+                                    }}
+                                    className="px-2 py-1 rounded bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-[9px] font-bold text-red-400 cursor-pointer focus:outline-none"
+                                  >
+                                    Retry Ingestion
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        case 'ready':
+                        case 'indexed':
+                        default:
+                          return (
+                            <span className="text-[9.5px] text-neutral-400 font-mono mt-0.5 block">
+                              {src.size || 'Web Stream'} • <span className="text-emerald-500 font-bold">Ready ✓</span>
+                            </span>
+                          );
+                      }
+                    })()}
                   </div>
                 );
               })
@@ -2860,9 +2893,25 @@ ${queryText}`;
             activeSourceId ? '' : 'w-full md:w-[420px] shrink-0'
           }`}
         >
-          <div>
-            <h2 className="section-label text-xs font-bold text-[var(--text-primary)] uppercase tracking-[3px]">Output Studio</h2>
-            <p className="text-[11px] text-[var(--text-secondary)] font-mono mt-0.5">Generate, display, and export materials.</p>
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <h2 className="section-label text-xs font-bold text-[var(--text-primary)] uppercase tracking-[3px]">Output Studio</h2>
+              <p className="text-[11px] text-[var(--text-secondary)] font-mono mt-0.5">Generate, display, and export materials.</p>
+            </div>
+            {activeSource && (
+              <button
+                onClick={async () => {
+                  if (window.confirm(`Delete content "${activeSource.title}" completely?`)) {
+                    await handleDeleteSource(activeSource.id);
+                  }
+                }}
+                className="px-2.5 py-1 rounded-[4px] border-2 border-red-500 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white font-mono text-[10px] font-bold uppercase transition-colors cursor-pointer flex items-center gap-1 shrink-0"
+                title="Delete current open content item"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                <span>Delete</span>
+              </button>
+            )}
           </div>
 
           {/* Multi-language selector */}
