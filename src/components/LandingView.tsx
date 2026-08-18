@@ -183,12 +183,12 @@ export default function LandingView({
               <div className="absolute -bottom-2 left-6 w-3 h-3 bg-[#FFC400] border-r-2 border-b-2 border-[var(--border-main)] transform rotate-45" />
             </div>
 
-            {/* Giant Mascot Broot Thinking */}
-            <div className="relative z-10 p-4 bg-[var(--card-bg)] rounded-[20px] border-3 border-[var(--border-main)] shadow-paper-lg flex items-center justify-center overflow-hidden">
+            {/* Giant Mascot Broot Thinking (No Box Container) */}
+            <div className="relative z-10 flex items-center justify-center">
               <img 
                 src="/mascots/broot-hero-thinking.png" 
                 alt="Broot Thinking Mascot" 
-                className="w-64 h-64 sm:w-72 sm:h-72 md:w-80 md:h-80 object-contain transition-transform duration-300 group-hover:scale-105 filter drop-shadow-[0_15px_25px_rgba(0,0,0,0.25)]"
+                className="w-72 h-72 sm:w-80 sm:h-80 md:w-96 md:h-96 object-contain transition-transform duration-300 group-hover:scale-105 filter drop-shadow-[0_20px_30px_rgba(0,0,0,0.4)]"
               />
             </div>
 
@@ -390,7 +390,7 @@ export default function LandingView({
               <img 
                 src="/mascots/broot-celebrating-confetti.png" 
                 alt="Broot Celebrating Rewards" 
-                className="w-28 h-28 sm:w-36 sm:h-36 object-contain filter drop-shadow-md animate-bounce" 
+                className="w-36 h-36 sm:w-44 sm:h-44 md:w-52 md:h-52 object-contain filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.3)] animate-bounce" 
               />
             </div>
           </div>
