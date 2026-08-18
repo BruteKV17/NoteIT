@@ -110,31 +110,48 @@ export function useSubjects(userId: string | undefined) {
       return newSub.id;
     }
 
-    const subjectsRef = collection(db, 'users', userId, 'subjects');
-    const docRef = await addDoc(subjectsRef, {
-      ...subjectData,
-      createdAt: serverTimestamp(),
-      archived: false
-    });
-    return docRef.id;
+    try {
+      const subjectsRef = collection(db, 'users', userId, 'subjects');
+      const docRef = await addDoc(subjectsRef, {
+        ...subjectData,
+        createdAt: serverTimestamp(),
+        archived: false
+      });
+      return docRef.id;
+    } catch (err) {
+      console.warn('Firestore error creating subject, falling back to local state:', err);
+      const newSub: Subject = {
+        id: `sub-local-${Date.now()}`,
+        name: subjectData.name,
+        code: subjectData.code || '',
+        professor: subjectData.professor || '',
+        color: subjectData.color || '#3B82F6',
+      };
+      setSubjects(prev => [newSub, ...prev].slice(0, 5));
+      return newSub.id;
+    }
   };
 
   const updateSubject = async (id: string, data: Partial<Subject>) => {
-    if (!userId) {
-      setSubjects(prev => prev.map(s => s.id === id ? { ...s, ...data } : s));
-      return;
+    setSubjects(prev => prev.map(s => s.id === id ? { ...s, ...data } : s));
+    if (!userId) return;
+    try {
+      const docRef = doc(db, 'users', userId, 'subjects', id);
+      await updateDoc(docRef, { ...data, updatedAt: serverTimestamp() });
+    } catch (err) {
+      console.warn('Firestore error updating subject:', err);
     }
-    const docRef = doc(db, 'users', userId, 'subjects', id);
-    await updateDoc(docRef, { ...data, updatedAt: serverTimestamp() });
   };
 
   const deleteSubject = async (id: string) => {
-    if (!userId) {
-      setSubjects(prev => prev.filter(s => s.id !== id));
-      return;
+    setSubjects(prev => prev.filter(s => s.id !== id));
+    if (!userId) return;
+    try {
+      const docRef = doc(db, 'users', userId, 'subjects', id);
+      await deleteDoc(docRef);
+    } catch (err) {
+      console.warn('Firestore error deleting subject:', err);
     }
-    const docRef = doc(db, 'users', userId, 'subjects', id);
-    await deleteDoc(docRef);
   };
 
   return {

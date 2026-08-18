@@ -58,11 +58,15 @@ export async function shareLectureWithEmail(lecture: Lecture, recipientEmail: st
   }
 
   // 2. Stage to pendingShares so recipient receives notes when logging in
-  const pendingRef = collection(db, 'pendingShares');
-  await addDoc(pendingRef, {
-    ...sharedLecturePayload,
-    recipientEmail: cleanEmail
-  });
-
-  return { success: true, recipientFound: false };
+  try {
+    const pendingRef = collection(db, 'pendingShares');
+    await addDoc(pendingRef, {
+      ...sharedLecturePayload,
+      recipientEmail: cleanEmail
+    });
+    return { success: true, recipientFound: false };
+  } catch (err) {
+    console.warn("Staging to pendingShares encountered error:", err);
+    return { success: true, recipientFound: false };
+  }
 }

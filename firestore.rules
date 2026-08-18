@@ -2,15 +2,34 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Authenticated users can read and write to their own user document and any subcollections beneath it
+    // User profile documents & subcollections
     match /users/{userId} {
+      // Allow user to read and write their own profile
       allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Allow authenticated users to query/read profiles (e.g. searching user by email when sharing)
+      allow read: if request.auth != null;
       
-      // Authenticated users can read and write to all nested subcollections
+      // All nested subcollections under user (subjects, lectures, notes, folders, sources, etc.)
       match /{allPaths=**} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
+        // Allow authenticated peers to write shared lectures into recipient's lectures subcollection
+        allow create: if request.auth != null;
       }
+    }
+
+    // Pending shared lectures staged for peer students
+    match /pendingShares/{shareId} {
+      allow read, write, create: if request.auth != null;
+    }
+
+    // Feedback & support ticket submissions
+    match /feedback/{feedbackId} {
+      allow create, read, write: if true;
+    }
+
+    // Global fallback rule for all authenticated NoteIT users across any collection
+    match /{document=**} {
+      allow read, write: if request.auth != null;
     }
   }
 }
-
