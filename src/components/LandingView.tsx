@@ -80,18 +80,12 @@ export default function LandingView({
       {/* 1. Header Navigation Bar */}
       <header className="sticky top-0 z-50 bg-[var(--sidebar-bg)] border-b-2 border-[var(--border-main)] px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3 cursor-pointer group" onClick={onGetStarted}>
-          <div className="p-1.5 rounded-[6px] bg-[#FFC400] border-2 border-[var(--border-main)] shadow-paper-sm transition-transform group-hover:scale-105 flex items-center gap-1.5">
+          <div className="p-1.5 rounded-[6px] bg-[#FFC400] border-2 border-[var(--border-main)] shadow-paper-sm transition-transform group-hover:scale-105 flex items-center justify-center">
             <AILogo size={28} theme="light" />
-            <img 
-              src="/mascots/broot-peace-wink.png" 
-              alt="Broot Mascot" 
-              className="w-6 h-6 object-contain filter drop-shadow" 
-            />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <span className="font-heading font-extrabold text-lg text-[var(--text-primary)] tracking-tight block leading-none">NOTEIT</span>
-              <span className="text-[10px] font-mono font-extrabold px-1.5 py-0.2 rounded bg-[#38BDF8] text-[#0F294A] border border-[var(--border-main)]">WITH BROOT</span>
             </div>
             <span className="font-mono text-[9px] text-[var(--text-secondary)] font-bold tracking-[2px] uppercase">COGNITIVE SCHOLAR WORKSPACE</span>
           </div>
@@ -646,12 +640,11 @@ export default function LandingView({
       <footer className="bg-[var(--sidebar-bg)] text-[var(--text-primary)] border-t-2 border-[var(--border-main)] py-12 px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 font-mono text-xs">
           <div className="flex items-center gap-3">
-            <div className="p-1.5 rounded-[6px] bg-[#FFC400] text-[#111111] flex items-center gap-1">
+            <div className="p-1.5 rounded-[6px] bg-[#FFC400] text-[#111111] flex items-center justify-center">
               <AILogo size={22} theme="light" />
-              <img src="/mascots/broot-peace-wink.png" alt="Broot" className="w-5 h-5 object-contain" />
             </div>
             <p className="text-[var(--text-secondary)]">
-              © 2026 NoteIT Scholar featuring Broot. Precision in knowledge synthesis.
+              © 2026 NoteIT Scholar. Precision in knowledge synthesis.
             </p>
           </div>
 
