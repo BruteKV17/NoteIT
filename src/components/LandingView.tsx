@@ -127,11 +127,6 @@ export default function LandingView({
         
         {/* Left Side Copy */}
         <div className="lg:col-span-7 space-y-6 text-left relative z-10">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-[var(--card-bg)] border-2 border-[var(--border-main)] shadow-paper-sm rounded-[6px] font-mono text-xs font-bold text-[var(--text-primary)] uppercase">
-            <span className="w-2.5 h-2.5 bg-[#FF4D4D] border border-[var(--border-main)] rounded-full animate-ping" />
-            <span>MEET BROOT — YOUR AI STUDY BUDDY</span>
-          </div>
-
           <h1 className="font-heading font-extrabold text-4xl sm:text-6xl md:text-7xl text-[var(--text-primary)] tracking-tight leading-none uppercase">
             LEARN SMARTER <br />
             WITH <span className="bg-[#FFC400] text-[#111111] px-3 py-0.5 border-2 border-[var(--border-main)] shadow-paper-md inline-block mt-2 transform -rotate-1">
@@ -243,7 +238,87 @@ export default function LandingView({
         </div>
       </section>
 
-      {/* 3. FEATURES SECTION WITH BROOT INTEGRATION */}
+      {/* 3. PRICING SECTION ON LANDING PAGE */}
+      <section id="pricing" className="border-t-2 border-[var(--border-main)] bg-[var(--bg-paper)] py-16 px-6">
+        <div className="max-w-7xl mx-auto space-y-12">
+          <div className="text-center space-y-3 max-w-2xl mx-auto">
+            <Badge variant="yellow" size="md">TRANSPARENT PRICING</Badge>
+            <h2 className="font-heading font-extrabold text-3xl md:text-5xl uppercase text-[var(--text-primary)] tracking-tight">
+              SELECT YOUR PLAN
+            </h2>
+            <p className="text-xs md:text-sm font-mono text-[var(--text-secondary)]">
+              Start free with your own API keys, or upgrade for managed AI infrastructure.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* BYOK FREE PLAN */}
+            <Card shadow="md" className="p-6 bg-[var(--card-bg)] border-2 border-[var(--border-main)] space-y-6 flex flex-col justify-between">
+              <div className="space-y-4">
+                <Badge variant="yellow" size="sm">FREE FOREVER</Badge>
+                <div>
+                  <h3 className="font-heading font-extrabold text-xl uppercase text-[var(--text-primary)]">BYOK PLAN</h3>
+                  <div className="text-3xl font-heading font-extrabold text-[var(--text-primary)] mt-1">₹0 <span className="text-xs font-mono text-[var(--text-secondary)]">/ month</span></div>
+                </div>
+                <p className="text-xs font-mono text-[var(--text-secondary)]">Bring Your Own Key for 9+ AI providers with zero platform fee.</p>
+                <div className="space-y-2 font-mono text-xs text-[var(--text-primary)] border-t-2 border-[var(--border-main)] pt-3">
+                  <div className="flex items-center gap-2"><Check className="h-4 w-4 text-[#34D399]" /><span>Unlimited Live Audio Recording</span></div>
+                  <div className="flex items-center gap-2"><Check className="h-4 w-4 text-[#34D399]" /><span>Connect Gemini, Groq, OpenAI, Anthropic</span></div>
+                  <div className="flex items-center gap-2"><Check className="h-4 w-4 text-[#34D399]" /><span>Academic Library & Broot AI Companion</span></div>
+                </div>
+              </div>
+              <Button variant="tertiary" size="md" onClick={onGetStarted} className="w-full justify-center border-2 border-[var(--border-main)] text-[var(--text-primary)]">
+                Get Started Free
+              </Button>
+            </Card>
+
+            {/* FEATURED SCHOLAR PRO PLAN */}
+            <Card shadow="lg" className="p-6 bg-[var(--card-bg)] border-2 border-[#FFC400] space-y-6 flex flex-col justify-between relative shadow-paper-yellow">
+              <div className="space-y-4">
+                <span className="px-2.5 py-1 rounded-[4px] bg-[#FFC400] text-[#111111] font-mono text-[10px] font-extrabold uppercase border border-[#FFC400] inline-block shadow-paper-sm">
+                  RECOMMENDED SCHOLAR
+                </span>
+                <div>
+                  <h3 className="font-heading font-extrabold text-xl uppercase text-[var(--text-primary)]">SCHOLAR PRO</h3>
+                  <div className="text-3xl font-heading font-extrabold text-[var(--text-primary)] mt-1">₹399 <span className="text-xs font-mono text-[var(--text-secondary)]">/ month</span></div>
+                </div>
+                <p className="text-xs font-mono text-[var(--text-secondary)] font-bold">Managed AI infrastructure with high-speed API quota included.</p>
+                <div className="space-y-2 font-mono text-xs text-[var(--text-primary)] border-t-2 border-[var(--border-main)] pt-3">
+                  <div className="flex items-center gap-2"><Check className="h-4 w-4 text-[#FFC400] stroke-[3]" /><span className="text-[var(--text-primary)] font-medium">Managed AI Run Quota (No API keys needed)</span></div>
+                  <div className="flex items-center gap-2"><Check className="h-4 w-4 text-[#FFC400] stroke-[3]" /><span className="text-[var(--text-primary)] font-medium">100 GB Cloud Storage</span></div>
+                  <div className="flex items-center gap-2"><Check className="h-4 w-4 text-[#FFC400] stroke-[3]" /><span className="text-[var(--text-primary)] font-medium">Weak Topic Radar & Broot AI Presentations</span></div>
+                  <div className="flex items-center gap-2"><Check className="h-4 w-4 text-[#FFC400] stroke-[3]" /><span className="text-[var(--text-primary)] font-medium">Priority Support</span></div>
+                </div>
+              </div>
+              <Button variant="secondary" size="md" onClick={onGetStarted} className="w-full justify-center bg-[#FFC400] text-[#111111] hover:bg-[#ffe066] font-extrabold border-2 border-[var(--border-main)] shadow-paper-sm">
+                Upgrade to Scholar Pro →
+              </Button>
+            </Card>
+
+            {/* INSTITUTION PLAN - LOCKED */}
+            <Card shadow="md" className="p-6 bg-[var(--panel-bg)] border-2 border-[var(--border-main)] space-y-6 flex flex-col justify-between opacity-80 border-dashed">
+              <div className="space-y-4">
+                <Badge variant="blue" size="sm">🔒 UNDER DEVELOPMENT</Badge>
+                <div>
+                  <h3 className="font-heading font-extrabold text-xl uppercase text-[var(--text-primary)]">INSTITUTION</h3>
+                  <div className="text-2xl font-heading font-extrabold text-[var(--text-secondary)] mt-1">UNDER WORK</div>
+                </div>
+                <p className="text-xs font-mono text-[var(--text-secondary)]">Multi-user seat licenses and campus LMS sync under active engineering.</p>
+                <div className="space-y-2 font-mono text-xs text-[var(--text-secondary)] border-t-2 border-[var(--border-main)] pt-3">
+                  <div className="flex items-center gap-2"><Check className="h-4 w-4 text-[var(--text-secondary)]" /><span>Canvas & Blackboard LMS Sync (In Progress)</span></div>
+                  <div className="flex items-center gap-2"><Check className="h-4 w-4 text-[var(--text-secondary)]" /><span>Department-wide Knowledge Base</span></div>
+                  <div className="flex items-center gap-2"><Check className="h-4 w-4 text-[var(--text-secondary)]" /><span>Dedicated Account Manager</span></div>
+                </div>
+              </div>
+              <button disabled className="w-full py-3 px-4 font-mono text-xs font-bold uppercase rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--panel-bg)] text-[var(--text-secondary)] cursor-not-allowed">
+                🔒 UNDER DEVELOPMENT
+              </button>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. FEATURES SECTION WITH BROOT INTEGRATION */}
       <section id="features" className="border-t-2 border-[var(--border-main)] bg-[var(--card-bg)] py-16 px-6 relative">
         <div className="max-w-7xl mx-auto space-y-12">
           <div className="text-center space-y-3 max-w-3xl mx-auto">
@@ -518,86 +593,6 @@ export default function LandingView({
                 <a href="#" className="p-2 rounded-[4px] bg-[var(--card-bg)] border border-[var(--border-main)] text-[var(--text-primary)] hover:bg-[#FFC400] hover:text-[#111111] transition-colors"><Globe className="h-4 w-4" /></a>
                 <a href="#" className="p-2 rounded-[4px] bg-[var(--card-bg)] border border-[var(--border-main)] text-[var(--text-primary)] hover:bg-[#FFC400] hover:text-[#111111] transition-colors"><ShieldCheck className="h-4 w-4" /></a>
               </div>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* 6. PRICING SECTION ON LANDING PAGE */}
-      <section id="pricing" className="border-t-2 border-[var(--border-main)] bg-[var(--bg-paper)] py-16 px-6">
-        <div className="max-w-7xl mx-auto space-y-12">
-          <div className="text-center space-y-3 max-w-2xl mx-auto">
-            <Badge variant="yellow" size="md">TRANSPARENT PRICING</Badge>
-            <h2 className="font-heading font-extrabold text-3xl md:text-5xl uppercase text-[var(--text-primary)] tracking-tight">
-              SELECT YOUR PLAN
-            </h2>
-            <p className="text-xs md:text-sm font-mono text-[var(--text-secondary)]">
-              Start free with your own API keys, or upgrade for managed AI infrastructure.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* BYOK FREE PLAN */}
-            <Card shadow="md" className="p-6 bg-[var(--card-bg)] border-2 border-[var(--border-main)] space-y-6 flex flex-col justify-between">
-              <div className="space-y-4">
-                <Badge variant="yellow" size="sm">FREE FOREVER</Badge>
-                <div>
-                  <h3 className="font-heading font-extrabold text-xl uppercase text-[var(--text-primary)]">BYOK PLAN</h3>
-                  <div className="text-3xl font-heading font-extrabold text-[var(--text-primary)] mt-1">₹0 <span className="text-xs font-mono text-[var(--text-secondary)]">/ month</span></div>
-                </div>
-                <p className="text-xs font-mono text-[var(--text-secondary)]">Bring Your Own Key for 9+ AI providers with zero platform fee.</p>
-                <div className="space-y-2 font-mono text-xs text-[var(--text-primary)] border-t-2 border-[var(--border-main)] pt-3">
-                  <div className="flex items-center gap-2"><Check className="h-4 w-4 text-[#34D399]" /><span>Unlimited Live Audio Recording</span></div>
-                  <div className="flex items-center gap-2"><Check className="h-4 w-4 text-[#34D399]" /><span>Connect Gemini, Groq, OpenAI, Anthropic</span></div>
-                  <div className="flex items-center gap-2"><Check className="h-4 w-4 text-[#34D399]" /><span>Academic Library & Broot AI Companion</span></div>
-                </div>
-              </div>
-              <Button variant="tertiary" size="md" onClick={onGetStarted} className="w-full justify-center border-2 border-[var(--border-main)] text-[var(--text-primary)]">
-                Get Started Free
-              </Button>
-            </Card>
-
-            {/* FEATURED SCHOLAR PRO PLAN */}
-            <Card shadow="lg" className="p-6 bg-[var(--card-bg)] border-2 border-[#FFC400] space-y-6 flex flex-col justify-between relative shadow-paper-yellow">
-              <div className="space-y-4">
-                <span className="px-2.5 py-1 rounded-[4px] bg-[#FFC400] text-[#111111] font-mono text-[10px] font-extrabold uppercase border border-[#FFC400] inline-block shadow-paper-sm">
-                  RECOMMENDED SCHOLAR
-                </span>
-                <div>
-                  <h3 className="font-heading font-extrabold text-xl uppercase text-[var(--text-primary)]">SCHOLAR PRO</h3>
-                  <div className="text-3xl font-heading font-extrabold text-[var(--text-primary)] mt-1">₹399 <span className="text-xs font-mono text-[var(--text-secondary)]">/ month</span></div>
-                </div>
-                <p className="text-xs font-mono text-[var(--text-secondary)] font-bold">Managed AI infrastructure with high-speed API quota included.</p>
-                <div className="space-y-2 font-mono text-xs text-[var(--text-primary)] border-t-2 border-[var(--border-main)] pt-3">
-                  <div className="flex items-center gap-2"><Check className="h-4 w-4 text-[#FFC400] stroke-[3]" /><span className="text-[var(--text-primary)] font-medium">Managed AI Run Quota (No API keys needed)</span></div>
-                  <div className="flex items-center gap-2"><Check className="h-4 w-4 text-[#FFC400] stroke-[3]" /><span className="text-[var(--text-primary)] font-medium">100 GB Cloud Storage</span></div>
-                  <div className="flex items-center gap-2"><Check className="h-4 w-4 text-[#FFC400] stroke-[3]" /><span className="text-[var(--text-primary)] font-medium">Weak Topic Radar & Broot AI Presentations</span></div>
-                  <div className="flex items-center gap-2"><Check className="h-4 w-4 text-[#FFC400] stroke-[3]" /><span className="text-[var(--text-primary)] font-medium">Priority Support</span></div>
-                </div>
-              </div>
-              <Button variant="secondary" size="md" onClick={onGetStarted} className="w-full justify-center bg-[#FFC400] text-[#111111] hover:bg-[#ffe066] font-extrabold border-2 border-[var(--border-main)] shadow-paper-sm">
-                Upgrade to Scholar Pro →
-              </Button>
-            </Card>
-
-            {/* INSTITUTION PLAN - LOCKED */}
-            <Card shadow="md" className="p-6 bg-[var(--panel-bg)] border-2 border-[var(--border-main)] space-y-6 flex flex-col justify-between opacity-80 border-dashed">
-              <div className="space-y-4">
-                <Badge variant="blue" size="sm">🔒 UNDER DEVELOPMENT</Badge>
-                <div>
-                  <h3 className="font-heading font-extrabold text-xl uppercase text-[var(--text-primary)]">INSTITUTION</h3>
-                  <div className="text-2xl font-heading font-extrabold text-[var(--text-secondary)] mt-1">UNDER WORK</div>
-                </div>
-                <p className="text-xs font-mono text-[var(--text-secondary)]">Multi-user seat licenses and campus LMS sync under active engineering.</p>
-                <div className="space-y-2 font-mono text-xs text-[var(--text-secondary)] border-t-2 border-[var(--border-main)] pt-3">
-                  <div className="flex items-center gap-2"><Check className="h-4 w-4 text-[var(--text-secondary)]" /><span>Canvas & Blackboard LMS Sync (In Progress)</span></div>
-                  <div className="flex items-center gap-2"><Check className="h-4 w-4 text-[var(--text-secondary)]" /><span>Department-wide Knowledge Base</span></div>
-                  <div className="flex items-center gap-2"><Check className="h-4 w-4 text-[var(--text-secondary)]" /><span>Dedicated Account Manager</span></div>
-                </div>
-              </div>
-              <button disabled className="w-full py-3 px-4 font-mono text-xs font-bold uppercase rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--panel-bg)] text-[var(--text-secondary)] cursor-not-allowed">
-                🔒 UNDER DEVELOPMENT
-              </button>
             </Card>
           </div>
         </div>
