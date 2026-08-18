@@ -319,7 +319,7 @@ export const HandwrittenNotesViewer: React.FC<HandwrittenNotesViewerProps> = ({
 
             {/* PAGE FOOTER */}
             <div className="absolute bottom-[10mm] left-[20mm] right-[20mm] pt-3 border-t border-slate-300 flex justify-between items-center text-xs font-mono font-bold text-slate-600">
-              <span>NOTEIT AI — HANDWRITTEN STUDY ENGINE</span>
+              <span>NOTEIT — HANDWRITTEN STUDY ENGINE</span>
               <span>A4 PORTRAIT (210mm × 297mm)</span>
             </div>
           </div>

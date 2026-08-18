@@ -8,7 +8,7 @@ import { db, auth } from '../firebaseConfig';
 import { Lecture } from '../types';
 
 /**
- * Shares a lecture note with another student using NoteIT AI by recipient email.
+ * Shares a lecture note with another student using NoteIT by recipient email.
  * If the student exists, writes directly to their lectures collection.
  * If not yet registered, stores in pendingShares for automatic claim on registration.
  */

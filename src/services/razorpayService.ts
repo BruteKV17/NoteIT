@@ -63,7 +63,7 @@ export async function openRazorpayCheckout({
     key: RAZORPAY_KEY_ID,
     amount: amountInPaise,
     currency: 'INR',
-    name: 'NoteIT AI',
+    name: 'NoteIT',
     description: `${planName} Subscription Pass`,
     image: '/favicon.svg',
     handler: function (response: RazorpayPaymentSuccessResponse) {
@@ -77,7 +77,7 @@ export async function openRazorpayCheckout({
       contact: userPhone
     },
     notes: {
-      app_name: 'NoteIT AI',
+      app_name: 'NoteIT',
       plan: planName
     },
     theme: {

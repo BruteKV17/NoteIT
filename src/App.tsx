@@ -66,6 +66,7 @@ import AILogo from './components/AILogo';
 import { generateAdditionalQuizQuestions } from './services/gemini';
 import FloatingRecordingWidget from './components/FloatingRecordingWidget';
 
+
 export default function App() {
   
   // Live global recording state across tabs
@@ -995,6 +996,7 @@ export default function App() {
       <XPToastNotification />
 
       <FeedbackWidget theme={theme} />
+
     </ErrorBoundary>
   );
 }

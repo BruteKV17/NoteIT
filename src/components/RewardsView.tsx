@@ -297,7 +297,7 @@ export default function RewardsView({
             VERIFIED XP TASKS & ELIGIBILITY
           </span>
           <h2 className="font-heading font-extrabold text-2xl uppercase text-[var(--text-primary)] tracking-tight">
-            HOW TO EARN XP IN NOTEIT AI
+            HOW TO EARN XP IN NOTEIT
           </h2>
           <p className="text-xs font-mono text-[var(--text-secondary)]">
             XP is awarded automatically upon verified completion of learning activity criteria.

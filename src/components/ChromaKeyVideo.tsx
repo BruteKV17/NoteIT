@@ -11,6 +11,9 @@ interface ChromaKeyVideoProps {
   fallbackImg?: string;
   className?: string;
   onClick?: () => void;
+  targetFps?: number;
+  canvasWidth?: number;
+  canvasHeight?: number;
 }
 
 export default function ChromaKeyVideo({
@@ -18,11 +21,21 @@ export default function ChromaKeyVideo({
   fallbackSrc,
   fallbackImg,
   className = 'w-48 h-48 sm:w-60 sm:h-60',
-  onClick
+  onClick,
+  targetFps = 45,
+  canvasWidth = 320,
+  canvasHeight = 320
 }: ChromaKeyVideoProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+
+  // Pre-allocated reusable buffers to avoid Garbage Collection memory thrashing at 45-60 FPS
+  const buffersRef = useRef<{
+    visited: Uint8Array;
+    queue: Int32Array;
+    size: number;
+  } | null>(null);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -33,23 +46,47 @@ export default function ChromaKeyVideo({
     if (!ctx) return;
 
     let isComponentMounted = true;
+    let lastFrameTime = 0;
+    const frameInterval = 1000 / targetFps; // e.g. ~22ms for 45 FPS target
 
-    const renderFrame = () => {
+    const renderFrame = (now: number) => {
       if (!isComponentMounted) return;
+
+      // Request next frame immediately
+      animationFrameRef.current = requestAnimationFrame(renderFrame);
+
+      // Regulate frame rate to target 40-50 FPS
+      const elapsed = now - lastFrameTime;
+      if (elapsed < frameInterval) {
+        return;
+      }
+      lastFrameTime = now - (elapsed % frameInterval);
 
       if (video.readyState >= 2 && !video.paused && !video.ended) {
         const width = canvas.width;
         const height = canvas.height;
+        const totalPixels = width * height;
+
+        // Reuse or initialize typed array buffers
+        if (!buffersRef.current || buffersRef.current.size !== totalPixels) {
+          buffersRef.current = {
+            visited: new Uint8Array(totalPixels),
+            queue: new Int32Array(totalPixels),
+            size: totalPixels
+          };
+        }
+
+        const visited = buffersRef.current.visited;
+        const queue = buffersRef.current.queue;
+        // Reset visited array quickly
+        visited.fill(0);
 
         ctx.clearRect(0, 0, width, height);
         ctx.drawImage(video, 0, 0, width, height);
 
         const imgData = ctx.getImageData(0, 0, width, height);
         const data = imgData.data;
-        const totalPixels = width * height;
 
-        const visited = new Uint8Array(totalPixels);
-        const queue = new Int32Array(totalPixels);
         let head = 0;
         let tail = 0;
 
@@ -70,15 +107,15 @@ export default function ChromaKeyVideo({
         // Seed all 4 outer borders of the video frame
         for (let x = 0; x < width; x++) {
           // Top border
-          let idxTop = x;
-          let pTop = idxTop * 4;
+          const idxTop = x;
+          const pTop = idxTop * 4;
           if (isBackgroundPixel(data[pTop], data[pTop + 1], data[pTop + 2])) {
             visited[idxTop] = 1;
             queue[tail++] = idxTop;
           }
           // Bottom border
-          let idxBot = (height - 1) * width + x;
-          let pBot = idxBot * 4;
+          const idxBot = (height - 1) * width + x;
+          const pBot = idxBot * 4;
           if (!visited[idxBot] && isBackgroundPixel(data[pBot], data[pBot + 1], data[pBot + 2])) {
             visited[idxBot] = 1;
             queue[tail++] = idxBot;
@@ -87,15 +124,15 @@ export default function ChromaKeyVideo({
 
         for (let y = 0; y < height; y++) {
           // Left border
-          let idxLeft = y * width;
-          let pLeft = idxLeft * 4;
+          const idxLeft = y * width;
+          const pLeft = idxLeft * 4;
           if (!visited[idxLeft] && isBackgroundPixel(data[pLeft], data[pLeft + 1], data[pLeft + 2])) {
             visited[idxLeft] = 1;
             queue[tail++] = idxLeft;
           }
           // Right border
-          let idxRight = y * width + (width - 1);
-          let pRight = idxRight * 4;
+          const idxRight = y * width + (width - 1);
+          const pRight = idxRight * 4;
           if (!visited[idxRight] && isBackgroundPixel(data[pRight], data[pRight + 1], data[pRight + 2])) {
             visited[idxRight] = 1;
             queue[tail++] = idxRight;
@@ -148,12 +185,10 @@ export default function ChromaKeyVideo({
 
         ctx.putImageData(imgData, 0, 0);
       }
-
-      animationFrameRef.current = requestAnimationFrame(renderFrame);
     };
 
     video.play().catch(console.error);
-    renderFrame();
+    animationFrameRef.current = requestAnimationFrame(renderFrame);
 
     return () => {
       isComponentMounted = false;
@@ -161,10 +196,10 @@ export default function ChromaKeyVideo({
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [src]);
+  }, [src, targetFps]);
 
   return (
-    <div className={`relative flex items-center justify-center select-none cursor-pointer ${className}`} onClick={onClick}>
+    <div className={`relative flex items-center justify-center select-none ${className}`} onClick={onClick}>
       {/* Hidden HTML5 video source element */}
       <video
         ref={videoRef}
@@ -182,8 +217,8 @@ export default function ChromaKeyVideo({
       {/* Real-time Chroma Key Canvas (Transparent, borderless) */}
       <canvas
         ref={canvasRef}
-        width={360}
-        height={360}
+        width={canvasWidth}
+        height={canvasHeight}
         className="w-full h-full object-contain pointer-events-auto filter drop-shadow-[0_12px_24px_rgba(0,0,0,0.4)]"
       />
 
@@ -201,4 +236,5 @@ export default function ChromaKeyVideo({
     </div>
   );
 }
+
 

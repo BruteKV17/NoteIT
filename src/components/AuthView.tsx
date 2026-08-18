@@ -182,7 +182,7 @@ export default function AuthView({
             <AILogo size={32} theme="light" />
           </div>
           <div>
-            <div className="font-heading font-extrabold text-lg text-[var(--text-primary)] tracking-tight">NOTEIT AI</div>
+            <div className="font-heading font-extrabold text-lg text-[var(--text-primary)] tracking-tight">NOTEIT</div>
             <div className="text-[10px] font-mono font-bold text-[var(--text-secondary)] uppercase tracking-[2px]">SCHOLAR WORKSPACE</div>
           </div>
         </div>
@@ -199,7 +199,7 @@ export default function AuthView({
             </span>
           </h1>
           <p className="text-sm font-mono text-[var(--text-secondary)] leading-relaxed border-l-4 border-[#FFC400] pl-3 py-1">
-            NoteIT AI captures lectures, extracts structural text, generates dynamic notes, flashcards, interactive quizzes, and designs beautiful presentation decks in one unified workspace.
+            NoteIT captures lectures, extracts structural text, generates dynamic notes, flashcards, interactive quizzes, and designs beautiful presentation decks in one unified workspace.
           </p>
 
           {/* Premium Preview Card */}
@@ -230,7 +230,7 @@ export default function AuthView({
 
         {/* Footer info */}
         <div className="text-xs font-mono text-[var(--text-secondary)]">
-          © 2026 NoteIT AI Labs. Powered by BRUTE.
+          © 2026 NoteIT Labs. Powered by BRUTE.
         </div>
       </div>
 
@@ -405,7 +405,7 @@ export default function AuthView({
           </Card>
 
           <p className="text-center text-[10px] font-mono text-[var(--text-secondary)]">
-            Private academic workspace protected by decentralized key signatures.<br />Powered by NoteIT AI Labs.
+            Private academic workspace protected by decentralized key signatures.<br />Powered by NoteIT Labs.
           </p>
         </div>
       </div>

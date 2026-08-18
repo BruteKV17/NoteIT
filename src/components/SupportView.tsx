@@ -130,7 +130,7 @@ export default function SupportView() {
           </div>
 
           <p className="text-xs font-mono text-[#666666]">
-            Can't find what you need? Send a ticket directly to NoteIT AI research engineering team.
+            Can't find what you need? Send a ticket directly to NoteIT research engineering team.
           </p>
 
           {ticketSubmitSuccess && (

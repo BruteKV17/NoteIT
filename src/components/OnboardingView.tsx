@@ -14,7 +14,10 @@ import {
   Lock,
   Key,
   Lightbulb,
-  X
+  X,
+  Eye,
+  EyeOff,
+  CheckCircle2
 } from 'lucide-react';
 import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebaseConfig';
@@ -150,6 +153,7 @@ export default function OnboardingView({
   // AI Provider configuration state
   const [selectedProvider, setSelectedProvider] = useState('gemini');
   const [apiKey, setApiKey] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [selectedModel, setSelectedModel] = useState('gemini-3.6-flash');
   const [searchQuery, setSearchQuery] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -646,18 +650,33 @@ export default function OnboardingView({
                   </div>
 
                   {/* API Key Input Section */}
-                  <div className="space-y-1.5 pt-1">
-                    <label className="text-[10px] font-mono font-extrabold uppercase tracking-wider text-[#111111] dark:text-slate-300 block">
-                      API Key *
+                  <div className="space-y-1.5 pt-2 border-t border-[#CBD5E1] dark:border-slate-700">
+                    <label className="text-[11px] font-mono font-extrabold uppercase tracking-wider text-[#111111] dark:text-slate-200 flex items-center gap-1.5">
+                      <Key className="w-3.5 h-3.5 text-[#2563EB]" /> API Key *
                     </label>
-                    <input
-                      type="password"
-                      required
-                      value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
-                      placeholder={`Paste secret API key for ${PROVIDER_METADATA[selectedProvider]?.name}`}
-                      className="w-full rounded-xl border-2 border-[#111111] bg-[#F8FAFC] dark:bg-[#0D1117] px-4 py-3 text-xs font-mono font-bold text-[#111111] dark:text-white placeholder-[#777777] outline-none focus:border-[#2F6BFF] focus:bg-white transition-all"
-                    />
+
+                    <div className="relative flex items-center">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        required
+                        value={apiKey}
+                        onChange={(e) => setApiKey(e.target.value)}
+                        placeholder={`Paste secret API key for ${PROVIDER_METADATA[selectedProvider]?.name}`}
+                        className={`w-full rounded-xl border-2 px-4 py-3 pr-12 text-xs font-mono font-extrabold outline-none transition-all ${
+                          apiKey.trim()
+                            ? 'border-[#10B981] bg-[#F0FDF4] text-[#065F46] dark:bg-[#064E3B]/40 dark:text-[#A7F3D0] shadow-[0_0_0_3px_rgba(16,185,129,0.2)]'
+                            : 'border-[#111111] dark:border-slate-600 bg-white dark:bg-[#0D1117] text-[#0F172A] dark:text-white placeholder-[#64748B] focus:border-[#2F6BFF] focus:bg-white'
+                        }`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3.5 p-1 text-[#475569] dark:text-slate-300 hover:text-[#111111] dark:hover:text-white cursor-pointer bg-slate-100 dark:bg-slate-800 rounded-md border border-slate-300 dark:border-slate-700 transition-colors"
+                        title={showPassword ? "Hide API key" : "Show API key"}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                   </div>
 
                   <div className="rounded-xl bg-[#EFF6FF] dark:bg-[#0F172A] border-2 border-[#3B82F6] p-3 flex gap-2.5 items-center shadow-sm">
@@ -759,7 +778,7 @@ export default function OnboardingView({
                     </div>
 
                     <p className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-relaxed bg-[#F8FAFC] dark:bg-[#0D1117] p-3 rounded-xl border border-slate-300 dark:border-slate-800">
-                      In the key creation popup, type a key name (e.g. NoteIT AI Key), select your project, and click the blue <strong className="text-[#2563EB]">"Create key"</strong> button.
+                      In the key creation popup, type a key name (e.g. NoteIT Key), select your project, and click the blue <strong className="text-[#2563EB]">"Create key"</strong> button.
                     </p>
                   </div>
 
@@ -785,7 +804,7 @@ export default function OnboardingView({
                     </div>
 
                     <p className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-relaxed bg-[#F8FAFC] dark:bg-[#0D1117] p-3 rounded-xl border border-slate-300 dark:border-slate-800">
-                      Click the blue <strong className="text-[#2563EB]">"Copy key"</strong> button to copy your secret key to clipboard, return to NoteIT AI, paste it into <strong className="text-[#2563EB]">Card 2 on the left</strong>, and click <strong className="text-[#2563EB]">"Complete Setup"</strong>!
+                      Click the blue <strong className="text-[#2563EB]">"Copy key"</strong> button to copy your secret key to clipboard, return to NoteIT, paste it into <strong className="text-[#2563EB]">Card 2 on the left</strong>, and click <strong className="text-[#2563EB]">"Complete Setup"</strong>!
                     </p>
                   </div>
 

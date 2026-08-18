@@ -26,7 +26,10 @@ import {
   Award,
   Zap,
   Key,
-  Trophy
+  Trophy,
+  MessageCircle,
+  Headphones,
+  Smile
 } from 'lucide-react';
 import AILogo from './AILogo';
 import { Button, Card, Badge } from './bauhaus';
@@ -50,8 +53,12 @@ export default function LandingView({
 
   const faqs = [
     {
-      q: "How does NoteIT AI record and transcribe lectures?",
-      a: "NoteIT AI uses browser-native WebAudio pipelines combined with custom Whisper and Gemini 2.5 audio processors to capture live spoken lectures or uploaded audio files, generating verbatim transcripts with speaker labels."
+      q: "Who is Broot?",
+      a: "Broot is NoteIT's friendly 3D cognitive companion! Broot listens to your lectures, organizes your research notes, helps you build flashcards, and celebrates your XP rewards as you study."
+    },
+    {
+      q: "How does NoteIT record and transcribe lectures?",
+      a: "NoteIT uses browser-native WebAudio pipelines combined with custom Whisper and Gemini 2.5 audio processors to capture live spoken lectures or uploaded audio files, generating verbatim transcripts with speaker labels."
     },
     {
       q: "What is Bring Your Own Key (BYOK) mode?",
@@ -72,17 +79,28 @@ export default function LandingView({
       
       {/* 1. Header Navigation Bar */}
       <header className="sticky top-0 z-50 bg-[var(--sidebar-bg)] border-b-2 border-[var(--border-main)] px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3 cursor-pointer" onClick={onGetStarted}>
-          <div className="p-1 rounded-[4px] bg-[#FFC400] border-2 border-[var(--border-main)] shadow-paper-sm">
-            <AILogo size={32} theme="light" />
+        <div className="flex items-center gap-3 cursor-pointer group" onClick={onGetStarted}>
+          <div className="p-1.5 rounded-[6px] bg-[#FFC400] border-2 border-[var(--border-main)] shadow-paper-sm transition-transform group-hover:scale-105 flex items-center gap-1.5">
+            <AILogo size={28} theme="light" />
+            <img 
+              src="/mascots/broot-peace-wink.png" 
+              alt="Broot Mascot" 
+              className="w-6 h-6 object-contain filter drop-shadow" 
+            />
           </div>
           <div>
-            <span className="font-heading font-extrabold text-lg text-[var(--text-primary)] tracking-tight block leading-none">NOTEIT AI</span>
-            <span className="font-mono text-[9px] text-[var(--text-secondary)] font-bold tracking-[2px] uppercase">COGNITIVE SCHOLAR</span>
+            <div className="flex items-center gap-2">
+              <span className="font-heading font-extrabold text-lg text-[var(--text-primary)] tracking-tight block leading-none">NOTEIT</span>
+              <span className="text-[10px] font-mono font-extrabold px-1.5 py-0.2 rounded bg-[#38BDF8] text-[#0F294A] border border-[var(--border-main)]">WITH BROOT</span>
+            </div>
+            <span className="font-mono text-[9px] text-[var(--text-secondary)] font-bold tracking-[2px] uppercase">COGNITIVE SCHOLAR WORKSPACE</span>
           </div>
         </div>
 
         <nav className="hidden md:flex items-center gap-6 font-mono text-xs font-bold uppercase tracking-wider">
+          <a href="#broot-showcase" style={{ color: 'var(--text-primary)' }} className="landing-nav-link px-2.5 py-1 rounded-[3px] border border-transparent transition-colors font-bold flex items-center gap-1 text-[#FFC400]">
+            <Sparkles className="w-3.5 h-3.5" /> Broot AI
+          </a>
           <a href="#features" style={{ color: 'var(--text-primary)' }} className="landing-nav-link px-2.5 py-1 rounded-[3px] border border-transparent transition-colors font-bold">Features</a>
           <a href="#workflow" style={{ color: 'var(--text-primary)' }} className="landing-nav-link px-2.5 py-1 rounded-[3px] border border-transparent transition-colors font-bold">Workflow</a>
           <a href="#team" style={{ color: 'var(--text-primary)' }} className="landing-nav-link px-2.5 py-1 rounded-[3px] border border-transparent transition-colors font-bold">Founders</a>
@@ -103,31 +121,32 @@ export default function LandingView({
             variant="secondary"
             size="sm"
             onClick={onGetStarted}
-            className="bg-[#FFC400] text-[#111111] border-2 border-[var(--border-main)] shadow-paper-sm hover:bg-[#ffe066]"
+            className="bg-[#FFC400] text-[#111111] border-2 border-[var(--border-main)] shadow-paper-sm hover:bg-[#ffe066] font-bold"
           >
             Get Started
           </Button>
         </div>
       </header>
 
-      {/* 2. Hero Presentation Area */}
-      <section className="max-w-7xl mx-auto px-6 pt-12 md:pt-20 pb-16 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center bg-grid-paper">
+      {/* 2. Hero Presentation Area featuring Mascot Broot */}
+      <section className="max-w-7xl mx-auto px-6 pt-10 md:pt-16 pb-16 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center bg-grid-paper relative">
+        
         {/* Left Side Copy */}
-        <div className="lg:col-span-7 space-y-6 text-left">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-[var(--card-bg)] border-2 border-[var(--border-main)] shadow-paper-sm rounded-[4px] font-mono text-xs font-bold text-[var(--text-primary)] uppercase">
-            <span className="w-2.5 h-2.5 bg-[#FF4D4D] border border-[var(--border-main)]" />
-            NEXT-GEN ACADEMIC AI WORKSPACE
+        <div className="lg:col-span-7 space-y-6 text-left relative z-10">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-[var(--card-bg)] border-2 border-[var(--border-main)] shadow-paper-sm rounded-[6px] font-mono text-xs font-bold text-[var(--text-primary)] uppercase">
+            <span className="w-2.5 h-2.5 bg-[#FF4D4D] border border-[var(--border-main)] rounded-full animate-ping" />
+            <span>MEET BROOT — YOUR AI STUDY BUDDY</span>
           </div>
 
           <h1 className="font-heading font-extrabold text-4xl sm:text-6xl md:text-7xl text-[var(--text-primary)] tracking-tight leading-none uppercase">
-            AI THAT THINKS <br />
-            <span className="bg-[#FFC400] text-[#111111] px-2 py-0.5 border-2 border-[var(--border-main)] shadow-paper-sm inline-block mt-2">
-              WHILE YOU LEARN
+            LEARN SMARTER <br />
+            WITH <span className="bg-[#FFC400] text-[#111111] px-3 py-0.5 border-2 border-[var(--border-main)] shadow-paper-md inline-block mt-2 transform -rotate-1">
+              BROOT & NOTEIT
             </span>
           </h1>
 
-          <p className="text-sm sm:text-base text-[var(--text-secondary)] font-mono font-medium leading-relaxed max-w-xl border-l-4 border-[#FFC400] pl-3 py-1">
-            NoteIT AI captures lectures live, extracts structural text, generates interactive quiz decks, builds weak topic radars, and synthesizes study decks with 9+ multi-LLM providers.
+          <p className="text-sm sm:text-base text-[var(--text-secondary)] font-mono font-medium leading-relaxed max-w-xl border-l-4 border-[#FFC400] pl-4 py-1">
+            NoteIT captures live lectures, extracts structured notes, generates quizzes, diagnoses weak topics, and rewards your learning progress alongside Broot!
           </p>
 
           <div className="flex flex-wrap items-center gap-4 pt-3">
@@ -135,65 +154,103 @@ export default function LandingView({
               variant="primary"
               size="lg"
               onClick={onGetStarted}
-              className="bg-[#2F6BFF] text-white hover:bg-[#255cd9] border-2 border-[var(--border-main)] shadow-paper-md"
+              className="bg-[#2F6BFF] text-white hover:bg-[#255cd9] border-2 border-[var(--border-main)] shadow-paper-md font-bold px-7"
               icon={<Play className="h-4 w-4 fill-current text-white" />}
             >
-              Start Learning for Free
+              Start Free with Broot
             </Button>
             
             <Button
               variant="tertiary"
               size="lg"
               onClick={onSignIn}
-              className="bg-[var(--card-bg)] text-[var(--text-primary)] border-2 border-[var(--border-main)] shadow-paper-md hover:bg-[var(--hover-bg)]"
+              className="bg-[var(--card-bg)] text-[var(--text-primary)] border-2 border-[var(--border-main)] shadow-paper-md hover:bg-[var(--hover-bg)] font-bold"
               icon={<BookOpen className="h-4 w-4 text-[var(--text-primary)]" />}
             >
-              Access Workspace
+              Workspace Sign In
             </Button>
           </div>
         </div>
 
-        {/* Right Side Live AI Node Callout Card */}
-        <div className="lg:col-span-5 relative w-full flex justify-center">
-          <Card shadow="lg" className="w-full max-w-[400px] p-6 bg-[var(--card-bg)] border-2 border-[var(--border-main)] space-y-4">
-            <div className="flex items-center justify-between border-b-2 border-[var(--border-main)] pb-3">
-              <span className="font-mono text-xs font-extrabold text-[var(--text-primary)] uppercase tracking-wider flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#19B56B] border border-[var(--border-main)] animate-pulse" />
-                ACTIVE COGNITIVE NODE
-              </span>
-              <Badge variant="yellow" size="sm">ONLINE</Badge>
+        {/* Right Side Broot Hero Showcase */}
+        <div className="lg:col-span-5 relative w-full flex flex-col items-center justify-center pt-6 lg:pt-0">
+          
+          {/* Broot Mascot Image with Speech Bubble */}
+          <div className="relative group">
+            {/* Speech Bubble */}
+            <div className="absolute -top-10 -left-6 z-20 bg-[#FFC400] text-[#111111] font-mono text-xs font-extrabold px-3 py-1.5 rounded-[8px] border-2 border-[var(--border-main)] shadow-paper-sm animate-bounce">
+              "Hi! I'm Broot! Ready to study?"
+              <div className="absolute -bottom-2 left-6 w-3 h-3 bg-[#FFC400] border-r-2 border-b-2 border-[var(--border-main)] transform rotate-45" />
             </div>
 
-            <div className="p-3 bg-[var(--panel-bg)] rounded-[4px] border-2 border-[var(--border-main)] space-y-2">
-              <div className="flex justify-between items-center text-xs font-mono font-bold text-[var(--text-primary)]">
-                <span>CONCEPT SYNTHESIS:</span>
-                <span className="text-[#34D399]">OPTIMAL</span>
-              </div>
-              <div className="w-full bg-[var(--card-bg)] h-3.5 rounded-[3px] border-2 border-[var(--border-main)] overflow-hidden p-0.5">
-                <div className="h-full bg-[#FFC400] w-[88%] rounded-[2px]" />
-              </div>
+            {/* Giant Mascot Broot Waving */}
+            <div className="relative z-10 p-4 bg-[var(--card-bg)] rounded-[20px] border-3 border-[var(--border-main)] shadow-paper-lg flex items-center justify-center overflow-hidden">
+              <img 
+                src="/mascots/broot-waving-chat.png" 
+                alt="Broot Waving Mascot" 
+                className="w-64 h-64 sm:w-72 sm:h-72 md:w-80 md:h-80 object-contain transition-transform duration-300 group-hover:scale-105 filter drop-shadow-[0_15px_25px_rgba(0,0,0,0.25)]"
+              />
             </div>
 
-            <div className="space-y-2 pt-1 font-mono text-xs text-[var(--text-primary)]">
-              <div className="p-2.5 rounded-[4px] bg-[var(--panel-bg)] border border-[var(--border-main)] shadow-paper-sm flex justify-between items-center">
-                <span>🎙️ Speech Transcription</span>
-                <span className="font-bold text-[#38BDF8]">99.4% Accuracy</span>
-              </div>
-              <div className="p-2.5 rounded-[4px] bg-[var(--panel-bg)] border border-[var(--border-main)] shadow-paper-sm flex justify-between items-center">
-                <span>⚡ Multi-LLM Provider</span>
-                <span className="font-bold text-[#34D399]">Gemini 2.5 Flash</span>
-              </div>
-              <div className="p-2.5 rounded-[4px] bg-[var(--panel-bg)] border border-[var(--border-main)] shadow-paper-sm flex justify-between items-center">
-                <span>🧠 Weak Topic Radar</span>
-                <span className="font-bold text-[#FF5353]">Calculus & Backprop</span>
-              </div>
+            {/* Decorative Floating Mini Badges */}
+            <div className="absolute -bottom-4 -left-4 z-20 bg-[var(--panel-bg)] border-2 border-[var(--border-main)] p-2.5 rounded-[8px] shadow-paper-sm flex items-center gap-2 font-mono text-xs font-bold text-[var(--text-primary)]">
+              <Headphones className="w-4 h-4 text-[#38BDF8]" />
+              <span>Live Listening</span>
             </div>
-          </Card>
+
+            <div className="absolute -top-4 -right-4 z-20 bg-[var(--panel-bg)] border-2 border-[var(--border-main)] p-2.5 rounded-[8px] shadow-paper-sm flex items-center gap-2 font-mono text-xs font-bold text-[#FFC400]">
+              <Trophy className="w-4 h-4" />
+              <span>Earn Study XP</span>
+            </div>
+          </div>
+
         </div>
       </section>
 
-      {/* 3. FEATURES SECTION */}
-      <section id="features" className="border-t-2 border-[var(--border-main)] bg-[var(--card-bg)] py-16 px-6">
+      {/* NEW SECTION: BROOT MASCOT SHOWCASE BANNER */}
+      <section id="broot-showcase" className="border-y-2 border-[var(--border-main)] bg-[#FFC400] text-[#111111] py-12 px-6">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
+          <div className="flex items-center gap-6">
+            <img 
+              src="/mascots/broot-listening-headphones.png" 
+              alt="Broot Listening" 
+              className="w-24 h-24 sm:w-32 sm:h-32 object-contain filter drop-shadow-md animate-pulse" 
+            />
+            <div className="space-y-1">
+              <div className="inline-block px-2.5 py-0.5 bg-[#111111] text-[#FFC400] font-mono text-xs font-extrabold rounded-[4px] uppercase tracking-wider">
+                ALWAYS BY YOUR SIDE
+              </div>
+              <h2 className="font-heading font-extrabold text-2xl md:text-4xl tracking-tight uppercase">
+                Meet Broot, Your Cognitive AI Companion
+              </h2>
+              <p className="font-mono text-xs md:text-sm font-semibold max-w-xl opacity-90">
+                Broot pops up at key study moments to guide lecture processing, remind you of weak topics, and celebrate your daily learning milestones.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex gap-4">
+            <img 
+              src="/mascots/broot-thinking.png" 
+              alt="Broot Thinking" 
+              className="w-16 h-16 sm:w-20 sm:h-20 object-contain bg-white/40 p-2 rounded-[12px] border-2 border-[#111111] shadow-paper-sm" 
+            />
+            <img 
+              src="/mascots/broot-peace-wink.png" 
+              alt="Broot Wink" 
+              className="w-16 h-16 sm:w-20 sm:h-20 object-contain bg-white/40 p-2 rounded-[12px] border-2 border-[#111111] shadow-paper-sm" 
+            />
+            <img 
+              src="/mascots/broot-celebrating-confetti.png" 
+              alt="Broot Celebrating" 
+              className="w-16 h-16 sm:w-20 sm:h-20 object-contain bg-white/40 p-2 rounded-[12px] border-2 border-[#111111] shadow-paper-sm" 
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* 3. FEATURES SECTION WITH BROOT INTEGRATION */}
+      <section id="features" className="border-t-2 border-[var(--border-main)] bg-[var(--card-bg)] py-16 px-6 relative">
         <div className="max-w-7xl mx-auto space-y-12">
           <div className="text-center space-y-3 max-w-3xl mx-auto">
             <Badge variant="yellow" size="md">ENGINEERED FOR SCHOLARS</Badge>
@@ -206,38 +263,50 @@ export default function LandingView({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card shadow="md" className="p-6 bg-[var(--panel-bg)] border-2 border-[var(--border-main)] space-y-4 flex flex-col justify-between">
+            {/* Feature 1 with Broot Listening */}
+            <Card shadow="md" className="p-6 bg-[var(--panel-bg)] border-2 border-[var(--border-main)] space-y-4 flex flex-col justify-between relative overflow-hidden group">
               <div className="space-y-3">
-                <div className="w-12 h-12 rounded-[6px] bg-[#38BDF8]/20 border-2 border-[var(--border-main)] shadow-paper-sm flex items-center justify-center text-[#38BDF8]">
-                  <Mic className="w-6 h-6" />
+                <div className="flex items-center justify-between">
+                  <div className="w-12 h-12 rounded-[6px] bg-[#38BDF8]/20 border-2 border-[var(--border-main)] shadow-paper-sm flex items-center justify-center text-[#38BDF8]">
+                    <Mic className="w-6 h-6" />
+                  </div>
+                  <img src="/mascots/broot-listening-headphones.png" alt="Broot Listening" className="w-14 h-14 object-contain filter drop-shadow group-hover:scale-110 transition-transform" />
                 </div>
                 <h3 className="font-heading text-lg font-bold text-[var(--text-primary)] uppercase tracking-tight">
                   LIVE LECTURE CAPTURE
                 </h3>
                 <p className="text-xs text-[var(--text-secondary)] font-mono leading-relaxed">
-                  Real-time audio recording with live waveform display, multi-speaker segmentation, and instant verbatim transcript generation.
+                  Real-time audio recording with live waveform display, multi-speaker segmentation, and verbatim transcripts while Broot listens alongside you.
                 </p>
               </div>
             </Card>
 
-            <Card shadow="md" className="p-6 bg-[var(--panel-bg)] border-2 border-[var(--border-main)] space-y-4 flex flex-col justify-between">
+            {/* Feature 2 with Broot Thinking */}
+            <Card shadow="md" className="p-6 bg-[var(--panel-bg)] border-2 border-[var(--border-main)] space-y-4 flex flex-col justify-between relative overflow-hidden group">
               <div className="space-y-3">
-                <div className="w-12 h-12 rounded-[6px] bg-[#FFC400] border-2 border-[var(--border-main)] shadow-paper-sm flex items-center justify-center text-[#111111]">
-                  <Layers className="w-6 h-6" />
+                <div className="flex items-center justify-between">
+                  <div className="w-12 h-12 rounded-[6px] bg-[#FFC400] border-2 border-[var(--border-main)] shadow-paper-sm flex items-center justify-center text-[#111111]">
+                    <Layers className="w-6 h-6" />
+                  </div>
+                  <img src="/mascots/broot-thinking.png" alt="Broot Thinking" className="w-14 h-14 object-contain filter drop-shadow group-hover:scale-110 transition-transform" />
                 </div>
                 <h3 className="font-heading text-lg font-bold text-[var(--text-primary)] uppercase tracking-tight">
                   KNOWLEDGE STUDIO
                 </h3>
                 <p className="text-xs text-[var(--text-secondary)] font-mono leading-relaxed">
-                  NotebookLM-inspired multi-document synthesis. Upload PDFs, PPTs, or audio recordings to generate structured outlines and flashcard decks.
+                  Multi-document synthesis. Upload PDFs, PPTs, or audio recordings to generate structured outlines and flashcard decks as Broot processes key concepts.
                 </p>
               </div>
             </Card>
 
-            <Card shadow="md" className="p-6 bg-[var(--panel-bg)] border-2 border-[var(--border-main)] space-y-4 flex flex-col justify-between">
+            {/* Feature 3 with Broot Peace Wink */}
+            <Card shadow="md" className="p-6 bg-[var(--panel-bg)] border-2 border-[var(--border-main)] space-y-4 flex flex-col justify-between relative overflow-hidden group">
               <div className="space-y-3">
-                <div className="w-12 h-12 rounded-[6px] bg-[#FF5353]/20 border-2 border-[var(--border-main)] shadow-paper-sm flex items-center justify-center text-[#FF5353]">
-                  <TrendingUp className="w-6 h-6" />
+                <div className="flex items-center justify-between">
+                  <div className="w-12 h-12 rounded-[6px] bg-[#FF5353]/20 border-2 border-[var(--border-main)] shadow-paper-sm flex items-center justify-center text-[#FF5353]">
+                    <TrendingUp className="w-6 h-6" />
+                  </div>
+                  <img src="/mascots/broot-peace-wink.png" alt="Broot Wink" className="w-14 h-14 object-contain filter drop-shadow group-hover:scale-110 transition-transform" />
                 </div>
                 <h3 className="font-heading text-lg font-bold text-[var(--text-primary)] uppercase tracking-tight">
                   WEAK TOPIC RADAR
@@ -248,16 +317,20 @@ export default function LandingView({
               </div>
             </Card>
 
-            <Card shadow="md" className="p-6 bg-[var(--panel-bg)] border-2 border-[var(--border-main)] space-y-4 flex flex-col justify-between">
+            {/* Feature 4 with Broot Celebrating */}
+            <Card shadow="md" className="p-6 bg-[var(--panel-bg)] border-2 border-[var(--border-main)] space-y-4 flex flex-col justify-between relative overflow-hidden group">
               <div className="space-y-3">
-                <div className="w-12 h-12 rounded-[6px] bg-[#34D399]/20 border-2 border-[var(--border-main)] shadow-paper-sm flex items-center justify-center text-[#34D399]">
-                  <Brain className="w-6 h-6" />
+                <div className="flex items-center justify-between">
+                  <div className="w-12 h-12 rounded-[6px] bg-[#34D399]/20 border-2 border-[var(--border-main)] shadow-paper-sm flex items-center justify-center text-[#34D399]">
+                    <Brain className="w-6 h-6" />
+                  </div>
+                  <img src="/mascots/broot-celebrating-confetti.png" alt="Broot Celebrating" className="w-14 h-14 object-contain filter drop-shadow group-hover:scale-110 transition-transform" />
                 </div>
                 <h3 className="font-heading text-lg font-bold text-[var(--text-primary)] uppercase tracking-tight">
                   BYOK MULTI-LLM ARCHITECTURE
                 </h3>
                 <p className="text-xs text-[var(--text-secondary)] font-mono leading-relaxed">
-                  Connect personal keys for 9+ providers including Gemini 2.5, Groq, OpenAI, Anthropic, DeepSeek, and OpenRouter.
+                  Connect personal keys for 9+ providers including Gemini 2.5, Groq, OpenAI, Anthropic, DeepSeek, and OpenRouter with 0 platform markup.
                 </p>
               </div>
             </Card>
@@ -270,7 +343,7 @@ export default function LandingView({
         <div className="max-w-7xl mx-auto space-y-12">
           <div className="text-center space-y-3 max-w-2xl mx-auto">
             <h2 className="font-heading font-extrabold text-3xl md:text-4xl uppercase text-[var(--text-primary)]">
-              HOW NOTEIT AI WORKS
+              HOW NOTEIT WORKS
             </h2>
             <p className="text-xs font-mono text-[var(--text-secondary)]">
               From raw acoustic soundwaves to structured academic mastery in 4 simple steps.
@@ -284,7 +357,7 @@ export default function LandingView({
               { num: '03', title: 'SYNTHESIZE', desc: 'Generate multi-level outlines, flashcards, mind maps, and quiz decks.' },
               { num: '04', title: 'MASTER', desc: 'Review weak topics, practice interactive quizzes, and export presentation decks.' }
             ].map((step, i) => (
-              <Card key={i} shadow="sm" className="p-6 bg-[var(--card-bg)] border-2 border-[var(--border-main)] space-y-3">
+              <Card key={i} shadow="sm" className="p-6 bg-[var(--card-bg)] border-2 border-[var(--border-main)] space-y-3 relative overflow-hidden">
                 <span className="font-mono text-2xl font-extrabold bg-[#FFC400] text-[#111111] px-2 py-0.5 border border-[var(--border-main)] inline-block shadow-paper-sm">
                   {step.num}
                 </span>
@@ -296,10 +369,10 @@ export default function LandingView({
         </div>
       </section>
 
-      {/* 4.5. REWARDS PROMOTION SECTION (Requirements 12 & 13) */}
+      {/* 4.5. REWARDS PROMOTION SECTION WITH BROOT CELEBRATING */}
       <section id="rewards-promo" className="border-t-2 border-[var(--border-main)] bg-[var(--card-bg)] py-16 px-6 relative overflow-hidden">
         <div className="max-w-7xl mx-auto space-y-10">
-          <div className="text-center space-y-3 max-w-3xl mx-auto">
+          <div className="text-center space-y-3 max-w-3xl mx-auto relative">
             <Badge variant="yellow" size="md" icon={<Trophy className="h-3.5 w-3.5" />}>
               GAMIFIED ACADEMIC MASTERY
             </Badge>
@@ -309,8 +382,17 @@ export default function LandingView({
             </h2>
 
             <p className="text-xs md:text-sm font-mono text-[var(--text-secondary)] max-w-2xl mx-auto">
-              Your learning activity now has XP. Capture lectures, build knowledge, complete learning activities and level up.
+              Your learning activity earns XP. Capture lectures, build knowledge, complete quizzes with Broot and level up to unlock real rewards!
             </p>
+
+            {/* Floating Broot Celebrating Image */}
+            <div className="flex justify-center pt-2">
+              <img 
+                src="/mascots/broot-celebrating-confetti.png" 
+                alt="Broot Celebrating Rewards" 
+                className="w-28 h-28 sm:w-36 sm:h-36 object-contain filter drop-shadow-md animate-bounce" 
+              />
+            </div>
           </div>
 
           {/* Progression Visual */}
@@ -326,7 +408,7 @@ export default function LandingView({
             </div>
           </div>
 
-          {/* Small Reward Preview Cards (Requirement 13) */}
+          {/* Reward Preview Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 max-w-5xl mx-auto">
             {[
               { provider: 'AMAZON', title: '₹500 VOUCHER', xp: '8,000 XP', color: '#FF9900' },
@@ -362,7 +444,7 @@ export default function LandingView({
               className="bg-[#FFC400] text-[#111111] hover:bg-[#ffe066] font-extrabold border-2 border-[var(--border-main)] shadow-paper-md uppercase px-8"
               icon={<Trophy className="h-4 w-4" />}
             >
-              EXPLORE REWARDS →
+              EXPLORE REWARDS WITH BROOT →
             </Button>
           </div>
         </div>
@@ -393,7 +475,7 @@ export default function LandingView({
                   <p className="text-[10px] font-mono font-bold text-[#38BDF8] uppercase tracking-wider">FOUNDER & LEAD ARCHITECT</p>
                 </div>
                 <p className="text-xs font-mono text-[var(--text-secondary)] leading-relaxed">
-                  Spearheaded the core cognitive architecture, speech-to-text pipeline, and multi-LLM orchestration for NoteIT AI Labs.
+                  Spearheaded the core cognitive architecture, speech-to-text pipeline, and multi-LLM orchestration for NoteIT Labs.
                 </p>
               </div>
               <div className="flex justify-center gap-3 pt-2">
@@ -414,7 +496,7 @@ export default function LandingView({
                   <p className="text-[10px] font-mono font-bold text-[#FFC400] uppercase tracking-wider">CO-FOUNDER & PRODUCT STRATEGY</p>
                 </div>
                 <p className="text-xs font-mono text-[var(--text-secondary)] leading-relaxed">
-                  Driving product strategy, user experience design, and pedagogical alignment to ensure NoteIT AI delivers maximum academic value.
+                  Driving product strategy, user experience design, and pedagogical alignment to ensure NoteIT delivers maximum academic value.
                 </p>
               </div>
               <div className="flex justify-center gap-3 pt-2">
@@ -424,18 +506,18 @@ export default function LandingView({
               </div>
             </Card>
 
-            {/* Team Pillar 3 */}
-            <Card shadow="md" className="p-6 bg-[var(--panel-bg)] border-2 border-[var(--border-main)] space-y-4 text-center flex flex-col justify-between">
+            {/* Team Pillar 3: Broot & Brute AI Labs */}
+            <Card shadow="md" className="p-6 bg-[var(--panel-bg)] border-2 border-[var(--border-main)] space-y-4 text-center flex flex-col justify-between relative overflow-hidden">
               <div className="space-y-3">
-                <div className="w-20 h-20 rounded-full bg-[#19B56B] text-white border-2 border-[var(--border-main)] mx-auto shadow-paper-sm flex items-center justify-center font-heading font-extrabold text-2xl">
-                  BA
+                <div className="w-20 h-20 rounded-full bg-[#19B56B] text-white border-2 border-[var(--border-main)] mx-auto shadow-paper-sm flex items-center justify-center p-1">
+                  <img src="/mascots/broot-waving-chat.png" alt="Broot Avatar" className="w-full h-full object-contain filter drop-shadow" />
                 </div>
                 <div>
-                  <h3 className="font-heading font-extrabold text-lg uppercase text-[var(--text-primary)]">BRUTE AI LABS</h3>
-                  <p className="text-[10px] font-mono font-bold text-[#34D399] uppercase tracking-wider">RESEARCH & COGNITION ENGINE</p>
+                  <h3 className="font-heading font-extrabold text-lg uppercase text-[var(--text-primary)]">BROOT & BRUTE AI</h3>
+                  <p className="text-[10px] font-mono font-bold text-[#34D399] uppercase tracking-wider">RESEARCH & COGNITION MASCOT</p>
                 </div>
                 <p className="text-xs font-mono text-[var(--text-secondary)] leading-relaxed">
-                  Developing proprietary semantic indexing algorithms and presentation slide synthesis engines for higher education.
+                  Developing proprietary semantic indexing algorithms, Broot cognitive assistance, and automated presentation slide synthesis.
                 </p>
               </div>
               <div className="flex justify-center gap-3 pt-2">
@@ -473,7 +555,7 @@ export default function LandingView({
                 <div className="space-y-2 font-mono text-xs text-[var(--text-primary)] border-t-2 border-[var(--border-main)] pt-3">
                   <div className="flex items-center gap-2"><Check className="h-4 w-4 text-[#34D399]" /><span>Unlimited Live Audio Recording</span></div>
                   <div className="flex items-center gap-2"><Check className="h-4 w-4 text-[#34D399]" /><span>Connect Gemini, Groq, OpenAI, Anthropic</span></div>
-                  <div className="flex items-center gap-2"><Check className="h-4 w-4 text-[#34D399]" /><span>Academic Library & Quiz Engine</span></div>
+                  <div className="flex items-center gap-2"><Check className="h-4 w-4 text-[#34D399]" /><span>Academic Library & Broot AI Companion</span></div>
                 </div>
               </div>
               <Button variant="tertiary" size="md" onClick={onGetStarted} className="w-full justify-center border-2 border-[var(--border-main)] text-[var(--text-primary)]">
@@ -495,7 +577,7 @@ export default function LandingView({
                 <div className="space-y-2 font-mono text-xs text-[var(--text-primary)] border-t-2 border-[var(--border-main)] pt-3">
                   <div className="flex items-center gap-2"><Check className="h-4 w-4 text-[#FFC400] stroke-[3]" /><span className="text-[var(--text-primary)] font-medium">Managed AI Run Quota (No API keys needed)</span></div>
                   <div className="flex items-center gap-2"><Check className="h-4 w-4 text-[#FFC400] stroke-[3]" /><span className="text-[var(--text-primary)] font-medium">100 GB Cloud Storage</span></div>
-                  <div className="flex items-center gap-2"><Check className="h-4 w-4 text-[#FFC400] stroke-[3]" /><span className="text-[var(--text-primary)] font-medium">Weak Topic Radar & AI Presentations</span></div>
+                  <div className="flex items-center gap-2"><Check className="h-4 w-4 text-[#FFC400] stroke-[3]" /><span className="text-[var(--text-primary)] font-medium">Weak Topic Radar & Broot AI Presentations</span></div>
                   <div className="flex items-center gap-2"><Check className="h-4 w-4 text-[#FFC400] stroke-[3]" /><span className="text-[var(--text-primary)] font-medium">Priority Support</span></div>
                 </div>
               </div>
@@ -534,7 +616,7 @@ export default function LandingView({
             <h2 className="font-heading font-extrabold text-3xl md:text-4xl uppercase text-[var(--text-primary)]">
               FREQUENTLY ASKED QUESTIONS
             </h2>
-            <p className="text-xs font-mono text-[var(--text-secondary)]">Everything you need to know about NoteIT AI.</p>
+            <p className="text-xs font-mono text-[var(--text-secondary)]">Everything you need to know about NoteIT & Broot.</p>
           </div>
 
           <div className="space-y-4">
@@ -564,15 +646,17 @@ export default function LandingView({
       <footer className="bg-[var(--sidebar-bg)] text-[var(--text-primary)] border-t-2 border-[var(--border-main)] py-12 px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 font-mono text-xs">
           <div className="flex items-center gap-3">
-            <div className="p-1 rounded-[4px] bg-[#FFC400] text-[#111111]">
-              <AILogo size={24} theme="light" />
+            <div className="p-1.5 rounded-[6px] bg-[#FFC400] text-[#111111] flex items-center gap-1">
+              <AILogo size={22} theme="light" />
+              <img src="/mascots/broot-peace-wink.png" alt="Broot" className="w-5 h-5 object-contain" />
             </div>
             <p className="text-[var(--text-secondary)]">
-              © 2026 NoteIT Scholar AI. Precision in knowledge synthesis.
+              © 2026 NoteIT Scholar featuring Broot. Precision in knowledge synthesis.
             </p>
           </div>
 
           <div className="flex flex-wrap gap-6 font-bold uppercase tracking-wider text-[var(--text-primary)]">
+            <a href="#broot-showcase" className="hover:text-[#FFC400] transition-colors">BROOT AI</a>
             <a href="#features" className="hover:text-[#FFC400] transition-colors">FEATURES</a>
             <a href="#workflow" className="hover:text-[#FFC400] transition-colors">WORKFLOW</a>
             <a href="#team" className="hover:text-[#FFC400] transition-colors">FOUNDERS</a>
@@ -585,3 +669,4 @@ export default function LandingView({
     </div>
   );
 }
+

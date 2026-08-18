@@ -27,7 +27,10 @@ import {
   Palette,
   Trophy,
   Zap,
-  ArrowRight
+  ArrowRight,
+  Eye,
+  EyeOff,
+  CheckCircle2
 } from 'lucide-react';
 import { PageId, UserSettings } from '../types';
 import { auth } from '../firebaseConfig';
@@ -199,6 +202,7 @@ export default function SettingsView({
   // AI Provider & API Keys state
   const [aiProvider, setAiProvider] = useState<string>('gemini');
   const [selectedModel, setSelectedModel] = useState<string>('gemini-3.6-flash');
+  const [showNewKeyPassword, setShowNewKeyPassword] = useState(false);
   
   // Search & custom dropdowns
   const [searchQuery, setSearchQuery] = useState('');
@@ -526,7 +530,7 @@ export default function SettingsView({
                 Theme & Visual Appearance
               </h3>
               <p className="text-xs font-mono font-bold text-[var(--text-secondary)] mt-1">
-                Customize the color palette and interface format for NoteIT AI. Choose between our Dark Navy Blue Bauhaus theme and Classic Light Bauhaus theme.
+                Customize the color palette and interface format for NoteIT. Choose between our Dark Navy Blue Bauhaus theme and Classic Light Bauhaus theme.
               </p>
             </div>
 
@@ -1029,15 +1033,29 @@ export default function SettingsView({
 
                       {/* API Key */}
                       <div className="space-y-1.5">
-                        <label className="text-[9px] font-mono font-extrabold uppercase text-[#111111] block">New API Key *</label>
-                        <input
-                          type="password"
-                          required
-                          value={newKey}
-                          onChange={(e) => setNewKey(e.target.value)}
-                          placeholder={`Secret key for ${PROVIDER_METADATA[aiProvider]?.name}`}
-                          className="w-full rounded-[6px] border-2 border-[#111111] bg-[#F6F2EA] p-2.5 text-xs font-mono font-bold text-[#111111] outline-none shadow-paper-sm"
-                        />
+                        <label className="text-[9px] font-mono font-extrabold uppercase text-[#111111] dark:text-slate-300 block">New API Key *</label>
+                        <div className="relative flex items-center">
+                          <input
+                            type={showNewKeyPassword ? "text" : "password"}
+                            required
+                            value={newKey}
+                            onChange={(e) => setNewKey(e.target.value)}
+                            placeholder={`Secret key for ${PROVIDER_METADATA[aiProvider]?.name}`}
+                            className={`w-full rounded-[6px] border-2 px-3 py-2.5 pr-10 text-xs font-mono font-extrabold outline-none shadow-paper-sm transition-all ${
+                              newKey.trim()
+                                ? 'border-[#10B981] bg-[#F0FDF4] text-[#065F46] dark:bg-[#064E3B]/40 dark:text-[#A7F3D0]'
+                                : 'border-[#111111] bg-white dark:bg-[#0D1117] text-[#0F172A] dark:text-white placeholder-[#777777]'
+                            }`}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowNewKeyPassword(!showNewKeyPassword)}
+                            className="absolute right-2.5 p-1 text-[#475569] dark:text-slate-400 hover:text-[#111111] dark:hover:text-white cursor-pointer bg-slate-100 dark:bg-slate-800 rounded border border-slate-300 dark:border-slate-700"
+                            title={showNewKeyPassword ? "Hide API key" : "Show API key"}
+                          >
+                            {showNewKeyPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                          </button>
+                        </div>
                       </div>
                     </div>
 

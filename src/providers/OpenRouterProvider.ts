@@ -35,7 +35,7 @@ export class OpenRouterProvider extends BaseProvider {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${this.apiKey}`,
         'HTTP-Referer': 'https://noteit.ai',
-        'X-Title': 'NoteIT AI'
+        'X-Title': 'NoteIT'
       },
       body: JSON.stringify({
         model: activeModel,
@@ -60,7 +60,7 @@ export class OpenRouterProvider extends BaseProvider {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${this.apiKey}`,
         'HTTP-Referer': 'https://noteit.ai',
-        'X-Title': 'NoteIT AI'
+        'X-Title': 'NoteIT'
       },
       body: JSON.stringify({
         model: activeModel,

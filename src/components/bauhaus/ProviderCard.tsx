@@ -185,9 +185,13 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
               value={inputKey}
               onChange={(e) => setInputKey(e.target.value)}
               placeholder={`Enter your ${name} API key...`}
-              className="font-mono text-xs"
+              className={`font-mono text-xs font-bold ${
+                inputKey.trim() 
+                  ? 'border-[#10B981] bg-[#F0FDF4] text-[#065F46]' 
+                  : 'bg-white text-[#0F172A]'
+              }`}
             />
-            <Button variant="secondary" size="sm" onClick={handleSave} className="shrink-0">
+            <Button variant="secondary" size="sm" onClick={handleSave} className="shrink-0 font-bold">
               Save Key
             </Button>
           </div>
