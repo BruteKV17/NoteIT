@@ -82,7 +82,7 @@ export default function Sidebar({
       }`}>
         <div 
           className="flex items-center gap-2 cursor-pointer overflow-hidden truncate"
-          onClick={() => handleNavClick('landing')}
+          onClick={() => handleNavClick('dashboard')}
         >
           <div className="p-1 rounded-[6px] bg-[#FFC400] border-2 border-[var(--border-main)] shadow-paper-sm shrink-0">
             <AILogo size={26} theme="light" />

@@ -798,12 +798,19 @@ export default function App() {
         );
       default:
         return (
-          <LandingView
-            onEnterApp={() => setActivePage('dashboard')}
-            onLoginSuccess={handleLoginSuccess}
-            onNavigateToPricing={() => setActivePage('pricing')}
-            onGetStarted={() => { setAuthMode('signup'); setActivePage('auth'); }}
-            onSignIn={() => { setAuthMode('login'); setActivePage('auth'); }}
+          <DashboardView
+            setActivePage={setActivePage}
+            setSelectedQuizId={setSelectedQuizId}
+            lectures={combinedLectures}
+            weakTopics={weakTopics}
+            onNewAnalysis={handleNewAnalysisShortcut}
+            onOpenLecture={(id) => {
+              setActivePage('research-hub');
+            }}
+            theme={theme}
+            notes={notes}
+            totalXp={streakData.totalXp}
+            currentStreak={streakData.currentStreak}
           />
         );
     }
