@@ -172,48 +172,36 @@ export default function App() {
             )
           ]);
           
-          if (userDocSnap.exists() && userDocSnap.data().onboarding_completed) {
+          if (userDocSnap.exists()) {
             const data = userDocSnap.data();
-            console.log("User onboarding already completed. Loaded user data:", data);
+            console.log("User data loaded from Firestore:", data);
             
-            if (data.providerConfigured) {
-              setSettings(prev => ({
-                ...prev,
-                profile: {
-                  ...prev.profile,
-                  fullName: `${data.first_name || ''} ${data.last_name || ''}`.trim() || loggedUser.fullName,
-                  firstName: data.first_name || '',
-                  lastName: data.last_name || '',
-                  emailAddress: data.email || loggedUser.emailAddress,
-                  institution: data.school_or_university || '',
-                  countryCode: data.country_code || '',
-                  phoneNumber: data.phone_number || '',
-                  avatarUrl: data.profile_image_url || '',
-                  onboardingCompleted: true
-                }
-              }));
-              setSessionUser(loggedUser);
-              setIsOnboarding(false);
-              setActivePage(prev => (prev === 'landing' || prev === 'auth' ? 'dashboard' : prev));
-            } else {
-              console.log("Onboarding completed but AI Provider not configured. Routing to step 4.");
-              setSessionUser(loggedUser);
-              setOnboardingStep(4);
-              setIsOnboarding(true);
-            }
-          } else {
-            console.log("Onboarding incomplete or document missing for user UID:", user.uid);
+            setSettings(prev => ({
+              ...prev,
+              profile: {
+                ...prev.profile,
+                fullName: `${data.first_name || ''} ${data.last_name || ''}`.trim() || loggedUser.fullName,
+                firstName: data.first_name || '',
+                lastName: data.last_name || '',
+                emailAddress: data.email || loggedUser.emailAddress,
+                institution: data.school_or_university || '',
+                countryCode: data.country_code || '',
+                phoneNumber: data.phone_number || '',
+                avatarUrl: data.profile_image_url || '',
+                onboardingCompleted: true
+              }
+            }));
             setSessionUser(loggedUser);
-            setOnboardingStep(1);
-            setIsOnboarding(true);
+            setIsOnboarding(false);
+          } else {
+            console.log("User document missing in Firestore for UID:", user.uid);
+            setSessionUser(loggedUser);
+            setIsOnboarding(false);
           }
         } catch (err: any) {
-          console.error("Error checking onboarding status:", {
-            currentUserUID: user.uid,
-            exactFirestoreError: err
-          });
+          console.error("Error checking user status:", err);
           setSessionUser(loggedUser);
-          setIsOnboarding(true);
+          setIsOnboarding(false);
         } finally {
           setCheckingOnboarding(false);
         }
@@ -783,6 +771,30 @@ export default function App() {
               nextLevelXp: (Math.floor(streakData.totalXp / 1000) + 1) * 1000,
               lifetimeXp: streakData.totalXp,
               redeemedRewards: []
+            }}
+          />
+        );
+      case 'landing':
+        return (
+          <LandingView
+            onEnterApp={() => setActivePage('dashboard')}
+            onLoginSuccess={handleLoginSuccess}
+            onNavigateToPricing={() => setActivePage('pricing')}
+            onGetStarted={() => {
+              if (sessionUser) {
+                setActivePage('dashboard');
+              } else {
+                setAuthMode('signup');
+                setActivePage('auth');
+              }
+            }}
+            onSignIn={() => {
+              if (sessionUser) {
+                setActivePage('dashboard');
+              } else {
+                setAuthMode('login');
+                setActivePage('auth');
+              }
             }}
           />
         );
