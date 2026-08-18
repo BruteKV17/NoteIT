@@ -173,17 +173,17 @@ export default function ProfileView({
       <form onSubmit={handleSaveChanges} className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
         {/* Left Column: Avatar & Summary */}
-        <div className="space-y-6">
-          <Card shadow="md" className="p-6 bg-white border-2 border-[#111111] flex flex-col items-center text-center space-y-4">
+        <div className="space-y-6 w-full">
+          <Card shadow="md" className="p-4 sm:p-5 bg-[var(--card-bg)] border-2 border-[var(--border-main)] flex flex-col items-center text-center space-y-4 w-full overflow-hidden">
             <div className="relative">
               {avatarUrl ? (
                 <img
                   src={avatarUrl}
                   alt="Profile Avatar"
-                  className="h-28 w-28 rounded-[6px] border-2 border-[#111111] object-cover shadow-paper-sm"
+                  className="h-28 w-28 rounded-[6px] border-2 border-[var(--border-main)] object-cover shadow-paper-sm"
                 />
               ) : (
-                <div className="h-28 w-28 rounded-[6px] border-2 border-[#111111] bg-[#FFC400] flex items-center justify-center text-[#111111] font-heading font-bold text-3xl shadow-paper-sm">
+                <div className="h-28 w-28 rounded-[6px] border-2 border-[var(--border-main)] bg-[#FFC400] flex items-center justify-center text-[#111111] font-heading font-bold text-3xl shadow-paper-sm">
                   {firstName ? firstName.charAt(0) : 'U'}
                 </div>
               )}
@@ -194,20 +194,22 @@ export default function ProfileView({
               )}
             </div>
 
-            <div className="space-y-1">
-              <h3 className="font-heading font-extrabold text-base text-[#111111] uppercase">
+            <div className="space-y-1 w-full overflow-hidden">
+              <h3 className="font-heading font-extrabold text-base text-[var(--text-primary)] uppercase truncate px-2">
                 {firstName && lastName ? `${firstName} ${lastName}` : 'Anonymous Scholar'}
               </h3>
-              <p className="text-xs font-mono text-[#666666] truncate max-w-[180px]">
+              <p className="text-xs font-mono text-[var(--text-secondary)] truncate max-w-[220px] mx-auto">
                 {school || 'Institutional workspace'}
               </p>
             </div>
 
-            <MascotAvatarPicker
-              currentAvatarUrl={avatarUrl}
-              onSelectAvatar={(url) => setAvatarUrl(url)}
-              userInitial={firstName ? firstName.charAt(0) : 'U'}
-            />
+            <div className="w-full">
+              <MascotAvatarPicker
+                currentAvatarUrl={avatarUrl}
+                onSelectAvatar={(url) => setAvatarUrl(url)}
+                userInitial={firstName ? firstName.charAt(0) : 'U'}
+              />
+            </div>
           </Card>
         </div>
 

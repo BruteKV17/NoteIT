@@ -67,46 +67,46 @@ export function MascotAvatarPicker({
   const activeMascot = OFFICIAL_MASCOTS.find(m => m.url === currentAvatarUrl);
 
   return (
-    <div>
+    <div className="w-full">
       {/* Sleek, Non-Cluttered Compact Inline Avatar Row */}
-      <div className="flex items-center justify-between gap-3 p-3 rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--panel-bg)] shadow-paper-sm text-[var(--text-primary)] text-left">
+      <div className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-2.5 rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--panel-bg)] shadow-paper-sm text-[var(--text-primary)] text-left overflow-hidden">
         {/* Left: Avatar Thumbnail & Name */}
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="relative group cursor-pointer" onClick={handleOpenModal} title="Click to Change Avatar">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="relative group cursor-pointer shrink-0" onClick={handleOpenModal} title="Click to Change Avatar">
             {currentAvatarUrl ? (
               <img
                 src={currentAvatarUrl}
                 alt="Current Avatar"
-                className="h-11 w-11 rounded-[6px] border-2 border-[var(--border-main)] object-cover shadow-paper-xs group-hover:scale-105 transition-all shrink-0"
+                className="h-10 w-10 rounded-[6px] border-2 border-[var(--border-main)] object-cover shadow-paper-xs group-hover:scale-105 transition-all"
               />
             ) : (
-              <div className="h-11 w-11 rounded-[6px] border-2 border-[var(--border-main)] bg-[#FFC400] flex items-center justify-center font-bold text-base text-[#111111] uppercase shadow-paper-xs group-hover:scale-105 transition-all shrink-0">
+              <div className="h-10 w-10 rounded-[6px] border-2 border-[var(--border-main)] bg-[#FFC400] flex items-center justify-center font-bold text-sm text-[#111111] uppercase shadow-paper-xs group-hover:scale-105 transition-all">
                 {userInitial}
               </div>
             )}
-            <div className="absolute -bottom-1 -right-1 h-4.5 w-4.5 rounded-[3px] bg-[#FFC400] text-[#111111] border border-[#111111] flex items-center justify-center text-[9px] font-bold shadow-paper-xs">
+            <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-[3px] bg-[#FFC400] text-[#111111] border border-[#111111] flex items-center justify-center text-[8px] font-bold shadow-paper-xs">
               ✏️
             </div>
           </div>
 
-          <div className="min-w-0">
-            <div className="font-heading font-extrabold text-sm text-[var(--text-primary)] uppercase truncate">
+          <div className="min-w-0 flex-1">
+            <div className="font-heading font-extrabold text-xs text-[var(--text-primary)] uppercase truncate">
               {activeMascot ? activeMascot.name : (currentAvatarUrl ? 'Custom Avatar' : 'Default Avatar')}
             </div>
-            <div className="text-[10px] font-mono font-bold text-[var(--text-secondary)] truncate">
-              {activeMascot ? activeMascot.role : (currentAvatarUrl ? 'User Uploaded Photo' : 'Academic Profile Image')}
+            <div className="text-[9px] font-mono font-bold text-[var(--text-secondary)] truncate">
+              {activeMascot ? activeMascot.role : (currentAvatarUrl ? 'User Uploaded' : 'Academic Profile Image')}
             </div>
           </div>
         </div>
 
         {/* Right: Small Compact Buttons */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0 justify-end">
           <button
             type="button"
             onClick={handleOpenModal}
-            className="px-3 py-1.5 rounded-[4px] border-2 border-[var(--border-main)] bg-[#FFC400] text-[#111111] font-mono text-xs font-extrabold uppercase hover:bg-[#ffe066] transition-all shadow-paper-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+            className="px-2.5 py-1.5 rounded-[4px] border-2 border-[var(--border-main)] bg-[#FFC400] text-[#111111] font-mono text-[10px] font-extrabold uppercase hover:bg-[#ffe066] transition-all shadow-paper-xs flex items-center gap-1 cursor-pointer whitespace-nowrap"
           >
-            <Sparkles className="h-3.5 w-3.5" />
+            <Sparkles className="h-3 w-3" />
             <span>Choose Avatar</span>
           </button>
 
@@ -117,7 +117,7 @@ export function MascotAvatarPicker({
               className="p-1.5 rounded-[4px] border-2 border-[#FF4D4D]/60 text-[#FF4D4D] font-mono text-xs font-bold hover:bg-[#FF4D4D] hover:text-white transition-all cursor-pointer shadow-paper-xs"
               title="Reset Avatar"
             >
-              <Trash2 className="h-3.5 w-3.5" />
+              <Trash2 className="h-3 w-3" />
             </button>
           )}
         </div>
