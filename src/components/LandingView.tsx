@@ -183,11 +183,11 @@ export default function LandingView({
               <div className="absolute -bottom-2 left-6 w-3 h-3 bg-[#FFC400] border-r-2 border-b-2 border-[var(--border-main)] transform rotate-45" />
             </div>
 
-            {/* Giant Mascot Broot Waving */}
+            {/* Giant Mascot Broot Thinking */}
             <div className="relative z-10 p-4 bg-[var(--card-bg)] rounded-[20px] border-3 border-[var(--border-main)] shadow-paper-lg flex items-center justify-center overflow-hidden">
               <img 
-                src="/mascots/broot-waving-chat.png" 
-                alt="Broot Waving Mascot" 
+                src="/mascots/broot-hero-thinking.png" 
+                alt="Broot Thinking Mascot" 
                 className="w-64 h-64 sm:w-72 sm:h-72 md:w-80 md:h-80 object-contain transition-transform duration-300 group-hover:scale-105 filter drop-shadow-[0_15px_25px_rgba(0,0,0,0.25)]"
               />
             </div>
