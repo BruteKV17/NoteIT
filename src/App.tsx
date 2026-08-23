@@ -58,6 +58,7 @@ import OnboardingView from './components/OnboardingView';
 import RewardsView from './components/RewardsView';
 import DailyXPClaimModal from './components/rewards/DailyXPClaimModal';
 import { useStreak } from './hooks/useStreak';
+import { isWeekend, getLocalDateString } from './config/weekendQuizConfig';
 import { XPToastNotification } from './components/bauhaus/XPToastNotification';
 import BruteLoader from './components/BruteLoader';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -119,6 +120,7 @@ export default function App() {
   // Hook up 90-Day Streak & Daily XP Claim system (Requirement 1 & 21)
   const {
     streakData,
+    isLoading,
     todayClaimed,
     projectedStreak,
     projectedXp,
@@ -144,6 +146,34 @@ export default function App() {
     };
   }, [refreshStreak]);
 
+  // Smart Streak Warning Notification (dispatches once per date session)
+  useEffect(() => {
+    if (sessionUser && !todayClaimed && !isLoading) {
+      const warningKey = `noteit_streak_warn_${sessionUser.uid}_${getLocalDateString()}`;
+      if (!sessionStorage.getItem(warningKey)) {
+        sessionStorage.setItem(warningKey, 'true');
+        const weekend = isWeekend();
+        const msg = weekend
+          ? "No lecture today? Complete your Weekend Challenge to keep your streak alive!"
+          : "You haven't completed today's activity yet. Record a lecture before the day ends!";
+
+        window.dispatchEvent(
+          new CustomEvent('noteit_notification', {
+            detail: {
+              type: weekend ? 'weekend_reminder' : 'streak_warning',
+              title: weekend ? 'PROTECT YOUR STREAK! 🔥' : 'YOUR STREAK IS AT RISK! 🔥',
+              message: msg,
+              actionLabel: weekend ? 'TAKE CHALLENGE' : 'CONTINUE',
+              onAction: () => setActivePage(weekend ? 'dashboard' : 'lecture-capture'),
+              mascotPose: '/mascots/broot-thinking.png',
+              autoDismissMs: 7000
+            }
+          })
+        );
+      }
+    }
+  }, [sessionUser, todayClaimed, isLoading]);
+
 
   // Onboarding checks
   const [checkingOnboarding, setCheckingOnboarding] = useState(true);
@@ -156,7 +186,7 @@ export default function App() {
       if (user) {
         const loggedUser = {
           uid: user.uid,
-          fullName: user.displayName || user.email?.split('@')[0] || 'Academic Scholar',
+          fullName: user.displayName || (sessionUser?.fullName && !sessionUser.fullName.includes('@') ? sessionUser.fullName : (user.email?.split('@')[0] || 'Academic Scholar')),
           emailAddress: user.email || ''
         };
         
@@ -176,6 +206,8 @@ export default function App() {
             const data = userDocSnap.data();
             console.log("User data loaded from Firestore:", data);
             
+            const isCompleted = !!data.onboarding_completed;
+
             setSettings(prev => ({
               ...prev,
               profile: {
@@ -188,15 +220,21 @@ export default function App() {
                 countryCode: data.country_code || '',
                 phoneNumber: data.phone_number || '',
                 avatarUrl: data.profile_image_url || '',
-                onboardingCompleted: true
+                onboardingCompleted: isCompleted
               }
             }));
             setSessionUser(loggedUser);
-            setIsOnboarding(false);
+
+            if (!isCompleted) {
+              console.log("User onboarding incomplete. Directing to OnboardingView.");
+              setIsOnboarding(true);
+            } else {
+              setIsOnboarding(false);
+            }
           } else {
-            console.log("User document missing in Firestore for UID:", user.uid);
+            console.log("User document missing in Firestore for UID:", user.uid, "- New registration detected!");
             setSessionUser(loggedUser);
-            setIsOnboarding(false);
+            setIsOnboarding(true);
           }
         } catch (err: any) {
           console.error("Error checking user status:", err);
@@ -632,6 +670,9 @@ export default function App() {
 
   const handleLoginSuccess = (user: { fullName: string; emailAddress: string }) => {
     console.log("Login success callback triggered for:", user);
+    if (user.fullName) {
+      setSessionUser(prev => prev ? { ...prev, fullName: user.fullName } : { uid: auth.currentUser?.uid || '', fullName: user.fullName, emailAddress: user.emailAddress });
+    }
   };
 
   // Layout router switch
@@ -724,6 +765,9 @@ export default function App() {
             onUpdateQuizScore={handleUpdateQuizScore}
             onAddQuestions={handleAddQuestions}
             theme={theme}
+            lectures={combinedLectures}
+            notes={notes}
+            currentStreak={streakData.currentStreak}
           />
         );
       case 'knowledge-studio':

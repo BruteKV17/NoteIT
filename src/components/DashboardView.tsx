@@ -13,6 +13,16 @@ import {
 } from 'lucide-react';
 import { PageId, Lecture, WeakTopic, Note } from '../types';
 import { Button, Badge } from './bauhaus';
+import { auth } from '../firebaseConfig';
+import { isWeekend, getWeekendDayLabel, getLocalDateString } from '../config/weekendQuizConfig';
+import { 
+  fetchWeekendChallengeState, 
+  getOrGenerateWeekendQuiz, 
+  claimWeekendQuizXPAtomic, 
+  WeekendChallengeData 
+} from '../services/weekendQuizService';
+import WeekendChallengeCard from './weekend/WeekendChallengeCard';
+import WeekendQuizModal from './weekend/WeekendQuizModal';
 
 interface DashboardViewProps {
   setActivePage: (page: PageId) => void;
@@ -39,6 +49,51 @@ export default function DashboardView({
   totalXp = 2450,
   currentStreak = 6
 }: DashboardViewProps) {
+  const [weekendChallenge, setWeekendChallenge] = React.useState<WeekendChallengeData | null>(null);
+  const [showQuizModal, setShowQuizModal] = React.useState<boolean>(false);
+  const [isGeneratingQuiz, setIsGeneratingQuiz] = React.useState<boolean>(false);
+
+  const isWeekendActive = isWeekend();
+  const dateStr = getLocalDateString();
+  const dayLabel = getWeekendDayLabel() || 'Saturday';
+
+  React.useEffect(() => {
+    const userId = auth.currentUser?.uid || 'user_demo';
+    if (isWeekendActive && userId) {
+      fetchWeekendChallengeState(userId, dateStr).then(data => {
+        setWeekendChallenge(data);
+      }).catch(() => {});
+    }
+  }, [isWeekendActive, dateStr]);
+
+  const handleStartWeekendChallenge = async () => {
+    const userId = auth.currentUser?.uid || 'user_demo';
+    setIsGeneratingQuiz(true);
+    try {
+      const challenge = await getOrGenerateWeekendQuiz(userId, lectures, notes, dateStr);
+      setWeekendChallenge(challenge);
+      setShowQuizModal(true);
+    } catch (err) {
+      console.error('Error starting weekend challenge:', err);
+    } finally {
+      setIsGeneratingQuiz(false);
+    }
+  };
+
+  const handleCompleteWeekendQuiz = async (score: number) => {
+    const userId = auth.currentUser?.uid || 'user_demo';
+    try {
+      const res = await claimWeekendQuizXPAtomic(userId, dateStr, score);
+      setWeekendChallenge(prev => prev ? {
+        ...prev,
+        completed: true,
+        score,
+        xpAwarded: res.xpAwarded
+      } : null);
+    } catch (err) {
+      console.error('Error completing weekend quiz:', err);
+    }
+  };
   
   // Quick navigation helpers
   const handleStartRecording = () => {
@@ -204,6 +259,31 @@ export default function DashboardView({
         </div>
 
       </div>
+
+      {/* 4. WEEKEND STREAK PROTECTION CHALLENGE CARD (ACTIVE SATURDAY & SUNDAY) */}
+      {isWeekendActive && (
+        <WeekendChallengeCard
+          onStartChallenge={handleStartWeekendChallenge}
+          isCompleted={!!weekendChallenge?.completed}
+          score={weekendChallenge?.score || 0}
+          dayLabel={dayLabel}
+          theme={theme}
+        />
+      )}
+
+      {/* 5. INTERACTIVE WEEKEND QUIZ MODAL */}
+      {showQuizModal && (
+        <WeekendQuizModal
+          questions={weekendChallenge?.questions || []}
+          onComplete={handleCompleteWeekendQuiz}
+          onClose={() => setShowQuizModal(false)}
+          dayLabel={dayLabel}
+          isAlreadyCompleted={!!weekendChallenge?.completed}
+          previousScore={weekendChallenge?.score || 0}
+          currentStreak={streak}
+          theme={theme}
+        />
+      )}
 
     </div>
   );

@@ -18,12 +18,20 @@ import {
   Layers,
   GraduationCap
 } from 'lucide-react';
-import { Quiz, QuizQuestion } from '../types';
+import { Quiz, QuizQuestion, Lecture, Note } from '../types';
 import { generateAdditionalQuizQuestions } from '../services/gemini';
 import { auth } from '../firebaseConfig';
 import { awardXP, processActivityEvent } from '../services/activityTracker';
 import BruteLoader from './BruteLoader';
 import { Button, Card, Badge, SectionHeader } from './bauhaus';
+import { isWeekend, getWeekendDayLabel, getLocalDateString } from '../config/weekendQuizConfig';
+import { 
+  fetchWeekendChallengeState, 
+  getOrGenerateWeekendQuiz, 
+  claimWeekendQuizXPAtomic, 
+  WeekendChallengeData 
+} from '../services/weekendQuizService';
+import WeekendQuizModal from './weekend/WeekendQuizModal';
 
 interface QuizViewProps {
   quizzes: Quiz[];
@@ -32,6 +40,9 @@ interface QuizViewProps {
   onUpdateQuizScore: (id: string, score: number, scores?: { easy?: number; medium?: number; hard?: number }) => void;
   onAddQuestions?: (quizId: string, difficulty: 'easy' | 'medium' | 'hard', newQuestions: QuizQuestion[]) => void;
   theme?: 'light' | 'dark';
+  lectures?: Lecture[];
+  notes?: Note[];
+  currentStreak?: number;
 }
 
 export default function QuizView({
@@ -40,9 +51,53 @@ export default function QuizView({
   setSelectedQuizId,
   onUpdateQuizScore,
   onAddQuestions,
-  theme = 'light'
+  theme = 'light',
+  lectures = [],
+  notes = [],
+  currentStreak = 6
 }: QuizViewProps) {
-  
+  // Weekend Mega Quiz states
+  const [weekendChallenge, setWeekendChallenge] = useState<WeekendChallengeData | null>(null);
+  const [showWeekendModal, setShowWeekendModal] = useState<boolean>(false);
+  const isWeekendActive = isWeekend();
+  const dateStr = getLocalDateString();
+  const dayLabel = getWeekendDayLabel() || 'Saturday';
+
+  React.useEffect(() => {
+    const userId = auth.currentUser?.uid || 'user_demo';
+    if (userId) {
+      fetchWeekendChallengeState(userId, dateStr).then(data => {
+        setWeekendChallenge(data);
+      }).catch(() => {});
+    }
+  }, [dateStr]);
+
+  const handleStartWeekendQuiz = async () => {
+    const userId = auth.currentUser?.uid || 'user_demo';
+    try {
+      const challenge = await getOrGenerateWeekendQuiz(userId, lectures, notes, dateStr);
+      setWeekendChallenge(challenge);
+      setShowWeekendModal(true);
+    } catch (err) {
+      console.error('Error starting weekend mega quiz:', err);
+    }
+  };
+
+  const handleCompleteWeekendQuiz = async (score: number) => {
+    const userId = auth.currentUser?.uid || 'user_demo';
+    try {
+      const res = await claimWeekendQuizXPAtomic(userId, dateStr, score);
+      setWeekendChallenge(prev => prev ? {
+        ...prev,
+        completed: true,
+        score,
+        xpAwarded: res.xpAwarded
+      } : null);
+    } catch (err) {
+      console.error('Error completing weekend mega quiz:', err);
+    }
+  };
+
   // Game states
   const [activeDifficulty, setActiveDifficulty] = useState<'easy' | 'medium' | 'hard'>('easy');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -270,6 +325,40 @@ export default function QuizView({
             </Card>
           </div>
 
+          {/* MEGA QUIZ FEATURED BANNER */}
+          <div className="space-y-3">
+            <div className="p-6 rounded-[10px] border-3 border-[#FFC400] bg-gradient-to-r from-[#111827] via-[#1E1B4B] to-[#111827] text-white shadow-[0_10px_30px_rgba(255,196,0,0.25)] flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
+              <div className="space-y-2 max-w-xl">
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1 rounded-[4px] bg-[#FFC400] text-[#111111] font-mono text-xs font-black uppercase tracking-wider shadow-paper-xs">
+                    ⚡ MEGA QUIZ
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-[4px] bg-[#8B5CF6] text-white font-mono text-[10px] font-bold uppercase tracking-wider">
+                    WEEKEND REVISION
+                  </span>
+                  <Badge variant="green" size="sm">+50 BONUS XP</Badge>
+                </div>
+                <h2 className="font-heading font-extrabold text-xl sm:text-2xl text-white uppercase tracking-tight">
+                  10-QUESTION MIXED SUBJECT REVISION
+                </h2>
+                <p className="text-xs font-mono text-slate-300 leading-relaxed">
+                  Synthesized from your saved lecture notes, summaries, and flashcards across Operating Systems, Data Structures, Mathematics, and DBMS.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0">
+                <Button
+                  variant="secondary"
+                  size="md"
+                  onClick={handleStartWeekendQuiz}
+                  className="bg-[#FFC400] text-[#111111] hover:bg-[#ffe066] font-extrabold border-2 border-[#111111] shadow-paper-sm px-6 uppercase cursor-pointer"
+                >
+                  {weekendChallenge?.completed ? `REVIEW MEGA QUIZ (${weekendChallenge.score}/10 ✓)` : 'START MEGA QUIZ →'}
+                </Button>
+              </div>
+            </div>
+          </div>
+
           {/* Quiz Cards */}
           <div className="space-y-3">
             <h3 className="section-label text-xs font-bold uppercase tracking-[3px] text-[#666666]">
@@ -454,6 +543,20 @@ export default function QuizView({
             </Card>
           )}
         </div>
+      )}
+
+      {/* Weekend Mega Quiz Modal */}
+      {showWeekendModal && (
+        <WeekendQuizModal
+          questions={weekendChallenge?.questions || []}
+          onComplete={handleCompleteWeekendQuiz}
+          onClose={() => setShowWeekendModal(false)}
+          dayLabel={dayLabel}
+          isAlreadyCompleted={!!weekendChallenge?.completed}
+          previousScore={weekendChallenge?.score || 0}
+          currentStreak={currentStreak}
+          theme={theme}
+        />
       )}
 
     </div>

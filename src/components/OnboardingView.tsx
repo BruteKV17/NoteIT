@@ -182,6 +182,19 @@ export default function OnboardingView({
     setParticles(items);
   }, []);
 
+  // Sync initialFullName when it is provided or updated
+  useEffect(() => {
+    if (initialFullName && !initialFullName.includes('@')) {
+      const parts = initialFullName.trim().split(/\s+/);
+      if (parts.length > 0) {
+        setFirstName(parts[0]);
+        if (parts.length > 1) {
+          setLastName(parts.slice(1).join(' '));
+        }
+      }
+    }
+  }, [initialFullName]);
+
   // Sync step with initialStep prop if changed
   useEffect(() => {
     if (initialStep) {
@@ -257,7 +270,7 @@ export default function OnboardingView({
         country_code: countryCode,
         phone_number: cleanPhone,
         profile_image_url: null,
-        onboarding_completed: true,
+        onboarding_completed: false,
         created_at: serverTimestamp(),
         updated_at: serverTimestamp()
       };
@@ -330,6 +343,16 @@ export default function OnboardingView({
       localStorage.setItem('noteit_active_ai_provider', selectedProvider);
       localStorage.setItem('noteit_active_ai_model', selectedModel);
 
+      // Save onboarding_completed: true in Firestore
+      if (userId) {
+        try {
+          const userDocRef = doc(db, 'users', userId);
+          await setDoc(userDocRef, { onboarding_completed: true, updated_at: serverTimestamp() }, { merge: true });
+        } catch (fErr) {
+          console.warn("Failed to mark onboarding_completed in Firestore:", fErr);
+        }
+      }
+
       setValidationSuccess(true);
       
       // Complete setup and trigger callback
@@ -367,12 +390,12 @@ export default function OnboardingView({
   return (
     <div className="h-screen w-screen flex items-center justify-center p-3 sm:p-4 relative overflow-hidden font-sans bg-grid-paper text-[#111111] select-none">
       
-      <div className={`w-full h-full max-h-[96vh] flex flex-col justify-between transition-all duration-300 ${step === 4 ? 'max-w-7xl' : 'max-w-md'} relative z-10`}>
+      <div className={`w-full ${step === 4 ? 'h-full max-h-[96vh] max-w-7xl flex flex-col justify-between' : 'max-w-md my-auto flex flex-col'} transition-all duration-300 relative z-10`}>
 
         {/* Main Card */}
-        <div className="rounded-2xl border-2 border-[#111111] bg-white dark:bg-[#161B22] p-4 sm:p-5 shadow-paper-lg h-full flex flex-col justify-between overflow-hidden flex-1">
+        <div className={`rounded-2xl border-2 border-[#111111] bg-white dark:bg-[#161B22] p-5 sm:p-6 shadow-paper-lg ${step === 4 ? 'h-full flex flex-col justify-between flex-1 overflow-hidden' : 'flex flex-col space-y-4'}`}>
           {/* Step Progress Indicator */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-2">
             {[1, 2, 3, 4].map((s) => (
               <div key={s} className="flex items-center flex-1 last:flex-none">
                 <div className={`h-8 w-8 rounded-[4px] flex items-center justify-center font-mono text-xs font-bold border-2 border-[#111111] transition-all ${
@@ -399,7 +422,7 @@ export default function OnboardingView({
           )}
 
           {/* Form */}
-          <form onSubmit={(e) => e.preventDefault()} className="flex-1 flex flex-col justify-between overflow-hidden space-y-3 mt-2">
+          <form onSubmit={(e) => e.preventDefault()} className={`${step === 4 ? 'flex-1 flex flex-col justify-between overflow-hidden space-y-3 mt-2' : 'flex flex-col space-y-4 mt-1'}`}>
             
             {step === 1 && (
               <div className="space-y-4 animate-fade-in text-left">
@@ -818,7 +841,7 @@ export default function OnboardingView({
             )}
 
             {/* Buttons Navigation bar */}
-            <div className="flex gap-3 pt-3 border-t border-[#111111]/15 mt-auto shrink-0">
+            <div className={`flex gap-3 pt-3 border-t border-[#111111]/15 shrink-0 ${step === 4 ? 'mt-auto' : 'mt-2'}`}>
               {step > 1 && (
                 <button
                   type="button"

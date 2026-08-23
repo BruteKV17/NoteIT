@@ -588,6 +588,22 @@ export default function LectureCaptureView({
           const recordedSecs = secondsRef.current;
           await onSaveCapture(lectureTitle, lectureSubject, durationStr, audioBlob, finalId || undefined);
           
+          // Dispatch resource generated notification toast
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(
+              new CustomEvent('noteit_notification', {
+                detail: {
+                  type: 'resource_generated',
+                  title: 'LECTURE RESOURCES READY! 🎉',
+                  message: `Your notes, summary, flashcards and quiz for "${lectureTitle || 'Lecture'}" are ready.`,
+                  actionLabel: 'VIEW RESOURCES',
+                  mascotPose: '/mascots/broot-celebrating-confetti.png',
+                  autoDismissMs: 7000
+                }
+              })
+            );
+          }
+
           // Automatically award +50 XP for Task 01 if continuous recording >= 10 minutes (600s) and saved successfully (Section 1)
           if (auth.currentUser?.uid && recordedSecs >= 600) {
             awardXP({
@@ -605,6 +621,20 @@ export default function LectureCaptureView({
           lectureIdRef.current = null;
         } catch (err) {
           console.error('Failed to save capture:', err);
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(
+              new CustomEvent('noteit_notification', {
+                detail: {
+                  type: 'resource_failed',
+                  title: 'GENERATION UNCERTAIN ⚠️',
+                  message: `Resource generation for "${lectureTitle || 'Lecture'}" couldn't be completed. Your recording & transcript are safe.`,
+                  actionLabel: 'RETRY',
+                  mascotPose: '/mascots/broot-thinking.png',
+                  autoDismissMs: 8000
+                }
+              })
+            );
+          }
           setAiStatus('idle');
         }
       };
