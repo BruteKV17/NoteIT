@@ -268,14 +268,63 @@ export const AcademicNotesViewer: React.FC<AcademicNotesViewerProps> = ({
     }
   }
 
+  // Text selection highlight state for Ask Doubt feature (Phase 8 & Safeguards #2 & #7)
+  const [selectedText, setSelectedText] = React.useState<string>('');
+  const [popupPos, setPopupPos] = React.useState<{ x: number; y: number } | null>(null);
+
+  const handleMouseUp = React.useCallback(() => {
+    const selection = window.getSelection();
+    if (selection && !selection.isCollapsed) {
+      const text = selection.toString().trim();
+      if (text.length >= 3) {
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        setSelectedText(text);
+        setPopupPos({
+          x: rect.left + rect.width / 2,
+          y: rect.top - 8
+        });
+        return;
+      }
+    }
+    setPopupPos(null);
+  }, []);
+
+  const handleAskDoubtClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (selectedText) {
+      window.dispatchEvent(
+        new CustomEvent('noteit_open_ask_doubt', {
+          detail: { selectedText }
+        })
+      );
+      setPopupPos(null);
+    }
+  };
+
   // Ensure lingering tables are rendered
   if (isInsideTable) {
     flushTable();
   }
 
   return (
-    <div className="academic-notes-container space-y-2 selection:bg-[#FFC400] selection:text-[#111111]">
+    <div 
+      onMouseUp={handleMouseUp}
+      className="academic-notes-container space-y-2 selection:bg-[#FFC400] selection:text-[#111111] relative"
+    >
       {elements}
+
+      {/* FLOATING CONTEXTUAL 'ASK THIS AS DOUBT' POPUP (PHASE 8 & SAFEGUARD #7) */}
+      {popupPos && selectedText && (
+        <div
+          style={{ left: `${popupPos.x}px`, top: `${popupPos.y}px` }}
+          onClick={handleAskDoubtClick}
+          className="fixed z-50 transform -translate-x-1/2 -translate-y-full mb-1 px-3 py-1.5 rounded-[6px] bg-[#FFC400] text-[#111111] font-mono font-extrabold text-xs border-2 border-[#111111] shadow-paper-md flex items-center gap-1.5 cursor-pointer animate-pulse hover:bg-[#ffe066] transition-all"
+        >
+          <HelpCircle size={14} />
+          <span>🤔 Ask this as doubt</span>
+        </div>
+      )}
     </div>
   );
 };

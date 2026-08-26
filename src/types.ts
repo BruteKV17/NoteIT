@@ -18,7 +18,19 @@ export type PageId =
   | 'profile'
   | 'knowledge-studio'
   | 'rewards'
-  | 'auth';
+  | 'auth'
+  | 'faculty-login'
+  | 'faculty-dashboard'
+  | 'faculty-courses'
+  | 'faculty-course-progress'
+  | 'faculty-doubts'
+  | 'faculty-quiz-analytics'
+  | 'faculty-insights'
+  | 'faculty-settings'
+  | 'faculty-learning-analytics'
+  | 'faculty-lecture-insights'
+  | 'faculty-announcements'
+  | 'faculty-activity-center';
 
 export interface RewardItem {
   id: string;
@@ -89,6 +101,7 @@ export interface Subject {
   name: string;
   code?: string;
   professor?: string;
+  teacherCode?: string;
   color?: string;
   createdAt?: any;
   archived?: boolean;
@@ -226,6 +239,7 @@ export interface UserSettings {
     countryCode?: string;
     phoneNumber?: string;
     onboardingCompleted?: boolean;
+    teacherCode?: string;
   };
   subscription: {
     planName: 'BYOK' | 'Premium' | 'Institution';
@@ -326,6 +340,90 @@ export interface SlideBlueprint {
   visualImportance: string;
   wordLimit: number;
   designNotes: string;
+}
+
+export type UserRole = 'student' | 'faculty';
+
+export interface FacultyProfile {
+  uid: string;
+  fullName: string;
+  emailAddress: string;
+  role: 'faculty';
+  teacherCode?: string;
+  university: string;
+  department: string;
+  designation: string;
+  subjects: string[];
+  classes: string[];
+  whatsappNumber: string;
+  profilePhoto?: string;
+  createdAt?: any;
+}
+
+export interface TeacherAssignment {
+  id?: string;
+  teacherId: string;
+  teacherName: string;
+  teacherCode?: string;
+  teacherPhone?: string;
+  subjectId: string;
+  subjectName: string;
+  courseId?: string;
+  classId?: string;
+  university?: string;
+  assignedAt?: any;
+}
+
+export interface DoubtItem {
+  id: string;
+  studentId: string;
+  studentName: string;
+  studentUniversity?: string;
+  studentClass?: string;
+  subjectId: string;
+  subjectName: string;
+  teacherId: string;
+  teacherName?: string;
+  teacherCode?: string;
+  lectureId?: string;
+  lectureTitle?: string;
+  noteId?: string;
+  topic: string;
+  question: string;
+  selectedText?: string;
+  attachmentUrl?: string;
+  attachmentType?: string;
+  attachmentName?: string;
+  attachmentSize?: number;
+  createdAt: any;
+  status: 'NEW' | 'IN REVIEW' | 'ANSWERED' | 'RESOLVED';
+  priority?: 'low' | 'medium' | 'high';
+  response?: string;
+  respondedAt?: any;
+}
+
+export interface ClassLearningAlert {
+  id: string;
+  subject: string;
+  topic: string;
+  doubtCount: number;
+  quizAccuracy: number;
+  recommendation: string;
+  severity: 'low' | 'medium' | 'high';
+  updatedAt: any;
+}
+
+export interface QuizAttemptRecord {
+  id: string;
+  userId: string;
+  userName: string;
+  quizId: string;
+  subject: string;
+  topic: string;
+  score: number;
+  totalQuestions: number;
+  accuracy: number;
+  completedAt: any;
 }
 
 

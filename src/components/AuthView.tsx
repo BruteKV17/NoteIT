@@ -13,7 +13,8 @@ import {
   sendPasswordResetEmail,
   updateProfile 
 } from 'firebase/auth';
-import { auth } from '../firebaseConfig';
+import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { auth, db } from '../firebaseConfig';
 import { 
   GraduationCap, 
   ArrowRight, 
@@ -26,14 +27,18 @@ import {
   CheckCircle,
   AlertCircle,
   Github,
-  ArrowLeft
+  ArrowLeft,
+  Building,
+  BookOpen,
+  Phone,
+  Briefcase
 } from 'lucide-react';
 import AILogo from './AILogo';
 import { Button, Card, Badge, Input } from './bauhaus';
 
 interface AuthViewProps {
-  onLoginSuccess: (userData: { fullName: string; emailAddress: string }) => void;
-  initialMode?: 'login' | 'signup' | 'forgot' | 'verify';
+  onLoginSuccess: (userData: { fullName: string; emailAddress: string; role?: string }) => void;
+  initialMode?: 'login' | 'signup' | 'forgot' | 'verify' | 'faculty';
   theme: 'light' | 'dark';
   onNavigateToLanding?: () => void;
 }
@@ -44,18 +49,45 @@ export default function AuthView({
   theme,
   onNavigateToLanding
 }: AuthViewProps) {
-  const [mode, setMode] = useState<'login' | 'signup' | 'forgot' | 'verify'>(initialMode);
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot' | 'verify'>(
+    initialMode === 'faculty' ? 'login' : initialMode
+  );
+  const [isFacultyMode, setIsFacultyMode] = useState(initialMode === 'faculty');
   
-  // Field values
+  // Student & Common Field values
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   
+  // Faculty-specific fields
+  const [university, setUniversity] = useState('Chandigarh University');
+  const [department, setDepartment] = useState('Computer Science & Engineering');
+  const [designation, setDesignation] = useState('Associate Professor');
+  const [subjectsInput, setSubjectsInput] = useState('Operating Systems, Data Structures');
+  const [whatsappNumber, setWhatsappNumber] = useState('919876543210');
+
   // Status states
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  const saveFacultyProfile = async (uid: string, userEmail: string, userDisplayName?: string) => {
+    const userDocRef = doc(db, 'users', uid);
+    const docSnap = await getDoc(userDocRef);
+    const existingData = docSnap.exists() ? docSnap.data() : {};
+
+    await setDoc(userDocRef, {
+      ...existingData,
+      role: 'faculty',
+      first_name: (userDisplayName || fullName).split(' ')[0] || 'Dr.',
+      last_name: (userDisplayName || fullName).split(' ').slice(1).join(' ') || 'Faculty',
+      fullName: userDisplayName || fullName || 'Faculty Member',
+      email: userEmail,
+      onboarding_completed: existingData.onboarding_completed ?? false,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+  };
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,11 +104,30 @@ export default function AuthView({
         }
         
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        setSuccessMsg('Token validated! Connecting to research workspace...');
+        
+        const detectedRole: 'student' | 'faculty' = isFacultyMode ? 'faculty' : 'student';
+        const userRef = doc(db, 'users', userCredential.user.uid);
+        await setDoc(userRef, { 
+          role: detectedRole,
+          email: userCredential.user.email || email,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+
+        if (isFacultyMode) {
+          await saveFacultyProfile(userCredential.user.uid, userCredential.user.email || email, userCredential.user.displayName || fullName);
+        }
+
+        setSuccessMsg(
+          detectedRole === 'faculty'
+            ? 'Faculty credentials authenticated! Entering Faculty Academic Portal...'
+            : 'Token validated! Connecting to research workspace...'
+        );
+
         setTimeout(() => {
           onLoginSuccess({
-            fullName: userCredential.user.displayName || email.split('@')[0],
-            emailAddress: userCredential.user.email || email
+            fullName: userCredential.user.displayName || fullName || email.split('@')[0],
+            emailAddress: userCredential.user.email || email,
+            role: detectedRole
           });
         }, 1000);
 
@@ -90,11 +141,26 @@ export default function AuthView({
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(userCredential.user, { displayName: fullName });
         
-        setSuccessMsg('Academic identity registered successfully! Logging you in...');
+        if (isFacultyMode) {
+          await saveFacultyProfile(userCredential.user.uid, email, fullName);
+          setSuccessMsg('Faculty academic identity created! Redirecting to Faculty Portal...');
+        } else {
+          const userDocRef = doc(db, 'users', userCredential.user.uid);
+          await setDoc(userDocRef, {
+            role: 'student',
+            fullName: fullName,
+            email: email,
+            onboarding_completed: false,
+            createdAt: serverTimestamp()
+          }, { merge: true });
+          setSuccessMsg('Academic identity registered successfully! Logging you in...');
+        }
+
         setTimeout(() => {
           onLoginSuccess({
             fullName: fullName,
-            emailAddress: email
+            emailAddress: email,
+            role: isFacultyMode ? 'faculty' : 'student'
           });
         }, 1000);
 
@@ -137,9 +203,28 @@ export default function AuthView({
     try {
       const provider = new GoogleAuthProvider();
       const userCredential = await signInWithPopup(auth, provider);
+
+      const detectedRole: 'student' | 'faculty' = isFacultyMode ? 'faculty' : 'student';
+      const userRef = doc(db, 'users', userCredential.user.uid);
+      await setDoc(userRef, { 
+        role: detectedRole,
+        fullName: userCredential.user.displayName || 'Google User',
+        email: userCredential.user.email || '',
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+
+      if (isFacultyMode) {
+        await saveFacultyProfile(
+          userCredential.user.uid, 
+          userCredential.user.email || '', 
+          userCredential.user.displayName || 'Faculty Member'
+        );
+      }
+
       onLoginSuccess({
         fullName: userCredential.user.displayName || 'Google User',
-        emailAddress: userCredential.user.email || ''
+        emailAddress: userCredential.user.email || '',
+        role: detectedRole
       });
     } catch (err: any) {
       console.error(err);
@@ -155,9 +240,28 @@ export default function AuthView({
     try {
       const provider = new GithubAuthProvider();
       const userCredential = await signInWithPopup(auth, provider);
+
+      const detectedRole: 'student' | 'faculty' = isFacultyMode ? 'faculty' : 'student';
+      const userRef = doc(db, 'users', userCredential.user.uid);
+      await setDoc(userRef, { 
+        role: detectedRole,
+        fullName: userCredential.user.displayName || 'GitHub User',
+        email: userCredential.user.email || '',
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+
+      if (isFacultyMode) {
+        await saveFacultyProfile(
+          userCredential.user.uid, 
+          userCredential.user.email || '', 
+          userCredential.user.displayName || 'Faculty Member'
+        );
+      }
+
       onLoginSuccess({
         fullName: userCredential.user.displayName || 'GitHub User',
-        emailAddress: userCredential.user.email || ''
+        emailAddress: userCredential.user.email || '',
+        role: detectedRole
       });
     } catch (err: any) {
       console.error(err);
@@ -183,46 +287,63 @@ export default function AuthView({
           </div>
           <div>
             <div className="font-heading font-extrabold text-lg text-[var(--text-primary)] tracking-tight">NOTEIT</div>
-            <div className="text-[10px] font-mono font-bold text-[var(--text-secondary)] uppercase tracking-[2px]">SCHOLAR WORKSPACE</div>
+            <div className="text-[10px] font-mono font-bold text-[var(--text-secondary)] uppercase tracking-[2px]">
+              {isFacultyMode ? 'FACULTY ACADEMIC PORTAL' : 'SCHOLAR WORKSPACE'}
+            </div>
           </div>
         </div>
 
         {/* Tagline & Showcase Card */}
         <div className="space-y-6 my-auto max-w-lg text-left">
-          <Badge variant="yellow" size="md">
-            COGNITIVE AI PLATFORM
+          <Badge variant={isFacultyMode ? 'blue' : 'yellow'} size="md">
+            {isFacultyMode ? 'FACULTY MANAGEMENT SYSTEM' : 'COGNITIVE AI PLATFORM'}
           </Badge>
           <h1 className="text-4xl font-heading font-extrabold tracking-tight uppercase leading-tight text-[var(--text-primary)]">
-            AI THAT THINKS <br />
-            <span className="bg-[#FFC400] text-[#111111] px-2 py-0.5 border-2 border-[var(--border-main)] inline-block shadow-paper-sm mt-1">
-              WHILE YOU LEARN
-            </span>
+            {isFacultyMode ? (
+              <>
+                ACADEMIC & FACULTY <br />
+                <span className="bg-[#38BDF8] text-[#111111] px-2 py-0.5 border-2 border-[var(--border-main)] inline-block shadow-paper-sm mt-1">
+                  PORTAL WORKSPACE
+                </span>
+              </>
+            ) : (
+              <>
+                AI THAT THINKS <br />
+                <span className="bg-[#FFC400] text-[#111111] px-2 py-0.5 border-2 border-[var(--border-main)] inline-block shadow-paper-sm mt-1">
+                  WHILE YOU LEARN
+                </span>
+              </>
+            )}
           </h1>
           <p className="text-sm font-mono text-[var(--text-secondary)] leading-relaxed border-l-4 border-[#FFC400] pl-3 py-1">
-            NoteIT captures lectures, extracts structural text, generates dynamic notes, flashcards, interactive quizzes, and designs beautiful presentation decks in one unified workspace.
+            {isFacultyMode
+              ? 'Empower your teaching with live course metrics, student doubt management, real-time quiz performance analytics, and AI-driven Class Learning Alerts.'
+              : 'NoteIT captures lectures, extracts structural text, generates dynamic notes, flashcards, interactive quizzes, and designs beautiful presentation decks in one unified workspace.'}
           </p>
 
-          {/* Premium Preview Card */}
+          {/* Preview Card */}
           <Card shadow="md" className="p-5 bg-[var(--panel-bg)] border-2 border-[var(--border-main)] space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-mono font-extrabold uppercase tracking-wider text-[var(--text-secondary)]">
-                SPEAKER 1 • ACTIVE SYNTHESIS
+                {isFacultyMode ? 'FACULTY DASHBOARD • LIVE FEED' : 'SPEAKER 1 • ACTIVE SYNTHESIS'}
               </span>
-              <Badge variant="green" size="sm">
-                COMPLETED
+              <Badge variant={isFacultyMode ? 'blue' : 'green'} size="sm">
+                {isFacultyMode ? 'FACULTY' : 'COMPLETED'}
               </Badge>
             </div>
             
             <p className="text-xs font-mono text-[var(--text-primary)] leading-relaxed italic">
-              "Gradient descent scaling parameters decrease exponentially when optimization adaptive weights are scaled with moving averages of gradients..."
+              {isFacultyMode
+                ? '"Class Learning Alert: 14 students raised doubts on Deadlock Prevention. Quiz accuracy: 54%. Recommendation: Revise topic in next lecture."'
+                : '"Gradient descent scaling parameters decrease exponentially when optimization adaptive weights are scaled with moving averages of gradients..."'}
             </p>
 
             <div className="flex flex-wrap gap-2 pt-1 font-mono text-[10px] font-bold">
               <span className="rounded-[4px] bg-[#FFC400] text-[#111111] px-2 py-0.5 border border-[var(--border-main)]">
-                Adam Optimizer
+                {isFacultyMode ? 'Operating Systems' : 'Adam Optimizer'}
               </span>
               <span className="rounded-[4px] bg-[var(--card-bg)] text-[var(--text-primary)] px-2 py-0.5 border border-[var(--border-main)]">
-                Gradient Descent
+                {isFacultyMode ? '12 Pending Doubts' : 'Gradient Descent'}
               </span>
             </div>
           </Card>
@@ -234,32 +355,49 @@ export default function AuthView({
         </div>
       </div>
 
-      {/* RIGHT COLUMN: Bauhaus Login / Signup Panel */}
+      {/* RIGHT COLUMN: Auth Form Panel */}
       <div className="flex-1 flex items-center justify-center p-6 relative overflow-y-auto bg-[var(--bg-paper)]">
         
         <div className="w-full max-w-md space-y-6">
-          {/* Back Navigation trigger */}
-          {onNavigateToLanding && (
-            <button
-              onClick={onNavigateToLanding}
-              className="text-xs font-mono font-bold text-[var(--text-secondary)] hover:text-[#FFC400] transition-colors flex items-center gap-1 cursor-pointer"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span>Back to Landing</span>
-            </button>
-          )}
+          {/* Navigation trigger */}
+          <div className="flex items-center justify-between">
+            {onNavigateToLanding && (
+              <button
+                onClick={onNavigateToLanding}
+                className="text-xs font-mono font-bold text-[var(--text-secondary)] hover:text-[#FFC400] transition-colors flex items-center gap-1 cursor-pointer"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span>Back to Landing</span>
+              </button>
+            )}
+
+            {isFacultyMode && (
+              <button
+                onClick={() => { setIsFacultyMode(false); setMode('login'); }}
+                className="text-xs font-mono font-bold text-[#FFC400] hover:underline flex items-center gap-1 cursor-pointer ml-auto"
+              >
+                <GraduationCap className="h-4 w-4" />
+                <span>← Switch to Student Login</span>
+              </button>
+            )}
+          </div>
 
           <Card shadow="lg" className="p-8 bg-[var(--card-bg)] border-2 border-[var(--border-main)] space-y-6">
             <header className="space-y-1">
-              <h2 className="text-2xl font-heading font-extrabold uppercase text-[var(--text-primary)] tracking-tight">
-                {mode === 'login' && 'ACCESS AI WORKSPACE'}
-                {mode === 'signup' && 'CREATE ACADEMIC IDENTITY'}
-                {mode === 'forgot' && 'DISCHARGE RESET TOKEN'}
-              </h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-heading font-extrabold uppercase text-[var(--text-primary)] tracking-tight">
+                  {isFacultyMode ? (
+                    mode === 'login' ? 'FACULTY PORTAL LOGIN' : 'FACULTY REGISTRATION'
+                  ) : (
+                    mode === 'login' ? 'ACCESS AI WORKSPACE' : mode === 'signup' ? 'CREATE ACADEMIC IDENTITY' : 'DISCHARGE RESET TOKEN'
+                  )}
+                </h2>
+              </div>
               <p className="text-xs font-mono text-[var(--text-secondary)]">
-                {mode === 'login' && 'Authenticate to enter your research workspace.'}
-                {mode === 'signup' && 'Register your scholar account to begin.'}
-                {mode === 'forgot' && 'Enter your email to receive a password reset link.'}
+                {isFacultyMode 
+                  ? 'Authenticate with your official university credentials to enter the Teacher Portal.'
+                  : (mode === 'login' ? 'Authenticate to enter your research workspace.' : mode === 'signup' ? 'Register your scholar account to begin.' : 'Enter your email to receive a password reset link.')
+                }
               </p>
             </header>
 
@@ -280,22 +418,24 @@ export default function AuthView({
             <form onSubmit={handleAuthSubmit} className="space-y-4">
               {mode === 'signup' && (
                 <Input
-                  label="FULL NAME"
+                  label="FULL NAME & TITLE"
                   type="text"
                   required
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Kishan Verma"
+                  placeholder={isFacultyMode ? "Dr. Sharma" : "Kishan Verma"}
                 />
               )}
 
+
+
               <Input
-                label="ACADEMIC EMAIL ADDRESS"
+                label={isFacultyMode ? "FACULTY EMAIL ADDRESS" : "ACADEMIC EMAIL ADDRESS"}
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="scholar@university.edu"
+                placeholder={isFacultyMode ? "faculty@university.edu" : "scholar@university.edu"}
               />
 
               {mode !== 'forgot' && (
@@ -339,9 +479,16 @@ export default function AuthView({
                 size="md"
                 type="submit"
                 disabled={loading}
-                className="w-full justify-center bg-[#FFC400] text-[#111111] hover:bg-[#ffe066] font-extrabold border-2 border-[var(--border-main)] shadow-paper-sm"
+                className={`w-full justify-center text-[#111111] font-extrabold border-2 border-[var(--border-main)] shadow-paper-sm ${
+                  isFacultyMode ? 'bg-[#38BDF8] hover:bg-[#7dd3fc]' : 'bg-[#FFC400] hover:bg-[#ffe066]'
+                }`}
               >
-                {loading ? 'AUTHENTICATING...' : mode === 'login' ? 'AUTHENTICATE & ENTER →' : mode === 'signup' ? 'CREATE IDENTITY →' : 'SEND RESET LINK'}
+                {loading 
+                  ? 'AUTHENTICATING...' 
+                  : isFacultyMode 
+                    ? (mode === 'login' ? 'ENTER FACULTY PORTAL →' : 'REGISTER FACULTY IDENTITY →')
+                    : (mode === 'login' ? 'AUTHENTICATE & ENTER →' : mode === 'signup' ? 'CREATE IDENTITY →' : 'SEND RESET LINK')
+                }
               </Button>
             </form>
 
@@ -377,6 +524,20 @@ export default function AuthView({
               </div>
             </div>
 
+            {/* FACULTY ENTRY POINT BUTTON (PHASE 3) */}
+            {!isFacultyMode && (
+              <div className="pt-3 border-t border-[var(--border-main)]">
+                <button
+                  type="button"
+                  onClick={() => { setIsFacultyMode(true); setMode('login'); }}
+                  className="w-full flex items-center justify-center gap-2 p-3 rounded-[6px] border-2 border-[#38BDF8] bg-[#38BDF8]/10 hover:bg-[#38BDF8]/20 text-[#38BDF8] font-mono text-xs font-extrabold uppercase tracking-wide transition-colors cursor-pointer shadow-paper-sm"
+                >
+                  <GraduationCap className="h-4 w-4" />
+                  <span>[ FACULTY LOGIN → ]</span>
+                </button>
+              </div>
+            )}
+
             <div className="text-center pt-2 border-t border-[var(--border-main)]">
               {mode === 'login' ? (
                 <p className="text-xs font-mono text-[var(--text-secondary)]">
@@ -386,7 +547,7 @@ export default function AuthView({
                     onClick={() => setMode('signup')}
                     className="font-bold text-[var(--text-primary)] underline hover:text-[#38BDF8] cursor-pointer"
                   >
-                    Create academic identity
+                    {isFacultyMode ? 'Create faculty identity' : 'Create academic identity'}
                   </button>
                 </p>
               ) : (

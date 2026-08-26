@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 
 // Types and mock imports
-import { PageId, Source, Lecture, WeakTopic, Quiz, QuizQuestion, NotificationItem, UserSettings, Note } from './types';
+import { PageId, Source, Lecture, WeakTopic, Quiz, QuizQuestion, NotificationItem, UserSettings, Note, DoubtItem } from './types';
 import { useNotes } from './hooks/useNotes';
 import { useLectures } from './hooks/useLectures';
 import { 
@@ -67,6 +67,12 @@ import AILogo from './components/AILogo';
 import { generateAdditionalQuizQuestions } from './services/gemini';
 import FloatingRecordingWidget from './components/FloatingRecordingWidget';
 
+// Faculty Portal & Ask Doubt Imports
+import { subscribeFacultyDoubts, generateTeacherCode } from './services/teacherDoubtService';
+import AskDoubtModal from './components/AskDoubtModal';
+import FacultyOnboardingView from './components/faculty/FacultyOnboardingView';
+import TeacherPortalApp from './teacher-portal/TeacherPortalApp';
+
 
 export default function App() {
   
@@ -99,8 +105,43 @@ export default function App() {
     localStorage.setItem('noteit_theme', theme);
   }, [theme]);
 
-  // Authenticated user session state (gates with custom AuthView screen)
+  // Authenticated user session state & Role state (Student vs Faculty)
   const [sessionUser, setSessionUser] = useState<{ uid: string; fullName: string; emailAddress: string } | null>(null);
+  const [userRole, setUserRole] = useState<'student' | 'faculty'>('student');
+  const [doubts, setDoubts] = useState<DoubtItem[]>([]);
+  const [askDoubtModal, setAskDoubtModal] = useState<{
+    isOpen: boolean;
+    selectedText?: string;
+    subject?: string;
+    lectureTitle?: string;
+    topic?: string;
+  }>({ isOpen: false });
+
+  // Listen for global Ask Doubt trigger event across all views
+  useEffect(() => {
+    const handleOpenAskDoubt = (e: any) => {
+      setAskDoubtModal({
+        isOpen: true,
+        selectedText: e.detail?.selectedText || '',
+        subject: e.detail?.subject || 'Operating Systems',
+        lectureTitle: e.detail?.lectureTitle || '',
+        topic: e.detail?.topic || ''
+      });
+    };
+    window.addEventListener('noteit_open_ask_doubt', handleOpenAskDoubt);
+    return () => window.removeEventListener('noteit_open_ask_doubt', handleOpenAskDoubt);
+  }, []);
+
+  // Real-time listener for doubts collection
+  useEffect(() => {
+    if (!sessionUser) {
+      setDoubts([]);
+      return;
+    }
+    return subscribeFacultyDoubts(sessionUser.uid, (list) => {
+      setDoubts(list);
+    });
+  }, [sessionUser]);
 
   // Hook up Firestore notes & lectures in real-time
   const { notes, isLoading: notesLoading, error: notesError, addNote, updateNote, deleteNote } = useNotes(sessionUser?.uid);
@@ -207,6 +248,10 @@ export default function App() {
             console.log("User data loaded from Firestore:", data);
             
             const isCompleted = !!data.onboarding_completed;
+            const detectedRole = data.role === 'faculty' ? 'faculty' : 'student';
+            setUserRole(detectedRole);
+
+            const calculatedCode = data.teacherCode || (detectedRole === 'faculty' ? generateTeacherCode(`${data.first_name || ''} ${data.last_name || ''}`.trim() || loggedUser.fullName) : undefined);
 
             setSettings(prev => ({
               ...prev,
@@ -220,12 +265,20 @@ export default function App() {
                 countryCode: data.country_code || '',
                 phoneNumber: data.phone_number || '',
                 avatarUrl: data.profile_image_url || '',
-                onboardingCompleted: isCompleted
+                onboardingCompleted: isCompleted,
+                role: detectedRole,
+                teacherCode: calculatedCode
               }
             }));
             setSessionUser(loggedUser);
 
-            if (!isCompleted) {
+            if (detectedRole === 'faculty') {
+              if (!isCompleted || !data.teacherCode) {
+                setIsOnboarding(true);
+              } else {
+                setIsOnboarding(false);
+              }
+            } else if (!isCompleted) {
               console.log("User onboarding incomplete. Directing to OnboardingView.");
               setIsOnboarding(true);
             } else {
@@ -668,8 +721,15 @@ export default function App() {
     }
   };
 
-  const handleLoginSuccess = (user: { fullName: string; emailAddress: string }) => {
+  const handleLoginSuccess = (user: { fullName: string; emailAddress: string; role?: string }) => {
     console.log("Login success callback triggered for:", user);
+    if (user.role === 'faculty') {
+      setUserRole('faculty');
+      setActivePage('faculty-dashboard');
+    } else {
+      setUserRole('student');
+      setActivePage('dashboard');
+    }
     if (user.fullName) {
       setSessionUser(prev => prev ? { ...prev, fullName: user.fullName } : { uid: auth.currentUser?.uid || '', fullName: user.fullName, emailAddress: user.emailAddress });
     }
@@ -887,21 +947,36 @@ export default function App() {
     );
   }
 
+  if (activePage === 'landing') {
+    return (
+      <ErrorBoundary theme={theme}>
+        <LandingView
+          onEnterApp={() => { setAuthMode('login'); setActivePage('auth'); }}
+          onLoginSuccess={handleLoginSuccess}
+          onNavigateToPricing={() => setActivePage('pricing')}
+          onGetStarted={() => { setAuthMode('signup'); setActivePage('auth'); }}
+          onSignIn={() => { setAuthMode('login'); setActivePage('auth'); }}
+        />
+        <FeedbackWidget theme={theme} />
+      </ErrorBoundary>
+    );
+  }
+
+  if (activePage === 'auth') {
+    return (
+      <ErrorBoundary theme={theme}>
+        <AuthView 
+          onLoginSuccess={handleLoginSuccess}
+          initialMode={authMode}
+          theme={theme}
+          onNavigateToLanding={() => setActivePage('landing')}
+        />
+        <FeedbackWidget theme={theme} />
+      </ErrorBoundary>
+    );
+  }
+
   if (sessionUser === null) {
-    if (activePage === 'landing') {
-      return (
-        <ErrorBoundary theme={theme}>
-          <LandingView
-            onEnterApp={() => setActivePage('dashboard')}
-            onLoginSuccess={handleLoginSuccess}
-            onNavigateToPricing={() => setActivePage('pricing')}
-            onGetStarted={() => { setAuthMode('signup'); setActivePage('auth'); }}
-            onSignIn={() => { setAuthMode('login'); setActivePage('auth'); }}
-          />
-          <FeedbackWidget theme={theme} />
-        </ErrorBoundary>
-      );
-    }
     if (activePage === 'pricing') {
       return (
         <ErrorBoundary theme={theme}>
@@ -945,6 +1020,36 @@ export default function App() {
   }
 
   if (isOnboarding) {
+    if (userRole === 'faculty') {
+      return (
+        <ErrorBoundary theme={theme}>
+          <FacultyOnboardingView
+            userId={sessionUser.uid}
+            email={sessionUser.emailAddress}
+            initialFullName={sessionUser.fullName}
+            onComplete={(facultyData) => {
+              setSettings(prev => ({
+                ...prev,
+                profile: {
+                  ...prev.profile,
+                  fullName: facultyData.fullName,
+                  emailAddress: sessionUser.emailAddress,
+                  institution: facultyData.university,
+                  phoneNumber: facultyData.phoneNumber,
+                  role: 'faculty',
+                  teacherCode: facultyData.teacherCode,
+                  onboardingCompleted: true
+                }
+              }));
+              setIsOnboarding(false);
+              setActivePage('faculty-dashboard');
+            }}
+          />
+          <FeedbackWidget theme={theme} />
+        </ErrorBoundary>
+      );
+    }
+
     return (
       <ErrorBoundary theme={theme}>
         <OnboardingView
@@ -980,6 +1085,27 @@ export default function App() {
 
   if (notesLoading && lecturesLoading) {
     return <BruteLoader message="Initializing Note-IT Cognitive Workspace..." />;
+  }
+
+  // TEACHER PORTAL WORKSPACE (Integrated from teachers-LMS-portal)
+  if (sessionUser && userRole === 'faculty') {
+    return (
+      <ErrorBoundary theme={theme}>
+        <TeacherPortalApp
+          user={{
+            uid: sessionUser.uid,
+            fullName: settings.profile.fullName || sessionUser.fullName,
+            emailAddress: sessionUser.emailAddress,
+            teacherCode: settings.profile.teacherCode,
+            institution: settings.profile.institution
+          }}
+          onSignOut={handleLogOut}
+          theme={theme}
+          setTheme={setTheme}
+        />
+        <FeedbackWidget theme={theme} />
+      </ErrorBoundary>
+    );
   }
 
   return (
@@ -1052,6 +1178,24 @@ export default function App() {
           onPauseToggle={globalRecordingState.pauseCapture}
           onStop={globalRecordingState.stopCapture}
           onOpenCapture={() => setActivePage('lecture-capture')}
+        />
+      )}
+
+      {/* Ask Doubt Modal for Students (Phase 8) */}
+      {askDoubtModal.isOpen && (
+        <AskDoubtModal
+          isOpen={askDoubtModal.isOpen}
+          onClose={() => setAskDoubtModal({ isOpen: false })}
+          initialSelectedText={askDoubtModal.selectedText}
+          initialSubject={askDoubtModal.subject}
+          initialLectureTitle={askDoubtModal.lectureTitle}
+          initialTopic={askDoubtModal.topic}
+          studentUser={{
+            uid: sessionUser?.uid || 'student_demo',
+            fullName: settings.profile.fullName || sessionUser?.fullName || 'Student Scholar',
+            emailAddress: sessionUser?.emailAddress || '',
+            institution: settings.profile.institution
+          }}
         />
       )}
 

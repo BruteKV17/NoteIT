@@ -1,0 +1,206 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   THEME TOKENS  —  driven by CSS variables (space-separated RGB)
+   Dark is the default (see <html class="dark">). Light supported.
+   ============================================================ */
+:root {
+  /* Light mode */
+  --canvas: 244 246 251;
+  --card: 255 255 255;
+  --panel: 248 250 253;
+  --line: 224 228 238;
+  --ink: 15 18 28;
+  --muted: 82 90 110;
+  --faint: 130 138 158;
+  color-scheme: light;
+}
+
+.dark {
+  /* Dark mode — the default cinematic look */
+  --canvas: 3 4 8; /* #030408 */
+  --card: 13 15 23; /* #0D0F17 */
+  --panel: 20 24 39; /* #141827 */
+  --line: 30 34 51; /* #1E2233 */
+  --ink: 237 240 247;
+  --muted: 148 156 178;
+  --faint: 96 104 128;
+  color-scheme: dark;
+}
+
+@layer base {
+  * {
+    border-color: rgb(var(--line));
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-canvas text-ink font-sans antialiased;
+    font-feature-settings: 'ss01', 'cv01';
+    text-rendering: optimizeLegibility;
+  }
+
+  h1, h2, h3, h4, h5 {
+    @apply font-display tracking-tight;
+  }
+
+  /* Keyboard focus ring — visible and consistent (a11y floor) */
+  :focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: rgba(255, 196, 0, 0.28);
+    color: rgb(var(--ink));
+  }
+
+  /* Scrollbars */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--line)) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--line));
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--faint));
+    background-clip: content-box;
+  }
+
+  /* Numeric metrics look sharp in mono */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* ============================================================
+   LIQUID GLASS  —  used by the cinematic hero / login (exact spec)
+   ============================================================ */
+.liquid-glass {
+  background: rgba(255, 255, 255, 0.01);
+  background-blend-mode: luminosity;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  border: none;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.liquid-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.4px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.45) 0%,
+    rgba(255, 255, 255, 0.15) 20%,
+    rgba(255, 255, 255, 0) 40%,
+    rgba(255, 255, 255, 0) 60%,
+    rgba(255, 255, 255, 0.15) 80%,
+    rgba(255, 255, 255, 0.45) 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* ============================================================
+   PORTAL COMPONENT UTILITIES
+   ============================================================ */
+@layer components {
+  /* Glassmorphism card border for the dark portal surfaces */
+  .glass-panel {
+    @apply relative bg-card border border-line rounded-2xl;
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.04),
+      0 12px 32px -18px rgba(0, 0, 0, 0.8);
+  }
+
+  .glass-panel-hover {
+    @apply transition-all duration-300;
+  }
+  .glass-panel-hover:hover {
+    border-color: rgba(56, 189, 248, 0.35);
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.06),
+      0 20px 44px -22px rgba(0, 0, 0, 0.9);
+    transform: translateY(-2px);
+  }
+
+  /* Metric / code text */
+  .metric {
+    @apply font-mono tabular tracking-tight;
+  }
+
+  /* Shimmer skeleton */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.02) 25%,
+      rgba(255, 255, 255, 0.06) 37%,
+      rgba(255, 255, 255, 0.02) 63%
+    );
+    background-size: 200% 100%;
+    @apply animate-shimmer;
+  }
+
+  /* Mobile drawer slide-in */
+  @keyframes drawerIn {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+  .animate-drawer {
+    animation: drawerIn 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Sidebar nav item */
+  .nav-item {
+    @apply relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted transition-colors;
+  }
+  .nav-item:hover {
+    @apply text-ink bg-panel;
+  }
+  .nav-item[data-active='true'] {
+    @apply text-ink bg-panel;
+  }
+}
+
+/* ============================================================
+   ACCESSIBILITY — respect reduced motion
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

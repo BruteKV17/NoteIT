@@ -13,29 +13,7 @@ import {
 import { db } from '../firebaseConfig';
 import { Subject } from '../types';
 
-const INITIAL_SUBJECTS: Subject[] = [
-  {
-    id: 'sub-ds',
-    name: 'Data Structures',
-    code: 'CS201',
-    professor: 'Dr. Alan Turing',
-    color: '#3B82F6',
-  },
-  {
-    id: 'sub-os',
-    name: 'Operating Systems',
-    code: 'CS302',
-    professor: 'Dr. Grace Hopper',
-    color: '#10B981',
-  },
-  {
-    id: 'sub-la',
-    name: 'Linear Algebra',
-    code: 'MATH210',
-    professor: 'Dr. Gilbert Strang',
-    color: '#8B5CF6',
-  }
-];
+const INITIAL_SUBJECTS: Subject[] = [];
 
 export function useSubjects(userId: string | undefined) {
   const [subjects, setSubjects] = useState<Subject[]>(INITIAL_SUBJECTS);
@@ -57,7 +35,7 @@ export function useSubjects(userId: string | undefined) {
       q,
       (snapshot) => {
         if (snapshot.empty) {
-          setSubjects(INITIAL_SUBJECTS);
+          setSubjects([]);
         } else {
           const subjectList: Subject[] = [];
           snapshot.forEach((docSnap) => {
@@ -66,7 +44,8 @@ export function useSubjects(userId: string | undefined) {
               id: docSnap.id,
               name: data.name || 'Untitled Subject',
               code: data.code || '',
-              professor: data.professor || '',
+              professor: data.professor || data.teacherCode || '',
+              teacherCode: data.teacherCode || data.professor || '',
               color: data.color || '#3B82F6',
               createdAt: data.createdAt,
               archived: !!data.archived,
@@ -80,7 +59,7 @@ export function useSubjects(userId: string | undefined) {
       (err) => {
         console.error('Error fetching subjects from Firestore:', err);
         setError(err);
-        setSubjects(INITIAL_SUBJECTS);
+        setSubjects([]);
         setIsLoading(false);
       }
     );
@@ -92,18 +71,22 @@ export function useSubjects(userId: string | undefined) {
     name: string;
     code?: string;
     professor?: string;
+    teacherCode?: string;
     color?: string;
   }) => {
     if (subjects.filter(s => !s.archived).length >= 5) {
       throw new Error('Maximum limit of 5 active subjects reached. Please delete or archive a subject first.');
     }
 
+    const tCode = subjectData.teacherCode || subjectData.professor || '';
+
     if (!userId) {
       const newSub: Subject = {
         id: `sub-local-${Date.now()}`,
         name: subjectData.name,
         code: subjectData.code || '',
-        professor: subjectData.professor || '',
+        professor: tCode,
+        teacherCode: tCode,
         color: subjectData.color || '#3B82F6',
       };
       setSubjects(prev => [newSub, ...prev].slice(0, 5));
@@ -114,6 +97,8 @@ export function useSubjects(userId: string | undefined) {
       const subjectsRef = collection(db, 'users', userId, 'subjects');
       const docRef = await addDoc(subjectsRef, {
         ...subjectData,
+        professor: tCode,
+        teacherCode: tCode,
         createdAt: serverTimestamp(),
         archived: false
       });
@@ -124,7 +109,8 @@ export function useSubjects(userId: string | undefined) {
         id: `sub-local-${Date.now()}`,
         name: subjectData.name,
         code: subjectData.code || '',
-        professor: subjectData.professor || '',
+        professor: tCode,
+        teacherCode: tCode,
         color: subjectData.color || '#3B82F6',
       };
       setSubjects(prev => [newSub, ...prev].slice(0, 5));

@@ -213,7 +213,7 @@ export default function Navbar({
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-heading font-bold text-[var(--text-primary)] truncate">{settings.profile.fullName}</div>
                   <div className="text-[10px] font-mono font-bold uppercase text-[var(--text-secondary)] truncate mt-0.5">
-                    {settings.profile.role || 'Academic Scholar'}
+                    {settings.profile.role === 'faculty' ? 'FACULTY MEMBER' : 'SCHOLAR / STUDENT'}
                   </div>
                 </div>
               </div>

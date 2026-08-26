@@ -18,7 +18,8 @@ import {
   ChevronRight,
   LogOut,
   User,
-  ExternalLink
+  ExternalLink,
+  HelpCircle
 } from 'lucide-react';
 import { PageId, UserSettings } from '../types';
 import AILogo from './AILogo';
@@ -133,6 +134,16 @@ export default function Sidebar({
             icon={<Mic className="h-4 w-4 animate-pulse text-[#FF4D4D]" />}
           >
             Capture Live Course
+          </Button>
+          <Button
+            variant="secondary"
+            size="md"
+            fullWidth
+            onClick={() => window.dispatchEvent(new CustomEvent('noteit_open_ask_doubt'))}
+            icon={<HelpCircle className="h-4 w-4 text-[#38BDF8]" />}
+            className="border-[#38BDF8]/40 hover:border-[#38BDF8]"
+          >
+            Ask Doubt
           </Button>
         </div>
       )}

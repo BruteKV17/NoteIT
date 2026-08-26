@@ -266,7 +266,8 @@ export default function LibraryView({
       const newId = await addSubject({
         name: newSubName.trim(),
         code: newSubCode.trim().toUpperCase(),
-        professor: newSubProf.trim(),
+        professor: newSubProf.trim().toUpperCase(),
+        teacherCode: newSubProf.trim().toUpperCase(),
         color: chosenColor
       });
       setNewSubName('');
@@ -521,7 +522,31 @@ export default function LibraryView({
               {/* Path Container */}
               <div className="relative min-h-[1400px] w-full flex flex-col items-center py-16 pb-40">
 
-                {currentSubjectLectures.length === 0 ? (
+                {subjects.length === 0 ? (
+                  /* EMPTY SUBJECTS STATE ON SQUARE GRID MAP PAGE */
+                  <div className="relative z-20 flex flex-col items-center justify-center my-auto py-24 text-center px-4">
+                    <div className="bg-white dark:bg-[#161B22] brutal-border p-8 max-w-md w-full flex flex-col items-center space-y-4 shadow-[8px_8px_0px_#000]">
+                      <div className="w-16 h-16 bg-[#FFC107] border-2 border-black flex items-center justify-center rounded-full shadow-[3px_3px_0px_#000]">
+                        <BookOpen className="w-8 h-8 text-black stroke-[3]" />
+                      </div>
+                      <div className="space-y-1">
+                        <h3 className="text-xl font-black uppercase text-black dark:text-white">
+                          NO SUBJECTS ENROLLED YET
+                        </h3>
+                        <p className="text-xs font-bold text-[#64748B] dark:text-[#94A3B8]">
+                          Create your first subject map and enter your professor's Teacher Code (e.g., KISHVERM) to connect doubts.
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setShowCreateSubjectModal(true)}
+                        className="bg-[#FFC107] text-black font-black uppercase text-xs px-6 py-3 brutal-border flex items-center gap-2 hover:bg-[#FFD54F] transition-transform cursor-pointer"
+                      >
+                        <Plus className="w-4 h-4 stroke-[3]" />
+                        + CREATE YOUR FIRST SUBJECT
+                      </button>
+                    </div>
+                  </div>
+                ) : currentSubjectLectures.length === 0 ? (
                   /* EMPTY STATE ON SQUARE GRID MAP PAGE */
                   <div className="relative z-20 flex flex-col items-center justify-center my-auto py-24 text-center px-4">
                     <div className="bg-white dark:bg-[#161B22] brutal-border p-8 max-w-md w-full flex flex-col items-center space-y-4 shadow-[8px_8px_0px_#000]">
@@ -1020,6 +1045,21 @@ export default function LibraryView({
                   placeholder="e.g. DATA STRUCTURES & ALGORITHMS"
                   className="w-full bg-[#F4F1EA] dark:bg-[#0D1117] border-2 border-black p-2.5 text-xs font-bold uppercase text-black dark:text-white focus:outline-none"
                 />
+              </div>
+
+              <div>
+                <label className="text-xs font-black uppercase block mb-1 text-black dark:text-white">Faculty UID / Teacher Code * (e.g. KISHVERM)</label>
+                <input
+                  type="text"
+                  required
+                  value={newSubProf}
+                  onChange={(e) => setNewSubProf(e.target.value)}
+                  placeholder="e.g. KISHVERM"
+                  className="w-full bg-[#F4F1EA] dark:bg-[#0D1117] border-2 border-black p-2.5 text-xs font-bold uppercase text-black dark:text-white focus:outline-none font-mono tracking-wider"
+                />
+                <span className="text-[10px] font-mono text-gray-500 mt-1 block">
+                  Enter your professor's unique 8-character Teacher Code (e.g., KISHVERM) to route doubts to them.
+                </span>
               </div>
 
               <div>
