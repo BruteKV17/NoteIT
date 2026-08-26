@@ -132,7 +132,7 @@
 @layer components {
   /* Glassmorphism card border for the dark portal surfaces */
   .glass-panel {
-    @apply relative bg-card border border-line rounded-2xl;
+    @apply relative bg-card border border-line rounded-2xl max-w-full min-w-0 box-border;
     box-shadow:
       inset 0 1px 0 0 rgba(255, 255, 255, 0.04),
       0 12px 32px -18px rgba(0, 0, 0, 0.8);
