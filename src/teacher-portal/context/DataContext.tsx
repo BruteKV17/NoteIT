@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type {
   ActivityEvent,
   Announcement,
@@ -7,6 +7,9 @@ import type {
   TeacherAssignment,
 } from '../types'
 import { ACTIVITY, ANNOUNCEMENTS, COURSES, DOUBTS } from '../lib/mockData'
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore'
+import { db } from '../../firebaseConfig'
+import { updateDoubtResponse } from '../../services/teacherDoubtService'
 
 interface DataContextValue {
   doubts: DoubtItem[]
@@ -31,12 +34,125 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [announcements, setAnnouncements] = useState<Announcement[]>(ANNOUNCEMENTS)
   const [activity, setActivity] = useState<ActivityEvent[]>(ACTIVITY)
 
+  // Real-time synchronization of student doubts from Firestore & localStorage
+  useEffect(() => {
+    let unsubscribe = () => {};
+
+    try {
+      const doubtsRef = collection(db, 'doubts');
+      const q = query(doubtsRef, orderBy('createdAt', 'desc'));
+
+      unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          let fsDoubts: DoubtItem[] = [];
+
+          if (!snapshot.empty) {
+            fsDoubts = snapshot.docs.map((docSnap) => {
+              const data = docSnap.data();
+
+              let rawStatus = (data.status || 'pending').toString().toLowerCase();
+              if (rawStatus === 'new') rawStatus = 'pending';
+              const validStatus: DoubtStatus = ['pending', 'answered', 'resolved', 'escalated'].includes(rawStatus)
+                ? (rawStatus as DoubtStatus)
+                : 'pending';
+
+              let createdIso = new Date().toISOString();
+              if (data.createdAt) {
+                if (typeof data.createdAt.toDate === 'function') {
+                  createdIso = data.createdAt.toDate().toISOString();
+                } else if (typeof data.createdAt === 'string') {
+                  createdIso = data.createdAt;
+                }
+              }
+
+              let attachmentObj = undefined;
+              if (data.attachmentName) {
+                attachmentObj = {
+                  name: data.attachmentName,
+                  sizeMb: data.attachmentSize ? Number((data.attachmentSize / (1024 * 1024)).toFixed(1)) : 1.0,
+                  kind: (data.attachmentType?.includes('image') ? 'image' : 'pdf') as any,
+                };
+              }
+
+              return {
+                id: docSnap.id,
+                studentName: data.studentName || 'Student Scholar',
+                studentId: data.studentId || 'student_demo',
+                studentPhone: data.studentPhone || '919876543210',
+                courseCode: data.subjectCode || data.courseCode || 'CS301',
+                subject: data.subjectName || data.subject || 'Data Structures',
+                topic: data.topic || 'General Topic',
+                question: data.question || '',
+                highlightedText: data.selectedText || data.highlightedText || '',
+                attachment: attachmentObj,
+                status: validStatus,
+                priority: data.priority || 'medium',
+                createdAt: createdIso,
+                response: data.response || undefined,
+                respondedAt: data.respondedAt
+                  ? typeof data.respondedAt.toDate === 'function'
+                    ? data.respondedAt.toDate().toISOString()
+                    : data.respondedAt
+                  : undefined,
+              };
+            });
+          }
+
+          // Check local storage for fallback doubts
+          let localDoubts: DoubtItem[] = [];
+          try {
+            const rawLocal = localStorage.getItem('noteit_local_doubts');
+            if (rawLocal) {
+              const parsed = JSON.parse(rawLocal);
+              if (Array.isArray(parsed)) {
+                localDoubts = parsed.map((d: any) => ({
+                  id: d.id || uid('d'),
+                  studentName: d.studentName || 'Student Scholar',
+                  studentId: d.studentId || 'student_demo',
+                  studentPhone: d.studentPhone || '919876543210',
+                  courseCode: d.courseCode || d.subjectId?.toUpperCase() || 'CS301',
+                  subject: d.subjectName || d.subject || 'Data Structures',
+                  topic: d.topic || 'General Topic',
+                  question: d.question || '',
+                  highlightedText: d.selectedText || d.highlightedText || '',
+                  status: (d.status?.toLowerCase() === 'new' ? 'pending' : d.status?.toLowerCase() || 'pending') as DoubtStatus,
+                  priority: d.priority || 'medium',
+                  createdAt: d.createdAt || new Date().toISOString(),
+                  response: d.response,
+                  respondedAt: d.respondedAt,
+                }));
+              }
+            }
+          } catch (e) {}
+
+          // Deduplicate and combine (Firestore + Local + Demo)
+          const map = new Map<string, DoubtItem>();
+          [...fsDoubts, ...localDoubts, ...DOUBTS].forEach((item) => {
+            if (!map.has(item.id)) {
+              map.set(item.id, item);
+            }
+          });
+
+          setDoubts(Array.from(map.values()));
+        },
+        (err) => {
+          console.warn('Error reading real-time doubts from Firestore:', err);
+        }
+      );
+    } catch (err) {
+      console.warn('Firestore initialization fallback for doubts:', err);
+    }
+
+    return () => unsubscribe();
+  }, []);
+
   const logActivity = useCallback((event: Omit<ActivityEvent, 'id' | 'at'>) => {
     setActivity((list) => [{ ...event, id: uid('e'), at: new Date().toISOString() }, ...list])
   }, [])
 
   const answerDoubt = useCallback(
-    (id: string, response: string) => {
+    async (id: string, response: string) => {
       let studentName = ''
       let courseCode: string | undefined
       setDoubts((list) =>
@@ -47,6 +163,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
           return { ...d, response, status: 'answered', respondedAt: new Date().toISOString() }
         }),
       )
+
+      // Sync response to Firestore
+      try {
+        await updateDoubtResponse(id, response, 'ANSWERED')
+      } catch (err) {
+        console.warn('Failed to update doubt in Firestore:', err)
+      }
+
       logActivity({
         kind: 'doubt-answered',
         title: 'Answered a doubt',
@@ -59,6 +183,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const setDoubtStatus = useCallback((id: string, status: DoubtStatus) => {
     setDoubts((list) => list.map((d) => (d.id === id ? { ...d, status } : d)))
+    // Sync status change to Firestore
+    const firestoreStatusMap: Record<DoubtStatus, any> = {
+      pending: 'NEW',
+      answered: 'ANSWERED',
+      resolved: 'RESOLVED',
+      escalated: 'ESCALATED',
+    }
+    updateDoubtResponse(id, '', firestoreStatusMap[status] || 'ANSWERED').catch(() => {})
   }, [])
 
   const toggleSyllabusItem = useCallback(

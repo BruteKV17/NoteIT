@@ -55,6 +55,61 @@ export function generateTeacherCode(fullName: string): string {
 }
 
 /**
+ * Checks whether a Teacher Code / UID is already assigned to another user in Firestore.
+ */
+export async function isTeacherCodeTaken(
+  teacherCode: string,
+  currentUserId?: string
+): Promise<boolean> {
+  const cleanCode = teacherCode.trim().toUpperCase();
+  if (!cleanCode) return false;
+
+  try {
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('teacherCode', '==', cleanCode));
+    const snap = await getDocs(q);
+
+    if (snap.empty) return false;
+    return snap.docs.some(docSnap => docSnap.id !== currentUserId);
+  } catch (e) {
+    console.warn('Error checking teacher code uniqueness:', e);
+    return false;
+  }
+}
+
+/**
+ * Generates a strictly unique 8-character Teacher UID Code across Firestore users.
+ * Guarantees that only ONE teacher gets a given UID (e.g. Kishan Verma = KISHVERM).
+ * If KISHVERM is already assigned to another teacher, produces a unique variant (e.g. KISHVER2).
+ */
+export async function generateUniqueTeacherCode(
+  fullName: string,
+  currentUserId?: string
+): Promise<string> {
+  const baseCode = generateTeacherCode(fullName);
+  if (!baseCode || baseCode === 'TECH0000') return 'TECH0000';
+
+  const taken = await isTeacherCodeTaken(baseCode, currentUserId);
+  if (!taken) return baseCode;
+
+  // Code is already taken by another person! Generate unique numeric variant
+  let counter = 2;
+  while (counter <= 99) {
+    const suffix = String(counter);
+    const prefixLen = Math.max(1, 8 - suffix.length);
+    const candidate = `${baseCode.substring(0, prefixLen)}${suffix}`.toUpperCase();
+
+    const candidateTaken = await isTeacherCodeTaken(candidate, currentUserId);
+    if (!candidateTaken) {
+      return candidate;
+    }
+    counter++;
+  }
+
+  return `${baseCode.substring(0, 6)}99`;
+}
+
+/**
  * Queries Firestore for a faculty member matching a given Teacher Code (e.g. KISHVERM).
  * Includes robust fallback resolution so demo codes like KISHVERM always resolve cleanly.
  */

@@ -251,7 +251,9 @@ export default function App() {
             const detectedRole = data.role === 'faculty' ? 'faculty' : 'student';
             setUserRole(detectedRole);
 
-            const calculatedCode = data.teacherCode || (detectedRole === 'faculty' ? generateTeacherCode(`${data.first_name || ''} ${data.last_name || ''}`.trim() || loggedUser.fullName) : undefined);
+            const calculatedCode = detectedRole === 'faculty'
+              ? (data.teacherCode || generateTeacherCode(`${data.first_name || ''} ${data.last_name || ''}`.trim() || loggedUser.fullName))
+              : undefined;
 
             setSettings(prev => ({
               ...prev,
