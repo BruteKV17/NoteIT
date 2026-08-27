@@ -97,6 +97,24 @@ export default function LectureCaptureView({
   const [lectureTitle, setLectureTitle] = useState('');
   const [lectureSubject, setLectureSubject] = useState('Data Structures');
 
+  const defaultSubjectsList = React.useMemo(() => [
+    { id: 'def-1', name: 'Data Structures', code: 'CS201' },
+    { id: 'def-2', name: 'Operating Systems', code: 'CS301' },
+    { id: 'def-3', name: 'Computer Networks', code: 'CS302' },
+    { id: 'def-4', name: 'Database Management', code: 'CS303' },
+    { id: 'def-5', name: 'Machine Learning', code: 'CS401' },
+    { id: 'def-6', name: 'General', code: 'GEN' },
+  ], []);
+
+  const availableSubjects = React.useMemo(() => {
+    const baseList = subjects && subjects.length > 0 ? subjects : defaultSubjectsList;
+    const list = [...baseList];
+    if (lectureSubject && !list.some(s => s.name.toLowerCase() === lectureSubject.toLowerCase())) {
+      list.unshift({ id: `active-${lectureSubject}`, name: lectureSubject, code: '' });
+    }
+    return list;
+  }, [subjects, lectureSubject, defaultSubjectsList]);
+
   // Auto-sync active lecture details when opened from Academic Library
   useEffect(() => {
     if (!activeLectureId || !lectures || lectures.length === 0) return;
@@ -110,12 +128,12 @@ export default function LectureCaptureView({
   }, [activeLectureId, lectures]);
 
   useEffect(() => {
-    if (captureDestination === 'map' && subjects.length > 0) {
-      if (!subjects.some(s => s.name.toLowerCase() === lectureSubject.toLowerCase())) {
-        setLectureSubject(subjects[0].name);
+    if (captureDestination === 'map' && availableSubjects.length > 0) {
+      if (!availableSubjects.some(s => s.name.toLowerCase() === lectureSubject.toLowerCase())) {
+        setLectureSubject(availableSubjects[0].name);
       }
     }
-  }, [subjects, captureDestination]);
+  }, [availableSubjects, captureDestination]);
 
   // Capturing state machines
   const [isRecording, setIsRecording] = useState(false);
@@ -2602,7 +2620,9 @@ export default function LectureCaptureView({
                         disabled={isRecording}
                         onClick={() => {
                           setCaptureDestination('map');
-                          if (subjects.length > 0) setLectureSubject(subjects[0].name);
+                          if (availableSubjects.length > 0 && !availableSubjects.some(s => s.name.toLowerCase() === lectureSubject.toLowerCase())) {
+                            setLectureSubject(availableSubjects[0].name);
+                          }
                         }}
                         className="py-2.5 px-3 rounded-[4px] text-xs font-mono font-extrabold transition-all flex items-center justify-center gap-1.5 bg-[var(--card-bg)] text-[var(--text-primary)] border-2 border-[var(--border-main)] hover:bg-[#FFC400] hover:text-black hover:border-black shadow-paper-xs cursor-pointer"
                       >
@@ -2641,11 +2661,15 @@ export default function LectureCaptureView({
                       disabled={isRecording}
                       value={lectureSubject}
                       onChange={(e) => setLectureSubject(e.target.value)}
-                      style={{ color: 'var(--text-primary)' }}
-                      className="w-full rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] text-xs font-mono font-bold p-3 outline-none shadow-paper-sm disabled:bg-[var(--panel-bg)] disabled:cursor-not-allowed cursor-pointer"
+                      style={{ color: 'var(--text-primary)', backgroundColor: 'var(--card-bg)' }}
+                      className="w-full rounded-[6px] border-2 border-[var(--border-main)] text-xs font-mono font-bold p-3 outline-none shadow-paper-sm disabled:bg-[var(--panel-bg)] disabled:cursor-not-allowed cursor-pointer"
                     >
-                      {subjects.map(s => (
-                        <option key={s.id} value={s.name} className="bg-[var(--card-bg)] text-[var(--text-primary)] font-bold">
+                      {availableSubjects.map(s => (
+                        <option 
+                          key={s.id} 
+                          value={s.name} 
+                          className="bg-[#121212] text-white dark:bg-[#121212] dark:text-white font-mono font-bold py-1.5 px-2"
+                        >
                           {s.name.toUpperCase()} {s.code ? `(${s.code})` : ''}
                         </option>
                       ))}

@@ -13,16 +13,22 @@ import {
 import { db } from '../firebaseConfig';
 import { Subject } from '../types';
 
-const INITIAL_SUBJECTS: Subject[] = [];
+const DEFAULT_SUBJECTS: Subject[] = [
+  { id: 'sub-def-1', name: 'Data Structures', code: 'CS201', professor: 'Prof. Kishan Verma', teacherCode: 'CS201', color: '#3B82F6' },
+  { id: 'sub-def-2', name: 'Operating Systems', code: 'CS301', professor: 'Prof. Sharma', teacherCode: 'CS301', color: '#10B981' },
+  { id: 'sub-def-3', name: 'Computer Networks', code: 'CS302', professor: 'Prof. Gupta', teacherCode: 'CS302', color: '#8B5CF6' },
+  { id: 'sub-def-4', name: 'Database Management', code: 'CS303', professor: 'Prof. Roy', teacherCode: 'CS303', color: '#F59E0B' },
+  { id: 'sub-def-5', name: 'Machine Learning', code: 'CS401', professor: 'Prof. Mehta', teacherCode: 'CS401', color: '#EC4899' },
+];
 
 export function useSubjects(userId: string | undefined) {
-  const [subjects, setSubjects] = useState<Subject[]>(INITIAL_SUBJECTS);
+  const [subjects, setSubjects] = useState<Subject[]>(DEFAULT_SUBJECTS);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     if (!userId) {
-      setSubjects(INITIAL_SUBJECTS);
+      setSubjects(DEFAULT_SUBJECTS);
       setIsLoading(false);
       return;
     }
@@ -35,7 +41,7 @@ export function useSubjects(userId: string | undefined) {
       q,
       (snapshot) => {
         if (snapshot.empty) {
-          setSubjects([]);
+          setSubjects(DEFAULT_SUBJECTS);
         } else {
           const subjectList: Subject[] = [];
           snapshot.forEach((docSnap) => {
@@ -59,7 +65,7 @@ export function useSubjects(userId: string | undefined) {
       (err) => {
         console.error('Error fetching subjects from Firestore:', err);
         setError(err);
-        setSubjects([]);
+        setSubjects(DEFAULT_SUBJECTS);
         setIsLoading(false);
       }
     );
