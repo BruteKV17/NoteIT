@@ -120,6 +120,32 @@ export default function LibraryView({
   const [newSubProf, setNewSubProf] = useState('');
   const [subjectError, setSubjectError] = useState<string | null>(null);
 
+  // Subject Edit Modal
+  const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
+  const [editSubName, setEditSubName] = useState('');
+  const [editSubCode, setEditSubCode] = useState('');
+  const [editSubProf, setEditSubProf] = useState('');
+  const [editSubjectError, setEditSubjectError] = useState<string | null>(null);
+
+  // Floating Context Menu State (Right-click / Popup section)
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    type: 'subject' | 'lecture';
+    item: Subject | Lecture;
+  } | null>(null);
+
+  // Auto-close context menu on window click or scroll
+  useEffect(() => {
+    const handleCloseContextMenu = () => setContextMenu(null);
+    window.addEventListener('click', handleCloseContextMenu);
+    window.addEventListener('scroll', handleCloseContextMenu);
+    return () => {
+      window.removeEventListener('click', handleCloseContextMenu);
+      window.removeEventListener('scroll', handleCloseContextMenu);
+    };
+  }, []);
+
   // Lecture Creation Modal inside Subject Map
   const [showCreateLectureModal, setShowCreateLectureModal] = useState(false);
   const [newLectureTitle, setNewLectureTitle] = useState('');
@@ -282,6 +308,28 @@ export default function LibraryView({
     }
   };
 
+  // Handle Subject Edit
+  const handleEditSubjectSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEditSubjectError(null);
+    if (!editingSubject || !editSubName.trim()) {
+      setEditSubjectError('Subject name is required.');
+      return;
+    }
+
+    try {
+      await updateSubject(editingSubject.id, {
+        name: editSubName.trim(),
+        code: editSubCode.trim().toUpperCase(),
+        professor: editSubProf.trim().toUpperCase(),
+        teacherCode: editSubProf.trim().toUpperCase(),
+      });
+      setEditingSubject(null);
+    } catch (err: any) {
+      setEditSubjectError(err?.message || 'Failed to update subject.');
+    }
+  };
+
   // Handle New Lecture Creation inside Subject Map
   const handleCreateLectureInSubject = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -397,7 +445,19 @@ export default function LibraryView({
           <div className="relative z-50" ref={dropdownRef}>
             <button 
               onClick={() => setShowSubjectDropdown(!showSubjectDropdown)}
-              className="flex items-center gap-2 bg-[#FFC107] text-black px-4 py-2 brutal-border font-black text-base hover:bg-[#FFD54F] transition-colors"
+              onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (currentSubject) {
+                  setContextMenu({
+                    x: e.clientX,
+                    y: e.clientY,
+                    type: 'subject',
+                    item: currentSubject
+                  });
+                }
+              }}
+              className="flex items-center gap-2 bg-[#FFC107] text-black px-4 py-2 brutal-border font-black text-base hover:bg-[#FFD54F] transition-colors cursor-pointer"
             >
               <span>{currentSubject ? currentSubject.name.toUpperCase() : 'SELECT SUBJECT'}</span>
               <ChevronDown className="w-5 h-5 stroke-[3]" />
@@ -405,26 +465,57 @@ export default function LibraryView({
 
             {/* Subject Selector Dropdown with Outside Click Auto-Close */}
             {showSubjectDropdown && (
-              <div className="absolute left-0 top-full mt-2 w-64 bg-white dark:bg-[#161B22] border-4 border-black shadow-[8px_8px_0px_#000] z-[999] p-2 flex flex-col gap-1">
-                <div className="text-[10px] font-black uppercase text-black/70 dark:text-white/70 px-2 py-1">
-                  Active Subjects ({subjects.length}/5)
+              <div className="absolute left-0 top-full mt-2 w-72 bg-white dark:bg-[#161B22] border-4 border-black shadow-[8px_8px_0px_#000] z-[999] p-2 flex flex-col gap-1">
+                <div className="text-[10px] font-black uppercase text-black/70 dark:text-white/70 px-2 py-1 flex items-center justify-between">
+                  <span>Active Subjects ({subjects.length}/5)</span>
+                  <span className="text-[9px] font-mono text-amber-500">Right-click for options</span>
                 </div>
                 {subjects.map((sub) => (
-                  <button
+                  <div
                     key={sub.id}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setContextMenu({
+                        x: e.clientX,
+                        y: e.clientY,
+                        type: 'subject',
+                        item: sub
+                      });
+                    }}
                     onClick={() => {
                       setSelectedSubjectId(sub.id);
                       setShowSubjectDropdown(false);
                     }}
-                    className={`w-full text-left px-3 py-2 text-xs font-black uppercase flex items-center justify-between border-2 transition-all ${
+                    className={`w-full text-left px-3 py-2 text-xs font-black uppercase flex items-center justify-between border-2 transition-all cursor-pointer group ${
                       selectedSubjectId === sub.id
                         ? 'bg-[#FFC107] text-black border-black shadow-[2px_2px_0px_#000]'
                         : 'border-transparent text-black dark:text-white hover:border-black hover:bg-[#F4F1EA] dark:hover:bg-[#21262D]'
                     }`}
                   >
-                    <span>{sub.name}</span>
-                    {sub.code && <span className="text-[10px] font-mono px-1.5 py-0.5 bg-black text-white">{sub.code}</span>}
-                  </button>
+                    <div className="flex items-center gap-1.5 truncate pr-2">
+                      <span className="truncate">{sub.name}</span>
+                      {sub.code && <span className="text-[9px] font-mono px-1 py-0.2 bg-black text-white shrink-0">{sub.code}</span>}
+                    </div>
+
+                    {/* Options icon button */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setContextMenu({
+                          x: e.clientX,
+                          y: e.clientY,
+                          type: 'subject',
+                          item: sub
+                        });
+                      }}
+                      title="Subject Options (Edit / Delete)"
+                      className="p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded transition-colors"
+                    >
+                      <MoreVertical className="w-3.5 h-3.5 stroke-[3]" />
+                    </button>
+                  </div>
                 ))}
 
                 <button
@@ -599,6 +690,16 @@ export default function LibraryView({
                           <div
                             key={lec.id}
                             onClick={() => setSelectedLectureDetail(lec)}
+                            onContextMenu={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setContextMenu({
+                                x: e.clientX,
+                                y: e.clientY,
+                                type: 'lecture',
+                                item: lec
+                              });
+                            }}
                             className={`relative group cursor-pointer ${alignmentClass} ${isSelected ? 'z-30 scale-105' : 'z-10'}`}
                           >
                             {/* Node Status Badge Indicator */}
@@ -950,7 +1051,17 @@ export default function LibraryView({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredSavedLectures.map((lec) => (
                 <div 
-                  key={lec.id} 
+                  key={lec.id}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setContextMenu({
+                      x: e.clientX,
+                      y: e.clientY,
+                      type: 'lecture',
+                      item: lec
+                    });
+                  }}
                   className={`brutal-border p-6 flex flex-col justify-between ${
                     lec.isShared 
                       ? 'bg-[#10B981] text-black border-black shadow-[8px_8px_0px_#000]' 
@@ -1203,6 +1314,178 @@ export default function LibraryView({
               </form>
             )}
           </div>
+        </div>
+      )}
+
+      {/* MODAL: EDIT SUBJECT MAP */}
+      {editingSubject && (
+        <div className="fixed inset-0 z-[1000] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#161B22] brutal-border max-w-md w-full p-6 relative shadow-[10px_10px_0px_#000]">
+            <div className="flex items-center justify-between mb-4 border-b-4 border-black pb-2">
+              <h3 className="text-base font-black uppercase text-black dark:text-white flex items-center gap-2">
+                <Edit className="w-5 h-5 text-[#FFC107]" />
+                <span>EDIT SUBJECT MAP</span>
+              </h3>
+              <button onClick={() => setEditingSubject(null)} className="text-black dark:text-white hover:text-red-500">
+                <X className="w-5 h-5 stroke-[3]" />
+              </button>
+            </div>
+
+            {editSubjectError && (
+              <div className="mb-3 text-xs font-bold text-[#EF4444] bg-[#EF4444]/10 p-2 border border-[#EF4444]">
+                {editSubjectError}
+              </div>
+            )}
+
+            <form onSubmit={handleEditSubjectSubmit} className="flex flex-col gap-4">
+              <div>
+                <label className="text-xs font-black uppercase block mb-1 text-black dark:text-white">Subject Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={editSubName}
+                  onChange={(e) => setEditSubName(e.target.value)}
+                  placeholder="e.g. DATA STRUCTURES & ALGORITHMS"
+                  className="w-full bg-[#F4F1EA] dark:bg-[#0D1117] border-2 border-black p-2.5 text-xs font-bold uppercase text-black dark:text-white focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-black uppercase block mb-1 text-black dark:text-white">Subject Code (Optional)</label>
+                <input
+                  type="text"
+                  value={editSubCode}
+                  onChange={(e) => setEditSubCode(e.target.value)}
+                  placeholder="e.g. CS201"
+                  className="w-full bg-[#F4F1EA] dark:bg-[#0D1117] border-2 border-black p-2.5 text-xs font-bold uppercase text-black dark:text-white focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-black uppercase block mb-1 text-black dark:text-white">Faculty UID / Teacher Code (Optional)</label>
+                <input
+                  type="text"
+                  value={editSubProf}
+                  onChange={(e) => setEditSubProf(e.target.value)}
+                  placeholder="e.g. KISHVERM"
+                  className="w-full bg-[#F4F1EA] dark:bg-[#0D1117] border-2 border-black p-2.5 text-xs font-bold uppercase text-black dark:text-white focus:outline-none font-mono tracking-wider"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 mt-4 pt-3 border-t-2 border-black">
+                <button type="button" onClick={() => setEditingSubject(null)} className="px-4 py-2 bg-[#F4F1EA] dark:bg-[#21262D] text-black dark:text-white border-2 border-black font-black text-xs uppercase cursor-pointer">
+                  CANCEL
+                </button>
+                <button type="submit" className="px-5 py-2 bg-[#FFC107] text-black font-black text-xs uppercase brutal-border cursor-pointer">
+                  SAVE CHANGES
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* FLOATING CONTEXT MENU POPUP (Right-Click Menu on Subject or Lecture) */}
+      {contextMenu && (
+        <div 
+          style={{ 
+            top: `${Math.min(contextMenu.y, window.innerHeight - 180)}px`, 
+            left: `${Math.min(contextMenu.x, window.innerWidth - 240)}px` 
+          }}
+          className="fixed z-[9999] w-60 bg-white dark:bg-[#161B22] border-4 border-black shadow-[8px_8px_0px_#000] p-1.5 flex flex-col gap-1 font-mono text-xs animate-in fade-in zoom-in-95 duration-100 select-none"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="text-[10px] font-black uppercase tracking-wider text-black/60 dark:text-white/60 px-2.5 py-1.5 border-b-2 border-black flex items-center justify-between bg-[#F4F1EA] dark:bg-[#21262D]">
+            <span className="truncate max-w-[150px]">
+              {contextMenu.type === 'subject' ? (contextMenu.item as Subject).name : (contextMenu.item as Lecture).title}
+            </span>
+            <button onClick={() => setContextMenu(null)} className="hover:text-red-500 text-black dark:text-white">
+              <X className="w-3.5 h-3.5 stroke-[3]" />
+            </button>
+          </div>
+
+          {contextMenu.type === 'subject' && (
+            <>
+              <button
+                onClick={() => {
+                  const sub = contextMenu.item as Subject;
+                  setEditingSubject(sub);
+                  setEditSubName(sub.name);
+                  setEditSubCode(sub.code || '');
+                  setEditSubProf(sub.professor || sub.teacherCode || '');
+                  setContextMenu(null);
+                }}
+                className="w-full text-left px-3 py-2 font-black uppercase flex items-center gap-2 text-black dark:text-white hover:bg-[#FFC107] hover:text-black border-2 border-transparent hover:border-black transition-colors cursor-pointer"
+              >
+                <Edit className="w-4 h-4 stroke-[3] text-[#FFC107]" />
+                <span>1) EDIT SUBJECT</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  const sub = contextMenu.item as Subject;
+                  setContextMenu(null);
+                  if (window.confirm(`Are you sure you want to delete subject "${sub.name}" completely? This action cannot be undone.`)) {
+                    deleteSubject(sub.id);
+                    if (selectedSubjectId === sub.id) {
+                      const remaining = subjects.filter(s => s.id !== sub.id);
+                      setSelectedSubjectId(remaining.length > 0 ? remaining[0].id : null);
+                    }
+                  }
+                }}
+                className="w-full text-left px-3 py-2 font-black uppercase flex items-center gap-2 text-red-600 dark:text-red-400 hover:bg-red-500 hover:text-white border-2 border-transparent hover:border-black transition-colors cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4 stroke-[3]" />
+                <span>2) DELETE SUBJECT</span>
+              </button>
+            </>
+          )}
+
+          {contextMenu.type === 'lecture' && (
+            <>
+              <button
+                onClick={() => {
+                  const lec = contextMenu.item as Lecture;
+                  setContextMenu(null);
+                  if (setActiveLectureId) setActiveLectureId(lec.id);
+                  setActivePage('lecture-capture');
+                }}
+                className="w-full text-left px-3 py-2 font-black uppercase flex items-center gap-2 text-black dark:text-white hover:bg-[#FFC107] hover:text-black border-2 border-transparent hover:border-black transition-colors cursor-pointer"
+              >
+                <BookOpen className="w-4 h-4 stroke-[3] text-[#FFC107]" />
+                <span>OPEN NOTES</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  const lec = contextMenu.item as Lecture;
+                  setContextMenu(null);
+                  setShareModalLecture(lec);
+                }}
+                className="w-full text-left px-3 py-2 font-black uppercase flex items-center gap-2 text-black dark:text-white hover:bg-[#2563EB] hover:text-white border-2 border-transparent hover:border-black transition-colors cursor-pointer"
+              >
+                <Share2 className="w-4 h-4 stroke-[3] text-[#2563EB]" />
+                <span>SHARE LECTURE</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  const lec = contextMenu.item as Lecture;
+                  setContextMenu(null);
+                  if (window.confirm(`Are you sure you want to delete lecture "${lec.title}" completely?`)) {
+                    onDeleteLecture(lec.id);
+                    if (selectedLectureDetail?.id === lec.id) {
+                      setSelectedLectureDetail(null);
+                    }
+                  }
+                }}
+                className="w-full text-left px-3 py-2 font-black uppercase flex items-center gap-2 text-red-600 dark:text-red-400 hover:bg-red-500 hover:text-white border-2 border-transparent hover:border-black transition-colors cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4 stroke-[3]" />
+                <span>DELETE LECTURE</span>
+              </button>
+            </>
+          )}
         </div>
       )}
 
