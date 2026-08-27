@@ -279,12 +279,14 @@ export default function App() {
                 setIsOnboarding(true);
               } else {
                 setIsOnboarding(false);
+                setActivePage(prev => (prev === 'landing' ? 'faculty-dashboard' : prev));
               }
             } else if (!isCompleted) {
               console.log("User onboarding incomplete. Directing to OnboardingView.");
               setIsOnboarding(true);
             } else {
               setIsOnboarding(false);
+              setActivePage(prev => (prev === 'landing' ? 'dashboard' : prev));
             }
           } else {
             console.log("User document missing in Firestore for UID:", user.uid, "- New registration detected!");
@@ -302,7 +304,12 @@ export default function App() {
         setSessionUser(null);
         setIsOnboarding(false);
         setCheckingOnboarding(false);
-        setActivePage('landing');
+        const hasVisited = typeof window !== 'undefined' && localStorage.getItem('noteit_has_visited') === 'true';
+        if (!hasVisited) {
+          setActivePage('landing');
+        } else {
+          setActivePage(prev => (prev === 'landing' ? 'dashboard' : prev));
+        }
       }
     });
     return () => unsubscribe();
@@ -400,7 +407,22 @@ export default function App() {
   }, [combinedLectures]);
 
   // High-level dashboard states
-  const [activePage, setActivePage] = useState<PageId>('landing');
+  const [activePage, setActivePage] = useState<PageId>(() => {
+    if (typeof window !== 'undefined') {
+      const hasVisited = localStorage.getItem('noteit_has_visited') === 'true';
+      if (hasVisited) {
+        return 'dashboard';
+      }
+    }
+    return 'landing';
+  });
+
+  // Track user visit history so landing page is only shown once on first arrival
+  useEffect(() => {
+    if (activePage !== 'landing') {
+      localStorage.setItem('noteit_has_visited', 'true');
+    }
+  }, [activePage]);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const [isOpenMobile, setIsOpenMobile] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
