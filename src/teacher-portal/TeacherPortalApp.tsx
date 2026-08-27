@@ -116,7 +116,7 @@ export default function TeacherPortalApp(props: TeacherPortalAppProps) {
   return (
     <ThemeProvider>
       <ToastProvider>
-        <AuthProvider initialProfile={initialProfile} onSignOut={props.onSignOut} initialStage="hero">
+        <AuthProvider initialProfile={initialProfile} onSignOut={props.onSignOut} initialStage="ready">
           <DataProvider>
             <TeacherPortalInner {...props} />
             <Toaster />

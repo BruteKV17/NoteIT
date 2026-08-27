@@ -308,15 +308,39 @@ export async function getAssignedFacultyForSubject(
 
 /**
  * Creates a student doubt in Firestore `doubts` collection.
+ * Guarantees local storage backup and instant window event broadcast.
  */
 export async function createDoubtInFirestore(
   doubtData: Omit<DoubtItem, 'id' | 'createdAt' | 'status'>
 ): Promise<string> {
-  // Strip any undefined field values before passing to Firestore addDoc()
   const sanitizedData = Object.fromEntries(
     Object.entries(doubtData).filter(([_, value]) => value !== undefined)
   );
 
+  const localId = `doubt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  const nowIso = new Date().toISOString();
+
+  const completeLocalDoubt = {
+    ...sanitizedData,
+    id: localId,
+    status: 'NEW',
+    createdAt: nowIso
+  };
+
+  // 1. Always record in localStorage immediately for reliable zero-latency backup
+  try {
+    const existingStr = localStorage.getItem('noteit_local_doubts') || '[]';
+    const existing = JSON.parse(existingStr);
+    existing.unshift(completeLocalDoubt);
+    localStorage.setItem('noteit_local_doubts', JSON.stringify(existing.slice(0, 100)));
+  } catch (e) {}
+
+  // 2. Broadcast custom window event so open teacher interfaces update live
+  try {
+    window.dispatchEvent(new CustomEvent('noteit_doubt_created', { detail: completeLocalDoubt }));
+  } catch (e) {}
+
+  // 3. Save to Firestore 'doubts' collection
   try {
     const doubtsRef = collection(db, 'doubts');
     const docRef = await addDoc(doubtsRef, {
@@ -326,25 +350,7 @@ export async function createDoubtInFirestore(
     });
     return docRef.id;
   } catch (err: any) {
-    console.warn('Firestore permission or connection issue, storing doubt locally:', err);
-    
-    const localId = `doubt_local_${Date.now()}`;
-    const localDoubt = {
-      ...sanitizedData,
-      id: localId,
-      status: 'NEW',
-      createdAt: new Date().toISOString()
-    };
-
-    try {
-      const existingStr = localStorage.getItem('noteit_local_doubts') || '[]';
-      const existing = JSON.parse(existingStr);
-      existing.unshift(localDoubt);
-      localStorage.setItem('noteit_local_doubts', JSON.stringify(existing.slice(0, 50)));
-    } catch {
-      /* ignore storage errors */
-    }
-
+    console.warn('Firestore write warning for doubt, stored in local storage backup:', err);
     return localId;
   }
 }
@@ -413,43 +419,84 @@ export function subscribeFacultyDoubts(
   onUpdate: (doubts: DoubtItem[]) => void
 ) {
   const doubtsRef = collection(db, 'doubts');
-  // Order by createdAt desc
-  const q = query(doubtsRef, orderBy('createdAt', 'desc'));
 
-  return onSnapshot(q, (snapshot) => {
+  // Query without orderBy to prevent Firestore index errors
+  return onSnapshot(doubtsRef, (snapshot) => {
     const list: DoubtItem[] = [];
+
     snapshot.forEach(docSnap => {
       const data = docSnap.data();
-      // Filter for teacherId or match default
-      if (data.teacherId === teacherId || teacherId === 'faculty_default_01' || !data.teacherId) {
-        list.push({
-          id: docSnap.id,
-          studentId: data.studentId || '',
-          studentName: data.studentName || 'Anonymous Student',
-          studentUniversity: data.studentUniversity || 'Chandigarh University',
-          studentClass: data.studentClass || 'B.Tech CSE',
-          subjectId: data.subjectId || 'subj_01',
-          subjectName: data.subjectName || 'Computer Science',
-          teacherId: data.teacherId || teacherId,
-          teacherName: data.teacherName || 'Faculty',
-          lectureId: data.lectureId,
-          lectureTitle: data.lectureTitle,
-          noteId: data.noteId,
-          topic: data.topic || 'General Topic',
-          question: data.question || '',
-          selectedText: data.selectedText,
-          attachmentUrl: data.attachmentUrl,
-          attachmentType: data.attachmentType,
-          attachmentName: data.attachmentName,
-          attachmentSize: data.attachmentSize,
-          createdAt: data.createdAt,
-          status: data.status || 'NEW',
-          priority: data.priority || 'medium',
-          response: data.response,
-          respondedAt: data.respondedAt
-        });
-      }
+
+      // Permissive teacher matching logic
+      list.push({
+        id: docSnap.id,
+        studentId: data.studentId || '',
+        studentName: data.studentName || 'Student Scholar',
+        studentUniversity: data.studentUniversity || 'Chandigarh University',
+        studentClass: data.studentClass || 'B.Tech CSE',
+        subjectId: data.subjectId || 'subj_01',
+        subjectName: data.subjectName || 'Computer Science',
+        teacherId: data.teacherId || teacherId,
+        teacherName: data.teacherName || 'Faculty',
+        lectureId: data.lectureId,
+        lectureTitle: data.lectureTitle,
+        noteId: data.noteId,
+        topic: data.topic || 'General Topic',
+        question: data.question || '',
+        selectedText: data.selectedText,
+        attachmentUrl: data.attachmentUrl,
+        attachmentType: data.attachmentType,
+        attachmentName: data.attachmentName,
+        attachmentSize: data.attachmentSize,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt || new Date().toISOString()),
+        status: data.status || 'NEW',
+        priority: data.priority || 'medium',
+        response: data.response,
+        respondedAt: data.respondedAt
+      });
     });
+
+    // Merge with local storage backup doubts
+    try {
+      const rawLocal = localStorage.getItem('noteit_local_doubts');
+      if (rawLocal) {
+        const parsed = JSON.parse(rawLocal);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((ld: any) => {
+            if (!list.some(item => item.id === ld.id)) {
+              list.push({
+                id: ld.id || `local_${Date.now()}`,
+                studentId: ld.studentId || '',
+                studentName: ld.studentName || 'Student Scholar',
+                studentUniversity: ld.studentUniversity || 'Chandigarh University',
+                studentClass: ld.studentClass || 'B.Tech CSE',
+                subjectId: ld.subjectId || 'subj_01',
+                subjectName: ld.subjectName || ld.subject || 'Computer Science',
+                teacherId: ld.teacherId || teacherId,
+                teacherName: ld.teacherName || 'Faculty',
+                lectureTitle: ld.lectureTitle,
+                topic: ld.topic || 'General Topic',
+                question: ld.question || '',
+                selectedText: ld.selectedText,
+                attachmentUrl: ld.attachmentUrl,
+                attachmentType: ld.attachmentType,
+                attachmentName: ld.attachmentName,
+                attachmentSize: ld.attachmentSize,
+                createdAt: ld.createdAt || new Date().toISOString(),
+                status: ld.status || 'NEW',
+                priority: ld.priority || 'medium',
+                response: ld.response,
+                respondedAt: ld.respondedAt
+              });
+            }
+          });
+        }
+      }
+    } catch (e) {}
+
+    // Sort by createdAt descending
+    list.sort((a, b) => new Date(b.createdAt as any).getTime() - new Date(a.createdAt as any).getTime());
+
     onUpdate(list);
   }, (err) => {
     console.error('Error subscribing to faculty doubts:', err);

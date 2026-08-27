@@ -34,16 +34,58 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [announcements, setAnnouncements] = useState<Announcement[]>(ANNOUNCEMENTS)
   const [activity, setActivity] = useState<ActivityEvent[]>(ACTIVITY)
 
-  // Real-time synchronization of student doubts from Firestore & localStorage
+  // Real-time synchronization of student doubts from Firestore, localStorage, and window events
   useEffect(() => {
     let unsubscribe = () => {};
 
+    const loadCombinedDoubts = (fsDoubts: DoubtItem[] = []) => {
+      // Check local storage for fallback doubts
+      let localDoubts: DoubtItem[] = [];
+      try {
+        const rawLocal = localStorage.getItem('noteit_local_doubts');
+        if (rawLocal) {
+          const parsed = JSON.parse(rawLocal);
+          if (Array.isArray(parsed)) {
+            localDoubts = parsed.map((d: any) => ({
+              id: d.id || uid('d'),
+              studentName: d.studentName || 'Student Scholar',
+              studentId: d.studentId || 'student_demo',
+              studentPhone: d.studentPhone || '919876543210',
+              courseCode: d.courseCode || (d.subjectName ? d.subjectName.substring(0, 6).toUpperCase() : 'CS301'),
+              subject: d.subjectName || d.subject || 'Data Structures',
+              topic: d.topic || 'General Topic',
+              question: d.question || '',
+              highlightedText: d.selectedText || d.highlightedText || '',
+              status: (d.status?.toLowerCase() === 'new' ? 'pending' : d.status?.toLowerCase() || 'pending') as DoubtStatus,
+              priority: d.priority || 'medium',
+              createdAt: d.createdAt || new Date().toISOString(),
+              response: d.response,
+              respondedAt: d.respondedAt,
+            }));
+          }
+        }
+      } catch (e) {}
+
+      // Deduplicate and combine (Firestore + Local + Demo)
+      const map = new Map<string, DoubtItem>();
+      [...fsDoubts, ...localDoubts, ...DOUBTS].forEach((item) => {
+        if (!map.has(item.id)) {
+          map.set(item.id, item);
+        }
+      });
+
+      const combined = Array.from(map.values());
+      combined.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+      setDoubts(combined);
+    };
+
     try {
+      // Query collection without orderBy to prevent Firestore index errors
       const doubtsRef = collection(db, 'doubts');
-      const q = query(doubtsRef, orderBy('createdAt', 'desc'));
 
       unsubscribe = onSnapshot(
-        q,
+        doubtsRef,
         (snapshot) => {
           let fsDoubts: DoubtItem[] = [];
 
@@ -80,7 +122,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 studentName: data.studentName || 'Student Scholar',
                 studentId: data.studentId || 'student_demo',
                 studentPhone: data.studentPhone || '919876543210',
-                courseCode: data.subjectCode || data.courseCode || 'CS301',
+                courseCode: data.courseCode || (data.subjectName ? data.subjectName.substring(0, 6).toUpperCase() : 'CS301'),
                 subject: data.subjectName || data.subject || 'Data Structures',
                 topic: data.topic || 'General Topic',
                 question: data.question || '',
@@ -99,52 +141,30 @@ export function DataProvider({ children }: { children: ReactNode }) {
             });
           }
 
-          // Check local storage for fallback doubts
-          let localDoubts: DoubtItem[] = [];
-          try {
-            const rawLocal = localStorage.getItem('noteit_local_doubts');
-            if (rawLocal) {
-              const parsed = JSON.parse(rawLocal);
-              if (Array.isArray(parsed)) {
-                localDoubts = parsed.map((d: any) => ({
-                  id: d.id || uid('d'),
-                  studentName: d.studentName || 'Student Scholar',
-                  studentId: d.studentId || 'student_demo',
-                  studentPhone: d.studentPhone || '919876543210',
-                  courseCode: d.courseCode || d.subjectId?.toUpperCase() || 'CS301',
-                  subject: d.subjectName || d.subject || 'Data Structures',
-                  topic: d.topic || 'General Topic',
-                  question: d.question || '',
-                  highlightedText: d.selectedText || d.highlightedText || '',
-                  status: (d.status?.toLowerCase() === 'new' ? 'pending' : d.status?.toLowerCase() || 'pending') as DoubtStatus,
-                  priority: d.priority || 'medium',
-                  createdAt: d.createdAt || new Date().toISOString(),
-                  response: d.response,
-                  respondedAt: d.respondedAt,
-                }));
-              }
-            }
-          } catch (e) {}
-
-          // Deduplicate and combine (Firestore + Local + Demo)
-          const map = new Map<string, DoubtItem>();
-          [...fsDoubts, ...localDoubts, ...DOUBTS].forEach((item) => {
-            if (!map.has(item.id)) {
-              map.set(item.id, item);
-            }
-          });
-
-          setDoubts(Array.from(map.values()));
+          loadCombinedDoubts(fsDoubts);
         },
         (err) => {
-          console.warn('Error reading real-time doubts from Firestore:', err);
+          console.warn('Error reading real-time doubts from Firestore, fallback to local storage:', err);
+          loadCombinedDoubts([]);
         }
       );
     } catch (err) {
       console.warn('Firestore initialization fallback for doubts:', err);
+      loadCombinedDoubts([]);
     }
 
-    return () => unsubscribe();
+    // Listen for custom doubt creation events within the same window
+    const handleDoubtCreated = () => {
+      loadCombinedDoubts([]);
+    };
+    window.addEventListener('noteit_doubt_created', handleDoubtCreated);
+    window.addEventListener('storage', handleDoubtCreated);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener('noteit_doubt_created', handleDoubtCreated);
+      window.removeEventListener('storage', handleDoubtCreated);
+    };
   }, []);
 
   const logActivity = useCallback((event: Omit<ActivityEvent, 'id' | 'at'>) => {
