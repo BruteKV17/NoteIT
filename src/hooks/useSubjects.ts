@@ -21,14 +21,39 @@ const DEFAULT_SUBJECTS: Subject[] = [
   { id: 'sub-def-5', name: 'Machine Learning', code: 'CS401', professor: 'Prof. Mehta', teacherCode: 'CS401', color: '#EC4899' },
 ];
 
+function getDeletedSubjectIds(userId?: string): string[] {
+  try {
+    const key = `noteit_deleted_subjects_${userId || 'guest'}`;
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function recordDeletedSubjectId(id: string, userId?: string) {
+  try {
+    const key = `noteit_deleted_subjects_${userId || 'guest'}`;
+    const existing = getDeletedSubjectIds(userId);
+    if (!existing.includes(id)) {
+      const updated = [...existing, id];
+      localStorage.setItem(key, JSON.stringify(updated));
+    }
+  } catch (e) {}
+}
+
 export function useSubjects(userId: string | undefined) {
-  const [subjects, setSubjects] = useState<Subject[]>(DEFAULT_SUBJECTS);
+  const [subjects, setSubjects] = useState<Subject[]>(() => {
+    const dIds = getDeletedSubjectIds(userId);
+    return DEFAULT_SUBJECTS.filter(s => !dIds.includes(s.id));
+  });
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    const dIds = getDeletedSubjectIds(userId);
     if (!userId) {
-      setSubjects(DEFAULT_SUBJECTS);
+      setSubjects(DEFAULT_SUBJECTS.filter(s => !dIds.includes(s.id)));
       setIsLoading(false);
       return;
     }
@@ -40,24 +65,34 @@ export function useSubjects(userId: string | undefined) {
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
+        const currentDeleted = getDeletedSubjectIds(userId);
         if (snapshot.empty) {
-          setSubjects(DEFAULT_SUBJECTS);
+          const availableDefaults = DEFAULT_SUBJECTS.filter(s => !currentDeleted.includes(s.id));
+          setSubjects(availableDefaults);
         } else {
           const subjectList: Subject[] = [];
           snapshot.forEach((docSnap) => {
             const data = docSnap.data();
-            subjectList.push({
-              id: docSnap.id,
-              name: data.name || 'Untitled Subject',
-              code: data.code || '',
-              professor: data.professor || data.teacherCode || '',
-              teacherCode: data.teacherCode || data.professor || '',
-              color: data.color || '#3B82F6',
-              createdAt: data.createdAt,
-              archived: !!data.archived,
-            });
+            if (!currentDeleted.includes(docSnap.id) && !data.archived && !data.deleted) {
+              subjectList.push({
+                id: docSnap.id,
+                name: data.name || 'Untitled Subject',
+                code: data.code || '',
+                professor: data.professor || data.teacherCode || '',
+                teacherCode: data.teacherCode || data.professor || '',
+                color: data.color || '#3B82F6',
+                createdAt: data.createdAt,
+                archived: !!data.archived,
+              });
+            }
           });
-          setSubjects(subjectList.slice(0, 5));
+          
+          if (subjectList.length === 0) {
+            const remainingDefaults = DEFAULT_SUBJECTS.filter(s => !currentDeleted.includes(s.id));
+            setSubjects(remainingDefaults);
+          } else {
+            setSubjects(subjectList.slice(0, 5));
+          }
         }
         setIsLoading(false);
         setError(null);
@@ -65,7 +100,8 @@ export function useSubjects(userId: string | undefined) {
       (err) => {
         console.error('Error fetching subjects from Firestore:', err);
         setError(err);
-        setSubjects(DEFAULT_SUBJECTS);
+        const currentDeleted = getDeletedSubjectIds(userId);
+        setSubjects(DEFAULT_SUBJECTS.filter(s => !currentDeleted.includes(s.id)));
         setIsLoading(false);
       }
     );
@@ -136,8 +172,14 @@ export function useSubjects(userId: string | undefined) {
   };
 
   const deleteSubject = async (id: string) => {
+    // 1. Permanently record deleted subject ID in localStorage
+    recordDeletedSubjectId(id, userId);
+
+    // 2. Remove subject from active state immediately
     setSubjects(prev => prev.filter(s => s.id !== id));
+
     if (!userId) return;
+
     try {
       const docRef = doc(db, 'users', userId, 'subjects', id);
       await deleteDoc(docRef);
