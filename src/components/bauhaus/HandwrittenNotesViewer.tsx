@@ -4,7 +4,7 @@
  */
 
 import React, { useRef } from 'react';
-import { Download, Printer, BookOpen, Sparkles, FileText, ArrowRight, CornerDownRight, CheckCircle2 } from 'lucide-react';
+import { Download, Printer, ArrowRight } from 'lucide-react';
 
 interface HandwrittenNotesViewerProps {
   lectureData: any;
@@ -19,108 +19,130 @@ export const HandwrittenNotesViewer: React.FC<HandwrittenNotesViewerProps> = ({
 
   // Extract structured notes knowledge from lecture data
   const title = lectureData?.title || 'Lecture Study Notes';
-  const overview = lectureData?.summary || lectureData?.notes?.overview || 'High-yield engineering revision notes compiled directly from lecture synthesis.';
-  const keyConcepts = lectureData?.notes?.keyConcepts || lectureData?.keyConcepts || [];
-  const sections = lectureData?.sections || [];
-  const rawNotes = lectureData?.notes?.academic || lectureData?.notes?.detailed || lectureData?.notes || '';
-  const sourceIntel = lectureData?.sourceIntelligence || {};
+  const overview = lectureData?.summary || lectureData?.notes?.overview || (typeof lectureData?.notes === 'string' ? lectureData.notes : '') || '';
 
-  // Build handwritten notes pages logically
+  // Extract all sections/topics dynamically
+  let sections: Array<{ title: string; content: string }> = [];
+  if (Array.isArray(lectureData?.sections) && lectureData.sections.length > 0) {
+    sections = lectureData.sections.map((s: any) => ({
+      title: s.title || s.heading || 'Topic Section',
+      content: s.content || s.explanation || s.summary || ''
+    }));
+  } else if (Array.isArray(lectureData?.notes) && lectureData.notes.length > 0) {
+    sections = lectureData.notes.map((n: any) => ({
+      title: n.title || n.heading || 'Topic Section',
+      content: typeof n.content === 'string' ? n.content : (Array.isArray(n.details) ? n.details.join('. ') : JSON.stringify(n.content))
+    }));
+  } else if (typeof lectureData?.content === 'string' && lectureData.content.trim().length > 0) {
+    const paragraphs = lectureData.content.split(/\n\s*\n/).map((p: string) => p.trim()).filter((p: string) => p.length > 20);
+    sections = paragraphs.map((p: string, idx: number) => {
+      const lines = p.split('\n');
+      const firstLine = lines[0].replace(/^#{1,4}\s+/, '').trim();
+      const body = lines.length > 1 ? lines.slice(1).join(' ') : p;
+      return {
+        title: firstLine.length > 0 && firstLine.length < 70 ? firstLine : `Topic Section ${idx + 1}`,
+        content: body
+      };
+    });
+  }
+
+  // Key terms & formulas
+  const sourceIntel = lectureData?.sourceIntelligence || {};
+  const keyTerms: string[] = sourceIntel.keyTerms || [];
+  const formulas: string[] = sourceIntel.formulas || [];
+
+  // Build handwritten notes pages dynamically covering ALL topics
   const generateHandwrittenPages = () => {
-    // We break content into 2 to 3 A4 pages based on complexity
     const pages: Array<{
       pageNumber: number;
       header: string;
-      sectionType: 'overview' | 'formulas' | 'revision';
-      items: Array<{ title: string; type: 'flow' | 'formula' | 'diagram' | 'table' | 'bullets' | 'text'; content: any }>;
+      items: Array<{
+        title: string;
+        type: 'text' | 'concept' | 'diagram' | 'formula' | 'terms' | 'bullets';
+        content: any;
+      }>;
     }> = [];
 
-    // PAGE 1: Overview, Core Definitions & Flow Concepts
-    const page1Items: any[] = [];
-    
-    // Overview flow
-    page1Items.push({
-      title: 'CORE TOPIC OVERVIEW',
-      type: 'flow',
-      content: overview.replace(/\[Source:\s*[^\]]+\]/g, '').substring(0, 320)
-    });
+    const allSections = sections.length > 0 ? sections : [
+      { title: 'Core Concepts & Overview', content: overview || 'High-yield revision sheet compiled from source material.' }
+    ];
 
-    // Core concepts flow statements
-    if (sections && sections.length > 0) {
-      sections.slice(0, 3).forEach((sec: any) => {
-        page1Items.push({
-          title: sec.title || 'Key Concept',
-          type: 'flow',
-          content: sec.content || sec.summary || ''
+    // Distribute sections across pages (up to 3 sections per page for dense, full-page layout)
+    const sectionsPerPage = 3;
+    const pageCount = Math.max(1, Math.ceil(allSections.length / sectionsPerPage));
+
+    for (let p = 0; p < pageCount; p++) {
+      const pageSections = allSections.slice(p * sectionsPerPage, (p + 1) * sectionsPerPage);
+      const pageItems: any[] = [];
+
+      // Include Overview header on page 1 if available
+      if (p === 0 && overview) {
+        pageItems.push({
+          title: 'CORE TOPIC SYNTHESIS',
+          type: 'text',
+          content: overview.replace(/\[Source:\s*[^\]]+\]/g, '').trim()
         });
+      }
+
+      // Add each section topic for this page
+      pageSections.forEach((sec) => {
+        pageItems.push({
+          title: sec.title.toUpperCase(),
+          type: 'concept',
+          content: sec.content
+        });
+
+        // Extract dynamic step flow diagram if content contains multiple steps or sentences
+        const sentences = sec.content
+          .split(/[\.\n;]/)
+          .map(s => s.trim().replace(/^[-•*]\s*/, ''))
+          .filter(s => s.length > 12 && s.length < 55);
+
+        if (sentences.length >= 2) {
+          pageItems.push({
+            title: `${sec.title} — WORKFLOW & LOGIC`,
+            type: 'diagram',
+            content: sentences.slice(0, 4)
+          });
+        }
       });
-    } else {
-      page1Items.push({
-        title: 'Fundamental Principle',
-        type: 'flow',
-        content: 'Lectures present continuous signal & algorithmic transformation. Processing maps inputs to discrete outputs with minimal error.'
+
+      // Include Formulas / Equations if present on page 2 or last page
+      if ((p === 1 || p === pageCount - 1) && formulas.length > 0) {
+        pageItems.push({
+          title: 'KEY FORMULAS & GOVERNING EQUATIONS',
+          type: 'formula',
+          content: formulas
+        });
+      }
+
+      // Include Key Terminology & Exam Cheat Sheet on the final page
+      if (p === pageCount - 1) {
+        if (keyTerms.length > 0) {
+          pageItems.push({
+            title: 'KEY TERMINOLOGY & QUICK RECALL',
+            type: 'terms',
+            content: keyTerms.slice(0, 10)
+          });
+        }
+
+        const takeaways = allSections.slice(0, 4).map(s => `• ${s.title}: ${s.content.substring(0, 110).trim()}...`);
+        if (takeaways.length > 0) {
+          pageItems.push({
+            title: 'HIGH-YIELD EXAM CHEAT SHEET',
+            type: 'bullets',
+            content: takeaways
+          });
+        }
+      }
+
+      const sectionNum = String(p + 1).padStart(2, '0');
+      pages.push({
+        pageNumber: p + 1,
+        header: `SECTION ${sectionNum} — ${p === 0 ? 'CONCEPTUAL FOUNDATIONS' : p === 1 ? 'ADVANCED TOPICS & ARCHITECTURE' : 'REVISION & EXAM CHEAT SHEET'}`,
+        items: pageItems
       });
     }
-
-    pages.push({
-      pageNumber: 1,
-      header: 'SECTION 01 — CONCEPTUAL FOUNDATIONS',
-      sectionType: 'overview',
-      items: page1Items
-    });
-
-    // PAGE 2: Mathematical Formulas, Diagrams & Flowcharts
-    const page2Items: any[] = [];
-    const formulas = sourceIntel.formulas || ['b = log₂(L)', 'SNR = 6.02N + 1.76 dB', 'E = mc²'];
-    
-    page2Items.push({
-      title: 'CORE FORMULAS & MATHEMATICAL RELATIONSHIPS',
-      type: 'formula',
-      content: formulas
-    });
-
-    // Flowchart diagram
-    page2Items.push({
-      title: 'PROCESS FLOWCHART / ARCHITECTURE',
-      type: 'diagram',
-      content: sections.length >= 2 
-        ? sections.slice(0, 4).map((s: any) => s.title)
-        : ['Input Context', 'Signal Processing', 'Quantization Stage', 'Output Stream']
-    });
-
-    pages.push({
-      pageNumber: 2,
-      header: 'SECTION 02 — FORMULAS & SYSTEM FLOWCHART',
-      sectionType: 'formulas',
-      items: page2Items
-    });
-
-    // PAGE 3: Key Takeaways & Exam Memory Sheet
-    const page3Items: any[] = [];
-    const keyTerms = sourceIntel.keyTerms || ['Quantization', 'Sampling Rate', 'Nyquist Rate', 'Bit Rate'];
-    
-    page3Items.push({
-      title: 'KEY TERMINOLOGY & QUICK RECALL',
-      type: 'bullets',
-      content: keyTerms.slice(0, 6)
-    });
-
-    page3Items.push({
-      title: 'EXAM HIGH-YIELD TAKEAWAYS (RETAIN FOR TEST)',
-      type: 'bullets',
-      content: [
-        'Always verify Nyquist condition: fs ≥ 2 fmax to prevent aliasing.',
-        'Increasing quantization levels by 1 bit improves SNR by ~6 dB.',
-        'Check edge cases and boundary conditions in step-by-step algorithms.'
-      ]
-    });
-
-    pages.push({
-      pageNumber: 3,
-      header: 'SECTION 03 — REVISION & EXAM CHEAT SHEET',
-      sectionType: 'revision',
-      items: page3Items
-    });
 
     return pages;
   };
@@ -144,7 +166,7 @@ export const HandwrittenNotesViewer: React.FC<HandwrittenNotesViewerProps> = ({
             📝 A4 HANDWRITTEN REVISION SHEET
           </span>
           <span className="text-xs font-mono font-bold text-[#666666]">
-            (3 Pages • 210mm × 297mm A4 Canvas)
+            ({pages.length} {pages.length === 1 ? 'Page' : 'Pages'} • 210mm × 297mm A4 Canvas)
           </span>
         </div>
 
@@ -202,7 +224,7 @@ export const HandwrittenNotesViewer: React.FC<HandwrittenNotesViewerProps> = ({
         {pages.map((pg) => (
           <div
             key={pg.pageNumber}
-            className="a4-page relative w-[210mm] min-h-[297mm] !bg-white !text-slate-900 p-[20mm] rounded-[2px] border-[5px] border-[#2563EB] shadow-2xl overflow-hidden font-handwritten select-text"
+            className="a4-page relative w-[210mm] min-h-[297mm] !bg-white !text-slate-900 p-[16mm] rounded-[2px] border-[5px] border-[#2563EB] shadow-2xl overflow-hidden font-handwritten select-text"
             style={{
               fontFamily: "'Kalam', 'Caveat', cursive",
               backgroundColor: '#FFFFFF',
@@ -212,22 +234,19 @@ export const HandwrittenNotesViewer: React.FC<HandwrittenNotesViewerProps> = ({
               color: '#0F294A'
             }}
           >
-            {/* VERTICAL NOTEBOOK MARGIN LINE */}
-            <div className="absolute top-0 bottom-0 left-[22mm] border-l-2 border-red-500/80 pointer-events-none" />
-
             {/* HEADER METADATA */}
             <div className="flex justify-between items-center pb-2 border-b-2 border-[#2563EB] mb-6 text-sm font-bold tracking-wide">
               <div>
                 <span className="text-[#0F294A] uppercase tracking-wider text-xs font-mono font-black">{pg.header}</span>
               </div>
               <div className="text-xs font-mono font-bold text-[#475569]">
-                PAGE 0{pg.pageNumber} OF 0{pages.length}
+                PAGE {String(pg.pageNumber).padStart(2, '0')} OF {String(pages.length).padStart(2, '0')}
               </div>
             </div>
 
             {/* DOCUMENT TITLE (ON PAGE 1) */}
             {pg.pageNumber === 1 && (
-              <div className="mb-8">
+              <div className="mb-6">
                 <h1 className="text-3xl sm:text-4xl font-extrabold uppercase tracking-tight text-[#0F294A] leading-none mb-2 decoration-wavy underline underline-offset-8">
                   {title}
                 </h1>
@@ -250,52 +269,32 @@ export const HandwrittenNotesViewer: React.FC<HandwrittenNotesViewerProps> = ({
                   </div>
 
                   {/* ITEM CONTENT BASED ON TYPE */}
-                  {item.type === 'flow' && (
-                    <div className="pl-4 space-y-2 text-lg">
-                      <p className="whitespace-pre-line font-bold leading-snug text-[#0F294A]">
-                        {typeof item.content === 'string' ? item.content : ''}
-                      </p>
-                      {/* HANDWRITTEN FLOW STEP DIAGRAM */}
-                      <div className="flex flex-wrap items-center gap-2 pt-2 text-base font-bold text-[#0F294A]">
-                        <span className="px-2.5 py-1 bg-blue-100 rounded border border-blue-400 text-blue-950 font-bold">Input Data</span>
-                        <ArrowRight className="h-4 w-4 text-[#0F294A]" />
-                        <span className="px-2.5 py-1 bg-blue-100 rounded border border-blue-400 text-blue-950 font-bold">Core Processing</span>
-                        <ArrowRight className="h-4 w-4 text-[#0F294A]" />
-                        <span className="px-2.5 py-1 bg-amber-100 rounded border border-amber-400 text-amber-950 font-bold">Discrete Result</span>
-                      </div>
+                  {item.type === 'text' && (
+                    <div className="pl-2 text-lg font-bold leading-snug text-[#0F294A]">
+                      <p className="whitespace-pre-line">{item.content}</p>
                     </div>
                   )}
 
-                  {item.type === 'formula' && (
-                    <div className="my-4 space-y-3">
-                      {Array.isArray(item.content) && item.content.map((f: string, fIdx: number) => (
-                        <div key={fIdx} className="p-4 rounded-[6px] border-2 border-[#2563EB] bg-[#F1F5F9] shadow-sm relative">
-                          <span className="absolute top-1 right-2 text-xs font-mono text-blue-700 uppercase font-bold">Equation Box</span>
-                          <div className="text-2xl font-black text-[#0F294A] tracking-wider font-mono">
-                            {f}
-                          </div>
-                          <div className="text-sm font-sans text-slate-700 font-medium mt-1">
-                            Where variables denote signal scale, quantized bits, or energy state.
-                          </div>
-                        </div>
-                      ))}
+                  {item.type === 'concept' && (
+                    <div className="pl-2 space-y-1 text-lg font-bold leading-snug text-[#0F294A]">
+                      <p className="whitespace-pre-line">{item.content}</p>
                     </div>
                   )}
 
                   {item.type === 'diagram' && (
-                    <div className="my-4 p-5 rounded-[6px] border-2 border-dashed border-[#2563EB] bg-[#F8FAFC] space-y-3">
-                      <div className="text-sm font-bold uppercase text-[#0F294A]">Hand-Drawn System Architecture Diagram</div>
-                      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-center">
+                    <div className="my-3 p-4 rounded-[6px] border-2 border-dashed border-[#2563EB] bg-[#F8FAFC]">
+                      <div className="text-xs font-bold uppercase text-[#2563EB] mb-2 font-mono">Process Flow Diagram</div>
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-center">
                         {Array.isArray(item.content) && item.content.map((step: string, sIdx: number) => (
                           <React.Fragment key={sIdx}>
                             <div 
-                              className="p-3.5 bg-white rounded-md border-2 border-[#2563EB] shadow-sm font-extrabold text-base flex-1 text-center"
+                              className="p-2.5 bg-white rounded-md border-2 border-[#2563EB] shadow-sm font-extrabold text-sm flex-1 text-center"
                               style={{ backgroundColor: '#FFFFFF', color: '#0F294A' }}
                             >
                               {step}
                             </div>
                             {sIdx < item.content.length - 1 && (
-                              <span className="text-2xl font-extrabold text-[#2563EB] sm:rotate-0 rotate-90" style={{ color: '#2563EB' }}>➔</span>
+                              <ArrowRight className="h-5 w-5 text-[#2563EB] shrink-0 sm:rotate-0 rotate-90" />
                             )}
                           </React.Fragment>
                         ))}
@@ -303,8 +302,31 @@ export const HandwrittenNotesViewer: React.FC<HandwrittenNotesViewerProps> = ({
                     </div>
                   )}
 
+                  {item.type === 'formula' && (
+                    <div className="my-3 space-y-2">
+                      {Array.isArray(item.content) && item.content.map((f: string, fIdx: number) => (
+                        <div key={fIdx} className="p-3 rounded-[6px] border-2 border-[#2563EB] bg-[#F1F5F9] shadow-sm relative">
+                          <span className="absolute top-1 right-2 text-[10px] font-mono text-blue-700 uppercase font-bold">Equation Box</span>
+                          <div className="text-xl font-black text-[#0F294A] tracking-wider font-mono">
+                            {f}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {item.type === 'terms' && (
+                    <div className="flex flex-wrap gap-2 my-2 pl-2">
+                      {Array.isArray(item.content) && item.content.map((term: string, tIdx: number) => (
+                        <span key={tIdx} className="px-3 py-1 bg-amber-100 rounded-full border border-amber-400 text-amber-950 font-bold text-sm">
+                          📌 {term}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
                   {item.type === 'bullets' && (
-                    <ul className="space-y-2 pl-4 text-lg">
+                    <ul className="space-y-1.5 pl-2 text-lg">
                       {Array.isArray(item.content) && item.content.map((bullet: string, bIdx: number) => (
                         <li key={bIdx} className="flex items-start gap-2">
                           <span className="text-amber-500 font-extrabold">★</span>
@@ -318,7 +340,7 @@ export const HandwrittenNotesViewer: React.FC<HandwrittenNotesViewerProps> = ({
             </div>
 
             {/* PAGE FOOTER */}
-            <div className="absolute bottom-[10mm] left-[20mm] right-[20mm] pt-3 border-t border-slate-300 flex justify-between items-center text-xs font-mono font-bold text-slate-600">
+            <div className="mt-8 pt-3 border-t border-slate-300 flex justify-between items-center text-xs font-mono font-bold text-slate-600">
               <span>NOTEIT — HANDWRITTEN STUDY ENGINE</span>
               <span>A4 PORTRAIT (210mm × 297mm)</span>
             </div>
