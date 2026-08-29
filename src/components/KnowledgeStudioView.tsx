@@ -47,7 +47,7 @@ import { HandwrittenNotesViewer } from './bauhaus/HandwrittenNotesViewer';
 import { db, auth } from '../firebaseConfig';
 import { API_BASE_URL } from '../config';
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp, query, orderBy, onSnapshot } from 'firebase/firestore';
-import { generateLectureContentFromText, generateStructuredNotes, generateSummary, generateFlashcards, generateQuiz, generateMoreQuestions, generateMindmap, getAIConfig } from '../services/gemini';
+import { generateLectureContentFromText, generateFastDocumentAssets, generateStructuredNotes, generateSummary, generateFlashcards, generateQuiz, generateMoreQuestions, generateMindmap, getAIConfig } from '../services/gemini';
 import { getAzureUploadSasUrl, uploadBlobToAzure, extractTextFromDocument, extractTextFromUrl } from '../services/azure';
 import pptxgen from 'pptxgenjs';
 import BruteLoader from './BruteLoader';
@@ -637,60 +637,67 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
 
   const runFileUploadSequence = async (docId: string, file: File) => {
     const name = file.name;
+    const extension = name.split('.').pop()?.toLowerCase() || '';
     const docRef = doc(db, 'users', userId, 'sources', docId);
 
     try {
       setIsUploading(true);
-      setUploadProgress(20);
-      setProcessingStatus('Uploading...');
-      await updateDoc(docRef, { status: 'uploading', progress: 20 });
+      setUploadProgress(15);
+      setProcessingStatus('Reading document...');
+      await updateDoc(docRef, { status: 'uploading', progress: 15 });
 
-      // Local upload or Azure upload
-      const sasRes = await getAzureUploadSasUrl(name);
-      await updateDoc(docRef, { 
-        progress: 30,
-        blobPath: sasRes.blobPath
+      let extractedText = '';
+      const isTextFile = ['txt', 'md', 'csv', 'json', 'tsv'].includes(extension);
+
+      if (isTextFile) {
+        extractedText = await file.text();
+        setUploadProgress(50);
+      }
+
+      // Start background storage upload promise
+      const sasPromise = getAzureUploadSasUrl(name).then(async (sasRes) => {
+        await updateDoc(docRef, { blobPath: sasRes.blobPath });
+        await uploadBlobToAzure(sasRes.uploadUrl, file, () => {});
+        return sasRes;
+      }).catch(err => {
+        console.warn('Background blob storage upload skipped or failed:', err);
+        return null;
       });
-      setUploadProgress(30);
 
-      // Upload to Azure with throttled progress updates to Firestore
-      let lastProgressUpdate = 30;
-      await uploadBlobToAzure(sasRes.uploadUrl, file, async (progress) => {
-        const currentProgress = 30 + Math.round(progress * 0.4); // 30% to 70%
-        setUploadProgress(currentProgress);
-        if (currentProgress - lastProgressUpdate >= 10 || currentProgress === 70) {
-          lastProgressUpdate = currentProgress;
-          await updateDoc(docRef, { progress: currentProgress });
+      // Perform fast text extraction if not a simple text file
+      if (!isTextFile) {
+        setUploadProgress(40);
+        setProcessingStatus('Extracting content...');
+        const sasRes = await sasPromise;
+        if (sasRes && sasRes.blobPath) {
+          extractedText = await extractTextFromDocument(sasRes.blobPath);
+        } else {
+          extractedText = await file.text().catch(() => '');
         }
-      });
+      }
 
-      setUploadProgress(70);
-      setProcessingStatus('Extracting content...');
-      await updateDoc(docRef, { status: 'processing', progress: 70 });
-      
-      const extractedText = await extractTextFromDocument(sasRes.blobPath);
-      
+      if (!extractedText || extractedText.trim().length === 0) {
+        throw new Error('Could not extract text content from the file.');
+      }
+
       setUploadProgress(80);
-      setProcessingStatus('AI Ingestion...');
-      await updateDoc(docRef, { status: 'indexing', progress: 80 });
+      setProcessingStatus('Structuring content...');
 
-      const aiData = await generateLectureContentFromText(extractedText, undefined, notesFormat);
-      
-      setUploadProgress(95);
-      setProcessingStatus('Completing RAG Sync...');
-      await updateDoc(docRef, { progress: 95 });
+      // Fast rule-based asset generation (< 5ms)
+      const fastData = generateFastDocumentAssets(extractedText, name);
 
-      // Save everything to Firestore
+      // Save everything to Firestore and mark READY immediately!
       await updateDoc(docRef, {
         status: 'ready',
+        progress: 100,
         selectedMode: notesFormat,
         selectedSummaryMode: 'academic',
         content: extractedText,
         transcript: extractedText,
-        cleanTranscript: aiData.cleanTranscript || extractedText,
-        sections: aiData.sections || [],
-        timeline: aiData.timeline || [],
-        sourceIntelligence: aiData.sourceIntelligence || null,
+        cleanTranscript: fastData.cleanTranscript || extractedText,
+        sections: fastData.sections || [],
+        timeline: fastData.timeline || [],
+        sourceIntelligence: fastData.sourceIntelligence || null,
         summary: '',
         notes: [],
         flashcards: [],
@@ -700,30 +707,12 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
         podcastScript: ''
       });
 
-      // Call grounding engine
-      try {
-        const currentUser = auth.currentUser;
-        if (currentUser) {
-          const idToken = await currentUser.getIdToken(true);
-          const requestUrl = `${API_BASE_URL}/api/storage/ground-source`;
-          const res = await fetch(requestUrl, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${idToken}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              sourceId: docId,
-              sourceType: 'source',
-              text: extractedText
-            })
-          });
-          console.log(`[API Diagnostic] Base: ${API_BASE_URL}, Endpoint: ${requestUrl}, Status: ${res.status}`);
-          console.log('[RAG] Grounding completed for uploaded document');
-        }
-      } catch (ragErr) {
-        console.error('[RAG] Grounding failed for uploaded document:', ragErr);
-      }
+      // Activate source in local state immediately
+      setActiveSourceId(docId);
+      setSelectedSourceIds([docId]);
+      setIsUploading(false);
+      setProcessingStatus(null);
+      setUploadProgress(100);
 
       // Remove from memory list on success
       setUploadingFiles(prev => {
@@ -732,12 +721,48 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
         return next;
       });
 
-      // Set active source
-      setActiveSourceId(docId);
-      setSelectedSourceIds([docId]);
+      // Non-blocking background RAG Grounding
+      (async () => {
+        try {
+          const currentUser = auth.currentUser;
+          if (currentUser) {
+            const idToken = await currentUser.getIdToken(true);
+            const requestUrl = `${API_BASE_URL}/api/storage/ground-source`;
+            await fetch(requestUrl, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${idToken}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                sourceId: docId,
+                sourceType: 'source',
+                text: extractedText
+              })
+            });
+            console.log('[RAG] Grounding completed for uploaded document');
+          }
+        } catch (ragErr) {
+          console.error('[RAG] Grounding failed for uploaded document:', ragErr);
+        }
+      })();
 
-      setIsUploading(false);
-      setProcessingStatus(null);
+      // Non-blocking background AI enrichment for chapter breakdown
+      (async () => {
+        try {
+          const aiData = await generateLectureContentFromText(extractedText, undefined, notesFormat);
+          if (aiData && aiData.sections && aiData.sections.length > 0) {
+            await updateDoc(docRef, {
+              sections: aiData.sections,
+              timeline: aiData.timeline || fastData.timeline,
+              sourceIntelligence: aiData.sourceIntelligence || fastData.sourceIntelligence
+            });
+            console.log('[AI Background Enrichment] Applied detailed AI chapters to document');
+          }
+        } catch (aiErr) {
+          console.warn('[AI Background Enrichment] Skipped (fast assets retained):', aiErr);
+        }
+      })();
 
     } catch (err: any) {
       console.error("Upload process failed:", err);
@@ -745,7 +770,6 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
       setProcessingStatus("Failed");
       setImportError(`Upload Process Failed: ${err.message || err}`);
 
-      // Set status to failed in Firestore
       try {
         await updateDoc(docRef, {
           status: 'failed',
@@ -768,34 +792,28 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
     const docRef = doc(db, 'users', userId, 'sources', docId);
 
     setIsUploading(true);
-    setUploadProgress(70);
+    setUploadProgress(50);
     setProcessingStatus('Extracting content...');
-    await updateDoc(docRef, { status: 'processing', progress: 70, error: null });
+    await updateDoc(docRef, { status: 'processing', progress: 50, error: null });
 
     try {
       const extractedText = await extractTextFromDocument(blobPath);
+      const fastData = generateFastDocumentAssets(extractedText, title);
       
-      setUploadProgress(80);
-      setProcessingStatus('AI Ingestion...');
-      await updateDoc(docRef, { status: 'indexing', progress: 80 });
+      setUploadProgress(90);
+      setProcessingStatus('Structuring content...');
 
-      const aiData = await generateLectureContentFromText(extractedText, undefined, notesFormat);
-      
-      setUploadProgress(95);
-      setProcessingStatus('Completing RAG Sync...');
-      await updateDoc(docRef, { progress: 95 });
-
-      // Save everything to Firestore
       await updateDoc(docRef, {
         status: 'ready',
+        progress: 100,
         selectedMode: notesFormat,
         selectedSummaryMode: 'academic',
         content: extractedText,
         transcript: extractedText,
-        cleanTranscript: aiData.cleanTranscript || extractedText,
-        sections: aiData.sections || [],
-        timeline: aiData.timeline || [],
-        sourceIntelligence: aiData.sourceIntelligence || null,
+        cleanTranscript: fastData.cleanTranscript || extractedText,
+        sections: fastData.sections || [],
+        timeline: fastData.timeline || [],
+        sourceIntelligence: fastData.sourceIntelligence || null,
         summary: '',
         notes: [],
         flashcards: [],
@@ -805,32 +823,37 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
         podcastScript: ''
       });
 
-      // Call grounding engine
-      try {
-        const currentUser = auth.currentUser;
-        if (currentUser) {
-          const idToken = await currentUser.getIdToken(true);
-          const requestUrl = `${API_BASE_URL}/api/storage/ground-source`;
-          const res = await fetch(requestUrl, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${idToken}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              sourceId: docId,
-              sourceType: 'source',
-              text: extractedText
-            })
-          });
-          console.log(`[API Diagnostic] Base: ${API_BASE_URL}, Endpoint: ${requestUrl}, Status: ${res.status}`);
-        }
-      } catch (ragErr) {
-        console.error('[RAG] Grounding failed for uploaded document:', ragErr);
-      }
+      setActiveSourceId(docId);
+      setSelectedSourceIds([docId]);
 
       setIsUploading(false);
       setProcessingStatus(null);
+      setUploadProgress(100);
+
+      // Background RAG Grounding
+      (async () => {
+        try {
+          const currentUser = auth.currentUser;
+          if (currentUser) {
+            const idToken = await currentUser.getIdToken(true);
+            const requestUrl = `${API_BASE_URL}/api/storage/ground-source`;
+            await fetch(requestUrl, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${idToken}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                sourceId: docId,
+                sourceType: 'source',
+                text: extractedText
+              })
+            });
+          }
+        } catch (ragErr) {
+          console.error('[RAG] Retry grounding failed:', ragErr);
+        }
+      })();
     } catch (err: any) {
       console.error("Ingestion retry failed:", err);
       setIsUploading(false);

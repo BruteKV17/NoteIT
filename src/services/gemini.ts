@@ -982,6 +982,124 @@ export const generateLectureContent = async (
   };
 };
 
+export const generateFastDocumentAssets = (text: string, title?: string): {
+  cleanTranscript: string;
+  sections: Array<{ id: string; title: string; startTime: string; endTime: string; content: string }>;
+  timeline: Array<{ time: string; title: string; description: string }>;
+  sourceIntelligence: {
+    keyPeople: string[];
+    keyTerms: string[];
+    formulas: string[];
+    dates: string[];
+    statistics: string[];
+    references: string[];
+  };
+} => {
+  const cleanTranscript = text || '';
+  const lines = cleanTranscript.split('\n');
+  const sections: any[] = [];
+  let currentSectionTitle = 'Overview & Introduction';
+  let currentContent: string[] = [];
+  let secIdx = 1;
+
+  const pushSection = (secTitle: string, contentLines: string[]) => {
+    const fullContent = contentLines.join('\n').trim();
+    if (fullContent.length > 0) {
+      sections.push({
+        id: `sec-${secIdx}`,
+        title: secTitle,
+        startTime: `0${secIdx - 1}:00`,
+        endTime: `0${secIdx}:00`,
+        content: fullContent.length > 500 ? fullContent.substring(0, 500) + '...' : fullContent
+      });
+      secIdx++;
+    }
+  };
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const isHeading = /^#{1,4}\s+/.test(trimmed) || 
+                      /^(unit|chapter|section|module|part)\s+\d+/i.test(trimmed) ||
+                      /^\d+[\.\)]\s+[A-Z]/.test(trimmed);
+    
+    if (isHeading) {
+      if (currentContent.length > 0) {
+        pushSection(currentSectionTitle, currentContent);
+        currentContent = [];
+      }
+      currentSectionTitle = trimmed.replace(/^#{1,4}\s+/, '').trim();
+    } else {
+      currentContent.push(trimmed);
+    }
+  }
+  if (currentContent.length > 0) {
+    pushSection(currentSectionTitle, currentContent);
+  }
+
+  if (sections.length === 0 && cleanTranscript.length > 0) {
+    const paragraphs = cleanTranscript.split(/\n\s*\n/).filter(p => p.trim().length > 30);
+    if (paragraphs.length > 0) {
+      paragraphs.slice(0, 10).forEach((p, i) => {
+        const pLines = p.trim().split('\n');
+        const heading = pLines[0].substring(0, 60);
+        sections.push({
+          id: `sec-${i + 1}`,
+          title: heading || `Section ${i + 1}`,
+          startTime: `0${i}:00`,
+          endTime: `0${i + 1}:00`,
+          content: p.trim().substring(0, 400)
+        });
+      });
+    } else {
+      sections.push({
+        id: 'sec-1',
+        title: title || 'Main Source Content',
+        startTime: '00:00',
+        endTime: '05:00',
+        content: cleanTranscript.substring(0, 500)
+      });
+    }
+  }
+
+  const timeline = sections.slice(0, 8).map((sec, idx) => ({
+    time: `0${idx}:00`,
+    title: sec.title,
+    description: sec.content.substring(0, 150)
+  }));
+
+  const keyTerms: string[] = Array.from(new Set(
+    (cleanTranscript.match(/\b[A-Z][a-z]{3,}(?:\s+[A-Z][a-z]{3,})*\b/g) || [])
+      .filter(t => !['This', 'That', 'With', 'From', 'Have', 'They', 'There', 'Their', 'About', 'Which', 'Where', 'When'].includes(t))
+  )).slice(0, 12);
+
+  const formulas: string[] = Array.from(new Set(
+    cleanTranscript.match(/[A-Za-z0-9_]+\s*=\s*[^,\n;.]+|[a-zA-Z]\^[0-9]+|[0-9]²|[xX]²/g) || []
+  )).slice(0, 8);
+
+  const dates: string[] = Array.from(new Set(
+    cleanTranscript.match(/\b(?:19|20)\d{2}\b|\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{1,2},? \d{4}\b/g) || []
+  )).slice(0, 8);
+
+  const statistics: string[] = Array.from(new Set(
+    cleanTranscript.match(/\b\d+(?:\.\d+)?%\b|\b\d+\s*(?:million|billion|trillion|users|MB|GB|KB)\b/gi) || []
+  )).slice(0, 8);
+
+  return {
+    cleanTranscript,
+    sections,
+    timeline,
+    sourceIntelligence: {
+      keyPeople: [],
+      keyTerms,
+      formulas,
+      dates,
+      statistics,
+      references: []
+    }
+  };
+};
+
 export const generateLectureContentFromText = async (
   extractedText: string,
   onBusy?: (isBusy: boolean) => void,
@@ -990,20 +1108,25 @@ export const generateLectureContentFromText = async (
 ): Promise<any> => {
   const apiKey = getAIConfig().geminiKey;
   if (!apiKey && !auth.currentUser) {
-    throw new Error("Gemini API key is not configured. Please configure an API key in Settings or environment.");
+    return generateFastDocumentAssets(extractedText);
   }
 
-  if (onProgress) onProgress(1, "Analyzing text and generating initial workspace chapters...");
-  const data = await generateInitialLectureAssets(extractedText, apiKey, onBusy);
+  try {
+    if (onProgress) onProgress(1, "Analyzing text and generating initial workspace chapters...");
+    const data = await generateInitialLectureAssets(extractedText, apiKey, onBusy);
 
-  return {
-    transcript: extractedText,
-    cleanTranscript: data.cleanTranscript || extractedText,
-    sections: data.sections || [],
-    timeline: data.timeline || [],
-    sourceIntelligence: data.sourceIntelligence || null,
-    keyConcepts: [] // Will generate Mindmap keyConcepts on demand
-  };
+    return {
+      transcript: extractedText,
+      cleanTranscript: data.cleanTranscript || extractedText,
+      sections: data.sections || [],
+      timeline: data.timeline || [],
+      sourceIntelligence: data.sourceIntelligence || null,
+      keyConcepts: []
+    };
+  } catch (err) {
+    console.warn("AI asset extraction failed or timed out, using fast rule-based fallback:", err);
+    return generateFastDocumentAssets(extractedText);
+  }
 };
 
 export const generateAdditionalQuizQuestions = async (

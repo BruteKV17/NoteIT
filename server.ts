@@ -1243,11 +1243,13 @@ app.post('/api/storage/ground-source', authenticateFirebaseUser, async (req, res
     const collectionName = sourceType === 'lecture' ? 'lectures' : 'sources';
     const chunksRef = adminDb.collection('users').doc(uid).collection(collectionName).doc(sourceId).collection('chunks');
     
-    // Clean old chunks
+    // Clean old chunks if present
     const existing = await chunksRef.get();
-    const batch = adminDb.batch();
-    existing.forEach(docSnap => batch.delete(docSnap.ref));
-    await batch.commit();
+    if (!existing.empty) {
+      const batch = adminDb.batch();
+      existing.forEach(docSnap => batch.delete(docSnap.ref));
+      await batch.commit();
+    }
     
     // Batch write chunks (limit 500 per batch)
     let currentBatch = adminDb.batch();
