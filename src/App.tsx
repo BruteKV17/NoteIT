@@ -279,14 +279,12 @@ export default function App() {
                 setIsOnboarding(true);
               } else {
                 setIsOnboarding(false);
-                setActivePage(prev => (prev === 'landing' ? 'faculty-dashboard' : prev));
               }
             } else if (!isCompleted) {
               console.log("User onboarding incomplete. Directing to OnboardingView.");
               setIsOnboarding(true);
             } else {
               setIsOnboarding(false);
-              setActivePage(prev => (prev === 'landing' ? 'dashboard' : prev));
             }
           } else {
             console.log("User document missing in Firestore for UID:", user.uid, "- New registration detected!");
@@ -304,12 +302,7 @@ export default function App() {
         setSessionUser(null);
         setIsOnboarding(false);
         setCheckingOnboarding(false);
-        const hasVisited = typeof window !== 'undefined' && localStorage.getItem('noteit_has_visited') === 'true';
-        if (!hasVisited) {
-          setActivePage('landing');
-        } else {
-          setActivePage(prev => (prev === 'landing' ? 'dashboard' : prev));
-        }
+        setActivePage('landing');
       }
     });
     return () => unsubscribe();
@@ -406,23 +399,8 @@ export default function App() {
     });
   }, [combinedLectures]);
 
-  // High-level dashboard states
-  const [activePage, setActivePage] = useState<PageId>(() => {
-    if (typeof window !== 'undefined') {
-      const hasVisited = localStorage.getItem('noteit_has_visited') === 'true';
-      if (hasVisited) {
-        return 'dashboard';
-      }
-    }
-    return 'landing';
-  });
-
-  // Track user visit history so landing page is only shown once on first arrival
-  useEffect(() => {
-    if (activePage !== 'landing') {
-      localStorage.setItem('noteit_has_visited', 'true');
-    }
-  }, [activePage]);
+  // High-level dashboard states defaulting to landing page
+  const [activePage, setActivePage] = useState<PageId>('landing');
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const [isOpenMobile, setIsOpenMobile] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -975,11 +953,32 @@ export default function App() {
     return (
       <ErrorBoundary theme={theme}>
         <LandingView
-          onEnterApp={() => { setAuthMode('login'); setActivePage('auth'); }}
+          onEnterApp={() => { 
+            if (sessionUser) {
+              setActivePage(userRole === 'faculty' ? 'faculty-dashboard' : 'dashboard');
+            } else {
+              setAuthMode('login'); 
+              setActivePage('auth'); 
+            }
+          }}
           onLoginSuccess={handleLoginSuccess}
           onNavigateToPricing={() => setActivePage('pricing')}
-          onGetStarted={() => { setAuthMode('signup'); setActivePage('auth'); }}
-          onSignIn={() => { setAuthMode('login'); setActivePage('auth'); }}
+          onGetStarted={() => { 
+            if (sessionUser) {
+              setActivePage(userRole === 'faculty' ? 'faculty-dashboard' : 'dashboard');
+            } else {
+              setAuthMode('signup'); 
+              setActivePage('auth'); 
+            }
+          }}
+          onSignIn={() => { 
+            if (sessionUser) {
+              setActivePage(userRole === 'faculty' ? 'faculty-dashboard' : 'dashboard');
+            } else {
+              setAuthMode('login'); 
+              setActivePage('auth'); 
+            }
+          }}
         />
         <FeedbackWidget theme={theme} />
       </ErrorBoundary>
