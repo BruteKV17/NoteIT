@@ -90,6 +90,48 @@ export default function AuthView({
     }, { merge: true });
   };
 
+  // Helper function to turn Firebase error codes into friendly, clear, user-facing error messages
+  const getFriendlyAuthErrorMessage = (err: any): string => {
+    if (!err) return 'An unexpected authentication error occurred.';
+    const code = err.code || '';
+    const msg = err.message || '';
+
+    switch (code) {
+      case 'auth/invalid-credential':
+      case 'auth/wrong-password':
+        return 'Invalid email or password. If you forgot your password, click "Forgot password?" below.';
+      case 'auth/user-not-found':
+        return 'No account found with this email address. Please verify your email or sign up.';
+      case 'auth/email-already-in-use':
+        return 'This email address is already in use by another account. Only a single email per account is permitted.';
+      case 'auth/weak-password':
+        return 'Password is too weak. Please enter a password with at least 6 characters.';
+      case 'auth/invalid-email':
+        return 'Invalid email address format. Please enter a valid email address.';
+      case 'auth/unauthorized-domain':
+        return 'Domain authorization error: Please add this domain to Authorized Domains in Firebase Console -> Authentication -> Settings.';
+      case 'auth/popup-closed-by-user':
+        return 'Sign-in popup was closed before completing authentication.';
+      case 'auth/popup-blocked':
+        return 'Sign-in popup was blocked by your browser. Please allow popups for this site.';
+      case 'auth/operation-not-allowed':
+        return 'This sign-in provider is disabled in Firebase Console. Please enable it under Authentication -> Sign-in method.';
+      case 'auth/account-exists-with-different-credential':
+        return 'An account already exists with the same email address using a different sign-in method.';
+      case 'auth/too-many-requests':
+        return 'Access to this account has been temporarily disabled due to many failed login attempts. Please reset your password or try again later.';
+      case 'auth/network-request-failed':
+        return 'Network connection failed. Please check your internet connection and try again.';
+      case 'auth/user-disabled':
+        return 'This user account has been disabled by an administrator.';
+      default:
+        if (msg.startsWith('Firebase:')) {
+          return msg.replace(/^Firebase:\s*/, '').replace(/\s*\(auth\/.*\)\.?$/, '');
+        }
+        return msg || 'Authentication error. Please verify your details.';
+    }
+  };
+
   // Strict RFC-5322 Email Format Validation
   const validateEmailFormat = (emailStr: string): { valid: boolean; reason?: string } => {
     const cleanEmail = emailStr.trim();
@@ -232,22 +274,8 @@ export default function AuthView({
         setSuccessMsg(`Password reset link sent to ${cleanEmail}! Please check your email inbox (and spam folder) to set a new password.`);
       }
     } catch (err: any) {
-      console.error(err);
-      let friendlyMessage = 'Authentication error. Please verify parameters.';
-      if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
-        friendlyMessage = 'Invalid email or password. Click "Forgot password?" below if you need to reset your password.';
-      } else if (err.code === 'auth/user-not-found') {
-        friendlyMessage = 'No account found with this email address. Please verify your email or sign up.';
-      } else if (err.code === 'auth/email-already-in-use') {
-        friendlyMessage = 'This email is already in use by another account. Only a single email per account is allowed.';
-      } else if (err.code === 'auth/weak-password') {
-        friendlyMessage = 'Password must be at least 6 characters long.';
-      } else if (err.code === 'auth/invalid-email') {
-        friendlyMessage = 'Invalid email address format. Please enter a valid email.';
-      } else if (err.message) {
-        friendlyMessage = err.message;
-      }
-      setError(friendlyMessage);
+      console.error('Firebase Auth error:', err);
+      setError(getFriendlyAuthErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -283,8 +311,8 @@ export default function AuthView({
         role: detectedRole
       });
     } catch (err: any) {
-      console.error(err);
-      setError(err.message || 'Google Sign-In failed.');
+      console.error('Google Auth error:', err);
+      setError(getFriendlyAuthErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -320,8 +348,8 @@ export default function AuthView({
         role: detectedRole
       });
     } catch (err: any) {
-      console.error(err);
-      setError(err.message || 'GitHub Sign-In failed.');
+      console.error('GitHub Auth error:', err);
+      setError(getFriendlyAuthErrorMessage(err));
     } finally {
       setLoading(false);
     }

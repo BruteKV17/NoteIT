@@ -1,11 +1,23 @@
 import { initializeApp, cert } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
-import path from 'path';
+import fs from 'fs';
 
-const serviceAccountPath = path.resolve('noteit-ai-fd7eb-firebase-adminsdk-fbsvc-f3061dd986.json');
+const potentialPaths = [
+  path.resolve('noteit-ai-fd7eb-firebase-adminsdk-fbsvc-f3061dd986.json'),
+  'C:\\Users\\Ramesh Sahu\\Downloads\\noteit-ai-fd7eb-firebase-adminsdk-fbsvc-f3061dd986.json',
+  'C:\\Users\\Ramesh Sahu\\Downloads\\noteit-ai-fd7eb-firebase-adminsdk-fbsvc-dd21a9ff26.json',
+];
 
-console.log('Initializing Firebase Admin...');
+let serviceAccountPath = potentialPaths.find(p => fs.existsSync(p));
+
+if (!serviceAccountPath) {
+  console.error('ERROR: Firebase Admin service account JSON file not found at any of the candidate paths:');
+  potentialPaths.forEach(p => console.error('  -', p));
+  process.exit(1);
+}
+
+console.log(`Initializing Firebase Admin SDK using key: ${serviceAccountPath}...`);
 initializeApp({
   credential: cert(serviceAccountPath),
   projectId: 'noteit-ai-fd7eb'
