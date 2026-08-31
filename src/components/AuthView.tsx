@@ -11,9 +11,10 @@ import {
   GoogleAuthProvider, 
   GithubAuthProvider,
   sendPasswordResetEmail,
+  sendEmailVerification,
   updateProfile 
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, getDocs, collection, query, where, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../firebaseConfig';
 import { 
   GraduationCap, 
@@ -89,32 +90,67 @@ export default function AuthView({
     }, { merge: true });
   };
 
+  // Strict RFC-5322 Email Format Validation
+  const validateEmailFormat = (emailStr: string): { valid: boolean; reason?: string } => {
+    const cleanEmail = emailStr.trim();
+    if (!cleanEmail) return { valid: false, reason: 'Email address is required.' };
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(cleanEmail)) {
+      return { valid: false, reason: 'Please enter a valid, real email address (e.g. name@university.edu).' };
+    }
+    return { valid: true };
+  };
+
+  // Firestore check to enforce single email per faculty/student account
+  const checkEmailExistsInFirestore = async (emailStr: string): Promise<boolean> => {
+    try {
+      const cleanEmail = emailStr.trim().toLowerCase();
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('email', '==', cleanEmail));
+      const snap = await getDocs(q);
+      return !snap.empty;
+    } catch (err) {
+      console.warn('Error querying Firestore for email uniqueness:', err);
+      return false;
+    }
+  };
+
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccessMsg(null);
     setLoading(true);
 
+    const cleanEmail = email.trim().toLowerCase();
+
+    // 1. Email format validation
+    const emailCheck = validateEmailFormat(cleanEmail);
+    if (!emailCheck.valid) {
+      setError(emailCheck.reason || 'Invalid email address format.');
+      setLoading(false);
+      return;
+    }
+
     try {
       if (mode === 'login') {
-        if (!email || !password) {
-          setError('Please fill in all requested fields.');
+        if (!cleanEmail || !password) {
+          setError('Please enter both your email address and password.');
           setLoading(false);
           return;
         }
-        
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+
+        const userCredential = await signInWithEmailAndPassword(auth, cleanEmail, password);
         
         const detectedRole: 'student' | 'faculty' = isFacultyMode ? 'faculty' : 'student';
         const userRef = doc(db, 'users', userCredential.user.uid);
         await setDoc(userRef, { 
           role: detectedRole,
-          email: userCredential.user.email || email,
+          email: cleanEmail,
           updatedAt: serverTimestamp()
         }, { merge: true });
 
         if (isFacultyMode) {
-          await saveFacultyProfile(userCredential.user.uid, userCredential.user.email || email, userCredential.user.displayName || fullName);
+          await saveFacultyProfile(userCredential.user.uid, cleanEmail, userCredential.user.displayName || fullName);
         }
 
         setSuccessMsg(
@@ -125,69 +161,89 @@ export default function AuthView({
 
         setTimeout(() => {
           onLoginSuccess({
-            fullName: userCredential.user.displayName || fullName || email.split('@')[0],
-            emailAddress: userCredential.user.email || email,
+            fullName: userCredential.user.displayName || fullName || cleanEmail.split('@')[0],
+            emailAddress: cleanEmail,
             role: detectedRole
           });
         }, 1000);
 
       } else if (mode === 'signup') {
-        if (!fullName || !email || !password) {
-          setError('All registration fields are required.');
+        if (!fullName.trim() || !cleanEmail || !password) {
+          setError('Full name, email, and password are all required.');
           setLoading(false);
           return;
         }
 
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        await updateProfile(userCredential.user, { displayName: fullName });
+        if (password.length < 6) {
+          setError('Password must be at least 6 characters long.');
+          setLoading(false);
+          return;
+        }
+
+        // 2. Enforce Single Email per Faculty/Student Account
+        const exists = await checkEmailExistsInFirestore(cleanEmail);
+        if (exists) {
+          setError('This email address is already registered. Each account requires a unique email. Please sign in or use a different email.');
+          setLoading(false);
+          return;
+        }
+
+        const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
+        await updateProfile(userCredential.user, { displayName: fullName.trim() });
         
+        // 3. Send email verification link
+        try {
+          await sendEmailVerification(userCredential.user);
+        } catch (vErr) {
+          console.warn('Verification email dispatch warning:', vErr);
+        }
+
         if (isFacultyMode) {
-          await saveFacultyProfile(userCredential.user.uid, email, fullName);
-          setSuccessMsg('Faculty academic identity created! Redirecting to Faculty Portal...');
+          await saveFacultyProfile(userCredential.user.uid, cleanEmail, fullName.trim());
+          setSuccessMsg(`Faculty account created! Verification email sent to ${cleanEmail}. Entering Faculty Portal...`);
         } else {
           const userDocRef = doc(db, 'users', userCredential.user.uid);
           await setDoc(userDocRef, {
             role: 'student',
-            fullName: fullName,
-            email: email,
+            fullName: fullName.trim(),
+            email: cleanEmail,
             onboarding_completed: false,
             createdAt: serverTimestamp()
           }, { merge: true });
-          setSuccessMsg('Academic identity registered successfully! Logging you in...');
+          setSuccessMsg(`Academic identity registered! Verification email sent to ${cleanEmail}. Logging you in...`);
         }
 
         setTimeout(() => {
           onLoginSuccess({
-            fullName: fullName,
-            emailAddress: email,
+            fullName: fullName.trim(),
+            emailAddress: cleanEmail,
             role: isFacultyMode ? 'faculty' : 'student'
           });
-        }, 1000);
+        }, 1200);
 
       } else if (mode === 'forgot') {
-        if (!email) {
-          setError('Valid academic email address is required.');
+        if (!cleanEmail) {
+          setError('Please enter your registered email address.');
           setLoading(false);
           return;
         }
-        await sendPasswordResetEmail(auth, email);
-        setSuccessMsg('A password reset link has been sent to your email.');
-        setTimeout(() => {
-          setMode('login');
-          setSuccessMsg(null);
-        }, 3000);
+
+        await sendPasswordResetEmail(auth, cleanEmail);
+        setSuccessMsg(`Password reset link sent to ${cleanEmail}! Please check your email inbox (and spam folder) to set a new password.`);
       }
     } catch (err: any) {
       console.error(err);
       let friendlyMessage = 'Authentication error. Please verify parameters.';
-      if (err.code === 'auth/invalid-credential') {
-        friendlyMessage = 'Invalid credentials. Please verify your email and password.';
+      if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
+        friendlyMessage = 'Invalid email or password. Click "Forgot password?" below if you need to reset your password.';
+      } else if (err.code === 'auth/user-not-found') {
+        friendlyMessage = 'No account found with this email address. Please verify your email or sign up.';
       } else if (err.code === 'auth/email-already-in-use') {
-        friendlyMessage = 'This email is already in use by another account.';
+        friendlyMessage = 'This email is already in use by another account. Only a single email per account is allowed.';
       } else if (err.code === 'auth/weak-password') {
-        friendlyMessage = 'Password should be at least 6 characters.';
+        friendlyMessage = 'Password must be at least 6 characters long.';
       } else if (err.code === 'auth/invalid-email') {
-        friendlyMessage = 'Invalid email address format.';
+        friendlyMessage = 'Invalid email address format. Please enter a valid email.';
       } else if (err.message) {
         friendlyMessage = err.message;
       }
@@ -539,12 +595,21 @@ export default function AuthView({
             )}
 
             <div className="text-center pt-2 border-t border-[var(--border-main)]">
-              {mode === 'login' ? (
+              {mode === 'forgot' ? (
+                <button
+                  type="button"
+                  onClick={() => { setMode('login'); setError(null); setSuccessMsg(null); }}
+                  className="font-mono text-xs font-bold text-[#38BDF8] hover:underline cursor-pointer flex items-center justify-center gap-1 mx-auto"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  <span>Back to Sign In</span>
+                </button>
+              ) : mode === 'login' ? (
                 <p className="text-xs font-mono text-[var(--text-secondary)]">
                   New to the platform?{' '}
                   <button
                     type="button"
-                    onClick={() => setMode('signup')}
+                    onClick={() => { setMode('signup'); setError(null); setSuccessMsg(null); }}
                     className="font-bold text-[var(--text-primary)] underline hover:text-[#38BDF8] cursor-pointer"
                   >
                     {isFacultyMode ? 'Create faculty identity' : 'Create academic identity'}
@@ -555,7 +620,7 @@ export default function AuthView({
                   Already registered?{' '}
                   <button
                     type="button"
-                    onClick={() => setMode('login')}
+                    onClick={() => { setMode('login'); setError(null); setSuccessMsg(null); }}
                     className="font-bold text-[var(--text-primary)] underline hover:text-[#38BDF8] cursor-pointer"
                   >
                     Sign in to workspace
