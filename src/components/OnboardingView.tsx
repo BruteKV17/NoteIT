@@ -19,7 +19,7 @@ import {
   EyeOff,
   CheckCircle2
 } from 'lucide-react';
-import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db, auth } from '../firebaseConfig';
 import { API_BASE_URL } from '../config';
 import { validateApiKeyDirect } from '../providers/ValidationAdapters';
@@ -242,7 +242,7 @@ export default function OnboardingView({
       }
       setStep(3);
     } else if (step === 3) {
-      if (!email.trim() || !countryCode || !phoneNumber.trim()) {
+      if (!email.trim() || !phoneNumber.trim()) {
         setError('All fields are required. Please verify all onboarding steps.');
         return;
       }
@@ -253,14 +253,50 @@ export default function OnboardingView({
         return;
       }
 
-      const cleanPhone = phoneNumber.replace(/[\s\-\(\)]/g, '');
-      const phoneRegex = /^\d{7,15}$/;
-      if (!phoneRegex.test(cleanPhone)) {
-        setError('Please enter a valid phone number (digits only, at least 7 digits).');
+      let cleanPhone = phoneNumber.replace(/\D/g, '');
+      if (cleanPhone.length === 12 && cleanPhone.startsWith('91')) {
+        cleanPhone = cleanPhone.slice(2);
+      }
+      if (cleanPhone.length !== 10) {
+        setError('Please enter a valid 10-digit mobile number (without country code).');
         return;
       }
 
       setLoading(true);
+
+      // Check phone number & email uniqueness
+      try {
+        const usersRef = collection(db, 'users');
+
+        const phoneQ1 = query(usersRef, where('phone_number', '==', cleanPhone));
+        const phoneSnap1 = await getDocs(phoneQ1);
+        const dup1 = phoneSnap1.docs.some(docSnap => docSnap.id !== userId);
+
+        const phoneQ2 = query(usersRef, where('whatsapp_number', '==', cleanPhone));
+        const phoneSnap2 = await getDocs(phoneQ2);
+        const dup2 = phoneSnap2.docs.some(docSnap => docSnap.id !== userId);
+
+        if (dup1 || dup2) {
+          setError('This phone number is already registered with another account. Each account must have a unique phone number.');
+          setLoading(false);
+          return;
+        }
+
+        if (email) {
+          const cleanEmail = email.trim().toLowerCase();
+          const emailQ = query(usersRef, where('email', '==', cleanEmail));
+          const emailSnap = await getDocs(emailQ);
+          const dupEmail = emailSnap.docs.some(docSnap => docSnap.id !== userId);
+
+          if (dupEmail) {
+            setError('This email address is already registered with another account. Each account must have a unique email address.');
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (checkErr) {
+        console.warn('Uniqueness check skipped or network fallback:', checkErr);
+      }
 
       const profileData = {
         first_name: firstName.trim(),
@@ -516,40 +552,29 @@ export default function OnboardingView({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="col-span-1 space-y-1.5">
-                    <label className="text-[10px] font-mono font-extrabold uppercase tracking-wider text-[#222222] block truncate">
-                      Code
-                    </label>
-                    <select
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-mono font-extrabold uppercase tracking-wider text-[#222222] block">
+                    Phone Number (10 Digits)
+                  </label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#444444]" />
+                    <input
+                      type="tel"
                       required
-                      value={countryCode}
-                      onChange={(e) => setCountryCode(e.target.value)}
-                      className="w-full rounded-xl border-2 border-[#111111] bg-[#F9F9F9] px-3 py-3 text-xs font-bold text-[#111111] outline-none transition-all cursor-pointer focus:bg-white"
-                    >
-                      <option value="" disabled>Select</option>
-                      {COUNTRY_CODES.map((c) => (
-                        <option key={c.code} value={c.code}>{c.code} ({c.name.split(' ')[0]})</option>
-                      ))}
-                    </select>
+                      value={phoneNumber}
+                      onChange={(e) => {
+                        let val = e.target.value.replace(/\D/g, '');
+                        if (val.length === 12 && val.startsWith('91')) val = val.slice(2);
+                        if (val.length > 10) val = val.slice(0, 10);
+                        setPhoneNumber(val);
+                      }}
+                      placeholder="9876543210"
+                      className="w-full rounded-xl border-2 border-[#111111] bg-[#F9F9F9] pl-10 pr-4 py-3 text-xs font-bold text-[#111111] placeholder-[#777777] outline-none focus:bg-white focus:border-[#2F6BFF] transition-all"
+                    />
                   </div>
-
-                  <div className="col-span-2 space-y-1.5">
-                    <label className="text-[10px] font-mono font-extrabold uppercase tracking-wider text-[#222222] block">
-                      Phone Number
-                    </label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#444444]" />
-                      <input
-                        type="tel"
-                        required
-                        value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
-                        placeholder="555-0199"
-                        className="w-full rounded-xl border-2 border-[#111111] bg-[#F9F9F9] pl-10 pr-4 py-3 text-xs font-bold text-[#111111] placeholder-[#777777] outline-none focus:bg-white focus:border-[#2F6BFF] transition-all"
-                      />
-                    </div>
-                  </div>
+                  <span className="text-[10px] font-mono text-[#666666] block">
+                    Enter 10-digit mobile number (without country code).
+                  </span>
                 </div>
               </div>
             )}

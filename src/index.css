@@ -47,47 +47,47 @@
 
   [data-theme="dark"],
   .dark {
-    --bg-paper: #090E0A;       /* Deep Dark Moss Black */
-    --bg-main: #090E0A;
-    --card-bg: #101712;        /* Dark Moss Card Surface */
-    --panel-bg: #162019;       /* Dark Moss Panel */
-    --text-primary: #F2F7F3;   /* Crisp White-Moss Text */
-    --text-secondary: #A0B2A3; /* Bright Silver-Moss Subtext */
-    --border-main: #233326;    /* Moss Border */
-    --border-subtle: #19261C;  /* Dark Moss Border */
+    --bg-paper: #050814;       /* Deep Dark Obsidian Navy Black */
+    --bg-main: #050814;
+    --card-bg: #0C1220;        /* Dark Navy Surface */
+    --panel-bg: #10182A;       /* Dark Navy Panel */
+    --text-primary: #F8FAFC;   /* Crisp Silver-White Text */
+    --text-secondary: #94A3B8; /* Muted Slate Subtext */
+    --border-main: #1E293B;    /* Subtle Navy Border */
+    --border-subtle: #0F172A;  /* Dark Border */
     --accent-yellow: #F59E0B;
     --accent-red: #F43F5E;
-    --accent-blue: #2DD4BF;
-    --accent-green: #22C55E;   /* Rich Moss Green */
-    --hover-bg: #1D2A20;       /* Deep Moss Hover State */
-    --shadow-color: #030604;
-    --input-bg: #101712;
-    --sidebar-bg: #090E0A;
-    --navbar-bg: #090E0A;
-    --brand-header-bg: #101712;
+    --accent-blue: #38BDF8;
+    --accent-green: #22C55E;   /* Rich Green */
+    --hover-bg: #1E293B;       /* Deep Hover State */
+    --shadow-color: #02040A;
+    --input-bg: #0C1220;
+    --sidebar-bg: #050814;
+    --navbar-bg: #050814;
+    --brand-header-bg: #0C1220;
     --hero-banner-bg: var(--card-bg);
     --hero-banner-text: var(--text-primary);
     --hero-banner-subtext: var(--text-secondary);
     --hero-banner-border: var(--border-main);
 
     /* Teacher Portal Academic Management Dark Tokens */
-    --app-bg: #090E0A;
-    --app-surface: #101712;
-    --app-surface-alt: #162019;
-    --app-border: #233326;
-    --app-text: #F2F7F3;
-    --app-muted: #A0B2A3;
-    --app-brand: #22C55E;
-    --app-brand-strong: #16A34A;
+    --app-bg: #050814;
+    --app-surface: #0C1220;
+    --app-surface-alt: #10182A;
+    --app-border: #1E293B;
+    --app-text: #F8FAFC;
+    --app-muted: #94A3B8;
+    --app-brand: #38BDF8;
+    --app-brand-strong: #0284C7;
 
-    /* Teachers LMS Portal Dark Tokens - Moss Green & Black */
-    --canvas: 8 12 9;
-    --card: 16 23 18;
-    --panel: 22 32 25;
-    --line: 35 51 38;
-    --ink: 242 247 243;
-    --muted: 160 178 163;
-    --faint: 102 120 105;
+    /* Teachers LMS Portal Dark Tokens - Navy & Black */
+    --canvas: 5 8 20;
+    --card: 12 18 32;
+    --panel: 16 24 42;
+    --line: 30 41 59;
+    --ink: 248 250 252;
+    --muted: 148 163 184;
+    --faint: 100 116 139;
   }
 
   body {
@@ -98,6 +98,15 @@
     padding: 0;
     -webkit-font-smoothing: antialiased;
     transition: background-color 200ms ease, color 200ms ease;
+  }
+
+  [data-theme="dark"] body,
+  .dark body {
+    background-color: #030610;
+    background-image: 
+      radial-gradient(circle at 50% -10%, rgba(30, 58, 138, 0.25) 0%, rgba(15, 23, 42, 0.5) 40%, rgba(3, 7, 18, 0.95) 80%, #02040A 100%),
+      radial-gradient(circle at 80% 50%, rgba(29, 78, 216, 0.08) 0%, transparent 60%);
+    background-attachment: fixed;
   }
 
   h1, h2, h3, h4, h5, h6, .font-heading {
@@ -175,8 +184,8 @@
 .dark .bg-grid-paper {
   background-color: var(--bg-paper);
   background-image: 
-    linear-gradient(to right, rgba(56, 189, 248, 0.08) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(56, 189, 248, 0.08) 1px, transparent 1px);
+    radial-gradient(circle at 50% -10%, rgba(30, 58, 138, 0.2) 0%, rgba(15, 23, 42, 0.4) 40%, transparent 80%);
+  background-attachment: fixed;
 }
 
 .bg-grid-paper-dense {
@@ -191,8 +200,8 @@
 .dark .bg-grid-paper-dense {
   background-color: var(--bg-paper);
   background-image: 
-    linear-gradient(to right, rgba(56, 189, 248, 0.1) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(56, 189, 248, 0.1) 1px, transparent 1px);
+    radial-gradient(circle at 50% -10%, rgba(30, 58, 138, 0.2) 0%, rgba(15, 23, 42, 0.4) 40%, transparent 80%);
+  background-attachment: fixed;
 }
 
 /* Hard Solid Offset Shadows */

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { GraduationCap, ArrowRight, ArrowLeft, ShieldCheck, User, Phone, Building, BookOpen, Check, Award } from 'lucide-react';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { generateTeacherCode } from '../../services/teacherDoubtService';
 
@@ -64,8 +64,9 @@ export default function FacultyOnboardingView({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!phoneNumber.trim()) {
-      setError('Please enter your WhatsApp / Phone Number for student doubts.');
+    const cleanPhone = phoneNumber.replace(/\D/g, '');
+    if (cleanPhone.length !== 10) {
+      setError('Please enter a valid 10-digit mobile number (without country code).');
       return;
     }
 
@@ -73,6 +74,41 @@ export default function FacultyOnboardingView({
     setError('');
 
     try {
+      const usersRef = collection(db, 'users');
+
+      // 1. Phone Uniqueness Check across all accounts
+      const phoneQ1 = query(usersRef, where('phone_number', '==', cleanPhone));
+      const phoneSnap1 = await getDocs(phoneQ1);
+      const isPhoneDup1 = phoneSnap1.docs.some(docSnap => docSnap.id !== userId);
+
+      const phoneQ2 = query(usersRef, where('whatsapp_number', '==', cleanPhone));
+      const phoneSnap2 = await getDocs(phoneQ2);
+      const isPhoneDup2 = phoneSnap2.docs.some(docSnap => docSnap.id !== userId);
+
+      const phoneQ3 = query(usersRef, where('phone_number', '==', `91${cleanPhone}`));
+      const phoneSnap3 = await getDocs(phoneQ3);
+      const isPhoneDup3 = phoneSnap3.docs.some(docSnap => docSnap.id !== userId);
+
+      if (isPhoneDup1 || isPhoneDup2 || isPhoneDup3) {
+        setError('This phone number is already registered with another account. Each account must have a unique phone number.');
+        setSaving(false);
+        return;
+      }
+
+      // 2. Email Uniqueness Check across all accounts
+      if (email && email.trim()) {
+        const cleanEmail = email.trim().toLowerCase();
+        const emailQ = query(usersRef, where('email', '==', cleanEmail));
+        const emailSnap = await getDocs(emailQ);
+        const isEmailDup = emailSnap.docs.some(docSnap => docSnap.id !== userId);
+
+        if (isEmailDup) {
+          setError('This email address is already registered with another account. Each account must have a unique email address.');
+          setSaving(false);
+          return;
+        }
+      }
+
       const generatedCode = generateTeacherCode(`${firstName.trim()} ${lastName.trim()}`);
       const subList = subjects.split(',').map(s => s.trim()).filter(Boolean);
 
@@ -83,9 +119,9 @@ export default function FacultyOnboardingView({
         first_name: firstName.trim(),
         last_name: lastName.trim(),
         fullName: fullNameCalculated,
-        email: email,
-        phone_number: phoneNumber.trim(),
-        whatsapp_number: phoneNumber.trim(),
+        email: email.trim().toLowerCase(),
+        phone_number: cleanPhone,
+        whatsapp_number: cleanPhone,
         school_or_university: university.trim(),
         department: department.trim(),
         designation: designation.trim(),
@@ -97,7 +133,7 @@ export default function FacultyOnboardingView({
 
       onComplete({
         fullName: fullNameCalculated,
-        phoneNumber: phoneNumber.trim(),
+        phoneNumber: cleanPhone,
         university: university.trim(),
         department: department.trim(),
         teacherCode: generatedCode
@@ -350,13 +386,22 @@ export default function FacultyOnboardingView({
                   type="tel"
                   required
                   value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  placeholder="919876543210"
+                  onChange={(e) => {
+                    let val = e.target.value.replace(/\D/g, '');
+                    if (val.length === 12 && val.startsWith('91')) {
+                      val = val.slice(2);
+                    }
+                    if (val.length > 10) {
+                      val = val.slice(0, 10);
+                    }
+                    setPhoneNumber(val);
+                  }}
+                  placeholder="9876543210"
                   className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-alt)] text-[var(--app-text)] font-sans text-sm focus:outline-none focus:border-[#22C55E]"
                 />
               </div>
               <span className="text-[10px] font-mono text-[var(--app-muted)] mt-1 block">
-                Include country code (e.g., 91 for India). Used for WhatsApp doubt alerts.
+                Enter 10-digit mobile number (without country code). Used for WhatsApp doubt alerts.
               </span>
             </div>
 

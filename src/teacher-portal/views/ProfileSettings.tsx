@@ -214,7 +214,19 @@ export function ProfileSettings() {
               </div>
               <div>
                 <label htmlFor="f-phone" className="mb-1.5 block text-xs font-medium text-muted">WhatsApp / phone</label>
-                <input id="f-phone" value={draft.phone} onChange={(e) => setDraft({ ...draft, phone: e.target.value })} className={inputCls} />
+                <input 
+                  id="f-phone" 
+                  value={draft.phone} 
+                  onChange={(e) => {
+                    let val = e.target.value.replace(/\D/g, '');
+                    if (val.length === 12 && val.startsWith('91')) val = val.slice(2);
+                    if (val.length > 10) val = val.slice(0, 10);
+                    setDraft({ ...draft, phone: val });
+                  }}
+                  placeholder="9876543210"
+                  className={inputCls} 
+                />
+                <p className="mt-1 text-[10px] font-mono text-muted">10-digit mobile number (without country code)</p>
               </div>
               <div>
                 <label htmlFor="f-uni" className="mb-1.5 block text-xs font-medium text-muted">University</label>

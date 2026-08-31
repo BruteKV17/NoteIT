@@ -27,7 +27,7 @@ import {
   Camera,
   Share2
 } from 'lucide-react';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { generateTeacherCode } from '../../services/teacherDoubtService';
 
@@ -43,87 +43,80 @@ export default function FacultyProfileSettings({ user }: FacultyProfileSettingsP
   const [designation, setDesignation] = useState('Associate Professor');
   const [officeHours, setOfficeHours] = useState('Mon - Fri, 2:00 PM - 5:00 PM');
   const [officeLocation, setOfficeLocation] = useState('Academic Block 3, Room 402');
-  const [whatsappNumber, setWhatsappNumber] = useState('919876543210');
+  const [whatsappNumber, setWhatsappNumber] = useState('9876543210');
   const [bio, setBio] = useState('Specializing in Operating Systems, Distributed Computing, and System Architecture.');
   const [avatarUrl, setAvatarUrl] = useState('');
 
   // Subjects chip list
-  const [subjectList, setSubjectList] = useState<string[]>([
-    'Operating Systems',
-    'Data Structures & Algorithms',
-    'Computer Networks',
-    'Database Management Systems'
-  ]);
-  const [newSubject, setNewSubject] = useState('');
+  const [subjectList, setSubjectList] = useState<string[]>(['Operating Systems', 'Data Structures']);
+  const [newSubjectInput, setNewSubjectInput] = useState('');
 
-  // Preference Toggles
+  // Preferences & Toggles
   const [autoAssignDoubts, setAutoAssignDoubts] = useState(true);
   const [whatsappNotifications, setWhatsappNotifications] = useState(true);
 
-  // Status state
+  // System states
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  // Load existing profile from Firestore
+  // Calculated names
+  const fullNameCalculated = `${firstName.trim()} ${lastName.trim()}`.trim() || user.fullName;
+  const currentTeacherCode = user.teacherCode || generateTeacherCode(fullNameCalculated);
+
   useEffect(() => {
-    async function loadProfile() {
-      if (!user.uid) {
-        setLoadingProfile(false);
-        return;
-      }
+    if (!user.uid) {
+      setLoadingProfile(false);
+      return;
+    }
+
+    const fetchFacultyData = async () => {
       try {
         const userRef = doc(db, 'users', user.uid);
-        const snap = await getDoc(userRef);
-        if (snap.exists()) {
-          const data = snap.data();
+        const docSnap = await getDoc(userRef);
+
+        if (docSnap.exists()) {
+          const data = docSnap.data();
           if (data.first_name) setFirstName(data.first_name);
           if (data.last_name) setLastName(data.last_name);
-          if (!data.first_name && user.fullName) {
-            const parts = user.fullName.split(' ');
-            setFirstName(parts[0] || '');
-            setLastName(parts.slice(1).join(' ') || '');
-          }
           if (data.school_or_university) setUniversity(data.school_or_university);
           if (data.department) setDepartment(data.department);
           if (data.designation) setDesignation(data.designation);
           if (data.office_hours) setOfficeHours(data.office_hours);
           if (data.office_location) setOfficeLocation(data.office_location);
-          if (data.whatsapp_number || data.phone_number) setWhatsappNumber(data.whatsapp_number || data.phone_number);
-          if (data.bio) setBio(data.bio);
-          if (data.profile_image_url || data.avatarUrl) setAvatarUrl(data.profile_image_url || data.avatarUrl);
-          if (Array.isArray(data.subjects) && data.subjects.length > 0) {
-            setSubjectList(data.subjects);
+          if (data.whatsapp_number || data.phone_number) {
+            let clean = (data.whatsapp_number || data.phone_number).replace(/\D/g, '');
+            if (clean.length === 12 && clean.startsWith('91')) clean = clean.slice(2);
+            if (clean.length > 10) clean = clean.slice(0, 10);
+            setWhatsappNumber(clean);
           }
-        } else if (user.fullName) {
-          const parts = user.fullName.split(' ');
-          setFirstName(parts[0] || '');
-          setLastName(parts.slice(1).join(' ') || '');
+          if (data.bio) setBio(data.bio);
+          if (data.avatarUrl) setAvatarUrl(data.avatarUrl);
+          if (Array.isArray(data.subjects)) setSubjectList(data.subjects);
+          if (typeof data.auto_assign_doubts === 'boolean') setAutoAssignDoubts(data.auto_assign_doubts);
+          if (typeof data.whatsapp_notifications === 'boolean') setWhatsappNotifications(data.whatsapp_notifications);
         }
       } catch (err) {
-        console.error('Error loading faculty profile:', err);
+        console.error('Failed to load faculty profile in settings:', err);
       } finally {
         setLoadingProfile(false);
       }
+    };
+
+    fetchFacultyData();
+  }, [user.uid]);
+
+  const handleAddSubject = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!newSubjectInput.trim()) return;
+    if (subjectList.includes(newSubjectInput.trim())) {
+      setNewSubjectInput('');
+      return;
     }
-    loadProfile();
-  }, [user.uid, user.fullName]);
-
-  const fullNameCalculated = `${firstName.trim()} ${lastName.trim()}`.trim() || user.fullName || 'Professor';
-  const teacherCode = user.teacherCode || generateTeacherCode(fullNameCalculated);
-
-  const copyCodeToClipboard = () => {
-    navigator.clipboard.writeText(teacherCode);
-    setCopiedCode(true);
-    setTimeout(() => setCopiedCode(false), 2000);
-  };
-
-  const handleAddSubject = () => {
-    if (newSubject.trim() && !subjectList.includes(newSubject.trim())) {
-      setSubjectList([...subjectList, newSubject.trim()]);
-      setNewSubject('');
-    }
+    setSubjectList([...subjectList, newSubjectInput.trim()]);
+    setNewSubjectInput('');
   };
 
   const handleRemoveSubject = (subToRemove: string) => {
@@ -132,11 +125,36 @@ export default function FacultyProfileSettings({ user }: FacultyProfileSettingsP
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage('');
+
+    const cleanPhone = whatsappNumber.replace(/\D/g, '');
+    if (cleanPhone.length !== 10) {
+      setErrorMessage('Please enter a valid 10-digit mobile number (without country code).');
+      return;
+    }
+
     setSaving(true);
     setSavedSuccess(false);
 
     try {
       if (user.uid) {
+        const usersRef = collection(db, 'users');
+
+        // Phone Uniqueness Check
+        const phoneQ1 = query(usersRef, where('phone_number', '==', cleanPhone));
+        const phoneSnap1 = await getDocs(phoneQ1);
+        const dup1 = phoneSnap1.docs.some(docSnap => docSnap.id !== user.uid);
+
+        const phoneQ2 = query(usersRef, where('whatsapp_number', '==', cleanPhone));
+        const phoneSnap2 = await getDocs(phoneQ2);
+        const dup2 = phoneSnap2.docs.some(docSnap => docSnap.id !== user.uid);
+
+        if (dup1 || dup2) {
+          setErrorMessage('This phone number is already registered with another account. Each account must have a unique phone number.');
+          setSaving(false);
+          return;
+        }
+
         const userRef = doc(db, 'users', user.uid);
         const generatedCode = generateTeacherCode(fullNameCalculated);
 
@@ -145,15 +163,15 @@ export default function FacultyProfileSettings({ user }: FacultyProfileSettingsP
           first_name: firstName.trim(),
           last_name: lastName.trim(),
           fullName: fullNameCalculated,
-          email: user.emailAddress,
+          email: user.emailAddress.trim().toLowerCase(),
           school_or_university: university.trim(),
           department: department.trim(),
           designation: designation.trim(),
           office_hours: officeHours.trim(),
           office_location: officeLocation.trim(),
           subjects: subjectList,
-          whatsapp_number: whatsappNumber.trim(),
-          phone_number: whatsappNumber.trim(),
+          whatsapp_number: cleanPhone,
+          phone_number: cleanPhone,
           bio: bio.trim(),
           avatarUrl: avatarUrl.trim(),
           teacherCode: generatedCode,
@@ -166,11 +184,18 @@ export default function FacultyProfileSettings({ user }: FacultyProfileSettingsP
 
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 3500);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error updating faculty profile:', err);
+      setErrorMessage(err.message || 'Failed to update profile.');
     } finally {
       setSaving(false);
     }
+  };
+
+  const copyCodeToClipboard = () => {
+    navigator.clipboard.writeText(currentTeacherCode);
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2000);
   };
 
   if (loadingProfile) {
@@ -202,7 +227,7 @@ export default function FacultyProfileSettings({ user }: FacultyProfileSettingsP
           <CheckCircle size={20} className="shrink-0" />
           <div>
             <div className="font-extrabold uppercase">PROFILE SAVED SUCCESSFULLY!</div>
-            <div className="text-[11px] font-normal">Your teacher profile and Student Connect UID ({teacherCode}) are updated in Firestore.</div>
+            <div className="text-[11px] font-normal">Your teacher profile and Student Connect UID ({currentTeacherCode}) are updated in Firestore.</div>
           </div>
         </div>
       )}
@@ -245,7 +270,7 @@ export default function FacultyProfileSettings({ user }: FacultyProfileSettingsP
             </div>
             <div className="flex items-center md:justify-end gap-2">
               <span className="text-2xl font-mono font-black text-[#FFC400] tracking-widest">
-                {teacherCode}
+                {currentTeacherCode}
               </span>
               <button
                 onClick={copyCodeToClipboard}
@@ -291,6 +316,11 @@ export default function FacultyProfileSettings({ user }: FacultyProfileSettingsP
 
       {/* MAIN FORM */}
       <form onSubmit={handleSave} className="space-y-6">
+        {errorMessage && (
+          <div className="p-4 rounded-xl bg-red-500/10 border border-red-500 text-red-500 text-xs font-mono font-bold">
+            {errorMessage}
+          </div>
+        )}
         
         {/* Personal & Academic Details Section */}
         <div className="p-6 rounded-2xl bg-[var(--app-surface)] border border-[var(--app-border)] space-y-4 shadow-sm">
@@ -345,11 +375,19 @@ export default function FacultyProfileSettings({ user }: FacultyProfileSettingsP
                   type="tel"
                   required
                   value={whatsappNumber}
-                  onChange={(e) => setWhatsappNumber(e.target.value)}
-                  placeholder="919876543210"
+                  onChange={(e) => {
+                    let val = e.target.value.replace(/\D/g, '');
+                    if (val.length === 12 && val.startsWith('91')) val = val.slice(2);
+                    if (val.length > 10) val = val.slice(0, 10);
+                    setWhatsappNumber(val);
+                  }}
+                  placeholder="9876543210"
                   className="w-full pl-9 pr-3 py-3 rounded-xl bg-[var(--app-surface-alt)] border border-[var(--app-border)] text-[var(--app-text)] font-sans text-sm focus:outline-none focus:border-[var(--app-brand)]"
                 />
               </div>
+              <span className="text-[10px] font-mono text-[var(--app-muted)] mt-1 block">
+                Enter 10-digit mobile number (without country code). Used for student doubt alerts.
+              </span>
             </div>
 
             <div>
@@ -476,8 +514,8 @@ export default function FacultyProfileSettings({ user }: FacultyProfileSettingsP
           <div className="flex items-center gap-2 pt-2">
             <input
               type="text"
-              value={newSubject}
-              onChange={(e) => setNewSubject(e.target.value)}
+              value={newSubjectInput}
+              onChange={(e) => setNewSubjectInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddSubject(); } }}
               placeholder="Add new subject (e.g. Cloud Computing)..."
               className="flex-1 p-2.5 rounded-xl bg-[var(--app-surface-alt)] border border-[var(--app-border)] text-[var(--app-text)] font-sans text-sm focus:outline-none focus:border-[var(--app-brand)]"

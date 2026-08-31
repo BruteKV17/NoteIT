@@ -202,11 +202,17 @@ export function SetupModal() {
           <Field label="WhatsApp / phone number" icon={<Phone size={16} />}>
             <input
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="+91 98765 43210"
+              onChange={(e) => {
+                let val = e.target.value.replace(/\D/g, '');
+                if (val.length === 12 && val.startsWith('91')) val = val.slice(2);
+                if (val.length > 10) val = val.slice(0, 10);
+                setPhone(val);
+              }}
+              placeholder="9876543210"
               inputMode="tel"
               className={cn(inputCls, 'pl-10')}
             />
+            <p className="mt-1 text-[10px] font-mono text-muted">10-digit mobile number (without country code)</p>
           </Field>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
