@@ -141,17 +141,23 @@ export default function FacultyProfileSettings({ user }: FacultyProfileSettingsP
         try {
           const usersRef = collection(db, 'users');
 
-          // Phone Uniqueness Check
+          // Phone Uniqueness Check (Only block if another FACULTY account uses this phone)
           const phoneQ1 = query(usersRef, where('phone_number', '==', cleanPhone));
           const phoneSnap1 = await getDocs(phoneQ1);
-          const dup1 = phoneSnap1.docs.some(docSnap => docSnap.id !== user.uid);
+          const dup1 = phoneSnap1.docs.some(docSnap => {
+            const data = docSnap.data();
+            return docSnap.id !== user.uid && (data.role === 'faculty' || data.role === 'teacher');
+          });
 
           const phoneQ2 = query(usersRef, where('whatsapp_number', '==', cleanPhone));
           const phoneSnap2 = await getDocs(phoneQ2);
-          const dup2 = phoneSnap2.docs.some(docSnap => docSnap.id !== user.uid);
+          const dup2 = phoneSnap2.docs.some(docSnap => {
+            const data = docSnap.data();
+            return docSnap.id !== user.uid && (data.role === 'faculty' || data.role === 'teacher');
+          });
 
           if (dup1 || dup2) {
-            setErrorMessage('This phone number is already registered with another account. Each account must have a unique phone number.');
+            setErrorMessage('This phone number is already registered to another Faculty account. Maximum 1 Faculty account is allowed per phone number.');
             setSaving(false);
             return;
           }

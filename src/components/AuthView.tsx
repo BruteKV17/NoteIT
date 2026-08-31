@@ -143,14 +143,19 @@ export default function AuthView({
     return { valid: true };
   };
 
-  // Firestore check to enforce single email per faculty/student account
-  const checkEmailExistsInFirestore = async (emailStr: string): Promise<boolean> => {
+  // Firestore check to enforce 1 Faculty account AND 1 Student account max per email address
+  const checkEmailExistsInFirestore = async (emailStr: string, targetRole: 'faculty' | 'student'): Promise<boolean> => {
     try {
       const cleanEmail = emailStr.trim().toLowerCase();
       const usersRef = collection(db, 'users');
       const q = query(usersRef, where('email', '==', cleanEmail));
       const snap = await getDocs(q);
-      return !snap.empty;
+      
+      return snap.docs.some(docSnap => {
+        const data = docSnap.data();
+        const docRole = (data.role === 'faculty' || data.role === 'teacher') ? 'faculty' : 'student';
+        return docRole === targetRole;
+      });
     } catch (err) {
       console.warn('Error querying Firestore for email uniqueness:', err);
       return false;
@@ -222,10 +227,11 @@ export default function AuthView({
           return;
         }
 
-        // 2. Enforce Single Email per Faculty/Student Account
-        const exists = await checkEmailExistsInFirestore(cleanEmail);
+        // 2. Enforce Max 1 Faculty Account AND 1 Student Account per Email
+        const targetRole: 'faculty' | 'student' = isFacultyMode ? 'faculty' : 'student';
+        const exists = await checkEmailExistsInFirestore(cleanEmail, targetRole);
         if (exists) {
-          setError('This email address is already registered. Each account requires a unique email. Please sign in or use a different email.');
+          setError(`This email address is already registered to a ${targetRole === 'faculty' ? 'Faculty' : 'Student'} account. Maximum 1 ${targetRole === 'faculty' ? 'Faculty' : 'Student'} account is allowed per email address.`);
           setLoading(false);
           return;
         }

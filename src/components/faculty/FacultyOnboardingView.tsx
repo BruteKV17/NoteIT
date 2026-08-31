@@ -84,30 +84,39 @@ export default function FacultyOnboardingView({
       try {
         const usersRef = collection(db, 'users');
 
-        // Phone Uniqueness Check
+        // Phone Uniqueness Check (Only block if another FACULTY account uses this phone)
         const phoneQ1 = query(usersRef, where('phone_number', '==', cleanPhone));
         const phoneSnap1 = await getDocs(phoneQ1);
-        const isPhoneDup1 = phoneSnap1.docs.some(docSnap => docSnap.id !== activeUid);
+        const isPhoneDup1 = phoneSnap1.docs.some(docSnap => {
+          const data = docSnap.data();
+          return docSnap.id !== activeUid && (data.role === 'faculty' || data.role === 'teacher');
+        });
 
         const phoneQ2 = query(usersRef, where('whatsapp_number', '==', cleanPhone));
         const phoneSnap2 = await getDocs(phoneQ2);
-        const isPhoneDup2 = phoneSnap2.docs.some(docSnap => docSnap.id !== activeUid);
+        const isPhoneDup2 = phoneSnap2.docs.some(docSnap => {
+          const data = docSnap.data();
+          return docSnap.id !== activeUid && (data.role === 'faculty' || data.role === 'teacher');
+        });
 
         if (isPhoneDup1 || isPhoneDup2) {
-          setError('This phone number is already registered with another account. Each account must have a unique phone number.');
+          setError('This phone number is already registered to another Faculty account. Maximum 1 Faculty account is allowed per phone number.');
           setSaving(false);
           return;
         }
 
-        // Email Uniqueness Check
+        // Email Uniqueness Check (Only block if another FACULTY account uses this email)
         if (email && email.trim()) {
           const cleanEmail = email.trim().toLowerCase();
           const emailQ = query(usersRef, where('email', '==', cleanEmail));
           const emailSnap = await getDocs(emailQ);
-          const isEmailDup = emailSnap.docs.some(docSnap => docSnap.id !== activeUid);
+          const isEmailDup = emailSnap.docs.some(docSnap => {
+            const data = docSnap.data();
+            return docSnap.id !== activeUid && (data.role === 'faculty' || data.role === 'teacher');
+          });
 
           if (isEmailDup) {
-            setError('This email address is already registered with another account. Each account must have a unique email address.');
+            setError('This email address is already registered to another Faculty account. Maximum 1 Faculty account is allowed per email address.');
             setSaving(false);
             return;
           }
