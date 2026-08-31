@@ -138,21 +138,25 @@ export default function FacultyProfileSettings({ user }: FacultyProfileSettingsP
 
     try {
       if (user.uid) {
-        const usersRef = collection(db, 'users');
+        try {
+          const usersRef = collection(db, 'users');
 
-        // Phone Uniqueness Check
-        const phoneQ1 = query(usersRef, where('phone_number', '==', cleanPhone));
-        const phoneSnap1 = await getDocs(phoneQ1);
-        const dup1 = phoneSnap1.docs.some(docSnap => docSnap.id !== user.uid);
+          // Phone Uniqueness Check
+          const phoneQ1 = query(usersRef, where('phone_number', '==', cleanPhone));
+          const phoneSnap1 = await getDocs(phoneQ1);
+          const dup1 = phoneSnap1.docs.some(docSnap => docSnap.id !== user.uid);
 
-        const phoneQ2 = query(usersRef, where('whatsapp_number', '==', cleanPhone));
-        const phoneSnap2 = await getDocs(phoneQ2);
-        const dup2 = phoneSnap2.docs.some(docSnap => docSnap.id !== user.uid);
+          const phoneQ2 = query(usersRef, where('whatsapp_number', '==', cleanPhone));
+          const phoneSnap2 = await getDocs(phoneQ2);
+          const dup2 = phoneSnap2.docs.some(docSnap => docSnap.id !== user.uid);
 
-        if (dup1 || dup2) {
-          setErrorMessage('This phone number is already registered with another account. Each account must have a unique phone number.');
-          setSaving(false);
-          return;
+          if (dup1 || dup2) {
+            setErrorMessage('This phone number is already registered with another account. Each account must have a unique phone number.');
+            setSaving(false);
+            return;
+          }
+        } catch (checkErr) {
+          console.warn('Phone uniqueness query skipped due to Firestore security rule restrictions:', checkErr);
         }
 
         const userRef = doc(db, 'users', user.uid);

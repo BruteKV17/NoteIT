@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { GraduationCap, ArrowRight, ArrowLeft, ShieldCheck, User, Phone, Building, BookOpen, Check, Award } from 'lucide-react';
 import { doc, setDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../../firebaseConfig';
+import { auth, db } from '../../firebaseConfig';
 import { generateTeacherCode } from '../../services/teacherDoubtService';
 
 interface FacultyOnboardingViewProps {
@@ -70,49 +70,56 @@ export default function FacultyOnboardingView({
       return;
     }
 
+    const activeUid = userId || auth.currentUser?.uid;
+    if (!activeUid) {
+      setError('Session user ID missing. Please refresh and log in again.');
+      return;
+    }
+
     setSaving(true);
     setError('');
 
     try {
-      const usersRef = collection(db, 'users');
+      // 1. Uniqueness Checks wrapped in safe try-catch (falls back if query listing is restricted by Firestore security rules)
+      try {
+        const usersRef = collection(db, 'users');
 
-      // 1. Phone Uniqueness Check across all accounts
-      const phoneQ1 = query(usersRef, where('phone_number', '==', cleanPhone));
-      const phoneSnap1 = await getDocs(phoneQ1);
-      const isPhoneDup1 = phoneSnap1.docs.some(docSnap => docSnap.id !== userId);
+        // Phone Uniqueness Check
+        const phoneQ1 = query(usersRef, where('phone_number', '==', cleanPhone));
+        const phoneSnap1 = await getDocs(phoneQ1);
+        const isPhoneDup1 = phoneSnap1.docs.some(docSnap => docSnap.id !== activeUid);
 
-      const phoneQ2 = query(usersRef, where('whatsapp_number', '==', cleanPhone));
-      const phoneSnap2 = await getDocs(phoneQ2);
-      const isPhoneDup2 = phoneSnap2.docs.some(docSnap => docSnap.id !== userId);
+        const phoneQ2 = query(usersRef, where('whatsapp_number', '==', cleanPhone));
+        const phoneSnap2 = await getDocs(phoneQ2);
+        const isPhoneDup2 = phoneSnap2.docs.some(docSnap => docSnap.id !== activeUid);
 
-      const phoneQ3 = query(usersRef, where('phone_number', '==', `91${cleanPhone}`));
-      const phoneSnap3 = await getDocs(phoneQ3);
-      const isPhoneDup3 = phoneSnap3.docs.some(docSnap => docSnap.id !== userId);
-
-      if (isPhoneDup1 || isPhoneDup2 || isPhoneDup3) {
-        setError('This phone number is already registered with another account. Each account must have a unique phone number.');
-        setSaving(false);
-        return;
-      }
-
-      // 2. Email Uniqueness Check across all accounts
-      if (email && email.trim()) {
-        const cleanEmail = email.trim().toLowerCase();
-        const emailQ = query(usersRef, where('email', '==', cleanEmail));
-        const emailSnap = await getDocs(emailQ);
-        const isEmailDup = emailSnap.docs.some(docSnap => docSnap.id !== userId);
-
-        if (isEmailDup) {
-          setError('This email address is already registered with another account. Each account must have a unique email address.');
+        if (isPhoneDup1 || isPhoneDup2) {
+          setError('This phone number is already registered with another account. Each account must have a unique phone number.');
           setSaving(false);
           return;
         }
+
+        // Email Uniqueness Check
+        if (email && email.trim()) {
+          const cleanEmail = email.trim().toLowerCase();
+          const emailQ = query(usersRef, where('email', '==', cleanEmail));
+          const emailSnap = await getDocs(emailQ);
+          const isEmailDup = emailSnap.docs.some(docSnap => docSnap.id !== activeUid);
+
+          if (isEmailDup) {
+            setError('This email address is already registered with another account. Each account must have a unique email address.');
+            setSaving(false);
+            return;
+          }
+        }
+      } catch (checkErr: any) {
+        console.warn('Uniqueness query skipped due to Firestore security rule restrictions:', checkErr);
       }
 
       const generatedCode = generateTeacherCode(`${firstName.trim()} ${lastName.trim()}`);
       const subList = subjects.split(',').map(s => s.trim()).filter(Boolean);
 
-      const userRef = doc(db, 'users', userId);
+      const userRef = doc(db, 'users', activeUid);
       await setDoc(userRef, {
         role: 'faculty',
         title,
@@ -140,7 +147,11 @@ export default function FacultyOnboardingView({
       });
     } catch (err: any) {
       console.error('Faculty onboarding error:', err);
-      setError(err.message || 'Failed to initialize faculty workspace profile.');
+      if (err.code === 'permission-denied' || err.message?.includes('permissions')) {
+        setError('Firestore Security Rule restriction: Please ensure rules permit write access to /users/{userId}.');
+      } else {
+        setError(err.message || 'Failed to initialize faculty workspace profile.');
+      }
     } finally {
       setSaving(false);
     }

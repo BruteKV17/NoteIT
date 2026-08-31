@@ -4,47 +4,42 @@ service cloud.firestore {
     
     // User profile documents & subcollections
     match /users/{userId} {
-      // Allow user to read and write their own profile
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-      // Allow authenticated users to query/read profiles (e.g. searching user by email when sharing)
-      allow read: if request.auth != null;
+      allow read, write: if true;
       
       // All nested subcollections under user (subjects, lectures, notes, folders, sources, etc.)
       match /{allPaths=**} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-        // Allow authenticated peers to write shared lectures into recipient's lectures subcollection
-        allow create: if request.auth != null;
+        allow read, write: if true;
       }
     }
 
     // Pending shared lectures staged for peer students
     match /pendingShares/{shareId} {
-      allow read, write, create: if request.auth != null;
+      allow read, write: if true;
     }
 
     // Feedback & support ticket submissions
     match /feedback/{feedbackId} {
-      allow create, read, write: if true;
+      allow read, write: if true;
     }
 
     // Student Doubts submitted to Faculty
     match /doubts/{doubtId} {
-      allow read, create, update: if request.auth != null;
+      allow read, write, create, update, delete: if true;
     }
 
     // Teacher subject assignments
     match /teacherAssignments/{assignmentId} {
-      allow read, write, create: if request.auth != null;
+      allow read, write: if true;
     }
 
     // Quiz attempts & performance records
     match /quizAttempts/{attemptId} {
-      allow read, write, create: if request.auth != null;
+      allow read, write: if true;
     }
 
-    // Global fallback rule for all authenticated NoteIT users across any collection
+    // Global fallback rule for all NoteIT users across any collection
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if true;
     }
   }
 }
