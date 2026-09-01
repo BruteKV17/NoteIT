@@ -644,7 +644,29 @@ export default function SettingsView({
                   {theme === 'light' ? 'Theme Selected' : 'Apply Light Theme'}
                 </button>
               </div>
+            </div>
 
+            {/* Guided Tour Reset Callout Banner */}
+            <div className="mt-6 p-4 rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--panel-bg)] flex flex-col md:flex-row items-center justify-between gap-4">
+              <div>
+                <h4 className="font-heading font-extrabold text-sm uppercase text-[var(--text-primary)] flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-[#2F6BFF]" />
+                  Interactive Feature Tour
+                </h4>
+                <p className="text-xs font-mono text-[var(--text-secondary)] mt-1">
+                  Re-play the step-by-step anchored popover tour to walk through Capture Live, Subject Maps, Library, and Quiz Mode.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  localStorage.removeItem('noteit_guided_tour_completed');
+                  window.dispatchEvent(new CustomEvent('noteit_start_guided_tour'));
+                }}
+                className="px-4 py-2 bg-[#2F6BFF] text-white hover:bg-[#255CD9] font-mono text-xs font-bold uppercase rounded-[4px] border-2 border-[var(--border-main)] shadow-paper-sm shrink-0 transition-all cursor-pointer"
+              >
+                Re-take Guided Tour
+              </button>
             </div>
           </div>
         )}

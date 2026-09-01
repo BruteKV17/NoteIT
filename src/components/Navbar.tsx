@@ -283,6 +283,17 @@ export default function Navbar({
                 </button>
 
                 <button
+                  onClick={() => {
+                    setDropdownOpen(false);
+                    window.dispatchEvent(new CustomEvent('noteit_start_guided_tour'));
+                  }}
+                  className="flex w-full items-center gap-2.5 rounded-[4px] px-2.5 py-2 font-bold text-left hover:bg-[#FFC400] hover:text-[#111111] transition-colors cursor-pointer"
+                >
+                  <Sparkles className="h-4 w-4 shrink-0 text-[#2F6BFF]" />
+                  <span>Interactive Guided Tour</span>
+                </button>
+
+                <button
                   onClick={() => handleDropdownOption('help-support')}
                   className="flex w-full items-center gap-2.5 rounded-[4px] px-2.5 py-2 font-bold text-left hover:bg-[#FFC400] hover:text-[#111111] transition-colors cursor-pointer"
                 >

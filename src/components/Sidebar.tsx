@@ -125,26 +125,30 @@ export default function Sidebar({
 
       {/* Primary Capture Live Trigger */}
       {!isCollapsed && onNewAnalysis && (
-        <div className="px-4 py-3 border-b-2 border-[var(--border-main)]">
-          <Button
-            variant="secondary"
-            size="md"
-            fullWidth
-            onClick={() => handleNavClick('lecture-capture')}
-            icon={<Mic className="h-4 w-4 animate-pulse text-[#FF4D4D]" />}
-          >
-            Capture Live Course
-          </Button>
-          <Button
-            variant="secondary"
-            size="md"
-            fullWidth
-            onClick={() => window.dispatchEvent(new CustomEvent('noteit_open_ask_doubt'))}
-            icon={<HelpCircle className="h-4 w-4 text-[#38BDF8]" />}
-            className="border-[#38BDF8]/40 hover:border-[#38BDF8]"
-          >
-            Ask Doubt
-          </Button>
+        <div className="px-4 py-3 border-b-2 border-[var(--border-main)] space-y-2">
+          <div data-tour="capture-live">
+            <Button
+              variant="secondary"
+              size="md"
+              fullWidth
+              onClick={() => handleNavClick('lecture-capture')}
+              icon={<Mic className="h-4 w-4 animate-pulse text-[#FF4D4D]" />}
+            >
+              Capture Live Course
+            </Button>
+          </div>
+          <div data-tour="ask-doubt">
+            <Button
+              variant="secondary"
+              size="md"
+              fullWidth
+              onClick={() => window.dispatchEvent(new CustomEvent('noteit_open_ask_doubt'))}
+              icon={<HelpCircle className="h-4 w-4 text-[#38BDF8]" />}
+              className="border-[#38BDF8]/40 hover:border-[#38BDF8]"
+            >
+              Ask Doubt
+            </Button>
+          </div>
         </div>
       )}
 
@@ -159,15 +163,16 @@ export default function Sidebar({
           )}
 
           {workspaceItems.map((item) => (
-            <SidebarItem
-              key={item.id}
-              icon={<item.icon className="h-4 w-4" />}
-              label={item.label}
-              badge={item.badge}
-              active={activePage === item.id}
-              onClick={() => handleNavClick(item.id as PageId)}
-              collapsed={isCollapsed}
-            />
+            <div key={item.id} data-tour={item.id === 'dashboard' ? 'dashboard-link' : item.id}>
+              <SidebarItem
+                icon={<item.icon className="h-4 w-4" />}
+                label={item.label}
+                badge={item.badge}
+                active={activePage === item.id}
+                onClick={() => handleNavClick(item.id as PageId)}
+                collapsed={isCollapsed}
+              />
+            </div>
           ))}
         </div>
 

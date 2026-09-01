@@ -66,6 +66,7 @@ import FeedbackWidget from './components/FeedbackWidget';
 import AILogo from './components/AILogo';
 import { generateAdditionalQuizQuestions } from './services/gemini';
 import FloatingRecordingWidget from './components/FloatingRecordingWidget';
+import GuidedTour from './components/GuidedTour';
 
 // Faculty Portal & Ask Doubt Imports
 import { subscribeFacultyDoubts, generateTeacherCode } from './services/teacherDoubtService';
@@ -116,6 +117,34 @@ export default function App() {
     lectureTitle?: string;
     topic?: string;
   }>({ isOpen: false });
+
+  // Onboarding checks
+  const [checkingOnboarding, setCheckingOnboarding] = useState(true);
+  const [isOnboarding, setIsOnboarding] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(1);
+
+  // Guided Tour State & Event Listeners
+  const [isGuidedTourOpen, setIsGuidedTourOpen] = useState(false);
+
+  // Listen for manual Guided Tour start triggers
+  useEffect(() => {
+    const handleStartTour = () => setIsGuidedTourOpen(true);
+    window.addEventListener('noteit_start_guided_tour', handleStartTour);
+    return () => window.removeEventListener('noteit_start_guided_tour', handleStartTour);
+  }, []);
+
+  // Auto-trigger Guided Tour for new users upon login & onboarding completion
+  useEffect(() => {
+    if (sessionUser && userRole === 'student' && !isOnboarding) {
+      const tourCompleted = localStorage.getItem('noteit_guided_tour_completed');
+      if (tourCompleted !== 'true') {
+        const timer = setTimeout(() => {
+          setIsGuidedTourOpen(true);
+        }, 1200);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [sessionUser, userRole, isOnboarding]);
 
   // Listen for global Ask Doubt trigger event across all views
   useEffect(() => {
@@ -215,11 +244,6 @@ export default function App() {
     }
   }, [sessionUser, todayClaimed, isLoading]);
 
-
-  // Onboarding checks
-  const [checkingOnboarding, setCheckingOnboarding] = useState(true);
-  const [isOnboarding, setIsOnboarding] = useState(false);
-  const [onboardingStep, setOnboardingStep] = useState(1);
 
   // Setup Firebase Auth State Listener
   useEffect(() => {
@@ -1224,6 +1248,15 @@ export default function App() {
 
       {/* Automatic Real-Time XP Toast Notification (Section 6) */}
       <XPToastNotification />
+
+      {/* Interactive Step-by-Step Guiding Tour Popup System */}
+      <GuidedTour
+        isOpen={isGuidedTourOpen}
+        onClose={() => setIsGuidedTourOpen(false)}
+        activePage={activePage}
+        setActivePage={setActivePage}
+        theme={theme}
+      />
 
       <FeedbackWidget theme={theme} />
 
