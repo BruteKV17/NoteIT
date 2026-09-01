@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { X, HelpCircle, Send, Paperclip, AlertCircle, CheckCircle, MessageSquare } from 'lucide-react';
 import { Button, Card, Badge } from './bauhaus';
-import { validateAttachment, getAssignedFacultyForSubject, createDoubtInFirestore, getWhatsAppDeepLink, getFacultyByTeacherCode } from '../services/teacherDoubtService';
+import { validateAttachment, getAssignedFacultyForSubject, createDoubtInFirestore, getWhatsAppDeepLink, getFacultyByTeacherCode, searchFacultySuggestions, FacultySearchResult } from '../services/teacherDoubtService';
 import { DoubtItem } from '../types';
 
 interface AskDoubtModalProps {
@@ -34,11 +34,13 @@ export default function AskDoubtModal({
   const [question, setQuestion] = useState('');
   const [selectedText, setSelectedText] = useState(initialSelectedText || '');
   
-  // Teacher Code search state
+  // Teacher Code search & suggestions state
   const [teacherCodeInput, setTeacherCodeInput] = useState('');
   const [matchedTeacher, setMatchedTeacher] = useState<{ teacherId: string; teacherName: string; whatsappNumber: string; teacherCode: string } | null>(null);
   const [searchingCode, setSearchingCode] = useState(false);
   const [codeSearchResult, setCodeSearchResult] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<FacultySearchResult[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   
   // Attachment file state
   const [file, setFile] = useState<File | null>(null);
@@ -54,22 +56,37 @@ export default function AskDoubtModal({
   const handleTeacherCodeSearch = async (code: string) => {
     setTeacherCodeInput(code);
     setCodeSearchResult(null);
-    if (code.trim().length >= 4) {
+    const clean = code.trim().toUpperCase();
+
+    if (clean.length >= 4) {
+      // 1. Fetch suggestions list for autocomplete
+      const results = await searchFacultySuggestions(clean);
+      setSuggestions(results);
+      setShowSuggestions(true);
+
+      // 2. Fetch exact matching faculty object if available
       setSearchingCode(true);
-      const res = await getFacultyByTeacherCode(code);
+      const res = await getFacultyByTeacherCode(clean);
       setSearchingCode(false);
+
       if (res) {
         setMatchedTeacher(res);
         setCodeSearchResult(`✓ Connected: ${res.teacherName} (${res.teacherCode})`);
       } else {
         setMatchedTeacher(null);
-        if (code.trim().length >= 8) {
-          setCodeSearchResult(`No faculty found with code "${code.toUpperCase()}". Default subject teacher will be assigned.`);
-        }
       }
     } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
       setMatchedTeacher(null);
     }
+  };
+
+  const handleSelectFaculty = (item: FacultySearchResult) => {
+    setTeacherCodeInput(item.teacherCode);
+    setMatchedTeacher(item);
+    setCodeSearchResult(`✓ Connected: ${item.teacherName} (${item.teacherCode})`);
+    setShowSuggestions(false);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -263,17 +280,52 @@ export default function AskDoubtModal({
               </div>
             )}
 
-            {/* CONNECT BY TEACHER CODE */}
-            <div className="space-y-1">
+            {/* CONNECT BY TEACHER CODE WITH UPWARD AUTOCOMPLETE MENU */}
+            <div className="space-y-1 relative">
               <label className="font-bold text-[var(--text-secondary)] uppercase text-[10px] tracking-wider flex items-center justify-between">
                 <span>CONNECT TO PROFESSOR (TEACHER CODE)</span>
                 <span className="text-[#38BDF8]">Optional (e.g. KISHVERM)</span>
               </label>
+
+              {/* Upward Autocomplete Suggestions Menu (4+ letters) */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="absolute bottom-full mb-1 left-0 right-0 z-[999] bg-[var(--card-bg)] border-2 border-[var(--border-main)] shadow-paper-lg rounded-[6px] overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-150">
+                  <div className="px-3 py-1.5 bg-[#FFC400] text-[#111111] text-[10px] font-mono font-black uppercase flex items-center justify-between border-b-2 border-[var(--border-main)]">
+                    <span>FACULTY CODE SUGGESTIONS ({suggestions.length})</span>
+                    <span className="text-[9px] font-bold">CLICK TO CONNECT</span>
+                  </div>
+                  <div className="max-h-44 overflow-y-auto divide-y divide-[var(--border-main)]">
+                    {suggestions.map((item) => (
+                      <div
+                        key={item.teacherCode}
+                        onClick={() => handleSelectFaculty(item)}
+                        className="px-3 py-2.5 hover:bg-[#FFC400] hover:text-[#111111] cursor-pointer transition-colors flex items-center justify-between group text-left"
+                      >
+                        <div className="min-w-0 flex-1 pr-2">
+                          <div className="text-xs font-heading font-extrabold uppercase truncate text-[var(--text-primary)] group-hover:text-[#111111]">
+                            {item.teacherName}
+                          </div>
+                          <div className="text-[10px] font-mono truncate text-[var(--text-secondary)] group-hover:text-[#111111]/80">
+                            {item.department || item.university}
+                          </div>
+                        </div>
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-black border border-[var(--border-main)] bg-[var(--input-bg)] text-[var(--text-primary)] group-hover:bg-[#111111] group-hover:text-white shrink-0">
+                          {item.teacherCode}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <input
                 type="text"
                 maxLength={8}
                 placeholder="Enter Teacher Code (e.g. KISHVERM)"
                 value={teacherCodeInput}
+                onFocus={() => {
+                  if (teacherCodeInput.trim().length >= 4) setShowSuggestions(true);
+                }}
                 onChange={(e) => handleTeacherCodeSearch(e.target.value)}
                 className="w-full p-2.5 rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--input-bg)] text-[var(--text-primary)] font-mono font-bold text-xs uppercase tracking-widest outline-none shadow-paper-sm focus:border-[#38BDF8]"
               />

@@ -58,6 +58,7 @@ import { useFolders } from '../hooks/useFolders';
 import { useSubjects } from '../hooks/useSubjects';
 import { auth } from '../firebaseConfig';
 import { shareLectureWithEmail } from '../services/shareService';
+import { searchFacultySuggestions, FacultySearchResult } from '../services/teacherDoubtService';
 
 interface LibraryViewProps {
   lectures: Lecture[];
@@ -119,6 +120,21 @@ export default function LibraryView({
   const [newSubCode, setNewSubCode] = useState('');
   const [newSubProf, setNewSubProf] = useState('');
   const [subjectError, setSubjectError] = useState<string | null>(null);
+  const [subProfSuggestions, setSubProfSuggestions] = useState<FacultySearchResult[]>([]);
+  const [showSubProfSuggestions, setShowSubProfSuggestions] = useState(false);
+
+  const handleSubProfChange = async (val: string) => {
+    setNewSubProf(val);
+    const clean = val.trim().toUpperCase();
+    if (clean.length >= 4) {
+      const res = await searchFacultySuggestions(clean);
+      setSubProfSuggestions(res);
+      setShowSubProfSuggestions(true);
+    } else {
+      setSubProfSuggestions([]);
+      setShowSubProfSuggestions(false);
+    }
+  };
 
   // Subject Edit Modal
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
@@ -1159,13 +1175,50 @@ export default function LibraryView({
                 />
               </div>
 
-              <div>
+              <div className="relative">
                 <label className="text-xs font-black uppercase block mb-1 text-black dark:text-white">Faculty UID / Teacher Code * (e.g. KISHVERM)</label>
+
+                {showSubProfSuggestions && subProfSuggestions.length > 0 && (
+                  <div className="absolute bottom-full mb-1 left-0 right-0 z-[999] bg-white dark:bg-[#161B22] border-2 border-black dark:border-gray-700 shadow-[4px_4px_0px_#000] overflow-hidden">
+                    <div className="px-3 py-1 bg-[#FFC400] text-[#111111] text-[10px] font-mono font-black uppercase flex items-center justify-between border-b-2 border-black">
+                      <span>FACULTY SUGGESTIONS ({subProfSuggestions.length})</span>
+                      <span className="text-[9px] font-bold">CLICK TO SELECT</span>
+                    </div>
+                    <div className="max-h-40 overflow-y-auto divide-y divide-black/10 dark:divide-white/10">
+                      {subProfSuggestions.map((item) => (
+                        <div
+                          key={item.teacherCode}
+                          onClick={() => {
+                            setNewSubProf(item.teacherCode);
+                            setShowSubProfSuggestions(false);
+                          }}
+                          className="px-3 py-2 hover:bg-[#FFC400] hover:text-[#111111] cursor-pointer transition-colors flex items-center justify-between group text-left"
+                        >
+                          <div className="min-w-0 flex-1 pr-2">
+                            <div className="text-xs font-black uppercase truncate text-black dark:text-white group-hover:text-black">
+                              {item.teacherName}
+                            </div>
+                            <div className="text-[10px] font-mono truncate text-gray-500 group-hover:text-black">
+                              {item.department || item.university}
+                            </div>
+                          </div>
+                          <span className="px-2 py-0.5 text-[10px] font-mono font-black border border-black bg-black text-white group-hover:bg-white group-hover:text-black shrink-0">
+                            {item.teacherCode}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <input
                   type="text"
                   required
                   value={newSubProf}
-                  onChange={(e) => setNewSubProf(e.target.value)}
+                  onFocus={() => {
+                    if (newSubProf.trim().length >= 4) setShowSubProfSuggestions(true);
+                  }}
+                  onChange={(e) => handleSubProfChange(e.target.value)}
                   placeholder="e.g. KISHVERM"
                   className="w-full bg-[#F4F1EA] dark:bg-[#0D1117] border-2 border-black p-2.5 text-xs font-bold uppercase text-black dark:text-white focus:outline-none font-mono tracking-wider"
                 />

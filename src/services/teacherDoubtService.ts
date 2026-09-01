@@ -109,18 +109,165 @@ export async function generateUniqueTeacherCode(
   return `${baseCode.substring(0, 6)}99`;
 }
 
+export interface FacultySearchResult {
+  teacherId: string;
+  teacherName: string;
+  whatsappNumber: string;
+  teacherCode: string;
+  department?: string;
+  university?: string;
+}
+
+// Preset faculty directory for demo & fallback matches
+export const PRESET_FACULTY_LIST: FacultySearchResult[] = [
+  {
+    teacherId: 'faculty_kishan_verma',
+    teacherName: 'Dr. Kishan Verma',
+    whatsappNumber: '919876543210',
+    teacherCode: 'KISHVERM',
+    department: 'Computer Science & Engineering',
+    university: 'Chandigarh University'
+  },
+  {
+    teacherId: 'faculty_kishore_algotra',
+    teacherName: 'Prof. Kishore Algotra',
+    whatsappNumber: '919876543211',
+    teacherCode: 'KISHALGO',
+    department: 'Algorithms & Data Structures',
+    university: 'Chandigarh University'
+  },
+  {
+    teacherId: 'faculty_alok_sharma',
+    teacherName: 'Prof. Alok Sharma',
+    whatsappNumber: '919876543212',
+    teacherCode: 'ALOKSHAR',
+    department: 'Operating Systems & Security',
+    university: 'IIT Delhi'
+  },
+  {
+    teacherId: 'faculty_ramesh_sahu',
+    teacherName: 'Prof. Ramesh Sahu',
+    whatsappNumber: '919876543213',
+    teacherCode: 'RAMESAHU',
+    department: 'Artificial Intelligence & Cognitive Systems',
+    university: 'BITS Pilani'
+  },
+  {
+    teacherId: 'faculty_ananya_gupta',
+    teacherName: 'Dr. Ananya Gupta',
+    whatsappNumber: '919876543214',
+    teacherCode: 'ANANGUPT',
+    department: 'Database Management Systems',
+    university: 'IIT Bombay'
+  },
+  {
+    teacherId: 'faculty_sunita_roy',
+    teacherName: 'Prof. Sunita Roy',
+    whatsappNumber: '919876543215',
+    teacherCode: 'SUNIROYX',
+    department: 'Software Engineering',
+    university: 'Delhi Technological University'
+  },
+  {
+    teacherId: 'faculty_vikram_patel',
+    teacherName: 'Dr. Vikram Patel',
+    whatsappNumber: '919876543216',
+    teacherCode: 'VIKRPATE',
+    department: 'Machine Learning & Neural Networks',
+    university: 'IIT Madras'
+  },
+  {
+    teacherId: 'faculty_rajesh_kumar',
+    teacherName: 'Prof. Rajesh Kumar',
+    whatsappNumber: '919876543217',
+    teacherCode: 'RAJEKUMA',
+    department: 'Computer Networks & IoT',
+    university: 'NIT Trichy'
+  }
+];
+
 /**
- * Queries Firestore for a faculty member matching a given Teacher Code (e.g. KISHVERM).
- * Includes robust fallback resolution so demo codes like KISHVERM always resolve cleanly.
+ * Searches and returns faculty suggestions matching 4+ typed letters.
+ * Matches against Teacher Code (e.g. KISH, ALGO) or Full Name.
+ */
+export async function searchFacultySuggestions(
+  queryStr: string
+): Promise<FacultySearchResult[]> {
+  const clean = queryStr.trim().toUpperCase();
+  if (!clean || clean.length < 4) return [];
+
+  const matches: FacultySearchResult[] = [];
+  const seenCodes = new Set<string>();
+
+  // 1. Check preset faculty list first
+  PRESET_FACULTY_LIST.forEach(item => {
+    if (item.teacherCode.includes(clean) || item.teacherName.toUpperCase().includes(clean)) {
+      matches.push(item);
+      seenCodes.add(item.teacherCode);
+    }
+  });
+
+  // 2. Query Firestore users collection for matching faculty
+  try {
+    const usersRef = collection(db, 'users');
+    const qFaculty = query(usersRef, where('role', '==', 'faculty'));
+    const facultySnap = await getDocs(qFaculty);
+
+    facultySnap.docs.forEach(docSnap => {
+      const data = docSnap.data();
+      const name = data.first_name ? `${data.first_name} ${data.last_name || ''}`.trim() : (data.fullName || 'Professor');
+      const code = (data.teacherCode || generateTeacherCode(name)).toUpperCase();
+
+      if (!seenCodes.has(code) && (code.includes(clean) || name.toUpperCase().includes(clean))) {
+        matches.push({
+          teacherId: docSnap.id,
+          teacherName: name.startsWith('Dr.') || name.startsWith('Prof.') ? name : `Dr. ${name}`,
+          whatsappNumber: data.whatsapp_number || data.phone_number || '919876543210',
+          teacherCode: code,
+          department: data.department || 'Computer Science & Engineering',
+          university: data.school_or_university || 'University'
+        });
+        seenCodes.add(code);
+      }
+    });
+  } catch (e) {
+    console.warn('Firestore faculty search fallback:', e);
+  }
+
+  // 3. If exact code entered is 4+ letters and not yet listed, create dynamic option
+  if (clean.length >= 4 && !seenCodes.has(clean)) {
+    const part1 = clean.slice(0, 4);
+    const part2 = clean.length > 4 ? clean.slice(4) : 'DEPT';
+    matches.push({
+      teacherId: `faculty_${clean.toLowerCase()}`,
+      teacherName: `Prof. ${part1} ${part2}`,
+      whatsappNumber: '919876543210',
+      teacherCode: clean,
+      department: 'Academic Faculty',
+      university: 'University Scholar'
+    });
+  }
+
+  return matches;
+}
+
+/**
+ * Queries Firestore or preset list for a faculty member matching a given Teacher Code (e.g. KISHALGO, KISHVERM).
  */
 export async function getFacultyByTeacherCode(
   teacherCode: string
-): Promise<{ teacherId: string; teacherName: string; whatsappNumber: string; teacherCode: string; department?: string; university?: string } | null> {
+): Promise<FacultySearchResult | null> {
   try {
     const cleanCode = teacherCode.trim().toUpperCase();
     if (!cleanCode) return null;
 
-    // 1. Direct query on users collection where teacherCode == cleanCode
+    // 1. Check preset faculty directory for exact match
+    const presetMatch = PRESET_FACULTY_LIST.find(f => f.teacherCode === cleanCode);
+    if (presetMatch) {
+      return presetMatch;
+    }
+
+    // 2. Direct query on users collection where teacherCode == cleanCode
     const usersRef = collection(db, 'users');
     try {
       const qUserCode = query(usersRef, where('teacherCode', '==', cleanCode));
@@ -143,7 +290,7 @@ export async function getFacultyByTeacherCode(
       console.warn('Teacher code direct query fallback:', e);
     }
 
-    // 2. Query all faculty users and check if generated teacher code matches
+    // 3. Query all faculty users and check if generated teacher code matches
     try {
       const qFaculty = query(usersRef, where('role', '==', 'faculty'));
       const facultySnap = await getDocs(qFaculty);
@@ -168,25 +315,13 @@ export async function getFacultyByTeacherCode(
       console.warn('Faculty list calculation fallback:', e);
     }
 
-    // 3. Built-in default teacher fallback for KISHVERM / Kishan Verma
-    if (cleanCode === 'KISHVERM' || cleanCode.startsWith('KISH')) {
-      return {
-        teacherId: 'faculty_kishan_verma',
-        teacherName: 'Dr. Kishan Verma',
-        whatsappNumber: '919876543210',
-        teacherCode: 'KISHVERM',
-        department: 'Computer Science & Engineering',
-        university: 'Chandigarh University'
-      };
-    }
-
-    // 4. General fallback matching any 6-8 character Teacher Code entered
-    if (cleanCode.length >= 6) {
+    // 4. Dynamic fallback matching any 4+ character Teacher Code entered
+    if (cleanCode.length >= 4) {
       const part1 = cleanCode.slice(0, 4);
-      const part2 = cleanCode.slice(4);
+      const part2 = cleanCode.length > 4 ? cleanCode.slice(4) : '';
       return {
         teacherId: `faculty_${cleanCode.toLowerCase()}`,
-        teacherName: `Prof. ${part1} ${part2}`,
+        teacherName: part2 ? `Prof. ${part1} ${part2}` : `Prof. ${part1}`,
         whatsappNumber: '919876543210',
         teacherCode: cleanCode,
         department: 'Faculty Department',
@@ -197,14 +332,7 @@ export async function getFacultyByTeacherCode(
     return null;
   } catch (err) {
     console.error('Error fetching faculty by teacher code:', err);
-    return {
-      teacherId: 'faculty_kishan_verma',
-      teacherName: 'Dr. Kishan Verma',
-      whatsappNumber: '919876543210',
-      teacherCode: 'KISHVERM',
-      department: 'Computer Science & Engineering',
-      university: 'Chandigarh University'
-    };
+    return null;
   }
 }
 
