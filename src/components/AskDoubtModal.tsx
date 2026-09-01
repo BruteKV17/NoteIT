@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { X, HelpCircle, Send, Paperclip, AlertCircle, CheckCircle, MessageSquare } from 'lucide-react';
+import { X, HelpCircle, Send, Paperclip, AlertCircle, CheckCircle, MessageSquare, User } from 'lucide-react';
 import { Button, Card, Badge } from './bauhaus';
 import { validateAttachment, getAssignedFacultyForSubject, createDoubtInFirestore, getWhatsAppDeepLink, getFacultyByTeacherCode, searchFacultySuggestions, FacultySearchResult } from '../services/teacherDoubtService';
 import { DoubtItem } from '../types';
@@ -136,19 +136,19 @@ export default function AskDoubtModal({
         studentId: studentUser.uid || 'student_demo',
         studentName: studentUser.fullName || 'Student Scholar',
         studentUniversity: studentUser.institution || 'Chandigarh University',
-        studentClass: 'B.Tech CSE AI/ML',
-        subjectId: subject.toLowerCase().replace(/\s+/g, '_'),
+        studentClass: 'B.Tech CSE',
+        subjectId: 'subj_dynamic',
         subjectName: subject,
         teacherId: faculty.teacherId,
         teacherName: faculty.teacherName,
-        lectureTitle: lectureTitle || 'Lecture Note',
-        topic: topic || (selectedText ? 'Highlighted Concept' : 'General Query'),
-        question: question.trim() || `Clarification needed on: "${selectedText.slice(0, 60)}..."`,
-        selectedText: selectedText || '',
-        attachmentUrl: attachmentUrl || '',
-        attachmentType: attachmentType || '',
-        attachmentName: attachmentName || '',
-        attachmentSize: attachmentSize || 0,
+        lectureTitle: lectureTitle || undefined,
+        topic: topic || 'General Doubt',
+        question: question.trim(),
+        selectedText: selectedText || undefined,
+        attachmentUrl: attachmentUrl || undefined,
+        attachmentType: attachmentType || undefined,
+        attachmentName: attachmentName || undefined,
+        attachmentSize: attachmentSize || undefined,
         priority: 'medium'
       };
 
@@ -157,44 +157,49 @@ export default function AskDoubtModal({
       const completeDoubt: DoubtItem = {
         ...newDoubtData,
         id: docId,
-        createdAt: new Date(),
+        createdAt: new Date().toISOString(),
         status: 'NEW'
       };
 
       setSubmittedDoubt(completeDoubt);
     } catch (err: any) {
       console.error('Error submitting doubt:', err);
-      setError(err.message || 'Failed to submit doubt. Please try again.');
+      setError(err?.message || 'Failed to submit doubt. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-      <Card shadow="lg" className="w-full max-w-lg bg-[var(--card-bg)] border-2 border-[var(--border-main)] space-y-5 p-6 relative">
+    <div className="fixed inset-0 z-[10000] bg-black/75 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+      <Card shadow="lg" className="w-full max-w-lg bg-[var(--card-bg)] border-2 border-[var(--border-main)] space-y-5 p-6 relative shadow-paper-lg">
         
-        {/* Header */}
+        {/* Header with Profile Icon & Cancel Cross Icon */}
         <div className="flex items-center justify-between border-b-2 border-[var(--border-main)] pb-3">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-[4px] bg-[#FFC400] text-[#111111] border border-[var(--border-main)] shadow-paper-sm font-bold">
-              <HelpCircle size={18} />
+          {/* Profile Identity & Section Title */}
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-9 w-9 rounded-[6px] border-2 border-[var(--border-main)] bg-[#FFC400] text-[#111111] flex items-center justify-center font-extrabold text-sm font-heading shrink-0 shadow-paper-sm">
+              {studentUser.fullName ? studentUser.fullName.charAt(0).toUpperCase() : <User size={18} />}
             </div>
-            <div>
-              <h2 className="font-heading font-extrabold text-lg uppercase text-[var(--text-primary)]">
-                {submittedDoubt ? 'DOUBT SUBMITTED' : 'ASK ACADEMIC DOUBT'}
-              </h2>
-              <p className="text-[10px] font-mono text-[var(--text-secondary)] uppercase">
-                {submittedDoubt ? 'Assigned to Subject Faculty' : 'Direct Academic Communication'}
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <h2 className="font-heading font-extrabold text-base md:text-lg uppercase text-[var(--text-primary)] truncate">
+                  {submittedDoubt ? 'DOUBT SUBMITTED' : 'ASK ACADEMIC DOUBT'}
+                </h2>
+              </div>
+              <p className="text-[10px] font-mono text-[var(--text-secondary)] uppercase truncate">
+                Scholar: <span className="text-[var(--text-primary)] font-bold">{studentUser.fullName || 'Student'}</span> • {studentUser.institution || 'Cognitive Lab'}
               </p>
             </div>
           </div>
 
+          {/* Cancel Cross Button */}
           <button
             onClick={onClose}
-            className="p-1 rounded-[4px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-main)] cursor-pointer"
+            className="p-1.5 rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--card-bg)] text-[var(--text-primary)] hover:bg-[#FF4D4D] hover:text-white transition-colors cursor-pointer shrink-0 shadow-paper-sm"
+            title="Cancel & Return to Dashboard"
           >
-            <X size={18} />
+            <X size={20} className="stroke-[3]" />
           </button>
         </div>
 
@@ -287,9 +292,9 @@ export default function AskDoubtModal({
                 <span className="text-[#38BDF8]">Optional (e.g. KISHVERM)</span>
               </label>
 
-              {/* Upward Autocomplete Suggestions Menu (4+ letters) */}
+              {/* Autocomplete Suggestions Menu (4+ letters) */}
               {showSuggestions && suggestions.length > 0 && (
-                <div className="absolute bottom-full mb-1 left-0 right-0 z-[999] bg-[var(--card-bg)] border-2 border-[var(--border-main)] shadow-paper-lg rounded-[6px] overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-150">
+                <div className="absolute top-full mt-1.5 left-0 right-0 z-[10005] bg-[var(--card-bg)] border-2 border-[var(--border-main)] shadow-2xl rounded-[6px] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
                   <div className="px-3 py-1.5 bg-[#FFC400] text-[#111111] text-[10px] font-mono font-black uppercase flex items-center justify-between border-b-2 border-[var(--border-main)]">
                     <span>FACULTY CODE SUGGESTIONS ({suggestions.length})</span>
                     <span className="text-[9px] font-bold">CLICK TO CONNECT</span>

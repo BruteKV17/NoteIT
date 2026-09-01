@@ -1179,7 +1179,7 @@ export default function LibraryView({
                 <label className="text-xs font-black uppercase block mb-1 text-black dark:text-white">Faculty UID / Teacher Code * (e.g. KISHVERM)</label>
 
                 {showSubProfSuggestions && subProfSuggestions.length > 0 && (
-                  <div className="absolute bottom-full mb-1 left-0 right-0 z-[999] bg-white dark:bg-[#161B22] border-2 border-black dark:border-gray-700 shadow-[4px_4px_0px_#000] overflow-hidden">
+                  <div className="absolute top-full mt-1.5 left-0 right-0 z-[10005] bg-white dark:bg-[#161B22] border-2 border-black dark:border-gray-700 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
                     <div className="px-3 py-1 bg-[#FFC400] text-[#111111] text-[10px] font-mono font-black uppercase flex items-center justify-between border-b-2 border-black">
                       <span>FACULTY SUGGESTIONS ({subProfSuggestions.length})</span>
                       <span className="text-[9px] font-bold">CLICK TO SELECT</span>
