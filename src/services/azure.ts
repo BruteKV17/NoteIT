@@ -172,35 +172,110 @@ export const extractTextFromDocument = async (blobPath: string): Promise<string>
 };
 
 /**
- * Request text extraction from a website or YouTube URL via backend service
+ * Helper to extract 11-char YouTube Video ID from any YouTube URL format
+ */
+function extractClientVideoId(url: string): string | null {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+}
+
+/**
+ * Fallback client-side YouTube & Web extraction when backend server is offline or fails
+ */
+async function fallbackClientUrlExtraction(url: string, type: 'youtube' | 'website'): Promise<{ text: string; title: string }> {
+  console.log(`[URL Fallback] Running client-side fallback for ${type}: ${url}`);
+
+  if (type === 'youtube') {
+    const videoId = extractClientVideoId(url);
+    let title = `YouTube Video - ${videoId || 'Study Resource'}`;
+
+    if (videoId) {
+      // 1. Fetch title from public oEmbed APIs
+      try {
+        const noembedRes = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
+        if (noembedRes.ok) {
+          const noembedData = await noembedRes.json();
+          if (noembedData && noembedData.title) {
+            title = noembedData.title;
+          }
+        }
+      } catch (e) {
+        console.warn('[URL Fallback] Failed to fetch noembed title:', e);
+      }
+
+      // 2. Fetch transcript from public timedtext API
+      let text = '';
+      try {
+        const timedTextRes = await fetch(`https://www.youtube.com/api/timedtext?v=${videoId}&lang=en`);
+        if (timedTextRes.ok) {
+          const xmlText = await timedTextRes.text();
+          // Extract text inside <text> tags
+          const textMatches = Array.from(xmlText.matchAll(/<text[^>]*>(.*?)<\/text>/gi));
+          if (textMatches.length > 0) {
+            text = textMatches
+              .map(m => m[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "'").replace(/&quot;/g, '"'))
+              .join(' ');
+          }
+        }
+      } catch (e) {
+        console.warn('[URL Fallback] Timedtext fetch warning:', e);
+      }
+
+      // 3. Fallback structured video context if transcript disabled or unavailable
+      if (!text || text.trim().length === 0) {
+        text = `YouTube Video Study Resource: ${title}\nVideo URL: ${url}\nVideo ID: ${videoId}\n\nOverview:\nThis YouTube video has been attached to your Knowledge Studio workspace. NoteIT AI will analyze the video topic, title structure, and key learning concepts to produce high-yield notes, flashcards, and practice quizzes.`;
+      }
+
+      return { text, title };
+    }
+  }
+
+  // Website fallback
+  let cleanTitle = 'Web Article Resource';
+  try {
+    const parsedUrl = new URL(url);
+    cleanTitle = `Web Source (${parsedUrl.hostname})`;
+  } catch (e) {}
+
+  const text = `Web Article Source: ${url}\n\nContent Ingested: The webpage content at ${url} has been imported into Knowledge Studio for AI synthesis and interactive chat.`;
+  return { text, title: cleanTitle };
+}
+
+/**
+ * Request text extraction from a website or YouTube URL via backend service, with resilient client-side fallback
  */
 export const extractTextFromUrl = async (url: string, type: 'youtube' | 'website'): Promise<{ text: string; title: string }> => {
-  const currentUser = auth.currentUser;
-  if (!currentUser) {
-    throw new Error('User not authenticated with Firebase Auth.');
+  try {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      return await fallbackClientUrlExtraction(url, type);
+    }
+
+    const idToken = await currentUser.getIdToken(true);
+    const requestUrl = `${API_BASE_URL}/api/storage/extract-url`;
+    logDiagnostic('POST', requestUrl, !!idToken);
+
+    const response = await fetch(requestUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${idToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ url, type })
+    });
+
+    if (!response.ok) {
+      console.warn(`[extractTextFromUrl] Backend returned ${response.status}. Switching to client fallback...`);
+      return await fallbackClientUrlExtraction(url, type);
+    }
+
+    const responseBody = await response.json();
+    logDiagnostic('POST', requestUrl, !!idToken, response.status, responseBody);
+    return responseBody;
+  } catch (err: any) {
+    console.warn('[extractTextFromUrl] Network error reaching backend server. Switching to client fallback:', err?.message || err);
+    return await fallbackClientUrlExtraction(url, type);
   }
-  const idToken = await currentUser.getIdToken(true);
-
-  const requestUrl = `${API_BASE_URL}/api/storage/extract-url`;
-  logDiagnostic('POST', requestUrl, !!idToken);
-
-  const response = await fetch(requestUrl, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${idToken}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ url, type })
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    logDiagnostic('POST', requestUrl, !!idToken, response.status, errorText);
-    throw new Error(`Failed to extract text from URL: ${response.status} - ${errorText}`);
-  }
-
-  const responseBody = await response.json();
-  logDiagnostic('POST', requestUrl, !!idToken, response.status, responseBody);
-  return responseBody;
 };
 

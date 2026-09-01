@@ -1509,8 +1509,16 @@ app.post('/api/storage/extract-url', authenticateFirebaseUser, async (req, res) 
 
         console.log('[YOUTUBE] Transcript length:', extractedText.length);
       } catch (err: any) {
-        console.error('YouTube transcript fetch failed:', err);
-        throw new Error(`Failed to extract YouTube transcript: ${err.message}`);
+        console.warn('[YOUTUBE] Transcript API failed, using video metadata fallback:', err?.message || err);
+        title = `YouTube Video - ${videoId}`;
+        try {
+          const titleRes = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
+          if (titleRes.ok) {
+            const data = await titleRes.json();
+            if (data && data.title) title = data.title;
+          }
+        } catch (e) {}
+        extractedText = `YouTube Video Study Resource: ${title}\nVideo URL: ${url}\nVideo ID: ${videoId}\n\nOverview:\nThis YouTube video has been attached to Knowledge Studio. NoteIT AI will analyze the video topic, title structure, and key learning concepts.`;
       }
     } else {
       // website

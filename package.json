@@ -4,7 +4,9 @@
   "version": "2.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node -e \"const { spawn } = require('child_process'); spawn('npx', ['tsx', 'server.ts'], { stdio: 'inherit', shell: true }); spawn('npx', ['vite'], { stdio: 'inherit', shell: true });\"",
+    "dev:vite": "vite",
+    "dev:server": "tsx server.ts",
     "build": "vite build",
     "start": "tsx server.ts",
     "preview": "vite preview",
