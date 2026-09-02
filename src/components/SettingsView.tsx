@@ -30,13 +30,15 @@ import {
   ArrowRight,
   Eye,
   EyeOff,
-  CheckCircle2
+  CheckCircle2,
+  Bell
 } from 'lucide-react';
 import { PageId, UserSettings } from '../types';
 import { auth } from '../firebaseConfig';
 import { API_BASE_URL } from '../config';
 import { MascotAvatarPicker } from './bauhaus/MascotAvatarPicker';
 import { validateApiKeyDirect } from '../providers/ValidationAdapters';
+import NotificationSettingsSection from './NotificationSettingsSection';
 
 const PROVIDER_METADATA: Record<string, {
   name: string;
@@ -176,7 +178,7 @@ export default function SettingsView({
 }: SettingsViewProps) {
   
   // Local state
-  const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'rewards' | 'ai' | 'usage' | 'security' | 'billing'>((initialTab as any) || 'profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'rewards' | 'notifications' | 'ai' | 'usage' | 'security' | 'billing'>((initialTab as any) || 'profile');
 
   
   // Profile edits
@@ -486,6 +488,7 @@ export default function SettingsView({
             { id: 'profile', label: 'User Profile', icon: User },
             { id: 'appearance', label: 'Theme & Appearance', icon: Sun },
             { id: 'rewards', label: 'Rewards & XP', icon: Trophy, badge: 'NEW' },
+            { id: 'notifications', label: 'Push Notifications', icon: Bell },
             { id: 'ai', label: 'AI Provider Keys', icon: Sparkles },
             { id: 'usage', label: 'Usage & Costs', icon: Activity },
             { id: 'security', label: 'Security & Auth', icon: ShieldCheck },
@@ -716,25 +719,30 @@ export default function SettingsView({
                   <div className="text-[10px] uppercase text-[var(--text-secondary)] font-bold">XP BALANCE</div>
                   <div className="text-xl font-extrabold text-[#FFC400] mt-1 flex items-center gap-1">
                     <Zap className="h-5 w-5 fill-[#FFC400]" />
-                    <span>2,450 XP</span>
+                    <span>0 XP</span>
                   </div>
                 </div>
 
                 <div className="p-4 bg-[var(--card-bg)] rounded-[6px] border-2 border-[var(--border-main)] shadow-paper-sm">
                   <div className="text-[10px] uppercase text-[var(--text-secondary)] font-bold">CURRENT RANK</div>
-                  <div className="text-sm font-extrabold text-[var(--text-primary)] mt-1">LEVEL 04</div>
+                  <div className="text-sm font-extrabold text-[var(--text-primary)] mt-1">LEVEL 01</div>
                   <div className="text-[11px] font-bold text-[#38BDF8]">KNOWLEDGE SEEKER</div>
                 </div>
 
                 <div className="p-4 bg-[var(--card-bg)] rounded-[6px] border-2 border-[var(--border-main)] shadow-paper-sm">
                   <div className="text-[10px] uppercase text-[var(--text-secondary)] font-bold">DAILY STREAK</div>
                   <div className="text-xl font-extrabold text-[#FF5353] mt-1 flex items-center gap-1">
-                    <span>🔥 5 DAYS</span>
+                    <span>🔥 0 DAYS</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+        )}
+
+        {/* Tab: Push Notifications */}
+        {activeTab === 'notifications' && (
+          <NotificationSettingsSection onTriggerSave={triggerSaveNotification} />
         )}
 
         {/* Tab 1: User Profile */}
@@ -774,17 +782,17 @@ export default function SettingsView({
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 font-mono text-xs text-[var(--text-primary)]">
                 <div className="p-3 bg-[var(--card-bg)] rounded-[4px] border border-[var(--border-main)] shadow-paper-sm">
                   <div className="text-[9px] uppercase text-[var(--text-secondary)] font-bold">Current XP Balance</div>
-                  <div className="text-lg font-extrabold text-[#FFC400] mt-0.5">2,450 XP</div>
+                  <div className="text-lg font-extrabold text-[#FFC400] mt-0.5">0 XP</div>
                 </div>
 
                 <div className="p-3 bg-[var(--card-bg)] rounded-[4px] border border-[var(--border-main)] shadow-paper-sm">
                   <div className="text-[9px] uppercase text-[var(--text-secondary)] font-bold">Current Level</div>
-                  <div className="text-sm font-extrabold text-[var(--text-primary)] mt-0.5">LEVEL 04 — KNOWLEDGE SEEKER</div>
+                  <div className="text-sm font-extrabold text-[var(--text-primary)] mt-0.5">LEVEL 01 — KNOWLEDGE SEEKER</div>
                 </div>
 
                 <div className="p-3 bg-[var(--card-bg)] rounded-[4px] border border-[var(--border-main)] shadow-paper-sm">
                   <div className="text-[9px] uppercase text-[var(--text-secondary)] font-bold">Next Level Target</div>
-                  <div className="text-xs font-extrabold text-[#38BDF8] mt-1">2,450 / 3,000 XP (550 XP to Lvl 5)</div>
+                  <div className="text-xs font-extrabold text-[#38BDF8] mt-1">0 / 500 XP (500 XP to Lvl 2)</div>
                 </div>
               </div>
             </div>

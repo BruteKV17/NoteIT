@@ -130,7 +130,7 @@ export function XPToastNotification() {
     const isError = smartToast.type === 'resource_failed';
 
     const borderColor = isError ? 'border-[#FF4D4D]' : (isWarning ? 'border-[#FFC400]' : 'border-[#19B56B]');
-    const mascotImg = smartToast.mascotPose || (isWarning ? '/mascots/broot-thinking.png' : '/mascots/broot-sunglasses-thumbsup.png');
+    const mascotImg = smartToast.mascotPose || (isWarning ? '/mascots/broot-thinking.png' : '/mascots/broot-peace-wink.png');
 
     return (
       <div className="fixed bottom-6 right-6 z-[99999] pointer-events-auto select-none transition-all duration-300 animate-in fade-in slide-in-from-bottom-5">

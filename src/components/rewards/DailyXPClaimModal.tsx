@@ -146,7 +146,7 @@ export default function DailyXPClaimModal({
         {/* Total XP Summary Pill */}
         <div className="flex items-center justify-between p-3 rounded-[6px] border-2 border-[var(--border-main)] bg-white font-mono text-xs font-bold">
           <span className="text-gray-600 uppercase">TOTAL ACCUMULATED XP</span>
-          <span className="font-extrabold text-[#111111] text-sm">{(totalXp || 2450).toLocaleString()} XP</span>
+          <span className="font-extrabold text-[#111111] text-sm">{(totalXp || 0).toLocaleString()} XP</span>
         </div>
 
         {/* Error message */}

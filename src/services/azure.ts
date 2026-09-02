@@ -256,26 +256,38 @@ export const extractTextFromUrl = async (url: string, type: 'youtube' | 'website
     const requestUrl = `${API_BASE_URL}/api/storage/extract-url`;
     logDiagnostic('POST', requestUrl, !!idToken);
 
-    const response = await fetch(requestUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${idToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ url, type })
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second client timeout
 
-    if (!response.ok) {
-      console.warn(`[extractTextFromUrl] Backend returned ${response.status}. Switching to client fallback...`);
+    try {
+      const response = await fetch(requestUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${idToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ url, type }),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        console.warn(`[extractTextFromUrl] Backend returned ${response.status}. Switching to client fallback...`);
+        return await fallbackClientUrlExtraction(url, type);
+      }
+
+      const responseBody = await response.json();
+      logDiagnostic('POST', requestUrl, !!idToken, response.status, responseBody);
+      return responseBody;
+    } catch (fetchErr: any) {
+      clearTimeout(timeoutId);
+      console.warn('[extractTextFromUrl] Backend request timed out or failed, using client fallback:', fetchErr?.message || fetchErr);
       return await fallbackClientUrlExtraction(url, type);
     }
-
-    const responseBody = await response.json();
-    logDiagnostic('POST', requestUrl, !!idToken, response.status, responseBody);
-    return responseBody;
   } catch (err: any) {
     console.warn('[extractTextFromUrl] Network error reaching backend server. Switching to client fallback:', err?.message || err);
     return await fallbackClientUrlExtraction(url, type);
   }
 };
+
 

@@ -81,11 +81,11 @@ export async function fetchUserStreakState(userId: string): Promise<{
   const localSavedStreak = localStorage.getItem(`noteit_streak_data_${userId}`);
   let streakData: UserStreakData = localSavedStreak ? JSON.parse(localSavedStreak) : { ...INITIAL_STREAK_DATA };
 
-  // Reset legacy cached 2450 XP to 0 if reset flag is missing (Requirement: reset whole XP to 0)
-  if (localStorage.getItem(`noteit_xp_reset_zero_${userId}`) !== 'true') {
+  // Revoke 2k+ XP from user accounts (Requirement: revoke all XP from accounts with 2k+ XP)
+  if (streakData.totalXp >= 2000 || localStorage.getItem(`noteit_xp_revoke_2k_${userId}`) !== 'true') {
     streakData.totalXp = 0;
     localStorage.setItem(`noteit_streak_data_${userId}`, JSON.stringify(streakData));
-    localStorage.setItem(`noteit_xp_reset_zero_${userId}`, 'true');
+    localStorage.setItem(`noteit_xp_revoke_2k_${userId}`, 'true');
     try {
       const summaryRef = doc(db, 'users', userId, 'rewards', 'summary');
       setDoc(summaryRef, { totalXp: 0, updatedAt: serverTimestamp() }, { merge: true }).catch(() => {});
@@ -105,6 +105,14 @@ export async function fetchUserStreakState(userId: string): Promise<{
     if (streakSnap && streakSnap.exists()) {
       const remoteData = streakSnap.data() as UserStreakData;
       streakData = { ...streakData, ...remoteData };
+      if (streakData.totalXp >= 2000) {
+        streakData.totalXp = 0;
+        localStorage.setItem(`noteit_streak_data_${userId}`, JSON.stringify(streakData));
+        try {
+          const summaryRef = doc(db, 'users', userId, 'rewards', 'summary');
+          setDoc(summaryRef, { totalXp: 0, updatedAt: serverTimestamp() }, { merge: true }).catch(() => {});
+        } catch (e) {}
+      }
     }
 
     const remoteClaimed = claimSnap && claimSnap.exists();

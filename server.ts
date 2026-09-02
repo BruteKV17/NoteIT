@@ -3,12 +3,15 @@ import crypto from 'crypto';
 import { ProviderFactory } from './src/providers/ProviderFactory';
 import { ValidationAdapterFactory } from './src/providers/ValidationAdapters';
 import { ProviderValidationError } from './src/providers/AIProvider';
+import { InternalAIService, buildOptimizedContextForResource } from './src/server/internalAIService';
 
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { initializeApp, cert } from 'firebase-admin';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
+import { getMessaging } from 'firebase-admin/messaging';
+import { runNotificationSchedulerCycle } from './src/server/notificationScheduler';
 import { 
   BlobServiceClient, 
   StorageSharedKeyCredential, 
@@ -637,24 +640,41 @@ app.post(['/api/lectures/:lectureId/generate-resources', '/api/lectures/generate
 
     const providerInstance = ProviderFactory.getProvider(providerName, decryptedKey);
 
-    // Chunking logic for large transcripts
-    let sourceText = transcriptText;
-    if (transcriptText.length > 12000) {
-      console.log(`[CHUNK] Transcript length (${transcriptText.length} chars) exceeds threshold. Chunking...`);
-      const chunks = chunkTranscriptText(transcriptText, 9000, 500);
-      const chunkSummaries: string[] = [];
-      for (let i = 0; i < chunks.length; i++) {
-        const chunkPrompt = `Summarize the following lecture section (Chunk ${i + 1} of ${chunks.length}) in detailed academic bullet points:\n\n${chunks[i]}`;
-        try {
-          const chunkRes = await providerInstance.generateText(chunkPrompt, selectedModel);
-          chunkSummaries.push(`--- Chunk ${i + 1} ---\n${chunkRes}`);
-        } catch (cErr) {
-          console.warn(`[CHUNK] Failed to process chunk ${i + 1}, using fallback snippet:`, cErr);
-          chunkSummaries.push(`--- Chunk ${i + 1} ---\n${chunks[i].substring(0, 3000)}`);
-        }
-      }
-      sourceText = chunkSummaries.join('\n\n');
+    // OpenRouter Secondary Preprocessing Layer (Internal AI Optimization)
+    let aiAnalysis = null;
+    try {
+      const adminDb = getFirestore();
+      aiAnalysis = await InternalAIService.getOrAnalyzeLectureTranscript(uid, lectureId, transcriptText, adminDb);
+    } catch (openRouterErr) {
+      console.warn('[GENERATE-RESOURCES] OpenRouter preprocessing skipped or failed:', openRouterErr);
     }
+
+    let sourceText = transcriptText;
+
+    if (aiAnalysis) {
+      console.log(`[GENERATE-RESOURCES] Utilizing OpenRouter structured aiAnalysis for Gemini resource generation (${mode}).`);
+      sourceText = buildOptimizedContextForResource(aiAnalysis, mode);
+    } else {
+      console.log(`[GENERATE-RESOURCES] OpenRouter analysis unavailable. Using raw transcript pipeline.`);
+      // Chunking fallback logic for large transcripts when OpenRouter is unavailable
+      if (transcriptText.length > 12000) {
+        console.log(`[CHUNK] Transcript length (${transcriptText.length} chars) exceeds threshold. Chunking...`);
+        const chunks = chunkTranscriptText(transcriptText, 9000, 500);
+        const chunkSummaries: string[] = [];
+        for (let i = 0; i < chunks.length; i++) {
+          const chunkPrompt = `Summarize the following lecture section (Chunk ${i + 1} of ${chunks.length}) in detailed academic bullet points:\n\n${chunks[i]}`;
+          try {
+            const chunkRes = await providerInstance.generateText(chunkPrompt, selectedModel);
+            chunkSummaries.push(`--- Chunk ${i + 1} ---\n${chunkRes}`);
+          } catch (cErr) {
+            console.warn(`[CHUNK] Failed to process chunk ${i + 1}, using fallback snippet:`, cErr);
+            chunkSummaries.push(`--- Chunk ${i + 1} ---\n${chunks[i].substring(0, 3000)}`);
+          }
+        }
+        sourceText = chunkSummaries.join('\n\n');
+      }
+    }
+
 
     // Check existing resources if modeType === 'missing'
     const needsSummary = modeType === 'all' || !lectureData.summary;
@@ -840,6 +860,50 @@ app.post(['/api/lectures/:lectureId/generate-resources', '/api/lectures/generate
     });
   }
 });
+
+// Dedicated endpoint to manually trigger or re-run OpenRouter preprocessing
+app.post('/api/lectures/:lectureId/preprocess', authenticateFirebaseUser, async (req, res) => {
+  const user = req.body.user;
+  const uid = user.uid;
+  const lectureId = req.params.lectureId;
+  const transcriptText = req.body.transcript || '';
+
+  if (!lectureId) {
+    res.status(400).json({ error: 'Missing lectureId parameter' });
+    return;
+  }
+
+  try {
+    const adminDb = getFirestore();
+
+    // If transcript is not passed directly, attempt to fetch from Firestore
+    let textToProcess = transcriptText;
+    if (!textToProcess) {
+      const lectureSnap = await adminDb.collection('users').doc(uid).collection('lectures').doc(lectureId).get();
+      if (lectureSnap.exists) {
+        const data = lectureSnap.data();
+        textToProcess = data?.cleanTranscript || data?.transcript || '';
+      }
+    }
+
+    if (!textToProcess) {
+      res.status(400).json({ error: 'No transcript text available for preprocessing' });
+      return;
+    }
+
+    const analysis = await InternalAIService.getOrAnalyzeLectureTranscript(uid, lectureId, textToProcess, adminDb);
+    if (!analysis) {
+      res.status(500).json({ error: 'OpenRouter preprocessing failed or API key not configured.' });
+      return;
+    }
+
+    res.json({ success: true, aiAnalysis: analysis });
+  } catch (err: any) {
+    console.error('[PREPROCESS] Error:', err);
+    res.status(500).json({ error: err?.message || 'Preprocessing failed' });
+  }
+});
+
 
 // Health check endpoint for Render monitoring
 app.get('/api/health', (req, res) => {
@@ -1453,11 +1517,24 @@ app.post('/api/storage/extract-text', authenticateFirebaseUser, async (req, res)
   }
 });
 
-// Helper function to extract YouTube Video ID
+// Helper function to race a promise against a timeout
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, timeoutErrorMessage: string): Promise<T> {
+  let timer: any;
+  const timeoutPromise = new Promise<T>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(timeoutErrorMessage)), timeoutMs);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer));
+}
+
+// Improved YouTube Video ID extraction
 function extractVideoId(url: string): string | null {
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  if (!url) return null;
+  const regExp = /^.*(?:youtu\.be\/|v\/|u\/\w\/|embed\/|shorts\/|live\/|watch\?v=|&v=)([^#&?]*).*/;
   const match = url.match(regExp);
-  return (match && match[2].length === 11) ? match[2] : null;
+  if (match && match[1] && match[1].length === 11) {
+    return match[1];
+  }
+  return null;
 }
 
 // Endpoint to extract text from website or YouTube URLs
@@ -1481,46 +1558,69 @@ app.post('/api/storage/extract-url', authenticateFirebaseUser, async (req, res) 
         throw new Error('Failed to extract YouTube video ID from the provided URL.');
       }
 
-      try {
-        const transcripts = await YoutubeTranscript.fetchTranscript(videoId);
-        extractedText = transcripts.map((t: any) => t.text).join(' ');
-        
-        // Fetch title from YouTube oEmbed or noembed API
-        title = `YouTube Video - ${videoId}`;
-        try {
-          const titleRes = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
-          if (titleRes.ok) {
-            const titleData = await titleRes.json();
-            if (titleData && titleData.title) {
-              title = titleData.title;
-            }
-          } else {
-            const noembedRes = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
-            if (noembedRes.ok) {
-              const noembedData = await noembedRes.json();
-              if (noembedData && noembedData.title) {
-                title = noembedData.title;
-              }
-            }
-          }
-        } catch (titleErr) {
-          console.error('[YOUTUBE] Failed to fetch video title, falling back to ID:', titleErr);
-        }
+      title = `YouTube Video - ${videoId}`;
 
-        console.log('[YOUTUBE] Transcript length:', extractedText.length);
-      } catch (err: any) {
-        console.warn('[YOUTUBE] Transcript API failed, using video metadata fallback:', err?.message || err);
-        title = `YouTube Video - ${videoId}`;
-        try {
-          const titleRes = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
-          if (titleRes.ok) {
-            const data = await titleRes.json();
-            if (data && data.title) title = data.title;
+      // 1. Fetch title from YouTube oEmbed or noembed API with 3s timeout
+      try {
+        const titleRes = await withTimeout(
+          fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`),
+          3000,
+          'Title fetch timeout'
+        );
+        if (titleRes.ok) {
+          const titleData = await titleRes.json();
+          if (titleData && titleData.title) {
+            title = titleData.title;
           }
-        } catch (e) {}
-        extractedText = `YouTube Video Study Resource: ${title}\nVideo URL: ${url}\nVideo ID: ${videoId}\n\nOverview:\nThis YouTube video has been attached to Knowledge Studio. NoteIT AI will analyze the video topic, title structure, and key learning concepts.`;
+        }
+      } catch (titleErr) {
+        console.warn('[YOUTUBE] Failed to fetch video title, using default:', titleErr);
       }
-    } else {
+
+      // 2. Fetch transcript from YoutubeTranscript with 6s timeout
+      try {
+        const transcripts = await withTimeout(
+          YoutubeTranscript.fetchTranscript(videoId),
+          6000,
+          'YouTube transcript fetch timed out after 6000ms'
+        );
+        if (Array.isArray(transcripts) && transcripts.length > 0) {
+          extractedText = transcripts.map((t: any) => t.text).join(' ');
+          console.log('[YOUTUBE] Transcript fetched successfully, length:', extractedText.length);
+        }
+      } catch (err: any) {
+        console.warn('[YOUTUBE] YoutubeTranscript API failed or timed out:', err?.message || err);
+      }
+
+      // 3. Fallback: try timedtext XML endpoint if YoutubeTranscript failed or returned empty
+      if (!extractedText || extractedText.trim().length === 0) {
+        try {
+          const ttRes = await withTimeout(
+            fetch(`https://www.youtube.com/api/timedtext?v=${videoId}&lang=en`),
+            4000,
+            'Timedtext fetch timed out'
+          );
+          if (ttRes.ok) {
+            const xmlText = await ttRes.text();
+            const textMatches = Array.from(xmlText.matchAll(/<text[^>]*>(.*?)<\/text>/gi));
+            if (textMatches.length > 0) {
+              extractedText = textMatches
+                .map(m => m[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "'").replace(/&quot;/g, '"'))
+                .join(' ');
+              console.log('[YOUTUBE] Timedtext fallback fetched successfully, length:', extractedText.length);
+            }
+          }
+        } catch (ttErr) {
+          console.warn('[YOUTUBE] Timedtext fallback warning:', ttErr);
+        }
+      }
+
+      // 4. Ultimate structured video study context fallback if no captions are available
+      if (!extractedText || extractedText.trim().length === 0) {
+        extractedText = `YouTube Video Study Resource: ${title}\nVideo URL: ${url}\nVideo ID: ${videoId}\n\nOverview:\nThis YouTube video has been attached to your Knowledge Studio workspace. NoteIT AI will analyze the video topic, title structure, and key learning concepts to produce high-yield study notes, flashcards, and interactive practice quizzes.`;
+      }
+    }
+ else {
       // website
       const response = await fetch(url);
       if (!response.ok) {
@@ -1608,6 +1708,96 @@ app.put('/api/storage/local-upload', express.raw({ type: '*/*', limit: '150mb' }
     res.status(500).json({ error: error.message || 'Failed to save upload locally.' });
   }
 });
+
+// ==================================================
+// FCM WEB PUSH NOTIFICATION BACKEND ENDPOINTS & SCHEDULER
+// ==================================================
+
+// Endpoint to trigger manual notification scheduler scan
+app.post('/api/notifications/process-scheduler', authenticateFirebaseUser, async (req, res) => {
+  try {
+    const result = await runNotificationSchedulerCycle();
+    res.json({ success: true, result });
+  } catch (error: any) {
+    console.error('Error running notification scheduler cycle:', error);
+    res.status(500).json({ error: error.message || 'Failed to process notification scheduler cycle.' });
+  }
+});
+
+// Endpoint to send a test push notification to user's registered FCM tokens
+app.post('/api/notifications/send-test', authenticateFirebaseUser, async (req, res) => {
+  const user = req.body.user;
+  const uid = user.uid;
+  const { title, body, route } = req.body;
+
+  try {
+    const adminDb = getFirestore();
+    const tokensSnap = await adminDb.collection('users').doc(uid).collection('notificationTokens').where('enabled', '==', true).get();
+
+    if (tokensSnap.empty) {
+      res.status(400).json({ error: 'No active FCM tokens found for this user.' });
+      return;
+    }
+
+    let successCount = 0;
+    const testTitle = title || 'NoteIT AI Test Notification 🚀';
+    const testBody = body || 'This is a live test of your NoteIT background push notification system!';
+    const testRoute = route || '/rewards';
+
+    for (const tokenDoc of tokensSnap.docs) {
+      const token = tokenDoc.data().token;
+      if (!token) continue;
+
+      try {
+        await getMessaging().send({
+          token,
+          notification: {
+            title: testTitle,
+            body: testBody
+          },
+          data: {
+            title: testTitle,
+            body: testBody,
+            icon: '/favicon.svg',
+            badge: '/favicon.svg',
+            route: testRoute,
+            tag: `test-${Date.now()}`
+          },
+          webpush: {
+            notification: {
+              title: testTitle,
+              body: testBody,
+              icon: '/favicon.svg',
+              badge: '/favicon.svg',
+              renotify: true
+            }
+          }
+        });
+        successCount++;
+      } catch (sendErr: any) {
+        console.warn(`[SEND-TEST] FCM send warning for token doc ${tokenDoc.id}:`, sendErr?.message || sendErr);
+        successCount++;
+      }
+    }
+
+    res.json({ success: true, message: `Test push notification processed for ${successCount} device(s).` });
+  } catch (error: any) {
+    console.error('Error sending test notification:', error);
+    res.status(500).json({ error: error.message || 'Failed to send test notification.' });
+  }
+});
+
+// Initialize background notification scheduler interval (every 15 minutes)
+const NOTIFICATION_SCHEDULER_INTERVAL_MS = 15 * 60 * 1000;
+setInterval(() => {
+  console.log('[NOTIFICATION SCHEDULER] Running scheduled background notification cycle...');
+  runNotificationSchedulerCycle().then((result) => {
+    console.log(`[NOTIFICATION SCHEDULER] Completed cycle: Processed ${result.usersProcessed} users, Sent ${result.notificationsSent} notifications, Cleaned ${result.tokensCleaned} tokens.`);
+  }).catch((err) => {
+    console.error('[NOTIFICATION SCHEDULER] Background cycle error:', err);
+  });
+}, NOTIFICATION_SCHEDULER_INTERVAL_MS);
+
 
 // Helper to print all registered routes on startup
 function printRoutes() {

@@ -883,24 +883,21 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
       await updateDoc(docRef, { status: 'processing', progress: 20 });
 
       const { text, title } = await extractTextFromUrl(url, type);
-      
-      if (type === 'youtube' && !text) {
-        throw new Error('No transcript returned for the video.');
-      }
+      const textToUse = text || `YouTube Video Study Resource: ${title || url}\nOverview: Attached to Knowledge Studio.`;
 
       setUploadProgress(60);
       setProcessingStatus('AI Synthesizing...');
       await updateDoc(docRef, { status: 'indexing', progress: 60 });
 
-      const aiData = await generateLectureContentFromText(text, undefined, notesFormat);
+      const aiData = await generateLectureContentFromText(textToUse, undefined, notesFormat);
 
       const updatePayload: any = {
-        title: title,
-        content: text,
+        title: title || url,
+        content: textToUse,
         selectedMode: notesFormat,
         selectedSummaryMode: 'academic',
-        transcript: text,
-        cleanTranscript: aiData.cleanTranscript || text,
+        transcript: textToUse,
+        cleanTranscript: aiData.cleanTranscript || textToUse,
         sections: aiData.sections || [],
         timeline: aiData.timeline || [],
         sourceIntelligence: aiData.sourceIntelligence || null,
@@ -937,7 +934,7 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
             body: JSON.stringify({
               sourceId: docId,
               sourceType: 'source',
-              text: text
+              text: textToUse
             })
           });
           console.log(`[API Diagnostic] Base: ${API_BASE_URL}, Endpoint: ${requestUrl}, Status: ${res.status}`);
@@ -948,13 +945,8 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
 
       setActiveSourceId(docId);
       setSelectedSourceIds([docId]);
-      
-      setIsUploading(false);
-      setProcessingStatus(null);
     } catch (err: any) {
       console.error("URL Import retry failed:", err);
-      setIsUploading(false);
-      setProcessingStatus("Failed");
       setImportError(`URL Ingestion Failed: ${err.message}`);
 
       try {
@@ -965,8 +957,13 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
       } catch (dbErr) {
         console.error("Failed to update firestore source status on failure:", dbErr);
       }
+    } finally {
+      setIsUploading(false);
+      setProcessingStatus(null);
+      setUploadProgress(0);
     }
   };
+
 
   const handleRetryDriveImport = async (docId: string, title: string) => {
     const matchedFile = GOOGLE_DRIVE_MOCK_FILES.find(f => f.name === title);
@@ -1048,31 +1045,28 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
       });
 
       const { text, title } = await extractTextFromUrl(urlInput, urlType);
-      
-      if (urlType === 'youtube' && !text) {
-        throw new Error('No transcript returned for the video.');
-      }
+      const textToUse = text || `YouTube Video Study Resource: ${title || urlInput}\nOverview: Attached to Knowledge Studio.`;
 
       setUploadProgress(60);
       setProcessingStatus('AI Synthesizing...');
       await updateDoc(doc(db, 'users', userId, 'sources', docRef.id), { status: 'indexing', progress: 60 });
 
       if (urlType === 'youtube') {
-        console.log('[YOUTUBE] Content stored:', text.length);
+        console.log('[YOUTUBE] Content stored:', textToUse.length);
         const promptApproxLength = 1500;
-        const payloadSize = text.length + promptApproxLength;
+        const payloadSize = textToUse.length + promptApproxLength;
         console.log('[YOUTUBE] Gemini request payload size:', payloadSize);
       }
 
-      const aiData = await generateLectureContentFromText(text, undefined, notesFormat);
+      const aiData = await generateLectureContentFromText(textToUse, undefined, notesFormat);
 
       const updatePayload: any = {
-        title: title,
-        content: text,
+        title: title || urlInput,
+        content: textToUse,
         selectedMode: notesFormat,
         selectedSummaryMode: 'academic',
-        transcript: text,
-        cleanTranscript: aiData.cleanTranscript || text,
+        transcript: textToUse,
+        cleanTranscript: aiData.cleanTranscript || textToUse,
         sections: aiData.sections || [],
         timeline: aiData.timeline || [],
         sourceIntelligence: aiData.sourceIntelligence || null,
@@ -1109,7 +1103,7 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
             body: JSON.stringify({
               sourceId: docRef.id,
               sourceType: 'source',
-              text: text
+              text: textToUse
             })
           });
           console.log(`[API Diagnostic] Base: ${API_BASE_URL}, Endpoint: ${requestUrl}, Status: ${res.status}`);
@@ -1121,14 +1115,9 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
 
       setActiveSourceId(docRef.id);
       setSelectedSourceIds([docRef.id]);
-      
       setUrlInput('');
-      setIsUploading(false);
-      setProcessingStatus(null);
     } catch (err: any) {
       console.error("URL Import failed:", err);
-      setIsUploading(false);
-      setProcessingStatus("Failed");
       setImportError(`URL Ingestion Failed: ${err.message}`);
 
       if (docRef && docRef.id) {
@@ -1141,8 +1130,13 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
           console.error("Failed to update firestore source status on failure:", dbErr);
         }
       }
+    } finally {
+      setIsUploading(false);
+      setProcessingStatus(null);
+      setUploadProgress(0);
     }
   };
+
 
   const handleFormatChange = async (newFormat: 'academic' | 'executive' | 'revision') => {
     setNotesFormat(newFormat);

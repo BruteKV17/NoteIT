@@ -90,7 +90,7 @@ export default function WeekendQuizModal({
         {/* Floating Top Broot Mascot */}
         <div className="absolute -top-12 -right-4 z-20 pointer-events-none filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.4)]">
           <img
-            src={isFinished ? '/mascots/broot-celebrating-confetti.png' : '/mascots/broot-sunglasses-thumbsup.png'}
+            src={isFinished ? '/mascots/broot-celebrating-confetti.png' : '/mascots/broot-peace-wink.png'}
             alt="Broot Mascot"
             className="w-20 h-20 sm:w-24 sm:h-24 object-contain animate-bounce"
           />

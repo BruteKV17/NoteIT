@@ -1,0 +1,17 @@
+{
+  "short_name": "NoteIT",
+  "name": "NoteIT AI - Scholar AI",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any 192x192 512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0c0e17",
+  "theme_color": "#FFC400",
+  "display": "standalone",
+  "gcm_sender_id": "103953800507"
+}

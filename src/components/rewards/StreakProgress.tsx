@@ -87,7 +87,7 @@ export default function StreakProgress({
           <div className="text-[10px] font-bold text-[var(--text-secondary)] uppercase">TOTAL ACCUMULATED XP</div>
           <div className="text-2xl font-extrabold text-[#FFC400] mt-1 flex items-center gap-1.5">
             <Zap className="h-6 w-6 fill-[#FFC400]" />
-            <span>{(totalXp || 2450).toLocaleString()} XP</span>
+            <span>{(totalXp || 0).toLocaleString()} XP</span>
           </div>
           <div className="text-[11px] font-bold text-[#38BDF8] mt-1">
             LIFETIME BALANCE

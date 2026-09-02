@@ -67,6 +67,8 @@ import AILogo from './components/AILogo';
 import { generateAdditionalQuizQuestions } from './services/gemini';
 import FloatingRecordingWidget from './components/FloatingRecordingWidget';
 import GuidedTour from './components/GuidedTour';
+import NotificationPermissionBanner from './components/NotificationPermissionBanner';
+import { setupForegroundMessageListener } from './services/notificationService';
 
 // Faculty Portal & Ask Doubt Imports
 import { subscribeFacultyDoubts, generateTeacherCode } from './services/teacherDoubtService';
@@ -125,6 +127,34 @@ export default function App() {
 
   // Guided Tour State & Event Listeners
   const [isGuidedTourOpen, setIsGuidedTourOpen] = useState(false);
+
+  // Service Worker Notification Click Navigation & Foreground Push Message Listener
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('navigator' in window)) return;
+    const handleServiceWorkerMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'NOTEIT_NOTIFICATION_NAVIGATE') {
+        const r = (event.data.route || '').toLowerCase().trim();
+        if (r.includes('reward')) setActivePage('rewards');
+        else if (r.includes('quiz')) setActivePage('quiz-mode');
+        else if (r.includes('library') || r.includes('academic')) setActivePage('academic-library');
+        else if (r.includes('research')) setActivePage('research-hub');
+        else if (r.includes('knowledge') || r.includes('studio')) setActivePage('knowledge-studio');
+        else if (r.includes('setting')) setActivePage('settings');
+        else if (r.includes('capture')) setActivePage('lecture-capture');
+        else setActivePage('dashboard');
+      }
+    };
+    if (navigator.serviceWorker) {
+      navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
+    }
+    const unsubForeground = setupForegroundMessageListener();
+    return () => {
+      if (navigator.serviceWorker) {
+        navigator.serviceWorker.removeEventListener('message', handleServiceWorkerMessage);
+      }
+      unsubForeground();
+    };
+  }, []);
 
   // Listen for manual Guided Tour start triggers
   useEffect(() => {
@@ -1157,6 +1187,7 @@ export default function App() {
 
   return (
     <ErrorBoundary theme={theme}>
+      {!isLanding && sessionUser && <NotificationPermissionBanner />}
       <div className="flex h-screen w-screen overflow-hidden transition-all duration-300 bg-[var(--bg-paper)] text-[var(--text-primary)]">
         
         {/* Sidebar - hides completely on landing page layout */}
