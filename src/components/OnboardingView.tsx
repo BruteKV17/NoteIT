@@ -17,7 +17,8 @@ import {
   X,
   Eye,
   EyeOff,
-  CheckCircle2
+  CheckCircle2,
+  BookOpen
 } from 'lucide-react';
 import { doc, setDoc, serverTimestamp, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db, auth } from '../firebaseConfig';
@@ -160,6 +161,8 @@ export default function OnboardingView({
   const [selectedGuideImage, setSelectedGuideImage] = useState<string | null>(null);
   const [isValidatingKey, setIsValidatingKey] = useState(false);
   const [validationSuccess, setValidationSuccess] = useState(false);
+  const [mobileTab, setMobileTab] = useState<'configure' | 'guide'>('configure');
+
 
   // Step state (1: Personal, 2: Academic, 3: Contact, 4: AI Config)
   const [step, setStep] = useState(initialStep || 1);
@@ -424,12 +427,12 @@ export default function OnboardingView({
   const isDark = theme === 'dark';
 
   return (
-    <div className="h-screen w-screen flex items-center justify-center p-3 sm:p-4 relative overflow-hidden font-sans bg-grid-paper text-[#111111] select-none">
+    <div className="h-screen w-screen flex items-center justify-center p-2 sm:p-4 relative overflow-hidden font-sans bg-grid-paper text-[#111111] select-none">
       
-      <div className={`w-full ${step === 4 ? 'h-full max-h-[96vh] max-w-7xl flex flex-col justify-between' : 'max-w-md my-auto flex flex-col'} transition-all duration-300 relative z-10`}>
+      <div className={`w-full ${step === 4 ? 'h-full max-h-[98vh] sm:max-h-[96vh] max-w-7xl flex flex-col justify-between' : 'max-w-md my-auto flex flex-col'} transition-all duration-300 relative z-10`}>
 
         {/* Main Card */}
-        <div className={`rounded-2xl border-2 border-[#111111] bg-white dark:bg-[#161B22] p-5 sm:p-6 shadow-paper-lg ${step === 4 ? 'h-full flex flex-col justify-between flex-1 overflow-hidden' : 'flex flex-col space-y-4'}`}>
+        <div className={`rounded-2xl border-2 border-[#111111] bg-white dark:bg-[#161B22] p-3.5 sm:p-6 shadow-paper-lg ${step === 4 ? 'h-full flex flex-col justify-between flex-1 overflow-hidden' : 'flex flex-col space-y-4'}`}>
           {/* Step Progress Indicator */}
           <div className="flex items-center justify-between mb-2">
             {[1, 2, 3, 4].map((s) => (
@@ -580,163 +583,193 @@ export default function OnboardingView({
             )}
 
             {step === 4 && (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start text-left animate-fade-in flex-1 overflow-hidden min-h-0">
+              <div className="flex flex-col flex-1 overflow-y-auto lg:overflow-hidden min-h-0 w-full animate-fade-in text-left">
                 
-                {/* LEFT SIDE: UNIFIED COMBINED AI PROVIDER & API KEY CARD */}
-                <div className="lg:col-span-5 space-y-4 rounded-2xl border-2 border-black dark:border-slate-700 bg-white dark:bg-[#1E293B] p-4 sm:p-5 shadow-paper-xs max-h-[66vh] overflow-y-auto custom-scrollbar">
-                  <div className="border-b border-[#CBD5E1] dark:border-slate-700 pb-2.5">
-                    <h3 className="text-xs sm:text-sm font-black uppercase text-[#111111] dark:text-white tracking-wide">Configure AI Provider</h3>
-                    <p className="text-[11px] text-[#334155] dark:text-slate-400 font-bold mt-0.5 leading-tight">
-                      Bring Your Own Key (BYOK) - select provider & enter secret API key.
-                    </p>
-                  </div>
+                {/* MOBILE TAB TOGGLE (< 1024px) */}
+                <div className="flex lg:hidden rounded-xl border-2 border-black bg-[#F1F5F9] dark:bg-[#0F172A] p-1 mb-3 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setMobileTab('configure')}
+                    className={`flex-1 py-2 text-xs font-mono font-black uppercase rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                      mobileTab === 'configure'
+                        ? 'bg-[#2563EB] text-white shadow-sm border border-black'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-black dark:hover:text-white'
+                    }`}
+                  >
+                    <Key className="w-3.5 h-3.5" />
+                    <span>1. Enter Key</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMobileTab('guide')}
+                    className={`flex-1 py-2 text-xs font-mono font-black uppercase rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                      mobileTab === 'guide'
+                        ? 'bg-[#FFC400] text-black shadow-sm border border-black'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-black dark:hover:text-white'
+                    }`}
+                  >
+                    <BookOpen className="w-3.5 h-3.5" />
+                    <span>2. Setup Guide</span>
+                  </button>
+                </div>
 
-                  {/* Searchable Dropdown */}
-                  <div className="space-y-1.5 relative">
-                    <label className="text-[10px] font-mono font-extrabold uppercase tracking-wider text-[#111111] dark:text-slate-300 block">
-                      Select Provider *
-                    </label>
-                    <div className="relative">
-                      <button
-                        type="button"
-                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                        className="w-full flex items-center justify-between rounded-xl border-2 border-[#111111] bg-[#F8FAFC] dark:bg-[#0D1117] px-4 py-3 text-xs font-bold text-[#111111] dark:text-white shadow-paper-xs outline-none cursor-pointer transition-all hover:bg-white"
-                      >
-                        <span className="font-extrabold">{PROVIDER_METADATA[selectedProvider]?.name || 'Choose Provider...'}</span>
-                        <ChevronDown className="h-4 w-4 text-[#111111] dark:text-white stroke-[2.5]" />
-                      </button>
-
-                      {isDropdownOpen && (
-                        <div className="absolute z-50 mt-1.5 w-full rounded-xl border-2 border-[#111111] bg-white text-[#111111] shadow-2xl p-2.5 space-y-2">
-                          <div className="relative">
-                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#555555]" />
-                            <input
-                              type="text"
-                              value={searchQuery}
-                              onChange={(e) => setSearchQuery(e.target.value)}
-                              placeholder="Search providers..."
-                              className="w-full rounded-lg border-2 border-[#111111] bg-[#F9F9F9] pl-8 pr-3 py-1.5 text-xs font-medium text-[#111111] placeholder-[#666666] outline-none"
-                            />
-                          </div>
-                          <div className="max-h-48 overflow-y-auto space-y-0.5">
-                            {Object.entries(PROVIDER_METADATA)
-                              .filter(([_, meta]) => meta.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                              .map(([key, meta]) => (
-                                <button
-                                  key={key}
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedProvider(key);
-                                    setSelectedModel(meta.defaultModel);
-                                    setIsDropdownOpen(false);
-                                    setSearchQuery('');
-                                  }}
-                                  className={`w-full text-left px-3 py-2 rounded-lg text-xs flex items-center justify-between cursor-pointer transition-colors ${
-                                    selectedProvider === key
-                                      ? 'bg-[#FFC400]/25 text-[#111111] font-black border border-[#111111]'
-                                      : 'text-[#111111] hover:bg-[#F6F2EA] font-semibold'
-                                  }`}
-                                >
-                                  <span>{meta.name}</span>
-                                  {selectedProvider === key && <Check className="h-3.5 w-3.5 stroke-[3] text-[#111111]" />}
-                                </button>
-                              ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Selected Provider Details Sub-Card */}
-                  <div className="p-3.5 rounded-xl border-2 border-black dark:border-slate-700 bg-[#F8FAFC] dark:bg-[#0D1117] space-y-3 shadow-sm">
-                    <div>
-                      <h4 className="text-xs font-black text-[#1D4ED8] dark:text-[#60A5FA] uppercase tracking-wide">
-                        {PROVIDER_METADATA[selectedProvider]?.name}
-                      </h4>
-                      <p className="text-xs text-[#334155] dark:text-[#CBD5E1] font-bold mt-1 leading-relaxed">
-                        {PROVIDER_METADATA[selectedProvider]?.description}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 items-start flex-1 min-h-0 w-full">
+                  
+                  {/* LEFT SIDE: UNIFIED COMBINED AI PROVIDER & API KEY CARD */}
+                  <div className={`${mobileTab === 'configure' ? 'block' : 'hidden'} lg:block lg:col-span-5 space-y-4 rounded-2xl border-2 border-black dark:border-slate-700 bg-white dark:bg-[#1E293B] p-3.5 sm:p-5 shadow-paper-xs lg:max-h-[66vh] overflow-y-auto custom-scrollbar w-full`}>
+                    <div className="border-b border-[#CBD5E1] dark:border-slate-700 pb-2.5">
+                      <h3 className="text-xs sm:text-sm font-black uppercase text-[#111111] dark:text-white tracking-wide">Configure AI Provider</h3>
+                      <p className="text-[11px] text-[#334155] dark:text-slate-400 font-bold mt-0.5 leading-tight">
+                        Bring Your Own Key (BYOK) - select provider & enter secret API key.
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-                      <div className="space-y-1">
-                        <span className="text-[10px] uppercase font-mono font-black text-[#475569] dark:text-[#94A3B8] tracking-wider block">
-                          Default Model
-                        </span>
-                        <div className="font-mono text-xs font-black text-white dark:text-[#FFC400] bg-[#0F172A] dark:bg-[#161B22] px-2.5 py-1.5 rounded-md border-2 border-black dark:border-amber-400/60 block w-full text-center truncate shadow-sm">
-                          {PROVIDER_METADATA[selectedProvider]?.defaultModel}
+                    {/* Searchable Dropdown */}
+                    <div className="space-y-1.5 relative">
+                      <label className="text-[10px] font-mono font-extrabold uppercase tracking-wider text-[#111111] dark:text-slate-300 block">
+                        Select Provider *
+                      </label>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                          className="w-full flex items-center justify-between rounded-xl border-2 border-[#111111] bg-[#F8FAFC] dark:bg-[#0D1117] px-4 py-3 text-xs font-bold text-[#111111] dark:text-white shadow-paper-xs outline-none cursor-pointer transition-all hover:bg-white"
+                        >
+                          <span className="font-extrabold">{PROVIDER_METADATA[selectedProvider]?.name || 'Choose Provider...'}</span>
+                          <ChevronDown className="h-4 w-4 text-[#111111] dark:text-white stroke-[2.5]" />
+                        </button>
+
+                        {isDropdownOpen && (
+                          <div className="absolute z-50 mt-1.5 w-full rounded-xl border-2 border-[#111111] bg-white text-[#111111] shadow-2xl p-2.5 space-y-2">
+                            <div className="relative">
+                              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#555555]" />
+                              <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Search providers..."
+                                className="w-full rounded-lg border-2 border-[#111111] bg-[#F9F9F9] pl-8 pr-3 py-1.5 text-xs font-medium text-[#111111] placeholder-[#666666] outline-none"
+                              />
+                            </div>
+                            <div className="max-h-48 overflow-y-auto space-y-0.5">
+                              {Object.entries(PROVIDER_METADATA)
+                                .filter(([_, meta]) => meta.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                                .map(([key, meta]) => (
+                                  <button
+                                    key={key}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedProvider(key);
+                                      setSelectedModel(meta.defaultModel);
+                                      setIsDropdownOpen(false);
+                                      setSearchQuery('');
+                                    }}
+                                    className={`w-full text-left px-3 py-2 rounded-lg text-xs flex items-center justify-between cursor-pointer transition-colors ${
+                                      selectedProvider === key
+                                        ? 'bg-[#FFC400]/25 text-[#111111] font-black border border-[#111111]'
+                                        : 'text-[#111111] hover:bg-[#F6F2EA] font-semibold'
+                                    }`}
+                                  >
+                                    <span>{meta.name}</span>
+                                    {selectedProvider === key && <Check className="h-3.5 w-3.5 stroke-[3] text-[#111111]" />}
+                                  </button>
+                                ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Selected Provider Details Sub-Card */}
+                    <div className="p-3.5 rounded-xl border-2 border-black dark:border-slate-700 bg-[#F8FAFC] dark:bg-[#0D1117] space-y-3 shadow-sm">
+                      <div>
+                        <h4 className="text-xs font-black text-[#1D4ED8] dark:text-[#60A5FA] uppercase tracking-wide">
+                          {PROVIDER_METADATA[selectedProvider]?.name}
+                        </h4>
+                        <p className="text-xs text-[#334155] dark:text-[#CBD5E1] font-bold mt-1 leading-relaxed">
+                          {PROVIDER_METADATA[selectedProvider]?.description}
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                        <div className="space-y-1">
+                          <span className="text-[10px] uppercase font-mono font-black text-[#475569] dark:text-[#94A3B8] tracking-wider block">
+                            Default Model
+                          </span>
+                          <div className="font-mono text-xs font-black text-white dark:text-[#FFC400] bg-[#0F172A] dark:bg-[#161B22] px-2.5 py-1.5 rounded-md border-2 border-black dark:border-amber-400/60 block w-full text-center truncate shadow-sm">
+                            {PROVIDER_METADATA[selectedProvider]?.defaultModel}
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <span className="text-[10px] uppercase font-mono font-black text-[#475569] dark:text-[#94A3B8] tracking-wider block">
+                            Choose Model
+                          </span>
+                          <select
+                            value={selectedModel}
+                            onChange={(e) => setSelectedModel(e.target.value)}
+                            className="w-full rounded-md border-2 border-black dark:border-amber-400/60 p-1.5 px-2 text-xs font-mono font-black bg-[#0F172A] dark:bg-[#161B22] text-white dark:text-[#FFC400] cursor-pointer focus:border-[#2F6BFF] outline-none truncate shadow-sm"
+                          >
+                            {PROVIDER_METADATA[selectedProvider]?.models.map(m => (
+                              <option key={m} value={m} className="bg-[#0F172A] text-white">{m}</option>
+                            ))}
+                          </select>
                         </div>
                       </div>
-                      
-                      <div className="space-y-1">
-                        <span className="text-[10px] uppercase font-mono font-black text-[#475569] dark:text-[#94A3B8] tracking-wider block">
-                          Choose Model
-                        </span>
-                        <select
-                          value={selectedModel}
-                          onChange={(e) => setSelectedModel(e.target.value)}
-                          className="w-full rounded-md border-2 border-black dark:border-amber-400/60 p-1.5 px-2 text-xs font-mono font-black bg-[#0F172A] dark:bg-[#161B22] text-white dark:text-[#FFC400] cursor-pointer focus:border-[#2F6BFF] outline-none truncate shadow-sm"
+
+                      <div className="pt-2 border-t border-[#CBD5E1] dark:border-slate-700">
+                        <a
+                          href={PROVIDER_METADATA[selectedProvider]?.getKeyLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border-2 border-black bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-mono font-black uppercase tracking-wider shadow-paper-xs hover:shadow-paper transition-all active:scale-98 cursor-pointer"
                         >
-                          {PROVIDER_METADATA[selectedProvider]?.models.map(m => (
-                            <option key={m} value={m} className="bg-[#0F172A] text-white">{m}</option>
-                          ))}
-                        </select>
+                          <span>Get {PROVIDER_METADATA[selectedProvider]?.name || 'Gemini'} API Key</span>
+                          <ExternalLink className="h-3.5 w-3.5 stroke-[2.5]" />
+                        </a>
                       </div>
                     </div>
 
-                    <div className="pt-2 border-t border-[#CBD5E1] dark:border-slate-700">
-                      <a
-                        href={PROVIDER_METADATA[selectedProvider]?.getKeyLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border-2 border-black bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-mono font-black uppercase tracking-wider shadow-paper-xs hover:shadow-paper transition-all active:scale-98 cursor-pointer"
-                      >
-                        <span>Get {PROVIDER_METADATA[selectedProvider]?.name || 'Gemini'} API Key</span>
-                        <ExternalLink className="h-3.5 w-3.5 stroke-[2.5]" />
-                      </a>
+                    {/* API Key Input Section */}
+                    <div className="space-y-1.5 pt-2 border-t border-[#CBD5E1] dark:border-slate-700">
+                      <label className="text-[11px] font-mono font-extrabold uppercase tracking-wider text-[#111111] dark:text-slate-200 flex items-center gap-1.5">
+                        <Key className="w-3.5 h-3.5 text-[#2563EB]" /> API Key *
+                      </label>
+
+                      <div className="relative flex items-center">
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          required
+                          value={apiKey}
+                          onChange={(e) => setApiKey(e.target.value)}
+                          placeholder={`Paste secret API key for ${PROVIDER_METADATA[selectedProvider]?.name}`}
+                          className={`w-full rounded-xl border-2 px-4 py-3 pr-12 text-xs font-mono font-extrabold outline-none transition-all ${
+                            apiKey.trim()
+                              ? 'border-[#10B981] bg-[#F0FDF4] text-[#065F46] dark:bg-[#064E3B]/40 dark:text-[#A7F3D0] shadow-[0_0_0_3px_rgba(16,185,129,0.2)]'
+                              : 'border-[#111111] dark:border-slate-600 bg-white dark:bg-[#0D1117] text-[#0F172A] dark:text-white placeholder-[#64748B] focus:border-[#2F6BFF] focus:bg-white'
+                          }`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3.5 p-1 text-[#475569] dark:text-slate-300 hover:text-[#111111] dark:hover:text-white cursor-pointer bg-slate-100 dark:bg-slate-800 rounded-md border border-slate-300 dark:border-slate-700 transition-colors"
+                          title={showPassword ? "Hide API key" : "Show API key"}
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl bg-[#EFF6FF] dark:bg-[#0F172A] border-2 border-[#3B82F6] p-3 flex gap-2.5 items-center shadow-sm">
+                      <Lock className="h-4 w-4 text-[#1D4ED8] dark:text-[#60A5FA] shrink-0" />
+                      <p className="text-[11px] font-bold leading-relaxed text-[#1E3A8A] dark:text-[#93C5FD]">
+                        Encrypted server-side using AES-256-GCM. Never exposed to the browser.
+                      </p>
                     </div>
                   </div>
 
-                  {/* API Key Input Section */}
-                  <div className="space-y-1.5 pt-2 border-t border-[#CBD5E1] dark:border-slate-700">
-                    <label className="text-[11px] font-mono font-extrabold uppercase tracking-wider text-[#111111] dark:text-slate-200 flex items-center gap-1.5">
-                      <Key className="w-3.5 h-3.5 text-[#2563EB]" /> API Key *
-                    </label>
-
-                    <div className="relative flex items-center">
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        required
-                        value={apiKey}
-                        onChange={(e) => setApiKey(e.target.value)}
-                        placeholder={`Paste secret API key for ${PROVIDER_METADATA[selectedProvider]?.name}`}
-                        className={`w-full rounded-xl border-2 px-4 py-3 pr-12 text-xs font-mono font-extrabold outline-none transition-all ${
-                          apiKey.trim()
-                            ? 'border-[#10B981] bg-[#F0FDF4] text-[#065F46] dark:bg-[#064E3B]/40 dark:text-[#A7F3D0] shadow-[0_0_0_3px_rgba(16,185,129,0.2)]'
-                            : 'border-[#111111] dark:border-slate-600 bg-white dark:bg-[#0D1117] text-[#0F172A] dark:text-white placeholder-[#64748B] focus:border-[#2F6BFF] focus:bg-white'
-                        }`}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3.5 p-1 text-[#475569] dark:text-slate-300 hover:text-[#111111] dark:hover:text-white cursor-pointer bg-slate-100 dark:bg-slate-800 rounded-md border border-slate-300 dark:border-slate-700 transition-colors"
-                        title={showPassword ? "Hide API key" : "Show API key"}
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="rounded-xl bg-[#EFF6FF] dark:bg-[#0F172A] border-2 border-[#3B82F6] p-3 flex gap-2.5 items-center shadow-sm">
-                    <Lock className="h-4 w-4 text-[#1D4ED8] dark:text-[#60A5FA] shrink-0" />
-                    <p className="text-[11px] font-bold leading-relaxed text-[#1E3A8A] dark:text-[#93C5FD]">
-                      Encrypted server-side using AES-256-GCM. Never exposed to the browser.
-                    </p>
-                  </div>
-                </div>
-
-                {/* RIGHT SIDE: 4 INDIVIDUAL SEPARATE STEP CARDS STACKED VERTICALLY */}
-                <div className="lg:col-span-7 space-y-4 max-h-[66vh] overflow-y-auto pr-1.5 custom-scrollbar">
+                  {/* RIGHT SIDE: 4 INDIVIDUAL SEPARATE STEP CARDS STACKED VERTICALLY */}
+                  <div className={`${mobileTab === 'guide' ? 'block' : 'hidden'} lg:block lg:col-span-7 space-y-4 lg:max-h-[66vh] overflow-y-auto pr-0 lg:pr-1.5 custom-scrollbar w-full`}>
                   <div className="flex items-center justify-between border-b-2 border-black dark:border-slate-700 pb-2">
                     <div className="flex items-center gap-2">
                       <div className="p-1.5 bg-[#2563EB] text-white rounded-lg border border-black shadow-sm">
@@ -860,8 +893,9 @@ export default function OnboardingView({
                     <Lightbulb className="h-4 w-4 text-amber-500 shrink-0" />
                     <span>Click any image above to open high-res full screen lightbox view!</span>
                   </div>
-                </div>
+                  </div>
 
+                </div>
               </div>
             )}
 

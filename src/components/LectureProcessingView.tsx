@@ -14,9 +14,12 @@ import { PageId } from '../types';
 import { blobToBase64, generateLectureContent, generateResourcesFromTranscript } from '../services/gemini';
 import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebaseConfig';
-import BruteLoader from './BruteLoader';
 import { API_BASE_URL } from '../config';
 import { awardXP, processActivityEvent } from '../services/activityTracker';
+import { formatUserFriendlyErrorMessage } from '../utils/errorSanitizer';
+import BruteLoader from './BruteLoader';
+
+
 
 interface LectureProcessingViewProps {
   userId: string | undefined;
@@ -307,7 +310,7 @@ export default function LectureProcessingView({
           } catch (resErr: any) {
             console.error("Resource generation stage failed:", resErr);
             if (isSubscribed) {
-              setErrorMsg(resErr.message || "AI resource generation failed. Your transcript and document are safe.");
+              setErrorMsg(formatUserFriendlyErrorMessage(resErr, "AI resource generation failed"));
               setUploadStatus('failed');
             }
           }

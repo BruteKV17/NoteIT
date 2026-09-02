@@ -4,6 +4,8 @@ import { ProviderFactory } from './src/providers/ProviderFactory';
 import { ValidationAdapterFactory } from './src/providers/ValidationAdapters';
 import { ProviderValidationError } from './src/providers/AIProvider';
 import { InternalAIService, buildOptimizedContextForResource } from './src/server/internalAIService';
+import { formatUserFriendlyErrorMessage } from './src/utils/errorSanitizer';
+
 
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -835,7 +837,7 @@ app.post(['/api/lectures/:lectureId/generate-resources', '/api/lectures/generate
   } catch (error: any) {
     console.error('[GENERATE-RESOURCES] Error generating resources:', error);
     const status = error.status || (error.message?.includes('429') ? 429 : error.message?.includes('503') ? 503 : 500);
-    const message = error.message || 'AI resource generation failed.';
+    const message = formatUserFriendlyErrorMessage(error, "AI resource generation failed");
     const provider = userData?.aiProvider || 'unknown';
 
     try {

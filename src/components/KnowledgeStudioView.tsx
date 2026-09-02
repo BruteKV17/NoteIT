@@ -52,6 +52,8 @@ import { getAzureUploadSasUrl, uploadBlobToAzure, extractTextFromDocument, extra
 import pptxgen from 'pptxgenjs';
 import BruteLoader from './BruteLoader';
 import PresentationWorkspace from './PresentationWorkspace';
+import { formatUserFriendlyErrorMessage } from '../utils/errorSanitizer';
+
 
 interface KnowledgeStudioViewProps {
   userId: string | undefined;
@@ -266,7 +268,7 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
       });
     } catch (err: any) {
       console.error("Failed to generate notes:", err);
-      setImportError(`Failed to generate notes: ${err.message || err}`);
+      setImportError(formatUserFriendlyErrorMessage(err, "Failed to generate notes"));
     } finally {
       setIsGeneratingNotes(false);
     }
@@ -303,7 +305,7 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
       });
     } catch (err: any) {
       console.error("Failed to generate summary:", err);
-      setImportError(`Failed to generate summary: ${err.message || err}`);
+      setImportError(formatUserFriendlyErrorMessage(err, "Failed to generate summary"));
     } finally {
       setIsGeneratingSummary(false);
     }
@@ -331,7 +333,7 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
       });
     } catch (err: any) {
       console.error("Failed to generate flashcards:", err);
-      setImportError(`Failed to generate flashcards: ${err.message || err}`);
+      setImportError(formatUserFriendlyErrorMessage(err, "Failed to generate flashcards"));
     } finally {
       setIsGeneratingFlashcards(false);
     }
@@ -356,7 +358,7 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
       });
     } catch (err: any) {
       console.error("Failed to generate quiz:", err);
-      setImportError(`Failed to generate quiz: ${err.message || err}`);
+      setImportError(formatUserFriendlyErrorMessage(err, "Failed to generate quiz"));
     } finally {
       setIsGeneratingQuiz(false);
     }
@@ -384,7 +386,7 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
       });
     } catch (err: any) {
       console.error("Failed to generate more quiz questions:", err);
-      setImportError(`Failed to generate more questions: ${err.message || err}`);
+      setImportError(formatUserFriendlyErrorMessage(err, "Failed to generate more questions"));
     } finally {
       setIsGeneratingQuiz(false);
     }
@@ -411,7 +413,7 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
       });
     } catch (err: any) {
       console.error("Failed to generate mind map:", err);
-      setImportError(`Failed to generate mind map: ${err.message || err}`);
+      setImportError(formatUserFriendlyErrorMessage(err, "Failed to generate mind map"));
     } finally {
       setIsGeneratingMindmap(false);
     }
@@ -768,7 +770,7 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
       console.error("Upload process failed:", err);
       setIsUploading(false);
       setProcessingStatus("Failed");
-      setImportError(`Upload Process Failed: ${err.message || err}`);
+      setImportError(formatUserFriendlyErrorMessage(err, "Upload Process Failed"));
 
       try {
         await updateDoc(docRef, {
@@ -858,7 +860,7 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
       console.error("Ingestion retry failed:", err);
       setIsUploading(false);
       setProcessingStatus("Failed");
-      setImportError(`Ingestion Retry Failed: ${err.message || err}`);
+      setImportError(formatUserFriendlyErrorMessage(err, "Ingestion Retry Failed"));
 
       try {
         await updateDoc(docRef, {
@@ -1195,7 +1197,7 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
       console.error("Re-synthesis failed:", err);
       setIsUploading(false);
       setProcessingStatus("Failed");
-      setImportError(`Re-synthesis Failed: ${err.message}`);
+      setImportError(formatUserFriendlyErrorMessage(err, "Re-synthesis Failed"));
     }
   };
 

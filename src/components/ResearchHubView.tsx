@@ -39,7 +39,9 @@ import {
 } from 'lucide-react';
 import { Source, Note, Lecture, PageId } from '../types';
 import { generateResourcesFromTranscript, generateNotesFromTranscript } from '../services/gemini';
+import { formatUserFriendlyErrorMessage } from '../utils/errorSanitizer';
 import { auth } from '../firebaseConfig';
+
 import { useNoteReviewTimer } from '../hooks/useNoteReviewTimer';
 import { renderTranscriptWithDots } from './bauhaus/TimestampDot';
 import { AcademicNotesViewer } from './bauhaus/AcademicNotesViewer';
@@ -213,7 +215,7 @@ export default function ResearchHubView({
       setIsGeneratingHubResources(false);
     } catch (err: any) {
       console.error("Failed to generate resources in ResearchHub:", err);
-      setHubResourceError(err.message || "Resource generation failed. Please check your AI provider key in Settings.");
+      setHubResourceError(formatUserFriendlyErrorMessage(err, "Resource generation failed"));
       setIsGeneratingHubResources(false);
     }
   };
@@ -240,7 +242,7 @@ export default function ResearchHubView({
       setActiveTab('Notes');
     } catch (err: any) {
       console.error("Notes generation failed:", err);
-      setNotesError(err.message || "Failed to generate notes from transcript.");
+      setNotesError(formatUserFriendlyErrorMessage(err, "Failed to generate notes"));
       setIsGeneratingNotes(false);
     }
   };

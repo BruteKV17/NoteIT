@@ -33,7 +33,10 @@ import {
   HardDrive
 } from 'lucide-react';
 import BruteLoader from './BruteLoader';
-import { PageId } from '../types';
+import { PageId, Lecture } from '../types';
+import { blobToBase64, generateLectureContent, generateResourcesFromTranscript } from '../services/gemini';
+import { formatUserFriendlyErrorMessage } from '../utils/errorSanitizer';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import PresentationWorkspace from './PresentationWorkspace';
 import { db, auth } from '../firebaseConfig';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -1104,7 +1107,7 @@ export default function LectureCaptureView({
       });
     } catch (err: any) {
       console.error("Notes generation failed:", err);
-      alert(`Failed to generate notes: ${err.message || err}`);
+      alert(formatUserFriendlyErrorMessage(err, "Failed to generate notes"));
     } finally {
       setIsGeneratingNotes(false);
     }
@@ -1133,7 +1136,7 @@ export default function LectureCaptureView({
       });
     } catch (err: any) {
       console.error("Summary generation failed:", err);
-      alert(`Failed to generate summary: ${err.message || err}`);
+      alert(formatUserFriendlyErrorMessage(err, "Failed to generate summary"));
     } finally {
       setIsGeneratingSummary(false);
     }
@@ -1167,7 +1170,7 @@ export default function LectureCaptureView({
       });
     } catch (err: any) {
       console.error("Flashcards generation failed:", err);
-      alert(`Failed to generate flashcards: ${err.message || err}`);
+      alert(formatUserFriendlyErrorMessage(err, "Failed to generate flashcards"));
     } finally {
       setIsGeneratingFlashcards(false);
     }
@@ -1198,7 +1201,7 @@ export default function LectureCaptureView({
       });
     } catch (err: any) {
       console.error("Generating more flashcards failed:", err);
-      alert(`Failed to generate more flashcards: ${err.message || err}`);
+      alert(formatUserFriendlyErrorMessage(err, "Failed to generate more flashcards"));
     } finally {
       setIsGeneratingFlashcards(false);
     }
@@ -1228,7 +1231,7 @@ export default function LectureCaptureView({
       });
     } catch (err: any) {
       console.error("Quiz generation failed:", err);
-      alert(`Failed to generate quiz: ${err.message || err}`);
+      alert(formatUserFriendlyErrorMessage(err, "Failed to generate quiz"));
     } finally {
       setIsGeneratingQuiz(false);
     }
@@ -1261,7 +1264,7 @@ export default function LectureCaptureView({
       });
     } catch (err: any) {
       console.error("Generating more quiz questions failed:", err);
-      alert(`Failed to generate more questions: ${err.message || err}`);
+      alert(formatUserFriendlyErrorMessage(err, "Failed to generate more questions"));
     } finally {
       setIsGeneratingQuiz(false);
     }
@@ -1292,7 +1295,7 @@ export default function LectureCaptureView({
       });
     } catch (err: any) {
       console.error("Mindmap generation failed:", err);
-      alert(`Failed to generate mind map: ${err.message || err}`);
+      alert(formatUserFriendlyErrorMessage(err, "Failed to generate mind map"));
     } finally {
       setIsGeneratingMindmap(false);
     }

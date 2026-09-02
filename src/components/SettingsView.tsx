@@ -1009,7 +1009,7 @@ export default function SettingsView({
                           </button>
 
                           {isDropdownOpen && (
-                            <div className="absolute z-50 mt-1.5 w-60 rounded-[6px] border-2 border-[#111111] bg-white shadow-paper-lg p-2.5 space-y-2 text-[#111111]">
+                            <div className="absolute z-50 mt-1.5 w-full rounded-[6px] border-2 border-[#111111] bg-white shadow-paper-lg p-2.5 space-y-2 text-[#111111]">
                               <div className="relative">
                                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#111111]" />
                                 <input
