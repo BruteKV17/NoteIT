@@ -602,50 +602,75 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
   };
 
   // 1. FILE UPLOAD HANDLER
+  // 1. FILE UPLOAD HANDLER (SUPPORTS MULTIPLE FILE SELECTION AT ONCE)
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0 || !userId) return;
-    const file = e.target.files[0];
-    const name = file.name;
-    const extension = name.split('.').pop()?.toLowerCase() || '';
-    
+    const files = Array.from(e.target.files);
+
+    // Reset file input element so user can select the same file(s) again if needed
+    e.target.value = '';
+
     setIsUploading(true);
-    setUploadProgress(10);
-    setProcessingStatus('Uploading...');
+    setUploadProgress(5);
+    setProcessingStatus(`Preparing ${files.length} file${files.length > 1 ? 's' : ''}...`);
 
-    let docRef: any = null;
-    try {
-      // Create firestore document initial state
-      docRef = await addDoc(collection(db, 'users', userId, 'sources'), {
-        title: name,
-        type: 'document',
-        sourceType: extension,
-        status: 'uploading',
-        progress: 10,
-        createdAt: serverTimestamp(),
-        size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`
-      });
+    const createdDocIds: string[] = [];
+    const total = files.length;
 
-      // Keep file object in memory in case of retries
-      setUploadingFiles(prev => ({ ...prev, [docRef.id]: file }));
+    for (let i = 0; i < total; i++) {
+      const file = files[i];
+      const name = file.name;
+      const extension = name.split('.').pop()?.toLowerCase() || '';
 
-      await runFileUploadSequence(docRef.id, file);
+      const progressStep = Math.round((i / total) * 90) + 10;
+      setUploadProgress(progressStep);
+      setProcessingStatus(`Processing (${i + 1}/${total}): ${name}`);
 
-    } catch (err) {
-      console.error("Upload initialization failed:", err);
-      setIsUploading(false);
-      setProcessingStatus("Failed");
+      try {
+        // Create firestore document initial state
+        const docRef = await addDoc(collection(db, 'users', userId, 'sources'), {
+          title: name,
+          type: 'document',
+          sourceType: extension,
+          status: 'uploading',
+          progress: 10,
+          createdAt: serverTimestamp(),
+          size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`
+        });
+
+        // Keep file object in memory in case of retries
+        setUploadingFiles(prev => ({ ...prev, [docRef.id]: file }));
+
+        await runFileUploadSequence(docRef.id, file, true);
+        createdDocIds.push(docRef.id);
+      } catch (err: any) {
+        console.error(`Upload failed for file ${name}:`, err);
+        setImportError(formatUserFriendlyErrorMessage(err, `Upload failed for ${name}`));
+      }
     }
+
+    if (createdDocIds.length > 0) {
+      const lastId = createdDocIds[createdDocIds.length - 1];
+      setActiveSourceId(lastId);
+      setSelectedSourceIds(prev => Array.from(new Set([...prev, ...createdDocIds])));
+    }
+
+    setIsUploading(false);
+    setProcessingStatus(null);
+    setUploadProgress(100);
   };
 
-  const runFileUploadSequence = async (docId: string, file: File) => {
+  const runFileUploadSequence = async (docId: string, file: File, isBatch: boolean = false) => {
     const name = file.name;
     const extension = name.split('.').pop()?.toLowerCase() || '';
     const docRef = doc(db, 'users', userId, 'sources', docId);
 
     try {
-      setIsUploading(true);
-      setUploadProgress(15);
-      setProcessingStatus('Reading document...');
+      if (!isBatch) {
+        setIsUploading(true);
+        setUploadProgress(15);
+        setProcessingStatus('Reading document...');
+      }
       await updateDoc(docRef, { status: 'uploading', progress: 15 });
 
       let extractedText = '';
@@ -709,12 +734,14 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
         podcastScript: ''
       });
 
-      // Activate source in local state immediately
-      setActiveSourceId(docId);
-      setSelectedSourceIds([docId]);
-      setIsUploading(false);
-      setProcessingStatus(null);
-      setUploadProgress(100);
+      if (!isBatch) {
+        // Activate source in local state immediately
+        setActiveSourceId(docId);
+        setSelectedSourceIds([docId]);
+        setIsUploading(false);
+        setProcessingStatus(null);
+        setUploadProgress(100);
+      }
 
       // Remove from memory list on success
       setUploadingFiles(prev => {
@@ -768,9 +795,11 @@ export default function KnowledgeStudioView({ userId, theme, setActivePage }: Kn
 
     } catch (err: any) {
       console.error("Upload process failed:", err);
-      setIsUploading(false);
-      setProcessingStatus("Failed");
-      setImportError(formatUserFriendlyErrorMessage(err, "Upload Process Failed"));
+      if (!isBatch) {
+        setIsUploading(false);
+        setProcessingStatus("Failed");
+        setImportError(formatUserFriendlyErrorMessage(err, "Upload Process Failed"));
+      }
 
       try {
         await updateDoc(docRef, {
@@ -2615,7 +2644,8 @@ ${queryText}`;
                 ref={fileInputRef}
                 className="hidden"
                 onChange={handleFileUpload}
-                accept=".pdf,.docx,.txt,.md,.pptx,.xlsx,.csv"
+                accept=".pdf,.docx,.doc,.txt,.md,.pptx,.ppt,.xlsx,.xls,.csv,.mp3,.wav,.m4a"
+                multiple
               />
             </div>
           </div>
