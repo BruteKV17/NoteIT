@@ -1024,15 +1024,18 @@ export const generateFastDocumentAssets = (text: string, title?: string): {
   let currentContent: string[] = [];
   let secIdx = 1;
 
+  const noiseRegex = /co-po|course outcome|program outcome|\bco[1-6]\b|\bpo[1-6]\b|table of content|\bindex\b|syllabus|faculty|instructor|office hour|grading|prerequisites|unit details/i;
+
   const pushSection = (secTitle: string, contentLines: string[]) => {
+    if (noiseRegex.test(secTitle)) return;
     const fullContent = contentLines.join('\n').trim();
-    if (fullContent.length > 0) {
+    if (fullContent.length > 0 && !noiseRegex.test(fullContent.substring(0, 100))) {
       sections.push({
         id: `sec-${secIdx}`,
         title: secTitle,
         startTime: `0${secIdx - 1}:00`,
         endTime: `0${secIdx}:00`,
-        content: fullContent.length > 500 ? fullContent.substring(0, 500) + '...' : fullContent
+        content: fullContent.length > 800 ? fullContent.substring(0, 800) + '...' : fullContent
       });
       secIdx++;
     }
@@ -1520,6 +1523,11 @@ export const generateNotes = async (
   apiKey: string,
   onBusy?: (isBusy: boolean) => void
 ): Promise<string> => {
+  // Pre-sanitize transcriptText to strip syllabus meta-noise
+  const lines = transcriptText.split('\n');
+  const noiseRegex = /co-po|course outcome|program outcome|\bco[1-6]\b|\bpo[1-6]\b|table of content|\bindex\b|syllabus overview|faculty|instructor|office hour|email:|credit hour|prerequisite|evaluation scheme|attendance policy/i;
+  const cleanTranscriptText = lines.filter(line => !noiseRegex.test(line.trim())).join('\n').trim();
+
   let modeInstructions = '';
   switch (mode) {
     case 'quick':
@@ -1554,6 +1562,13 @@ export const generateNotes = async (
 
     Selected Notes Mode: ${mode}
     Style Guidance: ${modeInstructions}
+
+    STRICT ADMINISTRATIVE NOISE FILTER (MANDATORY):
+    Completely IGNORE and EXCLUDE all administrative syllabus meta-noise:
+    - NEVER include sections for "Course Outcomes", "CO-PO Mapping", "Program Outcomes", or "Bloom Taxonomy"
+    - NEVER include sections for "Subject Name Header", "Table of Contents", "Index of Topics", "Course Code"
+    - NEVER include sections for "Faculty Name", "Instructor Profile", "Office Hours", "Grading Criteria", "Prerequisites"
+    - START GENERATING NOTES ONLY FROM REAL ACADEMIC CONCEPT CONTENT!
 
     PIPELINE RULES:
     1. Do NOT treat the lecture transcript as text to be summarized or rewritten as spoken.
