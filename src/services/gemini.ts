@@ -871,6 +871,11 @@ export const generateInitialLectureAssets = async (
   apiKey: string,
   onBusy?: (isBusy: boolean) => void
 ): Promise<any> => {
+  // Pre-sanitize rawText to remove syllabus noise lines
+  const lines = rawText.split('\n');
+  const noiseRegex = /co-po|course outcome|program outcome|\bco[1-6]\b|\bpo[1-6]\b|table of content|\bindex\b|syllabus overview|faculty|instructor|office hour|email:|credit hour|prerequisite|evaluation scheme|attendance policy/i;
+  const cleanRawText = lines.filter(line => !noiseRegex.test(line.trim())).join('\n').trim();
+
   const prompt = `
     You are an expert academic tutor and editor. Analyze the following raw source text.
     
@@ -879,17 +884,17 @@ export const generateInitialLectureAssets = async (
     
     STRICT ADMINISTRATIVE NOISE FILTER (MANDATORY):
     Completely IGNORE and EXCLUDE all administrative syllabus meta-noise such as:
-    - Faculty names, instructor titles, office hours, email IDs, contact numbers
-    - CO-PO (Course Outcome & Program Outcome) mapping tables, Bloom Taxonomy matrices
-    - Table of contents, index pages, course codes, grading weightage, attendance criteria, prerequisites
-    - Slide numbers, copyright footers, university headers, welcome slides
+    - NEVER create sections for "Course Outcomes", "CO-PO Mapping", "Program Outcomes", or "Bloom Taxonomy"
+    - NEVER create sections for "Subject Name Header", "Table of Contents", "Index of Topics", "Course Code"
+    - NEVER create sections for "Faculty Name", "Instructor Profile", "Office Hours", "Grading Criteria", "Prerequisites"
+    - START GENERATING SECTIONS ONLY FROM REAL ACADEMIC CONCEPT CONTENT!
     
     2. Segment the cleaned text into logical topics or sections (Chapters). For each section, define:
        - 'id': A unique string id (e.g. 'sec-1', 'sec-2')
        - 'title': A short, descriptive title of the section/topic
        - 'startTime': The start timestamp of the section (e.g. '00:00')
        - 'endTime': The end timestamp of the section (e.g. '01:30')
-       - 'content': A detailed summary of what was discussed in this section
+       - 'content': A detailed, in-depth academic summary (minimum 200 words) of what was discussed in this section
        Save this under the 'sections' array.
     3. Generate a timeline of chronological milestones. Each item must have:
        - 'time': A timestamp matching the lecture (e.g. '01:15' or '05:30'). Must be from the transcript's bracketed timestamps.
@@ -906,7 +911,7 @@ export const generateInitialLectureAssets = async (
     CRITICAL FORMATTING RULE: For any mathematical equations, numbers, variables, or exponents, NEVER use caret notation (like '3^2', 'x^y', 'x^2', '2^n'). Instead, write them with actual superscript Unicode characters representing the power/exponent directly above the base (e.g., '3²', 'xʸ', 'x²', '2ⁿ'). Apply this rule strictly to all mathematical powers and exponents throughout the output.
 
     Raw Source Text:
-    ${rawText.length > 150000 ? rawText.substring(0, 150000) + "\n[Processing full document...]" : rawText}
+    ${cleanRawText.length > 150000 ? cleanRawText.substring(0, 150000) + "\n[Processing full document...]" : cleanRawText}
     
     Return the result STRICTLY as a JSON object matching the requested schema.
   `;
@@ -957,7 +962,16 @@ export const generateInitialLectureAssets = async (
     required: ['cleanTranscript', 'sections', 'timeline', 'sourceIntelligence']
   };
 
-  return executeGeminiCall(prompt, apiKey, undefined, schema, onBusy);
+  const res = await executeGeminiCall(prompt, apiKey, undefined, schema, onBusy);
+
+  // JS Post-Filter to strip out any noise sections that bypassed LLM prompt rules
+  if (res && Array.isArray(res.sections)) {
+    res.sections = res.sections.filter((s: any) => 
+      !noiseRegex.test(s.title || '') && !noiseRegex.test(s.content || '')
+    );
+  }
+
+  return res;
 };
 
 export const generateLectureContent = async (

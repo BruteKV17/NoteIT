@@ -46,6 +46,31 @@ export interface AttachmentInputPayload {
   mimeType?: string;
 }
 
+/**
+ * JS Pre-Sanitizer: Strips out syllabus meta-noise before passing text to Gemini
+ */
+export function sanitizeDocumentText(rawText: string): string {
+  if (!rawText) return '';
+  const lines = rawText.split('\n');
+  const noiseRegex = /co-po|course outcome|program outcome|\bco[1-6]\b|\bpo[1-6]\b|table of content|\bindex\b|syllabus overview|faculty|instructor|office hour|email:|credit hour|prerequisite|evaluation scheme|attendance policy/i;
+  
+  const cleanLines = lines.filter(line => !noiseRegex.test(line.trim()));
+  return cleanLines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+/**
+ * JS Post-Filter: Filters out any noise concept cards that bypassed LLM prompt rules
+ */
+export function filterNoiseConceptCards(cards: AcademicConceptCard[]): AcademicConceptCard[] {
+  if (!cards || !Array.isArray(cards)) return [];
+  const noiseRegex = /co-po|course outcome|program outcome|\bco[1-6]\b|\bpo[1-6]\b|table of content|\bindex\b|syllabus|faculty|office hour|prerequisites/i;
+  return cards.filter(card => {
+    if (noiseRegex.test(card.title || '')) return false;
+    if (noiseRegex.test(card.conceptExplanation || '')) return false;
+    return true;
+  });
+}
+
 export async function generateAcademicNotesFromDocument(
   attachments: AttachmentInputPayload[],
   subjectName: string,
@@ -57,43 +82,45 @@ export async function generateAcademicNotesFromDocument(
   }
 
   const prompt = `You are an elite university professor and chief exam paper setter for ${subjectName}.
-Analyze the attached multi-page study materials (PDFs, PPTs, slides, notes) across ALL pages from Page 1 to the final page.
+Analyze the provided multi-page study document across ALL pages (Page 1 to the final page).
 
 CRITICAL MANDATORY INSTRUCTIONS:
 
-1. STRICT ADMINISTRATIVE NOISE FILTER (MUST REMOVE):
-   Completely IGNORE and DO NOT INCLUDE any syllabus administrative overhead, such as:
-   - Faculty names, professor titles, department names, email IDs, office hours
-   - CO-PO (Course Outcome & Program Outcome) mapping tables, Bloom Taxonomy matrices
-   - Course codes, credit weightage, grading rules, attendance criteria, prerequisites
-   - Slide numbers, copyright notices, logo headers, welcome slides, table of contents
+1. ABSOLUTE ADMINISTRATIVE NOISE FILTER (MUST REMOVE 100%):
+   Completely IGNORE, STRIP OUT, and DO NOT INCLUDE any syllabus administrative overhead:
+   - NEVER create cards for "Course Outcomes", "CO-PO Mapping", "Program Outcomes", or "Bloom Taxonomy"
+   - NEVER create cards for "Subject Name Header", "Table of Contents", "Index of Topics", "Course Code"
+   - NEVER create cards for "Faculty Name", "Instructor Profile", "Office Hours", "Grading Criteria", "Prerequisites"
+   - START GENERATING NOTES ONLY FROM REAL ACADEMIC CONCEPT SLIDES/PAGES!
 
-2. COMPLETE MULTI-PAGE ACADEMIC COVERAGE:
-   - Read EVERY single page/slide in the document from Page 1 to the end (e.g. Page 14+).
-   - Extract 100% core academic concepts, definitions, algorithms, formulas, step-by-step procedures, and technical principles.
-   - Do NOT stop at Page 3! Cover all chapters and topics present in the document.
+2. DEEP & THOROUGH EXPLANATIONS (NO SHORT OR BRIEF SUMMARIES):
+   - For every topic, write a DEEP, COMPREHENSIVE academic explanation (minimum 250-400 words per card).
+   - Include complete technical definitions, mathematical or algorithmic steps, structural mechanisms, edge case handling, and real-world engineering applications.
+   - Do NOT write brief 2-sentence summaries. Students need complete, detailed study notes!
 
-3. TEACHER FOCUS HIGHLIGHTS:
-   Incorporate these teacher focus topics if provided: ${teacherTopics.length > 0 ? teacherTopics.join(', ') : 'None'}.
+3. COMPLETE MULTI-PAGE COVERAGE:
+   - Cover EVERY single chapter and unit present across all pages (from Page 1 to Page 14+).
+   - Incorporate teacher focus topics if provided: ${teacherTopics.length > 0 ? teacherTopics.join(', ') : 'None'}.
 
 4. FORMAT OUTPUT AS STRICT JSON matching this schema:
 {
   "subjectName": "${subjectName}",
   "conceptCards": [
     {
-      "title": "Topic Title",
+      "title": "Core Technical Topic Name",
       "bloomLevel": "Understand",
-      "conceptExplanation": "Detailed, highly scannable academic explanation with clear definitions, key formulas, and bold technical terms.",
+      "conceptExplanation": "In-depth 300+ word academic explanation with complete definitions, mathematical rules, bold key terms, and step-by-step mechanisms.",
       "keyExamPoints": [
         "Essential scoring point 1 to write in 5-mark and 10-mark answers",
-        "Essential scoring point 2"
+        "Essential scoring point 2",
+        "Essential scoring point 3"
       ],
       "commonPitfalls": [
         "Common exam error or trap mistake students make on this topic"
       ],
       "comparisonTable": {
         "title": "Comparison Matrix Title",
-        "headers": ["Category", "Type A", "Type B"],
+        "headers": ["Category", "Approach A", "Approach B"],
         "rows": [
           ["Feature 1", "Detail A", "Detail B"]
         ]
@@ -150,15 +177,15 @@ CRITICAL MANDATORY INSTRUCTIONS:
     }
   });
 
-  // Attach text content from files or web links
-  const combinedText = attachments
-    .map(att => att.textContent)
+  // Attach pre-sanitized text content from files or web links
+  const sanitizedText = attachments
+    .map(att => sanitizeDocumentText(att.textContent || ''))
     .filter(t => t && t.trim().length > 10)
-    .join('\n\n--- DOCUMENT END / NEXT SECTION ---\n\n');
+    .join('\n\n--- NEXT SECTION ---\n\n');
 
-  if (combinedText.trim().length > 0) {
+  if (sanitizedText.trim().length > 0) {
     parts.push({
-      text: `ADDITIONAL EXTRACTED DOCUMENT TEXT (ALL PAGES):\n\n${combinedText.slice(0, 100000)}`
+      text: `SANITIZED ACADEMIC DOCUMENT TEXT (SYLLABUS NOISE REMOVED):\n\n${sanitizedText.slice(0, 100000)}`
     });
   }
 
@@ -178,8 +205,12 @@ CRITICAL MANDATORY INSTRUCTIONS:
       const data = await response.json();
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
       if (text) {
-        const parsed = JSON.parse(text);
-        return parsed as GeneratedAcademicNotes;
+        const parsed: GeneratedAcademicNotes = JSON.parse(text);
+        if (parsed && Array.isArray(parsed.conceptCards)) {
+          // JS Post-Filter to remove any noise cards that bypassed LLM rules
+          parsed.conceptCards = filterNoiseConceptCards(parsed.conceptCards);
+        }
+        return parsed;
       }
     }
   } catch (e) {
