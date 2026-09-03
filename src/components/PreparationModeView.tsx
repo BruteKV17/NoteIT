@@ -53,18 +53,20 @@ export default function PreparationModeView({
 
   if (activeExamConfig) {
     return (
-      <ExamRushWorkspace
-        config={activeExamConfig}
-        lectures={lectures}
-        notes={notes}
-        onExit={() => {
-          sessionStorage.removeItem('noteit_exam_rush_active_config');
-          setActiveExamConfig(null);
-          if (document.fullscreenElement && document.exitFullscreen) {
-            document.exitFullscreen().catch(() => {});
-          }
-        }}
-      />
+      <div className="fixed inset-0 z-[999999] h-screen w-screen overflow-y-auto bg-[#FAF9F6] dark:bg-[#0B0F17]">
+        <ExamRushWorkspace
+          config={activeExamConfig}
+          lectures={lectures}
+          notes={notes}
+          onExit={() => {
+            sessionStorage.removeItem('noteit_exam_rush_active_config');
+            setActiveExamConfig(null);
+            if (document.fullscreenElement && document.exitFullscreen) {
+              document.exitFullscreen().catch(() => {});
+            }
+          }}
+        />
+      </div>
     );
   }
 

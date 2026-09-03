@@ -86,32 +86,23 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
   const overallProgressPercent = Math.min(100, Math.round((Object.keys(completedSections).length / 7) * 100));
 
   return (
-    <div className="min-h-screen w-full bg-[#FAF9F6] dark:bg-[#0B0F17] text-[#1E293B] dark:text-[#E2E8F0] font-sans relative selection:bg-[#FFC400] selection:text-black">
+    <div className="fixed inset-0 z-[999999] h-screen w-screen overflow-y-auto bg-[#FAF9F6] dark:bg-[#0B0F17] text-[#1E293B] dark:text-[#E2E8F0] font-sans selection:bg-[#FFC400] selection:text-black">
       
       {/* CONTEXTUAL BHAI LANG POPOVER */}
       <BhaiLangPopover subjectName={config.subject.canonicalName} />
 
-      {/* STICKY CALM HEADER BAR */}
-      <header className="sticky top-0 z-40 bg-white/90 dark:bg-[#0F172A]/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 sm:px-8 py-3.5 flex items-center justify-between shadow-sm">
+      {/* STICKY CALM STANDALONE HEADER BAR */}
+      <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#0F172A]/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 sm:px-8 py-3 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={onExit}
-            className="p-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
-            title="Exit Exam Rush"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </button>
-
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 bg-[#FF4D4D] text-white text-[10px] font-mono font-black uppercase rounded">EXAM RUSH</span>
-              <h1 className="text-sm font-black uppercase tracking-wide text-black dark:text-white font-heading">{config.subject.canonicalName}</h1>
-            </div>
-            <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 font-semibold block sm:hidden">
-              ⏱ {formatTimer(secondsRemaining)} remaining
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-1 bg-[#FF4D4D] text-white text-[10px] font-mono font-black uppercase rounded-lg shadow-sm flex items-center gap-1">
+              <Flame className="h-3.5 w-3.5 fill-white animate-pulse" /> EXAM RUSH
             </span>
+            <h1 className="text-sm font-black uppercase tracking-wide text-black dark:text-white font-heading">{config.subject.canonicalName}</h1>
           </div>
+          <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 font-semibold block sm:hidden">
+            ⏱ {formatTimer(secondsRemaining)}
+          </span>
         </div>
 
         {/* CENTER PROGRESS & TIMER */}
@@ -130,23 +121,25 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
           </div>
         </div>
 
+        {/* SMALL ELEGANT CONTROLS */}
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={toggleFullscreen}
-            className="p-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-mono font-bold hover:bg-slate-100 cursor-pointer flex items-center gap-1.5"
+            className="p-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-mono font-bold hover:bg-slate-200 transition-all cursor-pointer flex items-center gap-1"
             title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
           >
-            {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
-            <span className="hidden sm:inline">{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</span>
+            {isFullscreen ? <Minimize className="h-3.5 w-3.5" /> : <Maximize className="h-3.5 w-3.5" />}
           </button>
 
           <button
             type="button"
             onClick={onExit}
-            className="px-3.5 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-mono font-bold hover:bg-slate-100 cursor-pointer"
+            className="px-3 py-1.5 rounded-xl border border-black dark:border-slate-700 bg-[#FF4D4D] hover:bg-red-600 text-white text-xs font-mono font-black uppercase tracking-wider shadow-sm transition-all cursor-pointer flex items-center gap-1.5"
+            title="Exit Exam Rush Learning Environment"
           >
-            Exit
+            <X className="h-3.5 w-3.5" />
+            <span>Exit Rush</span>
           </button>
         </div>
       </header>

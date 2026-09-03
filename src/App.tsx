@@ -45,6 +45,9 @@ import ResearchHubView from './components/ResearchHubView';
 import LibraryView from './components/LibraryView';
 import QuizView from './components/QuizView';
 import PreparationModeView from './components/PreparationModeView';
+import { ExamRushWorkspace } from './components/preparation/ExamRushWorkspace';
+import { ExamRushConfig } from './components/preparation/ExamRushSetup';
+import { resolveCanonicalSubject } from './utils/subjectCanonicalizer';
 import KnowledgeStudioView from './components/KnowledgeStudioView';
 import NotificationsView from './components/NotificationsView';
 import SettingsView from './components/SettingsView';
@@ -1000,6 +1003,48 @@ export default function App() {
           <BruteLoader size="lg" message="Loading Note-IT AI Interface..." />
         </div>
         <FeedbackWidget theme={theme} />
+      </ErrorBoundary>
+    );
+  }
+
+  // Standalone Fullscreen Exam Rush Environment (No Sidebar, No Navbar)
+  if (window.location.search.includes('mode=exam-rush-fullscreen')) {
+    const savedConfigStr = sessionStorage.getItem('noteit_exam_rush_active_config');
+    let examConfig: ExamRushConfig | null = null;
+    if (savedConfigStr) {
+      try {
+        examConfig = JSON.parse(savedConfigStr);
+      } catch (e) {}
+    }
+    if (!examConfig) {
+      examConfig = {
+        subject: resolveCanonicalSubject('Operating Systems'),
+        timeRemainingMinutes: 120,
+        timeLabel: '2 Hours',
+        teacherTopics: [],
+        intensity: 'balanced'
+      };
+    }
+
+    return (
+      <ErrorBoundary theme={theme}>
+        <div className="fixed inset-0 z-[999999] h-screen w-screen overflow-y-auto bg-[#FAF9F6] dark:bg-[#0B0F17]">
+          <ExamRushWorkspace
+            config={examConfig}
+            lectures={combinedLectures}
+            notes={notes}
+            onExit={() => {
+              sessionStorage.removeItem('noteit_exam_rush_active_config');
+              if (document.fullscreenElement && document.exitFullscreen) {
+                document.exitFullscreen().catch(() => {});
+              }
+              try {
+                window.close();
+              } catch (e) {}
+              window.location.href = window.location.origin + window.location.pathname;
+            }}
+          />
+        </div>
       </ErrorBoundary>
     );
   }
