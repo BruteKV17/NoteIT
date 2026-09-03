@@ -25,6 +25,8 @@ import {
 import { searchCanonicalSubjects, CanonicalSubject, resolveCanonicalSubject } from '../../utils/subjectCanonicalizer';
 import { extractTextFromUrl } from '../../services/azure';
 
+import { GeneratedAcademicNotes } from '../../services/academicNotesEngine';
+
 export interface ExamRushAttachment {
   id: string;
   name: string;
@@ -42,6 +44,7 @@ export interface ExamRushConfig {
   timeLabel: string;
   teacherTopics: string[];
   attachments?: ExamRushAttachment[];
+  generatedNotes?: GeneratedAcademicNotes | null;
   intensity: 'quick_survival' | 'balanced' | 'deep_preparation';
 }
 
@@ -158,7 +161,7 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
         const decoder = new TextDecoder('utf-8', { fatal: false });
         const rawText = decoder.decode(buffer);
         const cleaned = rawText.replace(/[^\x20-\x7E\n\r\t]/g, ' ').replace(/\s+/g, ' ').trim();
-        resolve(cleaned.slice(0, 15000) || `Uploaded file context from ${file.name}`);
+        resolve(cleaned.slice(0, 150000) || `Uploaded file context from ${file.name}`);
       };
       reader.readAsArrayBuffer(file);
     });
@@ -276,9 +279,6 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
       }
     }
 
-    setLaunchStep('Generating personalized Exam Attack Plan & Study Workspace...');
-    await new Promise(r => setTimeout(r, 400));
-
     const finalSubject = selectedSubject || resolveCanonicalSubject(subjectQuery || 'Database Management Systems');
     const finalMinutes = useCustomTime && customMinutes ? Math.max(10, parseInt(customMinutes, 10)) : selectedDuration.minutes;
     const finalLabel = useCustomTime && customMinutes ? `${customMinutes} Minutes` : selectedDuration.label;
@@ -288,12 +288,30 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
       .map(t => t.trim())
       .filter(t => t.length > 0);
 
+    setLaunchStep('Gemini AI analyzing multi-page document, filtering syllabus noise & generating structured study notes...');
+    
+    const combinedText = processedAttachments
+      .map(a => a.textContent)
+      .filter(t => t && t.trim().length > 10)
+      .join('\n\n');
+
+    let generatedNotes = null;
+    if (combinedText && combinedText.trim().length > 30) {
+      try {
+        const { generateAcademicNotesFromDocument } = await import('../../services/academicNotesEngine');
+        generatedNotes = await generateAcademicNotesFromDocument(combinedText, finalSubject.canonicalName, teacherTopics);
+      } catch (e) {
+        console.warn('[Gemini Academic Generation Failed]', e);
+      }
+    }
+
     const config: ExamRushConfig = {
       subject: finalSubject,
       timeRemainingMinutes: finalMinutes,
       timeLabel: finalLabel,
       teacherTopics,
       attachments: processedAttachments,
+      generatedNotes,
       intensity
     };
 
