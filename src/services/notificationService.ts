@@ -16,6 +16,14 @@ export interface UserNotificationPreferences {
   lectureUpdates: boolean;
   quizPractice: boolean;
   facultyDoubtUpdates: boolean;
+  quietHours: {
+    enabled: boolean;
+    start: string; // e.g. "22:30"
+    end: string;   // e.g. "08:00"
+  };
+  dailyLimit: number; // e.g. 2, 6
+  cooldownMinutes: number; // e.g. 90, 240
+  timezone?: string;
   updatedAt?: any;
 }
 
@@ -26,7 +34,15 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: UserNotificationPreferences = {
   streakAlerts: true,
   lectureUpdates: true,
   quizPractice: true,
-  facultyDoubtUpdates: true
+  facultyDoubtUpdates: true,
+  quietHours: {
+    enabled: true,
+    start: "22:30",
+    end: "08:00"
+  },
+  dailyLimit: 2,
+  cooldownMinutes: 240,
+  timezone: typeof Intl !== 'undefined' && Intl.DateTimeFormat ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'Asia/Kolkata'
 };
 
 /**
@@ -107,7 +123,7 @@ export async function requestNotificationPermission(uid: string): Promise<{
 }
 
 /**
- * Saves FCM Token to Firestore under users/{uid}/notificationTokens/{tokenId}
+ * Saves FCM Token & Device info to Firestore under users/{uid}/devices/{deviceId} AND users/{uid}/notificationTokens/{deviceId}
  */
 export async function saveFcmTokenToFirestore(uid: string, token: string): Promise<void> {
   if (!uid || !token) return;
@@ -126,25 +142,73 @@ export async function saveFcmTokenToFirestore(uid: string, token: string): Promi
     else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) browser = 'Safari';
     else if (userAgent.includes('Edg')) browser = 'Edge';
 
-    // Hash token to create doc ID
+    // Hash token to create unique device doc ID
     const tokenIdSanitized = token.replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 100);
-    const tokenRef = doc(db, 'users', uid, 'notificationTokens', tokenIdSanitized);
 
-    await setDoc(tokenRef, {
+    const devicePayload = {
+      deviceId: tokenIdSanitized,
+      fcmToken: token,
       token,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-      browser,
       platform,
+      browser,
+      deviceName: `${platform} (${browser})`,
       userAgent,
       isMobile,
       enabled: true,
+      notificationsEnabled: true,
+      permissionStatus: Notification.permission,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      lastSeenAt: serverTimestamp(),
       lastNotificationSentAt: null
-    }, { merge: true });
+    };
 
-    console.log('[NotificationService] FCM token saved to Firestore doc users/', uid, '/notificationTokens/', tokenIdSanitized);
+    // Save to users/{uid}/devices/{deviceId}
+    const deviceRef = doc(db, 'users', uid, 'devices', tokenIdSanitized);
+    await setDoc(deviceRef, devicePayload, { merge: true });
+
+    // Save to users/{uid}/notificationTokens/{deviceId} for backwards compatibility
+    const tokenRef = doc(db, 'users', uid, 'notificationTokens', tokenIdSanitized);
+    await setDoc(tokenRef, devicePayload, { merge: true });
+
+    console.log('[NotificationService] Device registered cleanly in Firestore users/', uid, '/devices/', tokenIdSanitized);
   } catch (err) {
-    console.error('[NotificationService] Failed to save FCM token to Firestore:', err);
+    console.error('[NotificationService] Failed to save FCM device token to Firestore:', err);
+  }
+}
+
+/**
+ * Triggers a backend test push notification to user's registered devices
+ */
+export async function sendTestPushNotificationToBackend(title?: string, body?: string, route?: string): Promise<{ success: boolean; message?: string; error?: string }> {
+  const currentUser = auth.currentUser;
+  if (!currentUser) return { success: false, error: 'User is not authenticated.' };
+
+  try {
+    const idToken = await currentUser.getIdToken(true);
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3002';
+    
+    const response = await fetch(`${backendUrl}/api/notifications/send-test`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${idToken}`
+      },
+      body: JSON.stringify({
+        title: title || 'NoteIT AI Test Notification 🚀',
+        body: body || 'This is a live test of your NoteIT background push notification system!',
+        route: route || '/rewards'
+      })
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      return { success: false, error: data.error || 'Failed to send test push notification.' };
+    }
+    return { success: true, message: data.message || 'Test push notification sent successfully!' };
+  } catch (err: any) {
+    console.error('[NotificationService] Send test push failed:', err);
+    return { success: false, error: err.message || 'Network error sending test push notification.' };
   }
 }
 

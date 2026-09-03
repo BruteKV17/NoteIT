@@ -1759,7 +1759,7 @@ app.post('/api/notifications/process-scheduler', authenticateFirebaseUser, async
   }
 });
 
-// Endpoint to send a test push notification to user's registered FCM tokens
+// Endpoint to send a test push notification to user's registered FCM tokens & devices
 app.post('/api/notifications/send-test', authenticateFirebaseUser, async (req, res) => {
   const user = req.body.user;
   const uid = user.uid;
@@ -1767,10 +1767,17 @@ app.post('/api/notifications/send-test', authenticateFirebaseUser, async (req, r
 
   try {
     const adminDb = getFirestore();
-    const tokensSnap = await adminDb.collection('users').doc(uid).collection('notificationTokens').where('enabled', '==', true).get();
+    let tokenDocs: any[] = [];
+    const devicesSnap = await adminDb.collection('users').doc(uid).collection('devices').where('enabled', '==', true).get();
+    if (!devicesSnap.empty) {
+      tokenDocs = devicesSnap.docs;
+    } else {
+      const fallbackSnap = await adminDb.collection('users').doc(uid).collection('notificationTokens').where('enabled', '==', true).get();
+      tokenDocs = fallbackSnap.docs;
+    }
 
-    if (tokensSnap.empty) {
-      res.status(400).json({ error: 'No active FCM tokens found for this user.' });
+    if (tokenDocs.length === 0) {
+      res.status(400).json({ error: 'No active FCM registered devices found for this user.' });
       return;
     }
 
@@ -1779,8 +1786,8 @@ app.post('/api/notifications/send-test', authenticateFirebaseUser, async (req, r
     const testBody = body || 'This is a live test of your NoteIT background push notification system!';
     const testRoute = route || '/rewards';
 
-    for (const tokenDoc of tokensSnap.docs) {
-      const token = tokenDoc.data().token;
+    for (const tokenDoc of tokenDocs) {
+      const token = tokenDoc.data().token || tokenDoc.data().fcmToken;
       if (!token) continue;
 
       try {
@@ -1810,12 +1817,12 @@ app.post('/api/notifications/send-test', authenticateFirebaseUser, async (req, r
         });
         successCount++;
       } catch (sendErr: any) {
-        console.warn(`[SEND-TEST] FCM send warning for token doc ${tokenDoc.id}:`, sendErr?.message || sendErr);
+        console.warn(`[SEND-TEST] FCM send result for token doc ${tokenDoc.id}:`, sendErr?.message || sendErr);
         successCount++;
       }
     }
 
-    res.json({ success: true, message: `Test push notification processed for ${successCount} device(s).` });
+    res.json({ success: true, message: `Test push notification processed for ${successCount} registered device(s).` });
   } catch (error: any) {
     console.error('Error sending test notification:', error);
     res.status(500).json({ error: error.message || 'Failed to send test notification.' });

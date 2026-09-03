@@ -7,12 +7,58 @@ import { getMessaging } from 'firebase-admin/messaging';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { NOTIFICATION_TEMPLATES, SCHEDULER_CONFIG, NotificationTemplate, personalizeText } from '../config/notificationTemplates';
 
-function getTodayDateString(): string {
-  const d = new Date();
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+function getTodayDateString(userTimezone: string = 'Asia/Kolkata'): string {
+  try {
+    const d = new Date();
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: userTimezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+    const parts = formatter.formatToParts(d);
+    const year = parts.find(p => p.type === 'year')?.value;
+    const month = parts.find(p => p.type === 'month')?.value;
+    const day = parts.find(p => p.type === 'day')?.value;
+    return `${year}-${month}-${day}`;
+  } catch (e) {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+}
+
+function isWithinQuietHours(quietHoursObj: any, userTimezone: string = 'Asia/Kolkata'): boolean {
+  if (!quietHoursObj || quietHoursObj.enabled === false) return false;
+  
+  const startStr = quietHoursObj.start || "22:30";
+  const endStr = quietHoursObj.end || "08:00";
+
+  try {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: userTimezone,
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: false
+    });
+    const parts = formatter.formatToParts(new Date());
+    const hour = parseInt(parts.find(p => p.type === 'hour')?.value || '0', 10);
+    const minute = parseInt(parts.find(p => p.type === 'minute')?.value || '0', 10);
+    const currentMins = hour * 60 + minute;
+
+    const [startH, startM] = startStr.split(':').map((n: string) => parseInt(n, 10));
+    const [endH, endM] = endStr.split(':').map((n: string) => parseInt(n, 10));
+    const startMins = startH * 60 + startM;
+    const endMins = endH * 60 + endM;
+
+    if (startMins < endMins) {
+      return currentMins >= startMins && currentMins < endMins;
+    } else {
+      // Quiet hours span past midnight (e.g. 22:30 -> 08:00)
+      return currentMins >= startMins || currentMins < endMins;
+    }
+  } catch (err) {
+    return false;
+  }
 }
 
 /**
@@ -37,9 +83,7 @@ export async function runNotificationSchedulerCycle(): Promise<{
       return { usersProcessed: 0, notificationsSent: 0, tokensCleaned: 0, errors: [] };
     }
 
-    const todayStr = getTodayDateString();
     const nowMs = Date.now();
-    const currentHour = new Date().getHours();
 
     for (const userDoc of usersSnap.docs) {
       const uid = userDoc.id;
@@ -55,13 +99,33 @@ export async function runNotificationSchedulerCycle(): Promise<{
           continue; // User has master notifications disabled
         }
 
-        // 2. Fetch active FCM tokens for this user
-        const tokensSnap = await adminDb.collection('users').doc(uid).collection('notificationTokens').where('enabled', '==', true).get();
-        if (tokensSnap.empty) {
-          continue; // No active tokens registered for user
+        const userTimezone = prefs?.timezone || userData?.timezone || 'Asia/Kolkata';
+        const todayStr = getTodayDateString(userTimezone);
+        
+        let currentHour = 20;
+        try {
+          const hrFormatter = new Intl.DateTimeFormat('en-US', { timeZone: userTimezone, hour: 'numeric', hour12: false });
+          currentHour = parseInt(hrFormatter.format(new Date()), 10);
+        } catch (e) {
+          currentHour = new Date().getHours();
         }
 
-        const tokenDocs = tokensSnap.docs;
+        // Quiet Hours check for normal notifications
+        const inQuietHours = isWithinQuietHours(prefs?.quietHours, userTimezone);
+
+        // 2. Fetch active FCM tokens / devices for this user (checking users/{uid}/devices first, then users/{uid}/notificationTokens)
+        let tokenDocs: any[] = [];
+        const devicesSnap = await adminDb.collection('users').doc(uid).collection('devices').where('enabled', '==', true).get();
+        if (!devicesSnap.empty) {
+          tokenDocs = devicesSnap.docs;
+        } else {
+          const fallbackSnap = await adminDb.collection('users').doc(uid).collection('notificationTokens').where('enabled', '==', true).get();
+          tokenDocs = fallbackSnap.docs;
+        }
+
+        if (tokenDocs.length === 0) {
+          continue; // No active tokens registered for user
+        }
 
         // 3. Fetch delivery history for today
         const historyRef = adminDb.collection('users').doc(uid).collection('notificationHistory');
@@ -80,7 +144,7 @@ export async function runNotificationSchedulerCycle(): Promise<{
           lastSentMs = typeof sentAtData.toMillis === 'function' ? sentAtData.toMillis() : new Date(sentAtData).getTime();
         }
 
-        // 4. Check Streak Status (Requirement 16, 17, 18)
+        // 4. Check Streak Status (Requirement 14, 15)
         const streakSummarySnap = await adminDb.collection('users').doc(uid).collection('rewards').doc('summary').get();
         const streakSummary = streakSummarySnap.exists ? streakSummarySnap.data() : {};
         const activeStreak = streakSummary?.currentStreak || 0;
@@ -100,11 +164,10 @@ export async function runNotificationSchedulerCycle(): Promise<{
         if (
           prefs.streakAlerts !== false &&
           activeStreak > 0 &&
-          !todayClaimed && // Requirement 18: STREAK WARNING CANCELLATION if today claimed!
+          !todayClaimed && // CANCELLATION: If today claimed, CANCEL STREAK WARNING!
           !streakWarningSentToday &&
           currentHour >= SCHEDULER_CONFIG.STREAK_WARNING_HOUR
         ) {
-          // Send high-priority streak warning
           const streakTemplates = NOTIFICATION_TEMPLATES.filter(t => t.category === 'STREAK_WARNING' && t.enabled);
           if (streakTemplates.length > 0) {
             const selectedTemplate = streakTemplates[Math.floor(Math.random() * streakTemplates.length)];
@@ -119,7 +182,8 @@ export async function runNotificationSchedulerCycle(): Promise<{
               selectedTemplate,
               personalizedTitle,
               personalizedBody,
-              'STREAK_WARNING'
+              'STREAK_WARNING',
+              todayStr
             );
 
             if (sent.successCount > 0) {
@@ -130,21 +194,22 @@ export async function runNotificationSchedulerCycle(): Promise<{
           }
         }
 
-        // If today is ALREADY claimed or streak warning conditions not met, skip streak warning
-        if (todayClaimed && streakWarningSentToday) {
-          // No duplicate streak warnings
+        // 5. NORMAL RANDOM NOTIFICATION CHECK
+        if (inQuietHours) {
+          continue; // Quiet hours active - skip normal notification
         }
 
-        // 5. NORMAL RANDOM NOTIFICATION CHECK
-        if (todayCount >= SCHEDULER_CONFIG.MAX_NORMAL_NOTIFICATIONS_PER_DAY) {
+        const maxDaily = prefs.dailyLimit || SCHEDULER_CONFIG.DEFAULT_MAX_NORMAL_NOTIFICATIONS_PER_DAY;
+        if (todayCount >= maxDaily) {
           continue; // Daily limit reached
         }
 
-        if (nowMs - lastSentMs < SCHEDULER_CONFIG.MIN_NOTIFICATION_COOLDOWN_MS) {
+        const cooldownMs = (prefs.cooldownMinutes || SCHEDULER_CONFIG.DEFAULT_MIN_NOTIFICATION_COOLDOWN_MINUTES) * 60 * 1000;
+        if (nowMs - lastSentMs < cooldownMs) {
           continue; // Cooldown period active
         }
 
-        // Evaluate user activity conditions (Requirement 15, 26)
+        // Evaluate user activity conditions for Truth Validation (Requirement 15)
         const lecturesSnap = await adminDb.collection('users').doc(uid).collection('lectures').limit(5).get();
         const hasLecturesToRevise = !lecturesSnap.empty;
         const hasLearningKit = lecturesSnap.docs.some(d => d.data()?.resourceGenerationStatus === 'completed');
@@ -167,7 +232,7 @@ export async function runNotificationSchedulerCycle(): Promise<{
             if (prefs.studyReminders === false) return false;
           }
 
-          // Privacy / Trust Rule (Requirement 26): Never claim a fake condition!
+          // Privacy / Truth Rule (Requirement 15): Never claim a fake condition!
           if (template.requiresCondition) {
             if (template.requiresCondition === 'unclaimedDailyXp' && !unclaimedDailyXp) return false;
             if (template.requiresCondition === 'activeStreakUnclaimed' && !activeStreakUnclaimed) return false;
@@ -176,7 +241,7 @@ export async function runNotificationSchedulerCycle(): Promise<{
             if (template.requiresCondition === 'untouchedChallenge' && !untouchedChallenge) return false;
           }
 
-          // Category Rotation (Requirement 14): Avoid repeating same category consecutively
+          // Category Rotation (Requirement 16): Avoid repeating same category consecutively
           if (lastSentCategory && template.category === lastSentCategory) return false;
 
           // Duplicate Prevention: Avoid repeating same template ID recently
@@ -202,7 +267,8 @@ export async function runNotificationSchedulerCycle(): Promise<{
           selectedTemplate,
           personalizedTitle,
           personalizedBody,
-          'NORMAL'
+          'NORMAL',
+          todayStr
         );
 
         notificationsSent += sent.successCount;
@@ -231,14 +297,15 @@ async function dispatchPushNotificationToUserTokens(
   template: NotificationTemplate,
   title: string,
   body: string,
-  deliveryReason: string
+  deliveryReason: string,
+  sentDate: string
 ): Promise<{ successCount: number; cleanedCount: number }> {
   let successCount = 0;
   let cleanedCount = 0;
 
   for (const tokenDoc of tokenDocs) {
     const tokenData = tokenDoc.data();
-    const tokenString = tokenData.token;
+    const tokenString = tokenData.token || tokenData.fcmToken;
     const docId = tokenDoc.id;
 
     if (!tokenString) continue;
@@ -279,27 +346,33 @@ async function dispatchPushNotificationToUserTokens(
       await getMessaging().send(payload);
       successCount++;
 
-      // Update token doc with lastNotificationSentAt
-      await adminDb.collection('users').doc(uid).collection('notificationTokens').doc(docId).set({
+      // Update token docs in both subcollections
+      const updateData = {
         lastNotificationSentAt: FieldValue.serverTimestamp(),
+        lastSeenAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp()
-      }, { merge: true });
+      };
+      await adminDb.collection('users').doc(uid).collection('devices').doc(docId).set(updateData, { merge: true }).catch(() => {});
+      await adminDb.collection('users').doc(uid).collection('notificationTokens').doc(docId).set(updateData, { merge: true }).catch(() => {});
 
     } catch (fcmErr: any) {
       console.warn(`[NotificationScheduler] FCM send result for user ${uid}:`, fcmErr?.message || fcmErr);
 
-      // Clean up invalid/unregistered FCM tokens (Requirement 4 & 28)
+      // Clean up invalid/unregistered FCM tokens
       if (
         fcmErr?.code === 'messaging/registration-token-not-registered' ||
         fcmErr?.code === 'messaging/invalid-registration-token' ||
         fcmErr?.message?.includes('not registered') ||
         fcmErr?.message?.includes('invalid')
       ) {
-        await adminDb.collection('users').doc(uid).collection('notificationTokens').doc(docId).set({
+        const disableData = {
           enabled: false,
+          notificationsEnabled: false,
           disabledAt: FieldValue.serverTimestamp(),
           reason: 'invalid_fcm_token'
-        }, { merge: true });
+        };
+        await adminDb.collection('users').doc(uid).collection('devices').doc(docId).set(disableData, { merge: true }).catch(() => {});
+        await adminDb.collection('users').doc(uid).collection('notificationTokens').doc(docId).set(disableData, { merge: true }).catch(() => {});
         cleanedCount++;
       } else {
         // Log local dev delivery
@@ -308,7 +381,7 @@ async function dispatchPushNotificationToUserTokens(
     }
   }
 
-  // Record delivery history in Firestore users/{uid}/notificationHistory (Requirement 20)
+  // Record delivery history in Firestore users/{uid}/notificationHistory (Requirement 19)
   if (successCount > 0) {
     const historyId = `hist_${template.id}_${Date.now()}`;
     await adminDb.collection('users').doc(uid).collection('notificationHistory').doc(historyId).set({
@@ -319,7 +392,7 @@ async function dispatchPushNotificationToUserTokens(
       body,
       route: template.route,
       sentAt: FieldValue.serverTimestamp(),
-      sentDate: getTodayDateString(),
+      sentDate,
       deliveryReason,
       type: template.priority === 'high' ? 'high_priority' : 'normal'
     });

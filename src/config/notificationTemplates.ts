@@ -16,10 +16,12 @@ export interface NotificationTemplate {
 }
 
 export const SCHEDULER_CONFIG = {
-  MAX_NORMAL_NOTIFICATIONS_PER_DAY: 2,
-  MIN_NOTIFICATION_COOLDOWN_MS: 4 * 60 * 60 * 1000, // 4 hours
+  DEFAULT_MAX_NORMAL_NOTIFICATIONS_PER_DAY: 2,
+  DEFAULT_MIN_NOTIFICATION_COOLDOWN_MINUTES: 240, // 4 hours
+  DEFAULT_QUIET_HOURS_START: "22:30", // 10:30 PM
+  DEFAULT_QUIET_HOURS_END: "08:00",   // 8:00 AM
   STREAK_WARNING_HOUR: 20, // 8 PM local time
-  DEFAULT_VAPID_KEY: "BDN_noteit_web_push_vapid_key_placeholder"
+  DEFAULT_VAPID_KEY: "BKun1CumK9D08MJM9M0UAr9iitdRbsq1C77BTzKSxoqhIYxCadMnmxnbh4cqXjoiTkr05fFnTffQJ7Jg-w_sfYM"
 };
 
 export const NOTIFICATION_TEMPLATES: NotificationTemplate[] = [

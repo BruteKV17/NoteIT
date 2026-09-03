@@ -60,6 +60,7 @@ export default function NotificationSettingsSection({
 
   const handleDisableAll = async () => {
     const disabled: UserNotificationPreferences = {
+      ...preferences,
       masterEnabled: false,
       studyReminders: false,
       xpRewards: false,
@@ -181,6 +182,127 @@ export default function NotificationSettingsSection({
         />
       </div>
 
+      {/* Quiet Hours & Delivery Constraints */}
+      <div className={`p-5 rounded-[6px] border-2 border-[var(--border-main)] bg-[var(--panel-bg)] space-y-4 shadow-paper-sm transition-all ${preferences.masterEnabled ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
+        <div className="flex items-center justify-between">
+          <div>
+            <h4 className="font-heading font-extrabold text-xs uppercase text-[var(--text-primary)]">
+              Quiet Hours Schedule
+            </h4>
+            <p className="text-[11px] font-mono text-[var(--text-secondary)] font-bold mt-0.5">
+              Pause normal notifications during sleep hours (Streak warnings exempt).
+            </p>
+          </div>
+          <input
+            type="checkbox"
+            checked={preferences.quietHours?.enabled ?? true}
+            onChange={(e) => {
+              const updated = {
+                ...preferences,
+                quietHours: {
+                  ...(preferences.quietHours || { start: "22:30", end: "08:00" }),
+                  enabled: e.target.checked
+                }
+              };
+              setPreferences(updated);
+              persistPreferences(updated);
+            }}
+            className="h-5 w-5 rounded border-2 border-[var(--border-main)] accent-[#FFC400] cursor-pointer"
+          />
+        </div>
+
+        {preferences.quietHours?.enabled && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-[var(--border-main)] font-mono text-xs">
+            <div>
+              <label className="text-[10px] font-extrabold text-[var(--text-secondary)] uppercase block mb-1">
+                Quiet Hours Start (From)
+              </label>
+              <input
+                type="time"
+                value={preferences.quietHours?.start || "22:30"}
+                onChange={(e) => {
+                  const updated = {
+                    ...preferences,
+                    quietHours: {
+                      ...(preferences.quietHours || { enabled: true, end: "08:00" }),
+                      start: e.target.value
+                    }
+                  };
+                  setPreferences(updated);
+                  persistPreferences(updated);
+                }}
+                className="w-full bg-[var(--card-bg)] border-2 border-[var(--border-main)] p-2 rounded-[4px] font-bold text-[var(--text-primary)] focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-extrabold text-[var(--text-secondary)] uppercase block mb-1">
+                Quiet Hours End (Until)
+              </label>
+              <input
+                type="time"
+                value={preferences.quietHours?.end || "08:00"}
+                onChange={(e) => {
+                  const updated = {
+                    ...preferences,
+                    quietHours: {
+                      ...(preferences.quietHours || { enabled: true, start: "22:30" }),
+                      end: e.target.value
+                    }
+                  };
+                  setPreferences(updated);
+                  persistPreferences(updated);
+                }}
+                className="w-full bg-[var(--card-bg)] border-2 border-[var(--border-main)] p-2 rounded-[4px] font-bold text-[var(--text-primary)] focus:outline-none"
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-[var(--border-main)] font-mono text-xs">
+          <div>
+            <label className="text-[10px] font-extrabold text-[var(--text-secondary)] uppercase block mb-1">
+              Max Notifications Per Day
+            </label>
+            <select
+              value={preferences.dailyLimit || 2}
+              onChange={(e) => {
+                const updated = { ...preferences, dailyLimit: parseInt(e.target.value, 10) };
+                setPreferences(updated);
+                persistPreferences(updated);
+              }}
+              className="w-full bg-[var(--card-bg)] border-2 border-[var(--border-main)] p-2 rounded-[4px] font-bold text-[var(--text-primary)] focus:outline-none cursor-pointer"
+            >
+              <option value={1}>1 notification / day</option>
+              <option value={2}>2 notifications / day (Recommended)</option>
+              <option value={4}>4 notifications / day</option>
+              <option value={6}>6 notifications / day</option>
+              <option value={8}>8 notifications / day</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] font-extrabold text-[var(--text-secondary)] uppercase block mb-1">
+              Minimum Cooldown Between Alerts
+            </label>
+            <select
+              value={preferences.cooldownMinutes || 240}
+              onChange={(e) => {
+                const updated = { ...preferences, cooldownMinutes: parseInt(e.target.value, 10) };
+                setPreferences(updated);
+                persistPreferences(updated);
+              }}
+              className="w-full bg-[var(--card-bg)] border-2 border-[var(--border-main)] p-2 rounded-[4px] font-bold text-[var(--text-primary)] focus:outline-none cursor-pointer"
+            >
+              <option value={30}>30 minutes</option>
+              <option value={60}>60 minutes</option>
+              <option value={90}>90 minutes</option>
+              <option value={120}>2 hours</option>
+              <option value={240}>4 hours (Recommended)</option>
+              <option value={360}>6 hours</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       {/* Category Granular Toggles */}
       <div className={`space-y-3 transition-all ${preferences.masterEnabled ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
         <span className="text-[10px] font-mono font-extrabold text-[var(--text-secondary)] uppercase tracking-widest block px-1">
@@ -215,6 +337,65 @@ export default function NotificationSettingsSection({
             />
           </div>
         ))}
+      </div>
+
+      {/* DEBUG TELEMETRY STATUS PANEL & TEST PUSH FLOW */}
+      <div className="p-5 rounded-[6px] border-2 border-[#2F6BFF] bg-[var(--card-bg)] space-y-4 shadow-paper-sm font-mono text-xs">
+        <div className="flex items-center justify-between border-b-2 border-[var(--border-main)] pb-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-[#2F6BFF]" />
+            <h4 className="font-heading font-extrabold uppercase text-[var(--text-primary)] text-xs">
+              Notification Engine Telemetry & Testing
+            </h4>
+          </div>
+          <span className="px-2 py-0.5 rounded bg-[#2F6BFF] text-white text-[9px] font-extrabold uppercase">
+            DEBUG & TEST
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
+          <div className="p-2.5 rounded bg-[var(--panel-bg)] border border-[var(--border-main)]">
+            <span className="text-[10px] text-[var(--text-secondary)] font-bold block uppercase">Browser Permission</span>
+            <span className="font-extrabold text-[var(--text-primary)]">{permissionState.toUpperCase()}</span>
+          </div>
+          <div className="p-2.5 rounded bg-[var(--panel-bg)] border border-[var(--border-main)]">
+            <span className="text-[10px] text-[var(--text-secondary)] font-bold block uppercase">Service Worker</span>
+            <span className="font-extrabold text-[#19B56B]">REGISTERED & ACTIVE</span>
+          </div>
+          <div className="p-2.5 rounded bg-[var(--panel-bg)] border border-[var(--border-main)]">
+            <span className="text-[10px] text-[var(--text-secondary)] font-bold block uppercase">FCM Engine Status</span>
+            <span className="font-extrabold text-[var(--text-primary)]">FIREBASE PUSH READY</span>
+          </div>
+          <div className="p-2.5 rounded bg-[var(--panel-bg)] border border-[var(--border-main)]">
+            <span className="text-[10px] text-[var(--text-secondary)] font-bold block uppercase">Active User Account UID</span>
+            <span className="font-extrabold text-[var(--text-primary)] truncate block">{auth.currentUser?.uid ? `${auth.currentUser.uid.substring(0, 12)}...` : 'N/A'}</span>
+          </div>
+        </div>
+
+        <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-[var(--border-main)]">
+          <p className="text-[10px] text-[var(--text-secondary)] font-bold">
+            Test sending a native Windows / Android push notification even when NoteIT is closed.
+          </p>
+          <button
+            type="button"
+            onClick={async () => {
+              const { sendTestPushNotificationToBackend } = await import('../services/notificationService');
+              const res = await sendTestPushNotificationToBackend(
+                'NoteIT AI Native Test Push 🚀',
+                'This test proves background native Web Push is working even when NoteIT is closed!'
+              );
+              if (res.success) {
+                alert(`✅ TEST PUSH SENT SUCCESS!\n\n${res.message || 'Notification dispatched to registered device(s).'}`);
+              } else {
+                alert(`❌ TEST PUSH ERROR:\n\n${res.error || 'Failed to send test push notification.'}`);
+              }
+            }}
+            className="px-4 py-2.5 rounded-[4px] border-2 border-[var(--border-main)] bg-[#2F6BFF] text-white font-mono text-xs font-extrabold uppercase hover:bg-[#255cd9] transition-all shadow-paper-sm flex items-center gap-1.5 cursor-pointer shrink-0"
+          >
+            <Sparkles className="h-4 w-4" />
+            <span>Send Test Push Notification</span>
+          </button>
+        </div>
       </div>
 
       {/* Opt-Out Disable All Button */}
