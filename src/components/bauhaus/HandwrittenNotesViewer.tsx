@@ -51,7 +51,7 @@ export const HandwrittenNotesViewer: React.FC<HandwrittenNotesViewerProps> = ({
   const keyTerms: string[] = sourceIntel.keyTerms || [];
   const formulas: string[] = sourceIntel.formulas || [];
 
-  // Build handwritten notes pages dynamically covering ALL topics
+  // Build handwritten notes pages dynamically covering ALL real academic topics
   const generateHandwrittenPages = () => {
     const pages: Array<{
       pageNumber: number;
@@ -64,25 +64,25 @@ export const HandwrittenNotesViewer: React.FC<HandwrittenNotesViewerProps> = ({
     }> = [];
 
     // STRICT ADMINISTRATIVE NOISE FILTER
-    const noiseRegex = /co-po|course outcome|faculty|office hour|grading|prerequisites|table of contents|index|attendance|unit details|syllabus mapping/i;
+    const noiseRegex = /co-po|course outcome|program outcome|\bco[1-6]\b|\bpo[1-6]\b|table of content|\bindex\b|syllabus|faculty|office hour|grading|prerequisites|unit details/i;
     const cleanSections = (sections.length > 0 ? sections : [
       { title: 'Core Concepts & Overview', content: overview || 'High-yield revision sheet compiled from source material.' }
-    ]).filter(s => !noiseRegex.test(s.title));
+    ]).filter(s => !noiseRegex.test(s.title || '') && !noiseRegex.test(s.content || ''));
 
     const allSections = cleanSections.length > 0 ? cleanSections : [
       { title: 'Core Concepts & Overview', content: overview || 'High-yield revision sheet compiled from source material.' }
     ];
 
-    // Calculate dynamic density to avoid blank spaces on pages
-    const sectionsPerPage = Math.max(2, Math.min(5, Math.ceil(allSections.length / Math.max(1, Math.floor(allSections.length / 3)))));
+    // Pack 2-3 real concept sections per A4 sheet
+    const sectionsPerPage = Math.max(2, Math.min(4, Math.ceil(allSections.length / Math.max(1, Math.ceil(allSections.length / 3)))));
     const pageCount = Math.max(1, Math.ceil(allSections.length / sectionsPerPage));
 
     for (let p = 0; p < pageCount; p++) {
       const pageSections = allSections.slice(p * sectionsPerPage, (p + 1) * sectionsPerPage);
       const pageItems: any[] = [];
 
-      // Include Overview header on page 1 if available
-      if (p === 0 && overview) {
+      // Include Overview synthesis on page 1 if available
+      if (p === 0 && overview && !noiseRegex.test(overview)) {
         pageItems.push({
           title: 'CORE TOPIC SYNTHESIS',
           type: 'text',
@@ -90,53 +90,30 @@ export const HandwrittenNotesViewer: React.FC<HandwrittenNotesViewerProps> = ({
         });
       }
 
-      // Add each section topic for this page
+      // Add each real academic section topic for this page
       pageSections.forEach((sec) => {
         pageItems.push({
           title: sec.title.toUpperCase(),
           type: 'concept',
           content: sec.content
         });
-
-        // Extract dynamic step flow diagram if content contains multiple steps or sentences
-        const sentences = sec.content
-          .split(/[\.\n;]/)
-          .map(s => s.trim().replace(/^[-•*]\s*/, ''))
-          .filter(s => s.length > 12 && s.length < 55);
-
-        if (sentences.length >= 2) {
-          pageItems.push({
-            title: `${sec.title} — WORKFLOW & LOGIC`,
-            type: 'diagram',
-            content: sentences.slice(0, 4)
-          });
-        }
       });
 
-      // Include Formulas / Equations if present
-      if (formulas.length > 0) {
+      // Include Formulas ONLY ONCE on the final page if present
+      if (p === pageCount - 1 && formulas.length > 0) {
         pageItems.push({
-          title: 'KEY FORMULAS & GOVERNING EQUATIONS',
+          title: 'KEY FORMULAS & EQUATIONS',
           type: 'formula',
           content: formulas
         });
       }
 
-      // Include Key Terminology & Exam Cheat Sheet
-      if (keyTerms.length > 0) {
+      // Include Key Terminology ONLY ONCE on the final page if present
+      if (p === pageCount - 1 && keyTerms.length > 0) {
         pageItems.push({
-          title: 'KEY TERMINOLOGY & QUICK RECALL',
+          title: 'KEY TERMINOLOGY',
           type: 'terms',
           content: keyTerms.slice(0, 10)
-        });
-      }
-
-      const takeaways = pageSections.map(s => `• ${s.title}: ${s.content.substring(0, 110).trim()}...`);
-      if (takeaways.length > 0) {
-        pageItems.push({
-          title: 'HIGH-YIELD EXAM CHEAT SHEET',
-          type: 'bullets',
-          content: takeaways
         });
       }
 
