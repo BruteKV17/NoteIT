@@ -876,6 +876,14 @@ export const generateInitialLectureAssets = async (
     
     Tasks to perform:
     1. Clean up the raw text, converting spoken language or raw layout text into clean, professional academic prose. Preserve any bracketed timestamps (e.g. [00:00], [01:15]) at their approximate correct locations if present in the source. Save this cleaned text under the 'cleanTranscript' field.
+    
+    STRICT ADMINISTRATIVE NOISE FILTER (MANDATORY):
+    Completely IGNORE and EXCLUDE all administrative syllabus meta-noise such as:
+    - Faculty names, instructor titles, office hours, email IDs, contact numbers
+    - CO-PO (Course Outcome & Program Outcome) mapping tables, Bloom Taxonomy matrices
+    - Table of contents, index pages, course codes, grading weightage, attendance criteria, prerequisites
+    - Slide numbers, copyright footers, university headers, welcome slides
+    
     2. Segment the cleaned text into logical topics or sections (Chapters). For each section, define:
        - 'id': A unique string id (e.g. 'sec-1', 'sec-2')
        - 'title': A short, descriptive title of the section/topic
@@ -898,7 +906,7 @@ export const generateInitialLectureAssets = async (
     CRITICAL FORMATTING RULE: For any mathematical equations, numbers, variables, or exponents, NEVER use caret notation (like '3^2', 'x^y', 'x^2', '2^n'). Instead, write them with actual superscript Unicode characters representing the power/exponent directly above the base (e.g., '3²', 'xʸ', 'x²', '2ⁿ'). Apply this rule strictly to all mathematical powers and exponents throughout the output.
 
     Raw Source Text:
-    ${rawText.length > 20000 ? rawText.substring(0, 20000) + "\n[Text truncated for rapid processing...]" : rawText}
+    ${rawText.length > 150000 ? rawText.substring(0, 150000) + "\n[Processing full document...]" : rawText}
     
     Return the result STRICTLY as a JSON object matching the requested schema.
   `;
@@ -1619,6 +1627,13 @@ export const generateStructuredNotes = async (
     
     CRITICAL GROUNDING INSTRUCTION:
     Throughout the notes text, you MUST integrate inline citations referencing the source timestamps (e.g. '[Source: Timestamp 01:30]') from the transcript.
+    
+    STRICT ADMINISTRATIVE NOISE FILTER (MANDATORY):
+    Completely IGNORE and EXCLUDE all administrative syllabus meta-noise such as:
+    - Faculty names, instructor titles, office hours, email IDs, contact numbers
+    - CO-PO (Course Outcome & Program Outcome) mapping tables, Bloom Taxonomy matrices
+    - Table of contents, index pages, course codes, grading weightage, attendance criteria, prerequisites
+    - Slide numbers, copyright footers, university headers, welcome slides
     
     CRITICAL FORMATTING RULE: For any mathematical equations, numbers, variables, or exponents, NEVER use caret notation (like '3^2', 'x^y', 'x^2', '2^n'). Instead, write them with actual superscript Unicode characters representing the power/exponent directly above the base (e.g., '3²', 'xʸ', 'x²', '2ⁿ'). Apply this rule strictly to all mathematical powers and exponents throughout the output.
     

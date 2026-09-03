@@ -63,12 +63,18 @@ export const HandwrittenNotesViewer: React.FC<HandwrittenNotesViewerProps> = ({
       }>;
     }> = [];
 
-    const allSections = sections.length > 0 ? sections : [
+    // STRICT ADMINISTRATIVE NOISE FILTER
+    const noiseRegex = /co-po|course outcome|faculty|office hour|grading|prerequisites|table of contents|index|attendance|unit details|syllabus mapping/i;
+    const cleanSections = (sections.length > 0 ? sections : [
+      { title: 'Core Concepts & Overview', content: overview || 'High-yield revision sheet compiled from source material.' }
+    ]).filter(s => !noiseRegex.test(s.title));
+
+    const allSections = cleanSections.length > 0 ? cleanSections : [
       { title: 'Core Concepts & Overview', content: overview || 'High-yield revision sheet compiled from source material.' }
     ];
 
-    // Distribute sections across pages (up to 3 sections per page for dense, full-page layout)
-    const sectionsPerPage = 3;
+    // Calculate dynamic density to avoid blank spaces on pages
+    const sectionsPerPage = Math.max(2, Math.min(5, Math.ceil(allSections.length / Math.max(1, Math.floor(allSections.length / 3)))));
     const pageCount = Math.max(1, Math.ceil(allSections.length / sectionsPerPage));
 
     for (let p = 0; p < pageCount; p++) {
@@ -107,8 +113,8 @@ export const HandwrittenNotesViewer: React.FC<HandwrittenNotesViewerProps> = ({
         }
       });
 
-      // Include Formulas / Equations if present on page 2 or last page
-      if ((p === 1 || p === pageCount - 1) && formulas.length > 0) {
+      // Include Formulas / Equations if present
+      if (formulas.length > 0) {
         pageItems.push({
           title: 'KEY FORMULAS & GOVERNING EQUATIONS',
           type: 'formula',
@@ -116,24 +122,22 @@ export const HandwrittenNotesViewer: React.FC<HandwrittenNotesViewerProps> = ({
         });
       }
 
-      // Include Key Terminology & Exam Cheat Sheet on the final page
-      if (p === pageCount - 1) {
-        if (keyTerms.length > 0) {
-          pageItems.push({
-            title: 'KEY TERMINOLOGY & QUICK RECALL',
-            type: 'terms',
-            content: keyTerms.slice(0, 10)
-          });
-        }
+      // Include Key Terminology & Exam Cheat Sheet
+      if (keyTerms.length > 0) {
+        pageItems.push({
+          title: 'KEY TERMINOLOGY & QUICK RECALL',
+          type: 'terms',
+          content: keyTerms.slice(0, 10)
+        });
+      }
 
-        const takeaways = allSections.slice(0, 4).map(s => `• ${s.title}: ${s.content.substring(0, 110).trim()}...`);
-        if (takeaways.length > 0) {
-          pageItems.push({
-            title: 'HIGH-YIELD EXAM CHEAT SHEET',
-            type: 'bullets',
-            content: takeaways
-          });
-        }
+      const takeaways = pageSections.map(s => `• ${s.title}: ${s.content.substring(0, 110).trim()}...`);
+      if (takeaways.length > 0) {
+        pageItems.push({
+          title: 'HIGH-YIELD EXAM CHEAT SHEET',
+          type: 'bullets',
+          content: takeaways
+        });
       }
 
       const sectionNum = String(p + 1).padStart(2, '0');
