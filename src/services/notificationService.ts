@@ -78,7 +78,7 @@ export async function registerMessagingServiceWorker(): Promise<ServiceWorkerReg
 }
 
 /**
- * Requests browser notification permission and generates an FCM Web Push token
+ * Requests browser notification permission and generates an FCM Web Push token & PushSubscription
  */
 export async function requestNotificationPermission(uid: string): Promise<{
   success: boolean;
@@ -100,22 +100,40 @@ export async function requestNotificationPermission(uid: string): Promise<{
     const messaging = getMessaging(app);
 
     let token = '';
+    let pushSub: any = null;
+
     try {
       token = await getToken(messaging, {
         vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY || SCHEDULER_CONFIG.DEFAULT_VAPID_KEY,
         serviceWorkerRegistration: swReg || undefined
       });
     } catch (fcmErr: any) {
-      console.warn('[NotificationService] FCM getToken fallback/warning:', fcmErr?.message || fcmErr);
-      // Fallback token identifier if VAPID key is unconfigured on localhost dev
-      token = `web_token_${uid.substring(0, 8)}_${Date.now()}`;
+      console.warn('[NotificationService] FCM getToken warning:', fcmErr?.message || fcmErr);
     }
 
-    if (token) {
-      await saveFcmTokenToFirestore(uid, token);
+    // Get PushManager subscription with p256dh and auth keys for web-push compatibility
+    if (swReg && swReg.pushManager) {
+      try {
+        let sub = await swReg.pushManager.getSubscription();
+        if (!sub) {
+          sub = await swReg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: import.meta.env.VITE_FIREBASE_VAPID_KEY || SCHEDULER_CONFIG.DEFAULT_VAPID_KEY
+          });
+        }
+        if (sub) {
+          pushSub = sub.toJSON();
+        }
+      } catch (subErr) {
+        console.warn('[NotificationService] PushManager subscribe warning:', subErr);
+      }
     }
 
-    return { success: true, token, permission: 'granted' };
+    const finalToken = token || (pushSub ? JSON.stringify(pushSub) : `web_token_${uid.substring(0, 8)}_${Date.now()}`);
+
+    await saveFcmTokenToFirestore(uid, finalToken, pushSub);
+
+    return { success: true, token: finalToken, permission: 'granted' };
   } catch (err: any) {
     console.error('[NotificationService] Request permission failed:', err);
     return { success: false, permission: Notification.permission, error: err.message || 'Failed to enable notifications.' };
@@ -125,7 +143,7 @@ export async function requestNotificationPermission(uid: string): Promise<{
 /**
  * Saves FCM Token & Device info to Firestore under users/{uid}/devices/{deviceId} AND users/{uid}/notificationTokens/{deviceId}
  */
-export async function saveFcmTokenToFirestore(uid: string, token: string): Promise<void> {
+export async function saveFcmTokenToFirestore(uid: string, token: string, pushSubscription?: any): Promise<void> {
   if (!uid || !token) return;
   try {
     const userAgent = navigator.userAgent;
@@ -149,6 +167,7 @@ export async function saveFcmTokenToFirestore(uid: string, token: string): Promi
       deviceId: tokenIdSanitized,
       fcmToken: token,
       token,
+      subscription: pushSubscription || null,
       platform,
       browser,
       deviceName: `${platform} (${browser})`,
