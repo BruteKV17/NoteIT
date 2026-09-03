@@ -32,6 +32,8 @@ export interface ExamRushAttachment {
   url?: string;
   textContent: string;
   sizeLabel?: string;
+  rawFile?: File;
+  isProcessed?: boolean;
 }
 
 export interface ExamRushConfig {
@@ -78,6 +80,8 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
   const [showUrlDialog, setShowUrlDialog] = useState(false);
   const [customUrlInput, setCustomUrlInput] = useState('');
   const [isExtractingUrl, setIsExtractingUrl] = useState(false);
+  const [isLaunching, setIsLaunching] = useState(false);
+  const [launchStep, setLaunchStep] = useState('');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const subjectResults = searchCanonicalSubjects(subjectQuery, selectedCategory);
@@ -136,10 +140,12 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
     });
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // INSTANT FILE ATTACHMENT - DEFERRED PARSING TILL START
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
+    const newAttachments: ExamRushAttachment[] = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const ext = file.name.split('.').pop()?.toLowerCase() || '';
@@ -147,18 +153,18 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
       if (['ppt', 'pptx'].includes(ext)) type = 'presentation';
       else if (['png', 'jpg', 'jpeg', 'webp'].includes(ext)) type = 'image';
 
-      const content = await readFileContent(file);
-      const newAtt: ExamRushAttachment = {
+      newAttachments.push({
         id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
         name: file.name,
         type,
-        textContent: content,
-        sizeLabel: `${(file.size / 1024).toFixed(1)} KB`
-      };
-
-      setAttachments(prev => [...prev, newAtt]);
+        textContent: '',
+        sizeLabel: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+        rawFile: file,
+        isProcessed: false
+      });
     }
 
+    setAttachments(prev => [...prev, ...newAttachments]);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -177,7 +183,8 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
         type: 'url',
         url: cleanUrl,
         textContent: result.text || `Content extracted from ${cleanUrl}`,
-        sizeLabel: `${(result.text || '').length} chars`
+        sizeLabel: `${(result.text || '').length} chars`,
+        isProcessed: true
       };
 
       setAttachments(prev => {
@@ -215,7 +222,30 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
     setAttachments(prev => prev.filter(a => a.id !== id));
   };
 
-  const handleStart = () => {
+  // PROCESS ATTACHMENTS & LAUNCH WITH PROGRESS OVERLAY
+  const handleStart = async () => {
+    setIsLaunching(true);
+    setLaunchStep('Initializing Exam Workspace...');
+
+    const processedAttachments: ExamRushAttachment[] = [];
+    for (let i = 0; i < attachments.length; i++) {
+      const att = attachments[i];
+      if (!att.isProcessed && att.rawFile) {
+        setLaunchStep(`Extracting document content from ${att.name}...`);
+        const text = await readFileContent(att.rawFile);
+        processedAttachments.push({
+          ...att,
+          textContent: text,
+          isProcessed: true
+        });
+      } else {
+        processedAttachments.push(att);
+      }
+    }
+
+    setLaunchStep('Generating personalized Exam Attack Plan & Study Workspace...');
+    await new Promise(r => setTimeout(r, 400));
+
     const finalSubject = selectedSubject || resolveCanonicalSubject(subjectQuery || 'Database Management Systems');
     const finalMinutes = useCustomTime && customMinutes ? Math.max(10, parseInt(customMinutes, 10)) : selectedDuration.minutes;
     const finalLabel = useCustomTime && customMinutes ? `${customMinutes} Minutes` : selectedDuration.label;
@@ -230,7 +260,7 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
       timeRemainingMinutes: finalMinutes,
       timeLabel: finalLabel,
       teacherTopics,
-      attachments,
+      attachments: processedAttachments,
       intensity
     };
 
@@ -255,6 +285,7 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
 
     // Trigger local state handler as well
     onStartExamRush(config);
+    setIsLaunching(false);
   };
 
   return (
@@ -608,15 +639,47 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
           <button
             type="button"
             onClick={handleStart}
-            className="w-full py-4 px-6 rounded-2xl bg-[#8F1D2C] hover:bg-[#651522] text-white font-sans text-base font-bold tracking-wide shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
+            disabled={isLaunching}
+            className="w-full py-4 px-6 rounded-2xl bg-[#8F1D2C] hover:bg-[#651522] text-white font-sans text-base font-bold tracking-wide shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            <Flame className="h-5 w-5 fill-white" />
-            <span>START EXAM RUSH ENVIRONMENT (FULLSCREEN NEW TAB)</span>
-            <ArrowRight className="h-5 w-5" />
+            {isLaunching ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span>PROCESSING MATERIALS & PREPARING...</span>
+              </>
+            ) : (
+              <>
+                <Flame className="h-5 w-5 fill-white" />
+                <span>START EXAM RUSH ENVIRONMENT</span>
+                <ArrowRight className="h-5 w-5" />
+              </>
+            )}
           </button>
         </div>
 
       </div>
+
+      {/* LAUNCHING / PROCESSING PROGRESS OVERLAY */}
+      {isLaunching && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in font-sans">
+          <div className="bg-white dark:bg-[#191416] border border-[#8F1D2C]/40 rounded-3xl p-8 max-w-md w-full text-center space-y-5 shadow-2xl">
+            <div className="w-14 h-14 mx-auto rounded-2xl bg-[#F8EDEF] dark:bg-[#2D1B20] text-[#8F1D2C] flex items-center justify-center border border-[#8F1D2C]/30 shadow-sm">
+              <Loader2 className="h-7 w-7 animate-spin" />
+            </div>
+            <div className="space-y-1.5">
+              <h3 className="text-lg font-bold text-[#191416] dark:text-[#FAF7F5]">
+                Preparing Exam Workspace
+              </h3>
+              <p className="text-xs text-[#71676A] dark:text-[#A3989B] font-medium leading-relaxed">
+                {launchStep}
+              </p>
+            </div>
+            <div className="w-full bg-[#FAF7F5] dark:bg-[#231B1E] h-2.5 rounded-full overflow-hidden border border-[#E5D7D9] dark:border-[#3D282C]">
+              <div className="h-full bg-[#8F1D2C] animate-pulse w-3/4" />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
