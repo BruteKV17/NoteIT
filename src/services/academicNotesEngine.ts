@@ -1,8 +1,8 @@
 /**
  * Gemini Academic Notes Generator Engine
- * Transforms raw multi-page document text (PDFs, PPTs, Word, Web links) into highly structured,
- * exam-tailored, multi-topic revision modules using gemini-3.6-flash.
- * Strictly filters out syllabus meta-noise (Faculty Intros, CO-PO mappings, office hours).
+ * Multimodal document ingestion engine powered by gemini-3.6-flash.
+ * Natively parses binary PDFs, PPTs, Images, and Web links across ALL pages (Page 1 to 14+).
+ * Strictly filters out administrative syllabus meta-noise (Faculty Intros, CO-PO mappings, office hours).
  */
 
 import { fetchGeminiApi } from '../providers/GeminiProvider';
@@ -39,52 +39,72 @@ export interface GeneratedAcademicNotes {
   preExamCheatSheet: string[];
 }
 
+export interface AttachmentInputPayload {
+  name: string;
+  textContent?: string;
+  base64Data?: string;
+  mimeType?: string;
+}
+
 export async function generateAcademicNotesFromDocument(
-  rawDocumentText: string,
+  attachments: AttachmentInputPayload[],
   subjectName: string,
   teacherTopics: string[] = []
 ): Promise<GeneratedAcademicNotes | null> {
   const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
-  if (!apiKey || !rawDocumentText || rawDocumentText.trim().length < 20) {
+  if (!apiKey || !attachments || attachments.length === 0) {
     return null;
   }
 
-  const prompt = `You are a distinguished university professor and exam paper setter for ${subjectName}.
-Analyze the provided multi-page study document across ALL pages.
+  const prompt = `You are an elite university professor and chief exam paper setter for ${subjectName}.
+Analyze the attached multi-page study materials (PDFs, PPTs, slides, notes) across ALL pages from Page 1 to the final page.
 
-STRICT INSTRUCTIONS:
-1. NOISE FILTER (MANDATORY): Completely IGNORE and EXCLUDE all administrative syllabus meta-noise such as:
-   - Faculty names, instructor titles, office hours, email IDs
-   - CO-PO (Course Outcome & Program Outcome) mapping tables
-   - Course codes, grading weightage, attendance policies, prerequisites
-   - Slide numbers, copyright footers, university headers
+CRITICAL MANDATORY INSTRUCTIONS:
 
-2. FULL DOCUMENT COVERAGE: Extract 100% core academic concepts, definitions, formulas, and technical principles covering EVERY unit/chapter present across all pages of the document (from Page 1 to the final page).
+1. STRICT ADMINISTRATIVE NOISE FILTER (MUST REMOVE):
+   Completely IGNORE and DO NOT INCLUDE any syllabus administrative overhead, such as:
+   - Faculty names, professor titles, department names, email IDs, office hours
+   - CO-PO (Course Outcome & Program Outcome) mapping tables, Bloom Taxonomy matrices
+   - Course codes, credit weightage, grading rules, attendance criteria, prerequisites
+   - Slide numbers, copyright notices, logo headers, welcome slides, table of contents
 
-3. TEACHER HIGHLIGHTS: Incorporate these teacher focus topics if applicable: ${teacherTopics.join(', ')}.
+2. COMPLETE MULTI-PAGE ACADEMIC COVERAGE:
+   - Read EVERY single page/slide in the document from Page 1 to the end (e.g. Page 14+).
+   - Extract 100% core academic concepts, definitions, algorithms, formulas, step-by-step procedures, and technical principles.
+   - Do NOT stop at Page 3! Cover all chapters and topics present in the document.
+
+3. TEACHER FOCUS HIGHLIGHTS:
+   Incorporate these teacher focus topics if provided: ${teacherTopics.length > 0 ? teacherTopics.join(', ') : 'None'}.
 
 4. FORMAT OUTPUT AS STRICT JSON matching this schema:
 {
   "subjectName": "${subjectName}",
   "conceptCards": [
     {
-      "title": "Topic Name",
+      "title": "Topic Title",
       "bloomLevel": "Understand",
-      "conceptExplanation": "Clear, scannable academic explanation with precise definitions and bold key terms.",
-      "keyExamPoints": ["Key point 1 for 5/10 mark answers", "Key point 2"],
-      "commonPitfalls": ["Common mistake students make in exam"],
+      "conceptExplanation": "Detailed, highly scannable academic explanation with clear definitions, key formulas, and bold technical terms.",
+      "keyExamPoints": [
+        "Essential scoring point 1 to write in 5-mark and 10-mark answers",
+        "Essential scoring point 2"
+      ],
+      "commonPitfalls": [
+        "Common exam error or trap mistake students make on this topic"
+      ],
       "comparisonTable": {
-        "title": "Comparison Matrix",
-        "headers": ["Category", "Approach A", "Approach B"],
-        "rows": [["Feature 1", "Val A", "Val B"]]
+        "title": "Comparison Matrix Title",
+        "headers": ["Category", "Type A", "Type B"],
+        "rows": [
+          ["Feature 1", "Detail A", "Detail B"]
+        ]
       },
       "diagramSpec": {
-        "title": "Architecture Pipeline",
+        "title": "Architecture or Execution Flowchart",
         "type": "pipeline",
         "nodes": [
-          {"label": "Input Stage", "subtext": "Raw Data"},
-          {"label": "Processing Stage", "subtext": "Transformation"},
-          {"label": "Output Stage", "subtext": "Result"}
+          {"label": "Input Stage", "subtext": "Specification"},
+          {"label": "Processing Core", "subtext": "Transformation"},
+          {"label": "Output Result", "subtext": "Validated State"}
         ]
       }
     }
@@ -92,13 +112,13 @@ STRICT INSTRUCTIONS:
   "subjectiveQuestions": [
     {
       "marks": "2 Marks",
-      "question": "Clear 2-mark definition question from document",
+      "question": "Clear 2-mark definition/short-answer question from document",
       "blueprintAnswer": "Exact scoring keywords for answer"
     },
     {
       "marks": "5 Marks",
-      "question": "Analytical 5-mark question",
-      "blueprintAnswer": "Step-by-step scoring answer"
+      "question": "Analytical 5-mark question covering core mechanisms",
+      "blueprintAnswer": "Step-by-step scoring answer blueprint"
     },
     {
       "marks": "10 Marks",
@@ -107,20 +127,47 @@ STRICT INSTRUCTIONS:
     }
   ],
   "memoryBlocks": [
-    {"title": "Core Formula/Theorem", "text":"Must-remember rule for exam"}
+    {"title": "Core Theorem / Formula", "text": "Must-remember rule for exam hall recall"}
   ],
   "preExamCheatSheet": [
-    "Scannable 5-minute pre-exam cheat point 1",
-    "Scannable pre-exam cheat point 2"
+    "Scannable 5-minute pre-exam trigger 1",
+    "Scannable 5-minute pre-exam trigger 2"
   ]
-}
+}`;
 
-DOCUMENT TEXT TO PROCESS (ALL PAGES):
-"${rawDocumentText.slice(0, 120000)}"`;
+  // Build multimodal parts payload for Gemini 3.6 Flash
+  const parts: any[] = [];
+
+  // Attach binary files (PDFs, PPTs, Images) as inlineData
+  attachments.forEach(att => {
+    if (att.base64Data && att.mimeType) {
+      parts.push({
+        inlineData: {
+          mimeType: att.mimeType,
+          data: att.base64Data
+        }
+      });
+    }
+  });
+
+  // Attach text content from files or web links
+  const combinedText = attachments
+    .map(att => att.textContent)
+    .filter(t => t && t.trim().length > 10)
+    .join('\n\n--- DOCUMENT END / NEXT SECTION ---\n\n');
+
+  if (combinedText.trim().length > 0) {
+    parts.push({
+      text: `ADDITIONAL EXTRACTED DOCUMENT TEXT (ALL PAGES):\n\n${combinedText.slice(0, 100000)}`
+    });
+  }
+
+  // Final Prompt text part
+  parts.push({ text: prompt });
 
   try {
     const body = {
-      contents: [{ parts: [{ text: prompt }] }],
+      contents: [{ parts }],
       generationConfig: {
         responseMimeType: 'application/json'
       }
@@ -136,7 +183,7 @@ DOCUMENT TEXT TO PROCESS (ALL PAGES):
       }
     }
   } catch (e) {
-    console.warn('[AcademicNotesEngine] Gemini generation error:', e);
+    console.warn('[AcademicNotesEngine] Gemini multimodal generation error:', e);
   }
 
   return null;

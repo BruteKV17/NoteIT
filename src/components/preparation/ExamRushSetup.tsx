@@ -33,6 +33,8 @@ export interface ExamRushAttachment {
   type: 'document' | 'presentation' | 'image' | 'url';
   url?: string;
   textContent: string;
+  base64Data?: string;
+  mimeType?: string;
   sizeLabel?: string;
   rawFile?: File;
   isProcessed?: boolean;
@@ -259,19 +261,36 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
       const att = attachments[i];
       if (!att.isProcessed && att.rawFile) {
         setLaunchStep(`Extracting document content from ${att.name}...`);
-        const text = await readFileContent(att.rawFile);
-        let imgUrl = att.url;
-        if (att.type === 'image' && !imgUrl && att.rawFile) {
-          imgUrl = await new Promise<string>((res) => {
-            const reader = new FileReader();
-            reader.onload = (ev) => res((ev.target?.result as string) || '');
-            reader.readAsDataURL(att.rawFile!);
-          });
+        
+        let text = '';
+        if (['txt', 'csv', 'json', 'md', 'html'].some(ext => att.name.toLowerCase().endsWith(ext))) {
+          text = await readFileContent(att.rawFile);
         }
+
+        const fileData = await new Promise<{ base64: string; mimeType: string; dataUrl: string }>((res) => {
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            const dataUrl = (ev.target?.result as string) || '';
+            const base64 = dataUrl.split(',')[1] || '';
+            let mimeType = att.rawFile!.type;
+            if (!mimeType) {
+              const ext = att.name.split('.').pop()?.toLowerCase();
+              if (ext === 'pdf') mimeType = 'application/pdf';
+              else if (ext === 'png') mimeType = 'image/png';
+              else if (ext === 'jpg' || ext === 'jpeg') mimeType = 'image/jpeg';
+              else mimeType = 'application/octet-stream';
+            }
+            res({ base64, mimeType, dataUrl });
+          };
+          reader.readAsDataURL(att.rawFile!);
+        });
+
         processedAttachments.push({
           ...att,
-          url: imgUrl,
+          url: att.type === 'image' ? fileData.dataUrl : att.url,
           textContent: text,
+          base64Data: fileData.base64,
+          mimeType: fileData.mimeType,
           isProcessed: true
         });
       } else {
@@ -288,20 +307,24 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
       .map(t => t.trim())
       .filter(t => t.length > 0);
 
-    setLaunchStep('Gemini AI analyzing multi-page document, filtering syllabus noise & generating structured study notes...');
+    setLaunchStep('Gemini AI analyzing multi-page PDF & study materials, filtering syllabus noise...');
     
-    const combinedText = processedAttachments
-      .map(a => a.textContent)
-      .filter(t => t && t.trim().length > 10)
-      .join('\n\n');
-
     let generatedNotes = null;
-    if (combinedText && combinedText.trim().length > 30) {
+    if (processedAttachments.length > 0) {
       try {
         const { generateAcademicNotesFromDocument } = await import('../../services/academicNotesEngine');
-        generatedNotes = await generateAcademicNotesFromDocument(combinedText, finalSubject.canonicalName, teacherTopics);
+        generatedNotes = await generateAcademicNotesFromDocument(
+          processedAttachments.map(a => ({
+            name: a.name,
+            textContent: a.textContent,
+            base64Data: a.base64Data,
+            mimeType: a.mimeType
+          })),
+          finalSubject.canonicalName,
+          teacherTopics
+        );
       } catch (e) {
-        console.warn('[Gemini Academic Generation Failed]', e);
+        console.warn('[Gemini Multimodal Generation Error]', e);
       }
     }
 
