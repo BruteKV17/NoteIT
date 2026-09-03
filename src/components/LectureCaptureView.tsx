@@ -1384,6 +1384,34 @@ export default function LectureCaptureView({
       chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [activeLectureId, isChatLoading]);
+  // Auto-trigger Note & Resource Generation if transcript exists but resources are missing!
+  useEffect(() => {
+    if (!activeLectureId) return;
+    const activeLec = lectures.find(l => l.id === activeLectureId);
+    if (!activeLec) return;
+
+    const hasNotes = activeLec.notes?.academic || activeLec.notes?.quick || activeLec.notes?.detailed;
+    const hasSummary = activeLec.summaries?.quick_revision || activeLec.summaries?.academic_format;
+    const transcriptText = activeLec.cleanTranscript || activeLec.transcript;
+
+    if (!hasNotes && !hasSummary && transcriptText && transcriptText.trim().length > 20) {
+      console.log('[LectureCaptureView] Saved transcript detected. Auto-generating notes & AI assets for:', activeLectureId);
+      setIsGeneratingNotes(true);
+      setIsGeneratingSummary(true);
+      generateResourcesFromTranscript(activeLectureId, transcriptText, { mode: 'academic', modeType: 'all' })
+        .then(() => {
+          console.log('[LectureCaptureView] Notes & assets auto-compiled successfully!');
+        })
+        .catch((err) => {
+          console.error('[LectureCaptureView] Auto note compilation failed:', err);
+        })
+        .finally(() => {
+          setIsGeneratingNotes(false);
+          setIsGeneratingSummary(false);
+        });
+    }
+  }, [activeLectureId, lectures]);
+
   // ----------------------------------------------------
   // MAIN ROUTING
   // ----------------------------------------------------
@@ -1405,6 +1433,8 @@ export default function LectureCaptureView({
     }
 
     const filteredNotes = notes.filter((n: any) => n.lectureId === activeLectureId);
+    const hasExistingNotes = activeLecture.notes?.academic || activeLecture.notes?.quick || activeLecture.notes?.detailed;
+    const hasExistingSummary = activeLecture.summaries?.quick_revision || activeLecture.summaries?.academic_format;
     
     return (
       <React.Fragment>
@@ -1473,6 +1503,42 @@ export default function LectureCaptureView({
             </span>
           </div>
         </div>
+
+        {/* RECORDED TRANSCRIPT AUTO-GENERATION BANNER IF NOTES ARE MISSING */}
+        {(!hasExistingNotes && !hasExistingSummary && (activeLecture.cleanTranscript || activeLecture.transcript)) && (
+          <div className="p-4 bg-[#FFC400] text-[#111111] border-b-2 border-[#111111] flex flex-col sm:flex-row items-center justify-between gap-3 shadow-paper-sm">
+            <div className="flex items-center gap-2.5">
+              <Sparkles className="h-5 w-5 text-[#111111] animate-bounce shrink-0" />
+              <div>
+                <h4 className="text-xs font-mono font-extrabold uppercase">Recorded Transcript Saved in Database!</h4>
+                <p className="text-[10px] font-mono font-bold text-[#334155]">
+                  {isGeneratingNotes || isGeneratingSummary ? 'AI is compiling study notes, executive summary, flashcards, & quiz now...' : 'Click below to compile full academic study notes, summary, flashcards & quiz now.'}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={async () => {
+                const text = activeLecture.cleanTranscript || activeLecture.transcript;
+                if (!text) return;
+                setIsGeneratingNotes(true);
+                setIsGeneratingSummary(true);
+                try {
+                  await generateResourcesFromTranscript(activeLecture.id, text, { mode: 'academic', modeType: 'all' });
+                  alert("Notes and AI assets compiled successfully!");
+                } catch (err: any) {
+                  alert(formatUserFriendlyErrorMessage(err, "Note generation paused"));
+                } finally {
+                  setIsGeneratingNotes(false);
+                  setIsGeneratingSummary(false);
+                }
+              }}
+              disabled={isGeneratingNotes || isGeneratingSummary}
+              className="px-4 py-2 bg-[#2F6BFF] text-white text-xs font-mono font-extrabold uppercase rounded-[6px] border-2 border-[#111111] shadow-paper-sm hover:bg-[#255cd9] cursor-pointer shrink-0 disabled:opacity-50"
+            >
+              {isGeneratingNotes || isGeneratingSummary ? 'Compiling Notes...' : '⚡ Generate Notes & Assets Now'}
+            </button>
+          </div>
+        )}
 
         {/* Mobile Workspace Toggle Header */}
         {isMobile && (
