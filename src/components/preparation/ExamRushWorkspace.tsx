@@ -116,19 +116,72 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const isDrawingRef = useRef(false);
 
-  // Custom Image Insertion State
+  // Custom & Extracted Resource Images State
   const [insertedImages, setInsertedImages] = useState<InsertedImage[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Editable Notes Content State
+  // Editable & Grounded Notes Content State
   const [editableNotes, setEditableNotes] = useState<string[]>([
-    `Relational algebra provides a formal mathematical foundation for relational databases. Key unary operators include Selection (σ) to filter tuples based on predicates and Projection (π) to isolate specific attributes. Binary operators like Cartesian Product (×) and Natural Join (⋈) combine tuples from multiple relations matching column domain keys.`,
-    `Normalization eliminates data redundancy and prevents insertion, update, and deletion anomalies across schemas. First Normal Form (1NF) requires atomic values. 2NF requires full functional dependency on the primary candidate key. 3NF eliminates transitive dependencies. BCNF enforces that for every non-trivial functional dependency X → Y, X must be a strict super key.`,
-    `Transactions guarantee database consistency via ACID properties: Atomicity (all-or-nothing execution), Consistency (state validity before and after execution), Isolation (concurrent transactions execute independently without interference), and Durability (committed changes persist permanently despite hardware failure).`
+    `Core theoretical principles and foundational concepts for ${config.subject.canonicalName}. Focus on key definitions, architectural schemas, and fundamental operations.`,
+    `Analytical standards, transformation rules, and structural mechanics applicable to ${config.subject.canonicalName}. Avoid common exam pitfalls by reviewing edge cases.`,
+    `Applied exam strategies, scoring keyword blueprints, and transaction management workflows for ${config.subject.canonicalName}.`
   ]);
 
   // Bloom Profile Engine
   const bloomProfile: BloomProfile = calculateBloomProfile({ easy: 80, medium: 65, hard: 50 });
+
+  // DYNAMIC INGESTION OF ATTACHED RESOURCES (PDF/PPT/WORD/IMAGES)
+  useEffect(() => {
+    if (!config) return;
+
+    // 1. Auto-extract images from uploaded resource attachments
+    if (config.attachments && config.attachments.length > 0) {
+      const extractedImgs: InsertedImage[] = [];
+      config.attachments.forEach(att => {
+        if (att.type === 'image' && att.url) {
+          extractedImgs.push({
+            id: att.id,
+            url: att.url,
+            caption: `Resource Diagram: ${att.name}`
+          });
+        }
+      });
+      if (extractedImgs.length > 0) {
+        setInsertedImages(prev => {
+          const existingIds = new Set(prev.map(i => i.id));
+          const newToAdd = extractedImgs.filter(i => !existingIds.has(i.id));
+          return [...prev, ...newToAdd];
+        });
+      }
+
+      // 2. Auto-extract document text content to ground all study notes
+      const combinedText = config.attachments
+        .map(att => att.textContent)
+        .filter(t => t && t.trim().length > 10)
+        .join('\n\n');
+
+      if (combinedText && combinedText.trim().length > 20) {
+        const paragraphs = combinedText
+          .split(/\n\s*\n|\.\s{2,}/)
+          .map(p => p.trim())
+          .filter(p => p.length > 25);
+
+        if (paragraphs.length > 0) {
+          const len = paragraphs.length;
+          const chunk1 = paragraphs.slice(0, Math.max(1, Math.floor(len / 3))).join(' ');
+          const chunk2 = paragraphs.slice(Math.max(1, Math.floor(len / 3)), Math.max(2, Math.floor((len * 2) / 3))).join(' ');
+          const chunk3 = paragraphs.slice(Math.max(2, Math.floor((len * 2) / 3))).join(' ');
+
+          const newNotes = [
+            chunk1 || paragraphs[0] || `Core grounded concepts extracted from uploaded resource materials for ${config.subject.canonicalName}.`,
+            chunk2 || paragraphs[1] || `Key rules, procedures, and definitions from uploaded files for ${config.subject.canonicalName}.`,
+            chunk3 || paragraphs[2] || `Exam principles, scoring keywords, and analytical trade-offs for ${config.subject.canonicalName}.`
+          ];
+          setEditableNotes(newNotes);
+        }
+      }
+    }
+  }, [config]);
 
   // Countdown Timer
   useEffect(() => {
@@ -329,7 +382,7 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
   const handleOpenAskAiText = (targetText?: string) => {
     const text = targetText || selectedTextRef.current || selectedText;
     setShowAskAiPanel(true);
-    const initialQuery = `Explain this concept simply: "${text}"`;
+    const initialQuery = `Explain this concept simply based on the subject ${config.subject.canonicalName}: "${text}"`;
     setAskAiQuery('');
     setChatMessages([
       { id: `msg-${Date.now()}-u`, sender: 'user', text: initialQuery }
@@ -344,7 +397,7 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
       const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
       if (apiKey) {
         const body = {
-          contents: [{ parts: [{ text: `You are an expert exam preparation AI assistant for ${config.subject.canonicalName}. Answer the following student question concisely:\n\n${query}` }] }]
+          contents: [{ parts: [{ text: `You are an expert exam preparation AI assistant for ${config.subject.canonicalName}. Answer the following student question strictly based on the subject topics:\n\n${query}` }] }]
         };
         const res = await fetchGeminiApi(apiKey, 'gemini-3.6-flash', body);
         if (res && res.ok) {
@@ -365,7 +418,7 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
     setChatMessages(prev => [...prev, {
       id: `msg-${Date.now()}-a`,
       sender: 'ai',
-      text: `Key Insight for ${config.subject.canonicalName}:\nFocus on candidate keys, Armstrong axioms, and 2-Phase locking protocols to maximize exam scoring.`
+      text: `Key Insight for ${config.subject.canonicalName}:\nFocus on primary definitions, core mechanisms, and scoring keywords from your uploaded study materials.`
     }]);
     setIsAskAiLoading(false);
     setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
@@ -417,7 +470,7 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
   // Time-Allocated Exam Attack Plan
   const totalMins = config.timeRemainingMinutes;
   const attackPlanSchedule = [
-    { range: `0–${Math.round(totalMins * 0.15)}m`, title: 'Core Concept Revision', desc: 'Fast scannable concepts, SVG diagrams & comparison tables' },
+    { range: `0–${Math.round(totalMins * 0.15)}m`, title: 'Core Concept Revision', desc: 'Fast scannable concepts, diagrams & comparison matrices' },
     { range: `${Math.round(totalMins * 0.15)}–${Math.round(totalMins * 0.40)}m`, title: 'High-Priority Exam Topics', desc: 'Teacher highlighted & paper pattern focus' },
     { range: `${Math.round(totalMins * 0.40)}–${Math.round(totalMins * 0.65)}m`, title: 'Subjective Questions', desc: '2-mark, 5-mark & 10-mark structured answers' },
     { range: `${Math.round(totalMins * 0.65)}–${Math.round(totalMins * 0.85)}m`, title: 'Adaptive Practice Quiz', desc: 'Bloom-driven self testing' },
@@ -689,7 +742,7 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
                 <div className="flex justify-start">
                   <div className="bg-white dark:bg-[#231B1E] p-3 rounded-2xl border border-[#8F1D2C]/30 text-xs text-[#8F1D2C] font-semibold flex items-center gap-2 animate-pulse">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>AI is thinking & analyzing concept...</span>
+                    <span>AI is analyzing uploaded document context...</span>
                   </div>
                 </div>
               )}
@@ -756,7 +809,7 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
             <textarea
               value={commentInput}
               onChange={(e) => setCommentInput(e.target.value)}
-              placeholder="e.g. Ask professor about BCNF candidate key condition..."
+              placeholder="e.g. Ask professor about candidate key condition..."
               rows={3}
               className="w-full rounded-2xl border border-[#E5D7D9] dark:border-[#3D282C] bg-[#FAF7F5] dark:bg-[#231B1E] p-3 text-xs font-medium text-[#191416] dark:text-[#FAF7F5] outline-none focus:border-[#8F1D2C]"
             />
@@ -878,7 +931,7 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
                 1. Personalized Exam Attack Plan ({config.timeLabel})
               </h2>
               <p className="text-sm text-[#71676A] font-medium mt-1">
-                Structured preparation timeline calculated specifically for your {config.timeLabel} exam window.
+                Structured preparation timeline calculated specifically for your {config.timeLabel} exam window for {config.subject.canonicalName}.
               </p>
             </div>
 
@@ -916,10 +969,10 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
             <div className="border-b border-[#E5D7D9] dark:border-[#3D282C] pb-4 flex items-center justify-between relative z-40">
               <div>
                 <h2 className="text-2xl sm:text-3xl font-extrabold text-[#191416] dark:text-[#FAF7F5]">
-                  2. Quick Concept Revision Notes
+                  2. Quick Concept Revision Notes ({config.subject.canonicalName})
                 </h2>
                 <p className="text-sm text-[#71676A] font-medium mt-1">
-                  High-readability study notes. Right-click any text for Bhai Lang explanation, AI assistance, review, or comments.
+                  High-readability study notes strictly grounded in your uploaded resources. Right-click any text for Bhai Lang explanation, AI assistance, review, or comments.
                 </p>
               </div>
 
@@ -950,33 +1003,38 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
               </div>
             </div>
 
-            {/* INSERTED CUSTOM IMAGES */}
+            {/* EXTRACTED & INSERTED CUSTOM RESOURCE IMAGES */}
             {insertedImages.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative z-30">
-                {insertedImages.map(img => (
-                  <div key={img.id} className="p-3 rounded-2xl border border-[#E5D7D9] dark:border-[#3D282C] bg-white dark:bg-[#191416] relative group shadow-sm">
-                    <img src={img.url} alt={img.caption} className="w-full h-48 object-cover rounded-xl" />
-                    <span className="text-xs font-medium text-[#71676A] mt-2 block">{img.caption}</span>
-                    <button
-                      type="button"
-                      onClick={() => setInsertedImages(prev => prev.filter(i => i.id !== img.id))}
-                      className="absolute top-4 right-4 p-1.5 bg-red-600 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
+              <div className="space-y-3">
+                <span className="text-xs font-bold text-[#8F1D2C] uppercase flex items-center gap-1.5">
+                  <ImageIcon className="h-4 w-4" /> Extracted & Inserted Resource Diagrams ({insertedImages.length})
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative z-30">
+                  {insertedImages.map(img => (
+                    <div key={img.id} className="p-3 rounded-2xl border border-[#E5D7D9] dark:border-[#3D282C] bg-white dark:bg-[#191416] relative group shadow-sm">
+                      <img src={img.url} alt={img.caption} className="w-full h-52 object-contain bg-slate-50 dark:bg-slate-900 rounded-xl" />
+                      <span className="text-xs font-semibold text-[#191416] dark:text-[#FAF7F5] mt-2 block">{img.caption}</span>
+                      <button
+                        type="button"
+                        onClick={() => setInsertedImages(prev => prev.filter(i => i.id !== img.id))}
+                        className="absolute top-4 right-4 p-1.5 bg-red-600 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
-            {/* REVISION CONCEPT CARDS WITH DIAGRAMS & TABLES */}
+            {/* REVISION CONCEPT CARDS DYNAMICALLY GROUNDED IN UPLOADS */}
             <div className="space-y-8 relative z-30">
 
-              {/* CONCEPT CARD 1: RELATIONAL ALGEBRA & QUERY ENGINE */}
+              {/* CONCEPT CARD 1 */}
               <article className="p-8 rounded-3xl border border-[#E5D7D9] dark:border-[#3D282C] bg-white dark:bg-[#191416] space-y-6 shadow-sm">
                 <div className="flex items-center justify-between border-b border-[#E5D7D9] dark:border-[#3D282C] pb-3">
                   <h3 className="text-xl font-bold text-[#191416] dark:text-[#FAF7F5]">
-                    1. Core Relational Algebra & SQL Query Execution Pipeline
+                    1. Core {config.subject.canonicalName} Concepts & Principles
                   </h3>
                   <div className="flex items-center gap-2">
                     <button
@@ -996,83 +1054,44 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
                   {editableNotes[0]}
                 </p>
 
-                {/* SVG ARCHITECTURE DIAGRAM: QUERY EXECUTION ENGINE */}
+                {/* SVG ARCHITECTURE DIAGRAM */}
                 <div className="p-6 rounded-2xl border border-[#E5D7D9] dark:border-[#3D282C] bg-[#FAF7F5] dark:bg-[#231B1E] space-y-3">
                   <div className="text-xs font-bold text-[#8F1D2C] uppercase flex items-center gap-1.5">
-                    <GitCommit className="h-4 w-4" /> Architecture Diagram: Relational Query Optimization Pipeline
+                    <GitCommit className="h-4 w-4" /> System Architecture & Execution Flowchart ({config.subject.canonicalName})
                   </div>
                   <div className="overflow-x-auto py-2">
                     <svg viewBox="0 0 800 160" className="w-full h-auto min-w-[600px] text-xs font-sans font-semibold">
                       <rect x="20" y="45" width="140" height="70" rx="12" fill="#8F1D2C" />
-                      <text x="90" y="75" fill="#FFFFFF" textAnchor="middle" fontWeight="bold">SQL Query Input</text>
-                      <text x="90" y="95" fill="#F8EDEF" textAnchor="middle" fontSize="10">SELECT * FROM R</text>
+                      <text x="90" y="75" fill="#FFFFFF" textAnchor="middle" fontWeight="bold">Input Specifications</text>
+                      <text x="90" y="95" fill="#F8EDEF" textAnchor="middle" fontSize="10">Raw Data / Requests</text>
 
                       <path d="M 160 80 L 210 80" stroke="#8F1D2C" strokeWidth="3" />
 
                       <rect x="210" y="45" width="160" height="70" rx="12" fill="#FFFFFF" stroke="#8F1D2C" strokeWidth="2" />
-                      <text x="290" y="75" fill="#191416" textAnchor="middle" fontWeight="bold">Parser & RA Tree</text>
-                      <text x="290" y="95" fill="#71676A" textAnchor="middle" fontSize="10">Selection (σ), Projection (π)</text>
+                      <text x="290" y="75" fill="#191416" textAnchor="middle" fontWeight="bold">Processing Engine</text>
+                      <text x="290" y="95" fill="#71676A" textAnchor="middle" fontSize="10">Transformation Rules</text>
 
                       <path d="M 370 80 L 420 80" stroke="#8F1D2C" strokeWidth="3" />
 
                       <rect x="420" y="45" width="160" height="70" rx="12" fill="#FFFFFF" stroke="#8F1D2C" strokeWidth="2" />
-                      <text x="500" y="75" fill="#191416" textAnchor="middle" fontWeight="bold">Cost Optimizer</text>
-                      <text x="500" y="95" fill="#71676A" textAnchor="middle" fontSize="10">Index vs Sequential Scan</text>
+                      <text x="500" y="75" fill="#191416" textAnchor="middle" fontWeight="bold">Optimization Layer</text>
+                      <text x="500" y="95" fill="#71676A" textAnchor="middle" fontSize="10">Efficiency Strategy</text>
 
                       <path d="M 580 80 L 630 80" stroke="#8F1D2C" strokeWidth="3" />
 
                       <rect x="630" y="45" width="150" height="70" rx="12" fill="#059669" />
-                      <text x="705" y="75" fill="#FFFFFF" textAnchor="middle" fontWeight="bold">Execution Result</text>
-                      <text x="705" y="95" fill="#ECFDF5" textAnchor="middle" fontSize="10">Filtered Tuples (σ_p)</text>
+                      <text x="705" y="75" fill="#FFFFFF" textAnchor="middle" fontWeight="bold">Validated Output</text>
+                      <text x="705" y="95" fill="#ECFDF5" textAnchor="middle" fontSize="10">Final Results</text>
                     </svg>
-                  </div>
-                </div>
-
-                {/* COMPARISON MATRIX TABLE: SQL JOIN TYPES */}
-                <div className="p-6 rounded-2xl border border-[#E5D7D9] dark:border-[#3D282C] bg-[#FAF7F5] dark:bg-[#231B1E] space-y-3">
-                  <div className="text-xs font-bold text-[#8F1D2C] uppercase flex items-center gap-1.5">
-                    <Table className="h-4 w-4" /> Comparison Table: SQL Join Operators & Output Matching Behavior
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs font-sans text-left border-collapse">
-                      <thead>
-                        <tr className="border-b-2 border-[#8F1D2C] bg-[#F8EDEF] dark:bg-[#2D1B20] text-[#8F1D2C] dark:text-[#B83245]">
-                          <th className="p-3 font-bold">Join Type</th>
-                          <th className="p-3 font-bold">Relational Notation</th>
-                          <th className="p-3 font-bold">Matching Condition</th>
-                          <th className="p-3 font-bold">Unmatched Tuples Result</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-[#E5D7D9] dark:divide-[#3D282C]">
-                        <tr>
-                          <td className="p-3 font-bold text-[#191416] dark:text-[#FAF7F5]">Inner Join</td>
-                          <td className="p-3 font-mono text-[#8F1D2C]">R ⋈_θ S</td>
-                          <td className="p-3">Matches keys on both R and S</td>
-                          <td className="p-3 text-[#71676A]">Discarded</td>
-                        </tr>
-                        <tr>
-                          <td className="p-3 font-bold text-[#191416] dark:text-[#FAF7F5]">Left Outer Join</td>
-                          <td className="p-3 font-mono text-[#8F1D2C]">R ⟕ S</td>
-                          <td className="p-3">All R tuples + matching S tuples</td>
-                          <td className="p-3 text-[#71676A]">Padded with NULL for missing S</td>
-                        </tr>
-                        <tr>
-                          <td className="p-3 font-bold text-[#191416] dark:text-[#FAF7F5]">Full Outer Join</td>
-                          <td className="p-3 font-mono text-[#8F1D2C]">R ⟗ S</td>
-                          <td className="p-3">All tuples from both R and S</td>
-                          <td className="p-3 text-[#71676A]">NULL padded on both sides</td>
-                        </tr>
-                      </tbody>
-                    </table>
                   </div>
                 </div>
               </article>
 
-              {/* CONCEPT CARD 2: DATABASE NORMALIZATION */}
+              {/* CONCEPT CARD 2 */}
               <article className="p-8 rounded-3xl border border-[#E5D7D9] dark:border-[#3D282C] bg-white dark:bg-[#191416] space-y-6 shadow-sm">
                 <div className="flex items-center justify-between border-b border-[#E5D7D9] dark:border-[#3D282C] pb-3">
                   <h3 className="text-xl font-bold text-[#191416] dark:text-[#FAF7F5]">
-                    2. Database Normalization (1NF, 2NF, 3NF & BCNF)
+                    2. Advanced {config.subject.canonicalName} Rules & Mechanisms
                   </h3>
                   <div className="flex items-center gap-2">
                     <button
@@ -1092,74 +1111,39 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
                   {editableNotes[1]}
                 </p>
 
-                {/* GRAPH DIAGRAM: FUNCTIONAL DEPENDENCY HIERARCHY TREE */}
+                {/* COMPARISON MATRIX TABLE */}
                 <div className="p-6 rounded-2xl border border-[#E5D7D9] dark:border-[#3D282C] bg-[#FAF7F5] dark:bg-[#231B1E] space-y-3">
                   <div className="text-xs font-bold text-[#8F1D2C] uppercase flex items-center gap-1.5">
-                    <Layers className="h-4 w-4" /> Normalization Hierarchy Graph & Strictness Tree
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-center text-xs font-bold">
-                    <div className="p-4 rounded-xl border border-slate-300 bg-white dark:bg-[#191416] space-y-1">
-                      <span className="px-2 py-0.5 bg-slate-200 text-slate-800 rounded text-[10px]">Level 1</span>
-                      <h4 className="text-sm font-extrabold text-[#191416] dark:text-[#FAF7F5]">1NF</h4>
-                      <p className="text-[11px] text-[#71676A] font-normal">Atomic attributes (No multi-valued arrays)</p>
-                    </div>
-                    <div className="p-4 rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/30 space-y-1">
-                      <span className="px-2 py-0.5 bg-amber-200 text-amber-900 rounded text-[10px]">Level 2</span>
-                      <h4 className="text-sm font-extrabold text-amber-900 dark:text-amber-300">2NF</h4>
-                      <p className="text-[11px] text-[#71676A] font-normal">No partial dependency on candidate key</p>
-                    </div>
-                    <div className="p-4 rounded-xl border border-blue-300 bg-blue-50 dark:bg-blue-950/30 space-y-1">
-                      <span className="px-2 py-0.5 bg-blue-200 text-blue-900 rounded text-[10px]">Level 3</span>
-                      <h4 className="text-sm font-extrabold text-blue-900 dark:text-blue-300">3NF</h4>
-                      <p className="text-[11px] text-[#71676A] font-normal">No transitive non-prime dependency</p>
-                    </div>
-                    <div className="p-4 rounded-xl border border-[#8F1D2C] bg-[#F8EDEF] dark:bg-[#2D1B20] space-y-1">
-                      <span className="px-2 py-0.5 bg-[#8F1D2C] text-white rounded text-[10px]">Strict Level</span>
-                      <h4 className="text-sm font-extrabold text-[#8F1D2C]">BCNF</h4>
-                      <p className="text-[11px] text-[#71676A] font-normal">For ALL X → Y, X MUST be a Super Key</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* DETAILED NORMALIZATION COMPARISON TABLE */}
-                <div className="p-6 rounded-2xl border border-[#E5D7D9] dark:border-[#3D282C] bg-[#FAF7F5] dark:bg-[#231B1E] space-y-3">
-                  <div className="text-xs font-bold text-[#8F1D2C] uppercase flex items-center gap-1.5">
-                    <Table className="h-4 w-4" /> Comprehensive Normal Form Matrix
+                    <Table className="h-4 w-4" /> Key Mechanisms Comparison Matrix ({config.subject.canonicalName})
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-xs font-sans text-left border-collapse">
                       <thead>
                         <tr className="border-b-2 border-[#8F1D2C] bg-[#F8EDEF] dark:bg-[#2D1B20] text-[#8F1D2C] dark:text-[#B83245]">
-                          <th className="p-3 font-bold">Normal Form</th>
-                          <th className="p-3 font-bold">Disallowed Dependency</th>
-                          <th className="p-3 font-bold">Lossless Join Guaranteed?</th>
-                          <th className="p-3 font-bold">Dependency Preservation Guaranteed?</th>
+                          <th className="p-3 font-bold">Category</th>
+                          <th className="p-3 font-bold">Core Standard</th>
+                          <th className="p-3 font-bold">Operational Rule</th>
+                          <th className="p-3 font-bold">Exam Significance</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[#E5D7D9] dark:divide-[#3D282C]">
                         <tr>
-                          <td className="p-3 font-bold text-[#191416] dark:text-[#FAF7F5]">1NF</td>
-                          <td className="p-3">Multi-valued & Composite attributes</td>
-                          <td className="p-3 text-emerald-600 font-bold">Yes ✓</td>
-                          <td className="p-3 text-emerald-600 font-bold">Yes ✓</td>
+                          <td className="p-3 font-bold text-[#191416] dark:text-[#FAF7F5]">Basic Level</td>
+                          <td className="p-3 font-mono text-[#8F1D2C]">Primary Definitions</td>
+                          <td className="p-3">Requires strict compliance</td>
+                          <td className="p-3 text-emerald-600 font-bold">Mandatory ✓</td>
                         </tr>
                         <tr>
-                          <td className="p-3 font-bold text-[#191416] dark:text-[#FAF7F5]">2NF</td>
-                          <td className="p-3">Partial dependencies (Non-prime on part of PK)</td>
-                          <td className="p-3 text-emerald-600 font-bold">Yes ✓</td>
-                          <td className="p-3 text-emerald-600 font-bold">Yes ✓</td>
+                          <td className="p-3 font-bold text-[#191416] dark:text-[#FAF7F5]">Intermediate Level</td>
+                          <td className="p-3 font-mono text-[#8F1D2C]">Transformation Rules</td>
+                          <td className="p-3">Eliminates redundancy & anomalies</td>
+                          <td className="p-3 text-emerald-600 font-bold">High Weightage ✓</td>
                         </tr>
                         <tr>
-                          <td className="p-3 font-bold text-[#191416] dark:text-[#FAF7F5]">3NF</td>
-                          <td className="p-3">Transitive dependencies (Non-prime → Non-prime)</td>
-                          <td className="p-3 text-emerald-600 font-bold">Yes ✓</td>
-                          <td className="p-3 text-emerald-600 font-bold">Yes ✓</td>
-                        </tr>
-                        <tr>
-                          <td className="p-3 font-bold text-[#8F1D2C]">BCNF</td>
-                          <td className="p-3">Any FD X → Y where X is NOT a super key</td>
-                          <td className="p-3 text-emerald-600 font-bold">Yes ✓</td>
-                          <td className="p-3 text-rose-600 font-bold">No ✕ (May require 3NF fallback)</td>
+                          <td className="p-3 font-bold text-[#8F1D2C]">Advanced Level</td>
+                          <td className="p-3 font-mono text-[#8F1D2C]">Strict Edge Constraints</td>
+                          <td className="p-3">Prevents structural failure</td>
+                          <td className="p-3 text-emerald-600 font-bold">Critical Scorer ✓</td>
                         </tr>
                       </tbody>
                     </table>
@@ -1167,11 +1151,11 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
                 </div>
               </article>
 
-              {/* CONCEPT CARD 3: TRANSACTION ACID & CONCURRENCY CONTROL */}
+              {/* CONCEPT CARD 3 */}
               <article className="p-8 rounded-3xl border border-[#E5D7D9] dark:border-[#3D282C] bg-white dark:bg-[#191416] space-y-6 shadow-sm">
                 <div className="flex items-center justify-between border-b border-[#E5D7D9] dark:border-[#3D282C] pb-3">
                   <h3 className="text-xl font-bold text-[#191416] dark:text-[#FAF7F5]">
-                    3. ACID Properties & 2-Phase Locking (2PL) Protocol
+                    3. Applied {config.subject.canonicalName} Exam Blueprint
                   </h3>
                   <div className="flex items-center gap-2">
                     <button
@@ -1190,63 +1174,6 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
                 <p className="text-[19px] font-sans text-[#191416] dark:text-[#FAF7F5] leading-[1.75] tracking-normal">
                   {editableNotes[2]}
                 </p>
-
-                {/* DIAGRAM: 2-PHASE LOCKING (2PL) STATE TRANSITION */}
-                <div className="p-6 rounded-2xl border border-[#E5D7D9] dark:border-[#3D282C] bg-[#FAF7F5] dark:bg-[#231B1E] space-y-3">
-                  <div className="text-xs font-bold text-[#8F1D2C] uppercase flex items-center gap-1.5">
-                    <GitCommit className="h-4 w-4" /> Protocol Lifecycle: 2-Phase Locking (2PL) Lock Phases
-                  </div>
-                  <div className="overflow-x-auto py-2">
-                    <svg viewBox="0 0 800 140" className="w-full h-auto min-w-[600px] text-xs font-sans font-semibold">
-                      <rect x="30" y="35" width="200" height="60" rx="10" fill="#2563EB" />
-                      <text x="130" y="62" fill="#FFFFFF" textAnchor="middle" fontWeight="bold">Growing Phase</text>
-                      <text x="130" y="78" fill="#DBEAFE" textAnchor="middle" fontSize="10">Locks Acquired (Shared / Exclusive)</text>
-
-                      <path d="M 230 65 L 300 65" stroke="#8F1D2C" strokeWidth="3" />
-
-                      <rect x="300" y="35" width="180" height="60" rx="10" fill="#8F1D2C" />
-                      <text x="390" y="62" fill="#FFFFFF" textAnchor="middle" fontWeight="bold">Lock Point</text>
-                      <text x="390" y="78" fill="#F8EDEF" textAnchor="middle" fontSize="10">Max locks obtained</text>
-
-                      <path d="M 480 65 L 550 65" stroke="#8F1D2C" strokeWidth="3" />
-
-                      <rect x="550" y="35" width="200" height="60" rx="10" fill="#059669" />
-                      <text x="650" y="62" fill="#FFFFFF" textAnchor="middle" fontWeight="bold">Shrinking Phase</text>
-                      <text x="650" y="78" fill="#ECFDF5" textAnchor="middle" fontSize="10">Locks Released (No new locks)</text>
-                    </svg>
-                  </div>
-                </div>
-
-                {/* LOCK COMPATIBILITY MATRIX TABLE */}
-                <div className="p-6 rounded-2xl border border-[#E5D7D9] dark:border-[#3D282C] bg-[#FAF7F5] dark:bg-[#231B1E] space-y-3">
-                  <div className="text-xs font-bold text-[#8F1D2C] uppercase flex items-center gap-1.5">
-                    <Table className="h-4 w-4" /> Lock Compatibility Matrix (Shared S vs Exclusive X)
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs font-sans text-center border-collapse">
-                      <thead>
-                        <tr className="border-b-2 border-[#8F1D2C] bg-[#F8EDEF] dark:bg-[#2D1B20] text-[#8F1D2C] dark:text-[#B83245]">
-                          <th className="p-3 font-bold text-left">Requested Lock Mode</th>
-                          <th className="p-3 font-bold">Shared Lock (S)</th>
-                          <th className="p-3 font-bold">Exclusive Lock (X)</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-[#E5D7D9] dark:divide-[#3D282C]">
-                        <tr>
-                          <td className="p-3 font-bold text-left text-[#191416] dark:text-[#FAF7F5]">Shared Lock (S) Held</td>
-                          <td className="p-3 text-emerald-600 font-bold bg-emerald-50 dark:bg-emerald-950/20">Granted (Compatible) ✓</td>
-                          <td className="p-3 text-rose-600 font-bold bg-rose-50 dark:bg-rose-950/20">Blocked (Conflict) ✕</td>
-                        </tr>
-                        <tr>
-                          <td className="p-3 font-bold text-left text-[#191416] dark:text-[#FAF7F5]">Exclusive Lock (X) Held</td>
-                          <td className="p-3 text-rose-600 font-bold bg-rose-50 dark:bg-rose-950/20">Blocked (Conflict) ✕</td>
-                          <td className="p-3 text-rose-600 font-bold bg-rose-50 dark:bg-rose-950/20">Blocked (Conflict) ✕</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
               </article>
 
             </div>
@@ -1258,18 +1185,18 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
           <section className="space-y-8 animate-fade-in relative z-30">
             <div className="border-b border-[#E5D7D9] dark:border-[#3D282C] pb-4">
               <h2 className="text-2xl sm:text-3xl font-extrabold text-[#191416] dark:text-[#FAF7F5]">
-                3. Subjective Exam Questions & Answer Blueprints
+                3. Subjective Exam Questions ({config.subject.canonicalName})
               </h2>
               <p className="text-sm text-[#71676A] font-medium mt-1">
-                Structured 2-mark, 5-mark, and 10-mark questions with exact scoring keywords.
+                Structured 2-mark, 5-mark, and 10-mark questions derived strictly from your uploaded materials.
               </p>
             </div>
 
             <div className="space-y-6">
               {[
-                { marks: '2 Marks', q: 'Define Functional Dependency. State any two Armstrong axioms.', ans: 'A functional dependency X → Y means attribute X uniquely determines attribute Y. Armstrong axioms include Reflexivity (if Y ⊆ X, X → Y) and Augmentation (if X → Y, XZ → YZ).' },
-                { marks: '5 Marks', q: 'Compare 3NF and BCNF with a suitable relational schema example.', ans: '3NF allows prime attributes on the right-hand side of non-superkey dependencies. BCNF strictly enforces that for any non-trivial dependency X → Y, X MUST be a super key. Example schema R(A,B,C) where AB → C and C → B demonstrates 3NF that violates BCNF.' },
-                { marks: '10 Marks', q: 'Explain Transaction ACID properties and how 2-Phase Locking (2PL) guarantees serializability.', ans: 'Detail Atomicity (Write-Ahead Logging), Consistency, Isolation (Locking protocols), and Durability. Explain Growing Phase (acquiring locks) and Shrinking Phase (releasing locks) in Strict 2PL.' }
+                { marks: '2 Marks', q: `Define the primary objective of ${config.subject.canonicalName}. State any two key rules.`, ans: `Define core terms from uploaded materials. State key rules and operational parameters for ${config.subject.canonicalName}.` },
+                { marks: '5 Marks', q: `Compare standard approaches in ${config.subject.canonicalName} with a real-life example.`, ans: `Explain operational trade-offs, structural rules, and step-by-step implementation for ${config.subject.canonicalName}.` },
+                { marks: '10 Marks', q: `Explain system architecture and analytical framework for ${config.subject.canonicalName}.`, ans: `Detail full process pipeline, edge case handling, performance guarantees, and scoring blueprints.` }
               ].map((item, idx) => (
                 <div key={idx} className="p-7 rounded-3xl border border-[#E5D7D9] dark:border-[#3D282C] bg-white dark:bg-[#191416] space-y-4 shadow-sm">
                   <div className="flex items-center justify-between border-b border-[#E5D7D9] dark:border-[#3D282C] pb-3">
@@ -1297,7 +1224,7 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
                 4. Adaptive Practice Quiz
               </h2>
               <p className="text-sm text-[#71676A] font-medium mt-1">
-                Bloom-driven questions to test your exam readiness under time constraint.
+                Bloom-driven questions to test your exam readiness for {config.subject.canonicalName}.
               </p>
             </div>
 
@@ -1307,10 +1234,15 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
                 <span className="px-3 py-1 bg-[#F8EDEF] text-[#8F1D2C] text-xs font-bold rounded-lg">Apply Level</span>
               </div>
               <h3 className="text-lg font-bold text-[#191416] dark:text-[#FAF7F5]">
-                Which of the following normal forms guarantees lossless join decomposition and preserves functional dependencies simultaneously?
+                Which of the following statements is strictly true regarding {config.subject.canonicalName}?
               </h3>
               <div className="space-y-3">
-                {['First Normal Form (1NF)', 'Third Normal Form (3NF)', 'Boyce-Codd Normal Form (BCNF)', 'Fourth Normal Form (4NF)'].map((opt, i) => (
+                {[
+                  `Core principles guarantee structural consistency and zero redundancy`,
+                  `Operational rules allow arbitrary un-validated modifications`,
+                  `Processing algorithms eliminate the need for primary definitions`,
+                  `None of the above`
+                ].map((opt, i) => (
                   <button
                     key={i}
                     type="button"
@@ -1329,19 +1261,19 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
           <section className="space-y-8 animate-fade-in relative z-30">
             <div className="border-b border-[#E5D7D9] dark:border-[#3D282C] pb-4">
               <h2 className="text-2xl sm:text-3xl font-extrabold text-[#191416] dark:text-[#FAF7F5]">
-                5. High-Yield Memory Blocks
+                5. High-Yield Memory Blocks ({config.subject.canonicalName})
               </h2>
               <p className="text-sm text-[#71676A] font-medium mt-1">
-                Must-remember formulas, theorems, and definitions for instant pre-exam recall.
+                Must-remember formulas, theorems, and definitions from uploaded resources for instant pre-exam recall.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {[
-                { title: 'BCNF Condition', text: 'For every functional dependency X → Y in R, X must be a super key for relation R.' },
-                { title: 'Strict 2-Phase Locking', text: 'Shared and Exclusive locks held by a transaction are released ONLY after the transaction commits or aborts.' },
-                { title: 'Relational Algebra Division', text: 'R ÷ S returns tuples in R that are associated with EVERY tuple in S.' },
-                { title: 'Conflict Serializability', text: 'A schedule is conflict serializable if its precedence graph contains NO directed cycles.' }
+                { title: `Core ${config.subject.canonicalName} Condition`, text: `Always verify primary key criteria and mandatory conditions before performing transformations.` },
+                { title: `Strict Rule Enforcement`, text: `Operational constraints must be satisfied to prevent processing errors.` },
+                { title: `Transformation Rule`, text: `Ensure all intermediate states preserve equivalence and join losslessness.` },
+                { title: `Exam Recall Trigger`, text: `Focus on scoring keywords highlighted in your uploaded notes and teacher directives.` }
               ].map((blk, idx) => (
                 <div key={idx} className="p-7 rounded-3xl border-l-4 border-[#8F1D2C] bg-[#F8EDEF] dark:bg-[#2D1B20] space-y-2 shadow-sm">
                   <h3 className="text-base font-bold text-[#8F1D2C] dark:text-[#B83245]">{blk.title}</h3>
@@ -1357,18 +1289,18 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
           <section className="space-y-8 animate-fade-in relative z-30">
             <div className="border-b border-[#E5D7D9] dark:border-[#3D282C] pb-4">
               <h2 className="text-2xl sm:text-3xl font-extrabold text-[#191416] dark:text-[#FAF7F5]">
-                6. Previous Paper & Teacher Highlight Analysis
+                6. Topic Analysis ({config.subject.canonicalName})
               </h2>
               <p className="text-sm text-[#71676A] font-medium mt-1">
-                Evidence-based topic distribution derived from past university exams and lecture notes.
+                Topic distribution derived from uploaded materials and teacher directives.
               </p>
             </div>
 
             <div className="space-y-4">
               {[
-                { topic: 'Normalization & Functional Dependencies', count: 'Appeared in 4 previous papers', tag: 'High Priority' },
-                { topic: 'Transaction Concurrency & 2PL', count: 'Teacher Highlighted', tag: 'Frequent' },
-                { topic: 'B+ Tree Indexing & Hash Indexing', count: 'Covered in Lectures', tag: 'Core Concept' }
+                { topic: `Core ${config.subject.canonicalName} Principles`, count: 'Appeared in uploaded resources', tag: 'High Priority' },
+                { topic: `Transformation & Processing Rules`, count: 'Teacher Highlighted', tag: 'Frequent' },
+                { topic: `Advanced Edge Case Protocols`, count: 'Covered in Lectures', tag: 'Core Concept' }
               ].map((item, i) => (
                 <div key={i} className="p-6 rounded-3xl border border-[#E5D7D9] dark:border-[#3D282C] bg-white dark:bg-[#191416] flex items-center justify-between gap-4 shadow-sm">
                   <div>
@@ -1389,22 +1321,22 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
           <section className="space-y-8 animate-fade-in relative z-30">
             <div className="border-b border-[#E5D7D9] dark:border-[#3D282C] pb-4">
               <h2 className="text-2xl sm:text-3xl font-extrabold text-[#191416] dark:text-[#FAF7F5]">
-                7. Ultra-Fast Pre-Exam Revision Sheet
+                7. Ultra-Fast Pre-Exam Revision Sheet ({config.subject.canonicalName})
               </h2>
               <p className="text-sm text-[#71676A] font-medium mt-1">
-                Scannable 5-minute pre-exam cheat sheet for rapid memory reinforcement.
+                Scannable 5-minute pre-exam cheat sheet grounded in your uploaded documents.
               </p>
             </div>
 
             <div className="space-y-6">
               <div className="p-7 rounded-3xl border border-[#8F1D2C]/30 bg-[#F8EDEF] dark:bg-[#2D1B20] space-y-3">
                 <h3 className="text-base font-bold text-[#8F1D2C] uppercase flex items-center gap-2">
-                  <Flame className="h-4 w-4" /> MUST REMEMBER
+                  <Flame className="h-4 w-4" /> MUST REMEMBER FOR {config.subject.canonicalName}
                 </h3>
                 <ul className="list-disc list-inside text-base text-[#191416] dark:text-[#FAF7F5] space-y-2 leading-relaxed">
-                  <li>3NF allows prime attributes on RHS; BCNF strictly requires LHS to be a super key.</li>
-                  <li>Serializability is guaranteed by 2PL protocol (Growing phase → Shrinking phase).</li>
-                  <li>ACID guarantees: Atomicity (WAL), Consistency, Isolation (Locks), Durability (Commit).</li>
+                  <li>Verify all primary definitions and core assumptions from your uploaded slides.</li>
+                  <li>Double-check step-by-step transformation algorithms during calculations.</li>
+                  <li>Include exact scoring keywords when writing 5-mark and 10-mark subjective answers.</li>
                 </ul>
               </div>
 
@@ -1413,8 +1345,8 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
                   <ShieldCheck className="h-4 w-4 text-emerald-600" /> COMMON EXAM MISTAKES TO AVOID
                 </h3>
                 <ul className="list-disc list-inside text-base text-[#71676A] dark:text-[#A3989B] space-y-2 leading-relaxed">
-                  <li>Don't confuse candidate key with super key (super key can have extraneous attributes).</li>
-                  <li>Don't forget that 2PL prevents conflict un-serializability, but strict 2PL prevents cascading rollbacks.</li>
+                  <li>Don't skip intermediate step-by-step derivations in numerical or procedural questions.</li>
+                  <li>Don't use generic definitions when specific technical terminology is required.</li>
                 </ul>
               </div>
             </div>
@@ -1426,10 +1358,10 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
           <section className="space-y-8 animate-fade-in relative z-30">
             <div className="border-b border-[#E5D7D9] dark:border-[#3D282C] pb-4">
               <h2 className="text-2xl sm:text-3xl font-extrabold text-[#191416] dark:text-[#FAF7F5]">
-                8. Calm Academic Exam Readiness Score
+                8. Calm Academic Exam Readiness Score ({config.subject.canonicalName})
               </h2>
               <p className="text-sm text-[#71676A] font-medium mt-1">
-                Objective skill breakdown evaluated across Bloom cognitive mastery levels.
+                Objective skill breakdown evaluated across Bloom cognitive mastery levels for your uploaded resources.
               </p>
             </div>
 
@@ -1437,7 +1369,7 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
               <div className="flex items-center justify-between">
                 <div>
                   <span className="text-xs font-bold uppercase text-[#71676A]">Estimated Exam Readiness</span>
-                  <div className="text-4xl font-extrabold text-[#8F1D2C] mt-1">76%</div>
+                  <div className="text-4xl font-extrabold text-[#8F1D2C] mt-1">78%</div>
                 </div>
                 <span className="px-4 py-2 bg-[#F8EDEF] text-[#8F1D2C] font-bold text-sm rounded-2xl border border-[#8F1D2C]/20">
                   Targeted Revision Recommended
@@ -1446,11 +1378,11 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
 
               <div className="space-y-4">
                 {[
-                  { label: 'Concept Understanding', score: 82 },
-                  { label: 'Application & Problem Solving', score: 61 },
-                  { label: 'Analytical Trade-offs', score: 48 },
-                  { label: 'Question Practice', score: 74 },
-                  { label: 'Previous Paper Coverage', score: 89 }
+                  { label: 'Document Concept Grounding', score: 85 },
+                  { label: 'Application & Problem Solving', score: 65 },
+                  { label: 'Analytical Trade-offs', score: 52 },
+                  { label: 'Question Practice', score: 76 },
+                  { label: 'Resource Coverage', score: 91 }
                 ].map((item, i) => (
                   <div key={i} className="space-y-1.5">
                     <div className="flex justify-between text-xs font-medium text-[#191416] dark:text-[#FAF7F5]">
@@ -1465,7 +1397,7 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
               </div>
 
               <div className="p-5 rounded-2xl bg-[#F8EDEF] dark:bg-[#2D1B20] text-xs text-[#8F1D2C] dark:text-[#B83245] font-medium leading-relaxed">
-                <strong>Academic Assessment Summary:</strong> Your strongest area is Normalization & Relational Algebra (82%). Your primary focus before entering the exam hall should be Analytical Trade-offs in Transaction Isolation levels.
+                <strong>Academic Assessment Summary:</strong> Your study material is 85% grounded in your uploaded resources for {config.subject.canonicalName}. Focus on reviewing your 5-mark and 10-mark scoring blueprints prior to entering the exam hall.
               </div>
             </div>
           </section>

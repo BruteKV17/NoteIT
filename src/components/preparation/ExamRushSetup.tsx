@@ -233,8 +233,17 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
       if (!att.isProcessed && att.rawFile) {
         setLaunchStep(`Extracting document content from ${att.name}...`);
         const text = await readFileContent(att.rawFile);
+        let imgUrl = att.url;
+        if (att.type === 'image' && !imgUrl && att.rawFile) {
+          imgUrl = await new Promise<string>((res) => {
+            const reader = new FileReader();
+            reader.onload = (ev) => res((ev.target?.result as string) || '');
+            reader.readAsDataURL(att.rawFile!);
+          });
+        }
         processedAttachments.push({
           ...att,
+          url: imgUrl,
           textContent: text,
           isProcessed: true
         });
