@@ -187,6 +187,28 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
           </p>
         </div>
 
+        {/* ATTACHED STUDY MATERIALS BADGE BANNER */}
+        {config.attachments && config.attachments.length > 0 && (
+          <div className="p-5 rounded-2xl border-2 border-[#2563EB] bg-[#EFF6FF] dark:bg-[#0F172A] space-y-2 shadow-sm">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-mono font-black uppercase text-[#2563EB] flex items-center gap-1.5">
+                <Sparkles className="h-4 w-4" /> Grounded in {config.attachments.length} Attached Materials & Web Links
+              </h3>
+              <span className="text-[10px] font-mono font-bold bg-[#2563EB] text-white px-2 py-0.5 rounded">
+                Knowledge Studio Ingested
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2 pt-1">
+              {config.attachments.map(att => (
+                <div key={att.id} className="px-3 py-1 bg-white dark:bg-slate-800 rounded-xl border border-blue-200 dark:border-slate-700 text-xs font-mono font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 shadow-sm">
+                  <span>{att.type === 'url' ? '🌐' : att.type === 'presentation' ? '📊' : att.type === 'image' ? '🖼️' : '📄'}</span>
+                  <span className="truncate max-w-[180px] font-extrabold">{att.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* 1. EXAM ATTACK PLAN */}
         {activeTab === 'attack_plan' && (
           <section className="space-y-6 animate-fade-in">

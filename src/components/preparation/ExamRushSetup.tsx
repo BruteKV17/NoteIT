@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   Zap, 
   Clock, 
@@ -10,15 +10,36 @@ import {
   Target, 
   ArrowRight, 
   FileText,
-  Brain
+  Brain,
+  Plus,
+  Upload,
+  Globe,
+  FileSpreadsheet,
+  FileDigit,
+  X,
+  Loader2,
+  CheckCircle2,
+  Trash2,
+  Paperclip
 } from 'lucide-react';
 import { searchCanonicalSubjects, CanonicalSubject, resolveCanonicalSubject } from '../../utils/subjectCanonicalizer';
+import { extractTextFromUrl } from '../../services/azure';
+
+export interface ExamRushAttachment {
+  id: string;
+  name: string;
+  type: 'document' | 'presentation' | 'image' | 'url';
+  url?: string;
+  textContent: string;
+  sizeLabel?: string;
+}
 
 export interface ExamRushConfig {
   subject: CanonicalSubject;
   timeRemainingMinutes: number;
   timeLabel: string;
   teacherTopics: string[];
+  attachments?: ExamRushAttachment[];
   intensity: 'quick_survival' | 'balanced' | 'deep_preparation';
 }
 
@@ -51,6 +72,14 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
   const [teacherTopicsInput, setTeacherTopicsInput] = useState('');
   const [intensity, setIntensity] = useState<'quick_survival' | 'balanced' | 'deep_preparation'>('balanced');
 
+  // Attachments and Web Link Extraction State
+  const [attachments, setAttachments] = useState<ExamRushAttachment[]>([]);
+  const [isAttachMenuOpen, setIsAttachMenuOpen] = useState(false);
+  const [showUrlDialog, setShowUrlDialog] = useState(false);
+  const [customUrlInput, setCustomUrlInput] = useState('');
+  const [isExtractingUrl, setIsExtractingUrl] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   const subjectResults = searchCanonicalSubjects(subjectQuery, selectedCategory);
 
   const BRANCH_CATEGORIES = [
@@ -71,6 +100,121 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
     setIsSubjectDropdownOpen(false);
   };
 
+  // Read uploaded file content (PPT, PDF, Word, Images, TXT)
+  const readFileContent = async (file: File): Promise<string> => {
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    
+    if (['txt', 'csv', 'json', 'md', 'html', 'js', 'ts'].includes(extension || '')) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve((e.target?.result as string) || '');
+        reader.onerror = reject;
+        reader.readAsText(file);
+      });
+    }
+
+    try {
+      const { getAzureUploadSasUrl, uploadBlobToAzure, extractTextFromDocument } = await import('../../services/azure');
+      const sas = await getAzureUploadSasUrl(file.name);
+      await uploadBlobToAzure(sas.uploadUrl, file, () => {});
+      const extractedText = await extractTextFromDocument(sas.blobPath);
+      if (extractedText && extractedText.trim()) return extractedText;
+    } catch (err) {
+      console.warn('[File Extraction] Azure extraction unavailable, using fallback text parsing:', err);
+    }
+
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const buffer = e.target?.result as ArrayBuffer;
+        const decoder = new TextDecoder('utf-8', { fatal: false });
+        const rawText = decoder.decode(buffer);
+        const cleaned = rawText.replace(/[^\x20-\x7E\n\r\t]/g, ' ').replace(/\s+/g, ' ').trim();
+        resolve(cleaned.slice(0, 15000) || `Uploaded file context from ${file.name}`);
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const ext = file.name.split('.').pop()?.toLowerCase() || '';
+      let type: 'document' | 'presentation' | 'image' | 'url' = 'document';
+      if (['ppt', 'pptx'].includes(ext)) type = 'presentation';
+      else if (['png', 'jpg', 'jpeg', 'webp'].includes(ext)) type = 'image';
+
+      const content = await readFileContent(file);
+      const newAtt: ExamRushAttachment = {
+        id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        name: file.name,
+        type,
+        textContent: content,
+        sizeLabel: `${(file.size / 1024).toFixed(1)} KB`
+      };
+
+      setAttachments(prev => [...prev, newAtt]);
+    }
+
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const extractUrlAndAttach = async (urlToFetch: string) => {
+    if (!urlToFetch || !urlToFetch.trim()) return;
+    const cleanUrl = urlToFetch.trim();
+    setIsExtractingUrl(true);
+
+    try {
+      const type = (cleanUrl.includes('youtube.com') || cleanUrl.includes('youtu.be')) ? 'youtube' : 'website';
+      const result = await extractTextFromUrl(cleanUrl, type);
+      
+      const newAtt: ExamRushAttachment = {
+        id: `url-${Date.now()}`,
+        name: result.title || cleanUrl,
+        type: 'url',
+        url: cleanUrl,
+        textContent: result.text || `Content extracted from ${cleanUrl}`,
+        sizeLabel: `${(result.text || '').length} chars`
+      };
+
+      setAttachments(prev => {
+        if (prev.some(a => a.url === cleanUrl)) return prev;
+        return [...prev, newAtt];
+      });
+    } catch (err) {
+      console.error('[URL Extraction Error]', err);
+    } finally {
+      setIsExtractingUrl(false);
+    }
+  };
+
+  // Automatic URL detection on typing/pasting into teacherTopicsInput
+  const handleTeacherTopicsChange = (val: string) => {
+    setTeacherTopicsInput(val);
+    const urlMatches = val.match(/(https?:\/\/[^\s]+)/gi);
+    if (urlMatches && urlMatches.length > 0) {
+      urlMatches.forEach(matchedUrl => {
+        if (!attachments.some(a => a.url === matchedUrl)) {
+          extractUrlAndAttach(matchedUrl);
+        }
+      });
+    }
+  };
+
+  const handleManualUrlSubmit = async () => {
+    if (!customUrlInput.trim()) return;
+    await extractUrlAndAttach(customUrlInput.trim());
+    setCustomUrlInput('');
+    setShowUrlDialog(false);
+  };
+
+  const removeAttachment = (id: string) => {
+    setAttachments(prev => prev.filter(a => a.id !== id));
+  };
+
   const handleStart = () => {
     const finalSubject = selectedSubject || resolveCanonicalSubject(subjectQuery || 'Database Management Systems');
     const finalMinutes = useCustomTime && customMinutes ? Math.max(10, parseInt(customMinutes, 10)) : selectedDuration.minutes;
@@ -86,6 +230,7 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
       timeRemainingMinutes: finalMinutes,
       timeLabel: finalLabel,
       teacherTopics,
+      attachments,
       intensity
     };
 
@@ -272,19 +417,160 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
           </div>
         </div>
 
-        {/* 3. TEACHER KEY TOPICS (OPTIONAL) */}
-        <div className="space-y-2 pt-4 border-t border-slate-200 dark:border-slate-700">
-          <label className="text-xs font-mono font-black uppercase tracking-wider text-black dark:text-slate-200 flex items-center justify-between">
-            <span>3. Teacher Key Topics (Optional)</span>
-            <span className="text-[10px] text-slate-400 font-bold">Priority Boost</span>
-          </label>
-          <textarea
-            value={teacherTopicsInput}
-            onChange={(e) => setTeacherTopicsInput(e.target.value)}
-            placeholder="Type key topics highlighted by teacher (e.g. Trees, AVL, Graphs, BFS, DFS, Normalization...)"
-            rows={2}
-            className="w-full rounded-2xl border-2 border-black dark:border-slate-600 bg-[#F8FAFC] dark:bg-[#0D1117] p-3.5 text-xs font-mono font-bold text-black dark:text-white placeholder-slate-400 outline-none focus:border-[#2563EB] custom-scrollbar"
+        {/* 3. TEACHER KEY TOPICS & EXAM MATERIALS (OPTIONAL) */}
+        <div className="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-mono font-black uppercase tracking-wider text-black dark:text-slate-200 flex items-center gap-2">
+              <span>3. Teacher Key Topics & Materials (Optional)</span>
+              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1">
+                <Sparkles className="h-3 w-3" /> Priority Boost
+              </span>
+            </label>
+
+            {/* PLUS (+) ATTACHMENT MENU BUTTON */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsAttachMenuOpen(!isAttachMenuOpen)}
+                className="px-2.5 py-1.5 rounded-xl border-2 border-black dark:border-slate-600 bg-[#FFC400] hover:bg-amber-400 text-black text-xs font-mono font-black flex items-center gap-1.5 shadow-paper-xs transition-all cursor-pointer"
+                title="Upload PPT, PDF, Word, Image or Add Web Link"
+              >
+                <Plus className="h-4 w-4" />
+                <span className="text-[11px] font-black uppercase">Attach Material</span>
+              </button>
+
+              {/* DROPDOWN ATTACHMENT OPTIONS */}
+              {isAttachMenuOpen && (
+                <div className="absolute right-0 z-50 mt-2 w-64 rounded-2xl border-2 border-black bg-white dark:bg-[#0D1117] shadow-2xl p-2 space-y-1 animate-fade-in">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      fileInputRef.current?.click();
+                      setIsAttachMenuOpen(false);
+                    }}
+                    className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-mono font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2.5 transition-colors cursor-pointer"
+                  >
+                    <Upload className="h-4 w-4 text-[#2563EB]" />
+                    <div>
+                      <div className="font-extrabold text-black dark:text-white">Upload File</div>
+                      <div className="text-[9px] text-slate-500 font-bold">PPT, PDF, Word (.docx), Image, TXT</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowUrlDialog(true);
+                      setIsAttachMenuOpen(false);
+                    }}
+                    className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-mono font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2.5 transition-colors cursor-pointer"
+                  >
+                    <Globe className="h-4 w-4 text-emerald-500" />
+                    <div>
+                      <div className="font-extrabold text-black dark:text-white">Add Web / YouTube Link</div>
+                      <div className="text-[9px] text-slate-500 font-bold">Extracts content from web URL</div>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* HIDDEN FILE INPUT FOR PPT, PDF, WORD, IMAGES */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept=".pdf,.ppt,.pptx,.doc,.docx,.png,.jpg,.jpeg,.webp,.txt"
+            onChange={handleFileUpload}
+            className="hidden"
           />
+
+          {/* TEXTAREA WITH AUTOMATIC LINK DETECTION */}
+          <div className="relative">
+            <textarea
+              value={teacherTopicsInput}
+              onChange={(e) => handleTeacherTopicsChange(e.target.value)}
+              placeholder="Type key topics (e.g. Trees, AVL, Normalization...) or paste any web/YouTube link..."
+              rows={2}
+              className="w-full rounded-2xl border-2 border-black dark:border-slate-600 bg-[#F8FAFC] dark:bg-[#0D1117] p-3.5 text-xs font-mono font-bold text-black dark:text-white placeholder-slate-400 outline-none focus:border-[#2563EB] custom-scrollbar"
+            />
+            {isExtractingUrl && (
+              <div className="absolute bottom-3 right-3 px-2.5 py-1 bg-[#2563EB] text-white text-[10px] font-mono font-bold rounded-lg flex items-center gap-1.5 animate-pulse shadow-sm">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                <span>Extracting link info...</span>
+              </div>
+            )}
+          </div>
+
+          {/* MANUAL URL INPUT DIALOG */}
+          {showUrlDialog && (
+            <div className="p-4 rounded-2xl border-2 border-black bg-blue-50 dark:bg-slate-800 space-y-3 animate-fade-in">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-black uppercase text-[#2563EB] flex items-center gap-1.5">
+                  <Globe className="h-4 w-4" /> Import Knowledge from Web or YouTube URL
+                </span>
+                <button type="button" onClick={() => setShowUrlDialog(false)} className="text-slate-500 hover:text-black">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="url"
+                  value={customUrlInput}
+                  onChange={(e) => setCustomUrlInput(e.target.value)}
+                  placeholder="Paste URL (e.g. https://wikipedia.org/... or YouTube video link)"
+                  className="flex-1 rounded-xl border-2 border-black dark:border-slate-600 bg-white dark:bg-[#0D1117] px-3 py-2 text-xs font-mono font-bold text-black dark:text-white outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={handleManualUrlSubmit}
+                  disabled={isExtractingUrl || !customUrlInput.trim()}
+                  className="px-4 py-2 rounded-xl border-2 border-black bg-[#2563EB] hover:bg-blue-700 text-white font-mono text-xs font-black uppercase disabled:opacity-50 cursor-pointer shadow-paper-xs"
+                >
+                  {isExtractingUrl ? 'Extracting...' : 'Gather Info'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ATTACHED MATERIALS BADGES LIST */}
+          {attachments.length > 0 && (
+            <div className="space-y-1.5 pt-1">
+              <div className="text-[10px] font-mono font-bold uppercase text-slate-500 flex items-center gap-1">
+                <Paperclip className="h-3 w-3" /> Attached Study Materials & Links ({attachments.length}):
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {attachments.map((att) => (
+                  <div
+                    key={att.id}
+                    className="px-3 py-1.5 rounded-xl border-2 border-black dark:border-slate-700 bg-amber-400/20 dark:bg-amber-400/10 text-xs font-mono font-bold text-black dark:text-white flex items-center gap-2 shadow-paper-xs"
+                  >
+                    {att.type === 'presentation' && <FileSpreadsheet className="h-3.5 w-3.5 text-amber-600" />}
+                    {att.type === 'document' && <FileText className="h-3.5 w-3.5 text-blue-600" />}
+                    {att.type === 'image' && <FileDigit className="h-3.5 w-3.5 text-purple-600" />}
+                    {att.type === 'url' && <Globe className="h-3.5 w-3.5 text-emerald-600" />}
+                    
+                    <div className="max-w-[200px] truncate">
+                      <span className="truncate block font-extrabold">{att.name}</span>
+                      <span className="text-[9px] text-slate-500 font-bold block">
+                        {att.type === 'url' ? 'Web Ingested' : att.sizeLabel || `${Math.round(att.textContent.length)} chars`}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => removeAttachment(att.id)}
+                      className="p-1 hover:bg-red-500/20 rounded-md text-red-600 transition-colors cursor-pointer"
+                      title="Remove material"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 4. PREPARATION STYLE */}
