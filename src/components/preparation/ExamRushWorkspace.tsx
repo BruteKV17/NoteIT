@@ -35,12 +35,12 @@ import {
   GitCommit,
   Table,
   Send,
-  Loader2
+  Loader2,
+  Sparkle
 } from 'lucide-react';
 import { ExamRushConfig } from './ExamRushSetup';
 import { calculateBloomProfile, getBloomLevelMetadata, BloomProfile } from '../../utils/bloomEngine';
 import { explainInBhaiLang } from '../../services/bhaiLangService';
-import MascotFloatingAnimation from '../MascotFloatingAnimation';
 import { Quiz, QuizQuestion, Lecture, Note } from '../../types';
 
 interface ExamRushWorkspaceProps {
@@ -70,6 +70,12 @@ interface InsertedImage {
   caption: string;
 }
 
+interface ChatMessage {
+  id: string;
+  sender: 'user' | 'ai';
+  text: string;
+}
+
 export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }: ExamRushWorkspaceProps) {
   const [secondsRemaining, setSecondsRemaining] = useState<number>(config.timeRemainingMinutes * 60);
   const [activeTab, setActiveTab] = useState<'attack_plan' | 'revision' | 'subjective' | 'quiz' | 'remember' | 'paper_analysis' | 'final_sheet' | 'readiness'>('attack_plan');
@@ -86,11 +92,12 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
   const [isBhaiLangLoading, setIsBhaiLangLoading] = useState(false);
   const bhaiLangBoxRef = useRef<HTMLDivElement | null>(null);
 
-  // Ask AI Panel State
+  // Interactive Ask AI Chatbot State
   const [showAskAiPanel, setShowAskAiPanel] = useState(false);
   const [askAiQuery, setAskAiQuery] = useState('');
-  const [askAiResponse, setAskAiResponse] = useState<string | null>(null);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isAskAiLoading, setIsAskAiLoading] = useState(false);
+  const chatBottomRef = useRef<HTMLDivElement | null>(null);
 
   // Review Drawer & Saved Items State
   const [reviewItems, setReviewItems] = useState<ReviewItem[]>([]);
@@ -140,6 +147,17 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
     return () => document.removeEventListener('fullscreenchange', handleFsChange);
   }, []);
 
+  // AUTOMATIC CLEANUP ON TAB SWITCHING
+  const handleTabChange = (newTab: any) => {
+    setActiveTab(newTab);
+    setBhaiLangExplanation(null);
+    setIsBhaiLangLoading(false);
+    setContextMenuPos(null);
+    setShowAskAiPanel(false);
+    setShowCommentDialog(false);
+    setIsDoodleActive(false);
+  };
+
   // RIGHT-CLICK (contextmenu) Event Listener
   useEffect(() => {
     const handleContextMenu = (e: MouseEvent) => {
@@ -147,7 +165,6 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
       let text = sel ? sel.toString().trim() : '';
 
       if (!text) {
-        // Extract word at click point
         const range = document.caretRangeFromPoint ? document.caretRangeFromPoint(e.clientX, e.clientY) : null;
         if (range && range.startContainer && range.startContainer.nodeValue) {
           const val = range.startContainer.nodeValue;
@@ -161,7 +178,7 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
       }
 
       if (text && text.length > 1) {
-        e.preventDefault(); // Prevent standard browser right-click menu
+        e.preventDefault();
         setSelectedText(text);
         selectedTextRef.current = text;
         setContextMenuPos({
@@ -262,7 +279,7 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
     return `${mins}m ${secs}s`;
   };
 
-  // Action Executions
+  // Actions
   const handleTriggerBhaiLang = async (textToExplain?: string) => {
     const text = textToExplain || selectedTextRef.current || selectedText;
     if (!text) return;
@@ -298,30 +315,31 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
   const handleOpenAskAiText = (targetText?: string) => {
     const text = targetText || selectedTextRef.current || selectedText;
     setShowAskAiPanel(true);
-    setAskAiQuery(`Explain this concept in detail: "${text}"`);
-    handleAskAiSubmit(`Explain this concept in detail: "${text}"`);
+    const initialQuery = `Explain this concept simply: "${text}"`;
+    setAskAiQuery('');
+    setChatMessages([
+      { id: `msg-${Date.now()}-u`, sender: 'user', text: initialQuery }
+    ]);
+    handleExecuteAiQuery(initialQuery);
   };
 
-  const handleAskAiSubmit = async (queryToRun?: string) => {
-    const q = queryToRun || askAiQuery;
-    if (!q || !q.trim()) return;
+  const handleExecuteAiQuery = async (query: string) => {
     setIsAskAiLoading(true);
-    setAskAiResponse(null);
-
     try {
       const { fetchGeminiApi } = await import('../../providers/GeminiProvider');
       const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
       if (apiKey) {
         const body = {
-          contents: [{ parts: [{ text: `You are an expert exam tutor for ${config.subject.canonicalName}. Answer the following student question concisely:\n\n${q}` }] }]
+          contents: [{ parts: [{ text: `You are an expert exam preparation AI assistant for ${config.subject.canonicalName}. Answer the following student question concisely:\n\n${query}` }] }]
         };
         const res = await fetchGeminiApi(apiKey, 'gemini-3.6-flash', body);
         if (res && res.ok) {
           const json = await res.json();
           const ans = json?.candidates?.[0]?.content?.parts?.[0]?.text;
           if (ans) {
-            setAskAiResponse(ans);
+            setChatMessages(prev => [...prev, { id: `msg-${Date.now()}-a`, sender: 'ai', text: ans }]);
             setIsAskAiLoading(false);
+            setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
             return;
           }
         }
@@ -330,8 +348,21 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
       console.warn('[Ask AI Error]', e);
     }
 
-    setAskAiResponse(`Key Insight for ${config.subject.canonicalName}:\nFocus on candidate keys, Armstrong axioms, and 2-Phase locking protocols to maximize exam scoring.`);
+    setChatMessages(prev => [...prev, {
+      id: `msg-${Date.now()}-a`,
+      sender: 'ai',
+      text: `Key Insight for ${config.subject.canonicalName}:\nFocus on candidate keys, Armstrong axioms, and 2-Phase locking protocols to maximize exam scoring.`
+    }]);
     setIsAskAiLoading(false);
+    setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+  };
+
+  const handleSendCustomAiQuery = () => {
+    if (!askAiQuery.trim()) return;
+    const text = askAiQuery.trim();
+    setAskAiQuery('');
+    setChatMessages(prev => [...prev, { id: `msg-${Date.now()}-u`, sender: 'user', text }]);
+    handleExecuteAiQuery(text);
   };
 
   const handleOpenCommentText = (targetText?: string) => {
@@ -384,9 +415,6 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
   return (
     <div className="fixed inset-0 z-[999999] h-screen w-screen overflow-y-auto bg-[#FAF7F5] dark:bg-[#120F10] text-[#191416] dark:text-[#FAF7F5] font-sans selection:bg-[#F8EDEF] selection:text-[#8F1D2C]">
       
-      {/* MASCOT COMPANION - RANDOM CORNER ENTRANCE */}
-      <MascotFloatingAnimation />
-
       {/* RIGHT-CLICK CONTEXT MENU (Z-100) */}
       {contextMenuPos && (
         <div 
@@ -544,7 +572,7 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
             <button
               key={tab.id}
               type="button"
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => handleTabChange(tab.id as any)}
               className={`px-4 py-2.5 rounded-xl flex items-center gap-2 shrink-0 transition-all cursor-pointer ${
                 isActive
                   ? 'bg-[#8F1D2C] text-white font-semibold shadow-sm'
@@ -558,40 +586,99 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
         })}
       </nav>
 
-      {/* ASK AI MODAL OVERLAY */}
+      {/* REDESIGNED INTERACTIVE ASK AI CHATBOT DRAWER/MODAL */}
       {showAskAiPanel && (
-        <div className="fixed inset-0 z-[110] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white dark:bg-[#191416] border border-[#8F1D2C]/40 rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-[#E5D7D9] dark:border-[#3D282C] pb-3">
-              <h3 className="text-sm font-bold text-[#8F1D2C] flex items-center gap-2">
-                <Bot className="h-5 w-5 text-emerald-600" /> ASK NOTEIT AI
-              </h3>
-              <button type="button" onClick={() => setShowAskAiPanel(false)} className="text-[#71676A] hover:text-[#191416]">
-                <X className="h-4 w-4" />
+        <div className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm flex items-center justify-end sm:p-6 animate-fade-in">
+          <div className="bg-white dark:bg-[#191416] border border-[#8F1D2C]/40 rounded-3xl w-full sm:max-w-md h-full sm:h-[650px] flex flex-col shadow-2xl overflow-hidden font-sans">
+            
+            {/* CHATBOT HEADER */}
+            <div className="p-4 border-b border-[#E5D7D9] dark:border-[#3D282C] bg-[#651522] text-white flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-[#8F1D2C] rounded-xl border border-red-400/30">
+                  <Bot className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-extrabold">NoteIT AI Exam Assistant</h3>
+                  <span className="text-[10px] text-red-200 font-medium block">
+                    {config.subject.canonicalName} Expert
+                  </span>
+                </div>
+              </div>
+              <button type="button" onClick={() => setShowAskAiPanel(false)} className="p-1 text-red-200 hover:text-white cursor-pointer">
+                <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="flex items-center gap-2">
+
+            {/* CHAT MESSAGES BODY */}
+            <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-[#FAF7F5] dark:bg-[#120F10] custom-scrollbar">
+              {chatMessages.map(msg => (
+                <div
+                  key={msg.id}
+                  className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[85%] p-3.5 rounded-2xl text-xs font-sans leading-relaxed whitespace-pre-line shadow-xs ${
+                      msg.sender === 'user'
+                        ? 'bg-[#651522] text-white rounded-tr-none font-medium'
+                        : 'bg-white dark:bg-[#231B1E] text-[#191416] dark:text-[#FAF7F5] border border-[#8F1D2C]/30 rounded-tl-none font-medium'
+                    }`}
+                  >
+                    {msg.text}
+                  </div>
+                </div>
+              ))}
+
+              {isAskAiLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-white dark:bg-[#231B1E] p-3 rounded-2xl border border-[#8F1D2C]/30 text-xs text-[#8F1D2C] font-semibold flex items-center gap-2 animate-pulse">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>AI is thinking & analyzing concept...</span>
+                  </div>
+                </div>
+              )}
+              <div ref={chatBottomRef} />
+            </div>
+
+            {/* SUGGESTED QUICK PROMPT CHIPS */}
+            <div className="px-4 py-2 bg-white dark:bg-[#191416] border-t border-[#E5D7D9] dark:border-[#3D282C] flex items-center gap-1.5 overflow-x-auto custom-scrollbar">
+              {[
+                "⚡ Real-world example",
+                "🎯 Top exam question",
+                "📝 3 bullet summary"
+              ].map((chip, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    setAskAiQuery(chip.slice(2));
+                    handleExecuteAiQuery(chip.slice(2));
+                  }}
+                  className="px-2.5 py-1 rounded-xl bg-[#F8EDEF] dark:bg-[#2D1B20] text-[#8F1D2C] dark:text-[#B83245] text-[11px] font-bold shrink-0 border border-[#8F1D2C]/20 hover:bg-[#8F1D2C] hover:text-white transition-colors cursor-pointer"
+                >
+                  {chip}
+                </button>
+              ))}
+            </div>
+
+            {/* CHAT INPUT BAR */}
+            <div className="p-3 bg-white dark:bg-[#191416] border-t border-[#E5D7D9] dark:border-[#3D282C] flex items-center gap-2">
               <input
                 type="text"
                 value={askAiQuery}
+                onKeyDown={(e) => e.key === 'Enter' && handleSendCustomAiQuery()}
                 onChange={(e) => setAskAiQuery(e.target.value)}
-                placeholder="Ask NoteIT AI any question on this concept..."
+                placeholder="Ask follow-up question..."
                 className="flex-1 rounded-xl border border-[#E5D7D9] dark:border-[#3D282C] bg-[#FAF7F5] dark:bg-[#231B1E] px-3.5 py-2.5 text-xs font-medium text-[#191416] dark:text-[#FAF7F5] outline-none focus:border-[#8F1D2C]"
               />
               <button
                 type="button"
-                onClick={() => handleAskAiSubmit()}
+                onClick={handleSendCustomAiQuery}
                 disabled={isAskAiLoading || !askAiQuery.trim()}
-                className="px-4 py-2.5 rounded-xl bg-[#8F1D2C] text-white text-xs font-bold disabled:opacity-50 flex items-center gap-1"
+                className="p-2.5 rounded-xl bg-[#8F1D2C] hover:bg-[#651522] text-white text-xs font-bold disabled:opacity-50 cursor-pointer shadow-sm"
               >
-                {isAskAiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                <Send className="h-4 w-4" />
               </button>
             </div>
-            {askAiResponse && (
-              <div className="p-4 rounded-2xl bg-[#FAF7F5] dark:bg-[#231B1E] border border-[#E5D7D9] dark:border-[#3D282C] text-xs font-sans leading-relaxed text-[#191416] dark:text-[#FAF7F5] whitespace-pre-line max-h-60 overflow-y-auto custom-scrollbar font-medium">
-                {askAiResponse}
-              </div>
-            )}
           </div>
         </div>
       )}
@@ -712,17 +799,22 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
           </div>
         )}
 
-        {/* USER COMMENTS LIST IF ANY */}
-        {comments.length > 0 && (
+        {/* USER COMMENTS LIST (SCOPED TO REVISION TAB) */}
+        {activeTab === 'revision' && comments.length > 0 && (
           <div className="p-5 rounded-3xl border border-rose-300 bg-rose-50 dark:bg-rose-950/20 space-y-2.5 relative z-30">
             <h4 className="text-xs font-bold uppercase text-rose-800 dark:text-rose-300 flex items-center gap-1.5">
               <MessageCircle className="h-4 w-4" /> Your Personal Notes & Comments ({comments.length})
             </h4>
             <div className="space-y-2">
               {comments.map(c => (
-                <div key={c.id} className="p-3 bg-white dark:bg-[#191416] rounded-xl border border-rose-200 dark:border-slate-800 text-xs font-sans">
-                  <span className="text-[11px] text-[#71676A] block font-medium">On text: "{c.targetText.slice(0, 40)}..."</span>
-                  <span className="text-sm font-bold text-[#191416] dark:text-[#FAF7F5] mt-1 block">💬 {c.commentText}</span>
+                <div key={c.id} className="p-3 bg-white dark:bg-[#191416] rounded-xl border border-rose-200 dark:border-slate-800 text-xs font-sans flex items-center justify-between">
+                  <div>
+                    <span className="text-[11px] text-[#71676A] block font-medium">On text: "{c.targetText.slice(0, 40)}..."</span>
+                    <span className="text-sm font-bold text-[#191416] dark:text-[#FAF7F5] mt-1 block">💬 {c.commentText}</span>
+                  </div>
+                  <button type="button" onClick={() => setComments(prev => prev.filter(item => item.id !== c.id))} className="text-[#71676A] hover:text-red-600">
+                    <X className="h-4 w-4" />
+                  </button>
                 </div>
               ))}
             </div>
@@ -757,7 +849,7 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
                     type="button"
                     onClick={() => {
                       const tabMap: Record<number, any> = { 0: 'revision', 1: 'remember', 2: 'subjective', 3: 'quiz', 4: 'final_sheet' };
-                      setActiveTab(tabMap[idx] || 'revision');
+                      handleTabChange(tabMap[idx] || 'revision');
                     }}
                     className="px-4 py-2 rounded-xl bg-[#8F1D2C] hover:bg-[#651522] text-white text-xs font-bold shrink-0 transition-all cursor-pointer flex items-center gap-1"
                   >
