@@ -339,65 +339,6 @@ export default function NotificationSettingsSection({
         ))}
       </div>
 
-      {/* DEBUG TELEMETRY STATUS PANEL & TEST PUSH FLOW */}
-      <div className="p-5 rounded-[6px] border-2 border-[#2F6BFF] bg-[var(--card-bg)] space-y-4 shadow-paper-sm font-mono text-xs">
-        <div className="flex items-center justify-between border-b-2 border-[var(--border-main)] pb-3">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-[#2F6BFF]" />
-            <h4 className="font-heading font-extrabold uppercase text-[var(--text-primary)] text-xs">
-              Notification Engine Telemetry & Testing
-            </h4>
-          </div>
-          <span className="px-2 py-0.5 rounded bg-[#2F6BFF] text-white text-[9px] font-extrabold uppercase">
-            DEBUG & TEST
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
-          <div className="p-2.5 rounded bg-[var(--panel-bg)] border border-[var(--border-main)]">
-            <span className="text-[10px] text-[var(--text-secondary)] font-bold block uppercase">Browser Permission</span>
-            <span className="font-extrabold text-[var(--text-primary)]">{permissionState.toUpperCase()}</span>
-          </div>
-          <div className="p-2.5 rounded bg-[var(--panel-bg)] border border-[var(--border-main)]">
-            <span className="text-[10px] text-[var(--text-secondary)] font-bold block uppercase">Service Worker</span>
-            <span className="font-extrabold text-[#19B56B]">REGISTERED & ACTIVE</span>
-          </div>
-          <div className="p-2.5 rounded bg-[var(--panel-bg)] border border-[var(--border-main)]">
-            <span className="text-[10px] text-[var(--text-secondary)] font-bold block uppercase">FCM Engine Status</span>
-            <span className="font-extrabold text-[var(--text-primary)]">FIREBASE PUSH READY</span>
-          </div>
-          <div className="p-2.5 rounded bg-[var(--panel-bg)] border border-[var(--border-main)]">
-            <span className="text-[10px] text-[var(--text-secondary)] font-bold block uppercase">Active User Account UID</span>
-            <span className="font-extrabold text-[var(--text-primary)] truncate block">{auth.currentUser?.uid ? `${auth.currentUser.uid.substring(0, 12)}...` : 'N/A'}</span>
-          </div>
-        </div>
-
-        <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-[var(--border-main)]">
-          <p className="text-[10px] text-[var(--text-secondary)] font-bold">
-            Test sending a native Windows / Android push notification even when NoteIT is closed.
-          </p>
-          <button
-            type="button"
-            onClick={async () => {
-              const { sendTestPushNotificationToBackend } = await import('../services/notificationService');
-              const res = await sendTestPushNotificationToBackend(
-                'NoteIT AI Native Test Push 🚀',
-                'This test proves background native Web Push is working even when NoteIT is closed!'
-              );
-              if (res.success) {
-                alert(`✅ TEST PUSH SENT SUCCESS!\n\n${res.message || 'Notification dispatched to registered device(s).'}`);
-              } else {
-                alert(`❌ TEST PUSH ERROR:\n\n${res.error || 'Failed to send test push notification.'}`);
-              }
-            }}
-            className="px-4 py-2.5 rounded-[4px] border-2 border-[var(--border-main)] bg-[#2F6BFF] text-white font-mono text-xs font-extrabold uppercase hover:bg-[#255cd9] transition-all shadow-paper-sm flex items-center gap-1.5 cursor-pointer shrink-0"
-          >
-            <Sparkles className="h-4 w-4" />
-            <span>Send Test Push Notification</span>
-          </button>
-        </div>
-      </div>
-
       {/* Opt-Out Disable All Button */}
       <div className="pt-4 border-t-2 border-[var(--border-main)] flex justify-between items-center">
         <button
