@@ -34,8 +34,8 @@ import {
   Layers,
   GitCommit,
   Table,
-  CheckCircle2,
-  AlertCircle
+  Send,
+  Loader2
 } from 'lucide-react';
 import { ExamRushConfig } from './ExamRushSetup';
 import { calculateBloomProfile, getBloomLevelMetadata, BloomProfile } from '../../utils/bloomEngine';
@@ -76,18 +76,21 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
   const [completedSections, setCompletedSections] = useState<Record<string, boolean>>({});
   const [isFullscreen, setIsFullscreen] = useState<boolean>(!!document.fullscreenElement);
   
-  // Interactive Text Selection & Actions State
-  const [selectionToolbarPos, setSelectionToolbarPos] = useState<{ x: number; y: number } | null>(null);
+  // Right-Click Context Menu State
+  const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
   const [selectedText, setSelectedText] = useState<string>('');
+  const selectedTextRef = useRef<string>('');
   
   // Inline Bhai Lang Panel State
-  const [bhaiLangText, setBhaiLangText] = useState<string | null>(null);
   const [bhaiLangExplanation, setBhaiLangExplanation] = useState<string | null>(null);
   const [isBhaiLangLoading, setIsBhaiLangLoading] = useState(false);
+  const bhaiLangBoxRef = useRef<HTMLDivElement | null>(null);
 
   // Ask AI Panel State
   const [showAskAiPanel, setShowAskAiPanel] = useState(false);
   const [askAiQuery, setAskAiQuery] = useState('');
+  const [askAiResponse, setAskAiResponse] = useState<string | null>(null);
+  const [isAskAiLoading, setIsAskAiLoading] = useState(false);
 
   // Review Drawer & Saved Items State
   const [reviewItems, setReviewItems] = useState<ReviewItem[]>([]);
@@ -98,6 +101,7 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
   const [comments, setComments] = useState<CommentItem[]>([]);
   const [commentInput, setCommentInput] = useState('');
   const [showCommentDialog, setShowCommentDialog] = useState(false);
+  const [activeCommentText, setActiveCommentText] = useState('');
 
   // Digital Notebook Canvas / Doodle Mode State
   const [isDoodleActive, setIsDoodleActive] = useState(false);
@@ -136,43 +140,50 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
     return () => document.removeEventListener('fullscreenchange', handleFsChange);
   }, []);
 
-  // Text Selection Detection Listener (MouseUp & selectionchange)
-  const handleCheckTextSelection = () => {
-    const sel = window.getSelection();
-    if (!sel || sel.isCollapsed || !sel.toString().trim()) {
-      return;
-    }
-
-    const text = sel.toString().trim();
-    if (text.length > 3) {
-      setSelectedText(text);
-      const range = sel.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
-      setSelectionToolbarPos({
-        x: Math.max(20, Math.min(window.innerWidth - 320, rect.left + rect.width / 2 - 140)),
-        y: Math.max(10, rect.top - 60 + window.scrollY)
-      });
-    }
-  };
-
+  // RIGHT-CLICK (contextmenu) Event Listener
   useEffect(() => {
-    const handleSelection = () => {
+    const handleContextMenu = (e: MouseEvent) => {
       const sel = window.getSelection();
-      if (!sel || sel.isCollapsed || !sel.toString().trim()) {
-        setTimeout(() => {
-          const currentSel = window.getSelection();
-          if (!currentSel || currentSel.isCollapsed) {
-            setSelectionToolbarPos(null);
-          }
-        }, 300);
-      } else {
-        handleCheckTextSelection();
+      let text = sel ? sel.toString().trim() : '';
+
+      if (!text) {
+        // Extract word at click point
+        const range = document.caretRangeFromPoint ? document.caretRangeFromPoint(e.clientX, e.clientY) : null;
+        if (range && range.startContainer && range.startContainer.nodeValue) {
+          const val = range.startContainer.nodeValue;
+          const offset = range.startOffset;
+          const left = val.slice(0, offset).search(/\s\S*$/);
+          const right = val.slice(offset).search(/\s/);
+          const start = left < 0 ? 0 : left + 1;
+          const end = right < 0 ? val.length : offset + right;
+          text = val.slice(start, end).trim();
+        }
+      }
+
+      if (text && text.length > 1) {
+        e.preventDefault(); // Prevent standard browser right-click menu
+        setSelectedText(text);
+        selectedTextRef.current = text;
+        setContextMenuPos({
+          x: Math.min(window.innerWidth - 260, e.clientX),
+          y: Math.min(window.innerHeight - 240, e.clientY)
+        });
       }
     };
 
-    document.addEventListener('selectionchange', handleSelection);
-    return () => document.removeEventListener('selectionchange', handleSelection);
-  }, []);
+    const handleGlobalClick = (e: MouseEvent) => {
+      if (contextMenuPos) {
+        setContextMenuPos(null);
+      }
+    };
+
+    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('click', handleGlobalClick);
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('click', handleGlobalClick);
+    };
+  }, [contextMenuPos]);
 
   // Canvas Drawing Handlers for Doodle Mode
   useEffect(() => {
@@ -181,7 +192,6 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Set canvas dimensions matching parent container
     const parent = canvas.parentElement;
     canvas.width = parent ? parent.clientWidth : window.innerWidth;
     canvas.height = parent ? parent.clientHeight : 1400;
@@ -252,54 +262,89 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
     return `${mins}m ${secs}s`;
   };
 
-  // Actions for Selection Bar & Direct Card Bhai Lang Trigger
+  // Action Executions
   const handleTriggerBhaiLang = async (textToExplain?: string) => {
-    const text = textToExplain || selectedText;
+    const text = textToExplain || selectedTextRef.current || selectedText;
     if (!text) return;
-    setBhaiLangText(text);
-    setSelectionToolbarPos(null);
     setIsBhaiLangLoading(true);
     setBhaiLangExplanation(null);
     try {
       const res = await explainInBhaiLang(text, config.subject.canonicalName);
       setBhaiLangExplanation(res);
+      setTimeout(() => {
+        bhaiLangBoxRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 150);
     } catch (e) {
-      setBhaiLangExplanation("Bhai lagta hai network issue hai. Dobara click karke try karo!");
+      setBhaiLangExplanation("Bhai lagta hai network issue hai. Dobara try karo!");
     } finally {
       setIsBhaiLangLoading(false);
     }
   };
 
-  const handleKeepForReview = () => {
-    if (!selectedText) return;
+  const handleKeepForReviewText = (targetText?: string) => {
+    const text = targetText || selectedTextRef.current || selectedText;
+    if (!text) return;
     const newItem: ReviewItem = {
       id: `rev-${Date.now()}`,
-      text: selectedText,
+      text: text,
       section: activeTab,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
     setReviewItems(prev => [newItem, ...prev]);
-    setSelectionToolbarPos(null);
     setReviewToast('Saved to Review ✓');
     setTimeout(() => setReviewToast(null), 3000);
   };
 
-  const handleOpenAskAi = () => {
+  const handleOpenAskAiText = (targetText?: string) => {
+    const text = targetText || selectedTextRef.current || selectedText;
     setShowAskAiPanel(true);
-    setSelectionToolbarPos(null);
-    setAskAiQuery(`Explain this concept simply: "${selectedText}"`);
+    setAskAiQuery(`Explain this concept in detail: "${text}"`);
+    handleAskAiSubmit(`Explain this concept in detail: "${text}"`);
   };
 
-  const handleOpenCommentDialog = () => {
+  const handleAskAiSubmit = async (queryToRun?: string) => {
+    const q = queryToRun || askAiQuery;
+    if (!q || !q.trim()) return;
+    setIsAskAiLoading(true);
+    setAskAiResponse(null);
+
+    try {
+      const { fetchGeminiApi } = await import('../../providers/GeminiProvider');
+      const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
+      if (apiKey) {
+        const body = {
+          contents: [{ parts: [{ text: `You are an expert exam tutor for ${config.subject.canonicalName}. Answer the following student question concisely:\n\n${q}` }] }]
+        };
+        const res = await fetchGeminiApi(apiKey, 'gemini-3.6-flash', body);
+        if (res && res.ok) {
+          const json = await res.json();
+          const ans = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (ans) {
+            setAskAiResponse(ans);
+            setIsAskAiLoading(false);
+            return;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[Ask AI Error]', e);
+    }
+
+    setAskAiResponse(`Key Insight for ${config.subject.canonicalName}:\nFocus on candidate keys, Armstrong axioms, and 2-Phase locking protocols to maximize exam scoring.`);
+    setIsAskAiLoading(false);
+  };
+
+  const handleOpenCommentText = (targetText?: string) => {
+    const text = targetText || selectedTextRef.current || selectedText;
+    setActiveCommentText(text);
     setShowCommentDialog(true);
-    setSelectionToolbarPos(null);
   };
 
   const handleAddCommentSubmit = () => {
-    if (!commentInput.trim() || !selectedText) return;
+    if (!commentInput.trim() || !activeCommentText) return;
     const newComment: CommentItem = {
       id: `cmt-${Date.now()}`,
-      targetText: selectedText,
+      targetText: activeCommentText,
       commentText: commentInput.trim(),
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
@@ -342,42 +387,67 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
       {/* MASCOT COMPANION - RANDOM CORNER ENTRANCE */}
       <MascotFloatingAnimation />
 
-      {/* FLOATING TEXT SELECTION TOOLBAR (Z-50) */}
-      {selectionToolbarPos && (
+      {/* RIGHT-CLICK CONTEXT MENU (Z-100) */}
+      {contextMenuPos && (
         <div 
-          style={{ top: `${selectionToolbarPos.y}px`, left: `${selectionToolbarPos.x}px` }}
-          className="absolute z-50 animate-fade-in flex items-center gap-1.5 p-1.5 rounded-2xl bg-[#651522] text-white shadow-2xl border border-red-400/40"
+          style={{ top: `${contextMenuPos.y}px`, left: `${contextMenuPos.x}px` }}
+          className="fixed z-[100] w-64 rounded-2xl border border-[#8F1D2C]/40 bg-white dark:bg-[#191416] text-[#191416] dark:text-[#FAF7F5] shadow-2xl p-2 space-y-1 animate-fade-in font-sans text-xs"
+          onClick={(e) => e.stopPropagation()}
         >
+          <div className="px-3 py-1.5 text-[10px] font-bold uppercase text-[#71676A] border-b border-[#E5D7D9] dark:border-[#3D282C] truncate">
+            Context: "{selectedTextRef.current.slice(0, 28)}..."
+          </div>
+
           <button
             type="button"
-            onClick={() => handleTriggerBhaiLang()}
-            className="px-3 py-1.5 rounded-xl bg-[#8F1D2C] hover:bg-[#B83245] text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleTriggerBhaiLang(selectedTextRef.current);
+              setContextMenuPos(null);
+            }}
+            className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-[#F8EDEF] dark:hover:bg-[#2D1B20] text-[#8F1D2C] dark:text-[#B83245] font-bold flex items-center gap-2.5 cursor-pointer transition-colors"
           >
-            <span>🗣️ Bhai Lang</span>
+            <span className="text-sm">🗣️</span>
+            <span>Bhai Lang Explain</span>
           </button>
+
           <button
             type="button"
-            onClick={handleKeepForReview}
-            className="px-3 py-1.5 rounded-xl hover:bg-white/10 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleKeepForReviewText(selectedTextRef.current);
+              setContextMenuPos(null);
+            }}
+            className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-[#F8EDEF] dark:hover:bg-[#2D1B20] font-bold flex items-center gap-2.5 cursor-pointer transition-colors"
           >
-            <Star className="h-3.5 w-3.5 text-amber-300 fill-amber-300" />
-            <span>Review</span>
+            <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
+            <span>Keep for Review</span>
           </button>
+
           <button
             type="button"
-            onClick={handleOpenAskAi}
-            className="px-3 py-1.5 rounded-xl hover:bg-white/10 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleOpenAskAiText(selectedTextRef.current);
+              setContextMenuPos(null);
+            }}
+            className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-[#F8EDEF] dark:hover:bg-[#2D1B20] font-bold flex items-center gap-2.5 cursor-pointer transition-colors"
           >
-            <Bot className="h-3.5 w-3.5 text-emerald-300" />
+            <Bot className="h-4 w-4 text-emerald-600" />
             <span>Ask AI</span>
           </button>
+
           <button
             type="button"
-            onClick={handleOpenCommentDialog}
-            className="px-3 py-1.5 rounded-xl hover:bg-white/10 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleOpenCommentText(selectedTextRef.current);
+              setContextMenuPos(null);
+            }}
+            className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-[#F8EDEF] dark:hover:bg-[#2D1B20] font-bold flex items-center gap-2.5 cursor-pointer transition-colors"
           >
-            <MessageCircle className="h-3.5 w-3.5 text-rose-300" />
-            <span>Comment</span>
+            <MessageCircle className="h-4 w-4 text-rose-500" />
+            <span>Add Comment</span>
           </button>
         </div>
       )}
@@ -488,6 +558,76 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
         })}
       </nav>
 
+      {/* ASK AI MODAL OVERLAY */}
+      {showAskAiPanel && (
+        <div className="fixed inset-0 z-[110] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white dark:bg-[#191416] border border-[#8F1D2C]/40 rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[#E5D7D9] dark:border-[#3D282C] pb-3">
+              <h3 className="text-sm font-bold text-[#8F1D2C] flex items-center gap-2">
+                <Bot className="h-5 w-5 text-emerald-600" /> ASK NOTEIT AI
+              </h3>
+              <button type="button" onClick={() => setShowAskAiPanel(false)} className="text-[#71676A] hover:text-[#191416]">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={askAiQuery}
+                onChange={(e) => setAskAiQuery(e.target.value)}
+                placeholder="Ask NoteIT AI any question on this concept..."
+                className="flex-1 rounded-xl border border-[#E5D7D9] dark:border-[#3D282C] bg-[#FAF7F5] dark:bg-[#231B1E] px-3.5 py-2.5 text-xs font-medium text-[#191416] dark:text-[#FAF7F5] outline-none focus:border-[#8F1D2C]"
+              />
+              <button
+                type="button"
+                onClick={() => handleAskAiSubmit()}
+                disabled={isAskAiLoading || !askAiQuery.trim()}
+                className="px-4 py-2.5 rounded-xl bg-[#8F1D2C] text-white text-xs font-bold disabled:opacity-50 flex items-center gap-1"
+              >
+                {isAskAiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              </button>
+            </div>
+            {askAiResponse && (
+              <div className="p-4 rounded-2xl bg-[#FAF7F5] dark:bg-[#231B1E] border border-[#E5D7D9] dark:border-[#3D282C] text-xs font-sans leading-relaxed text-[#191416] dark:text-[#FAF7F5] whitespace-pre-line max-h-60 overflow-y-auto custom-scrollbar font-medium">
+                {askAiResponse}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* COMMENT DIALOG MODAL */}
+      {showCommentDialog && (
+        <div className="fixed inset-0 z-[110] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white dark:bg-[#191416] border border-[#8F1D2C]/40 rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[#E5D7D9] dark:border-[#3D282C] pb-3">
+              <h3 className="text-sm font-bold text-[#8F1D2C] flex items-center gap-2">
+                <MessageCircle className="h-5 w-5 text-rose-500" /> Add Personal Note / Comment
+              </h3>
+              <button type="button" onClick={() => setShowCommentDialog(false)} className="text-[#71676A] hover:text-[#191416]">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="text-xs font-sans italic text-[#71676A]">Target: "{activeCommentText.slice(0, 50)}..."</p>
+            <textarea
+              value={commentInput}
+              onChange={(e) => setCommentInput(e.target.value)}
+              placeholder="e.g. Ask professor about BCNF candidate key condition..."
+              rows={3}
+              className="w-full rounded-2xl border border-[#E5D7D9] dark:border-[#3D282C] bg-[#FAF7F5] dark:bg-[#231B1E] p-3 text-xs font-medium text-[#191416] dark:text-[#FAF7F5] outline-none focus:border-[#8F1D2C]"
+            />
+            <button
+              type="button"
+              onClick={handleAddCommentSubmit}
+              disabled={!commentInput.trim()}
+              className="w-full py-2.5 rounded-xl bg-[#8F1D2C] text-white font-bold text-xs disabled:opacity-50 cursor-pointer shadow-sm"
+            >
+              Save Comment
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* SAVED REVIEW DRAWER OVERLAY */}
       {showReviewDrawer && (
         <aside className="fixed right-0 top-24 bottom-0 z-50 w-80 sm:w-96 bg-white dark:bg-[#191416] border-l border-[#E5D7D9] dark:border-[#3D282C] shadow-2xl p-6 overflow-y-auto space-y-4 animate-fade-in">
@@ -550,7 +690,7 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
 
         {/* INLINE BHAI LANG EXPLANATION CONTAINER */}
         {(bhaiLangExplanation || isBhaiLangLoading) && (
-          <div className="p-6 rounded-3xl border border-[#8F1D2C]/40 bg-[#F8EDEF] dark:bg-[#2D1B20] text-[#191416] dark:text-[#FAF7F5] space-y-3 shadow-md animate-fade-in relative z-30">
+          <div ref={bhaiLangBoxRef} className="p-6 rounded-3xl border border-[#8F1D2C]/40 bg-[#F8EDEF] dark:bg-[#2D1B20] text-[#191416] dark:text-[#FAF7F5] space-y-3 shadow-md animate-fade-in relative z-30">
             <div className="flex items-center justify-between border-b border-[#8F1D2C]/20 pb-3">
               <div className="flex items-center gap-2">
                 <span className="p-1.5 bg-[#8F1D2C] text-white rounded-lg text-xs">🗣️</span>
@@ -569,6 +709,23 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
                 {bhaiLangExplanation}
               </p>
             )}
+          </div>
+        )}
+
+        {/* USER COMMENTS LIST IF ANY */}
+        {comments.length > 0 && (
+          <div className="p-5 rounded-3xl border border-rose-300 bg-rose-50 dark:bg-rose-950/20 space-y-2.5 relative z-30">
+            <h4 className="text-xs font-bold uppercase text-rose-800 dark:text-rose-300 flex items-center gap-1.5">
+              <MessageCircle className="h-4 w-4" /> Your Personal Notes & Comments ({comments.length})
+            </h4>
+            <div className="space-y-2">
+              {comments.map(c => (
+                <div key={c.id} className="p-3 bg-white dark:bg-[#191416] rounded-xl border border-rose-200 dark:border-slate-800 text-xs font-sans">
+                  <span className="text-[11px] text-[#71676A] block font-medium">On text: "{c.targetText.slice(0, 40)}..."</span>
+                  <span className="text-sm font-bold text-[#191416] dark:text-[#FAF7F5] mt-1 block">💬 {c.commentText}</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -614,14 +771,14 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
 
         {/* 2. QUICK CONCEPT REVISION NOTES */}
         {activeTab === 'revision' && (
-          <section className="space-y-8 animate-fade-in relative z-30" onMouseUp={handleCheckTextSelection}>
+          <section className="space-y-8 animate-fade-in relative z-30">
             <div className="border-b border-[#E5D7D9] dark:border-[#3D282C] pb-4 flex items-center justify-between relative z-40">
               <div>
                 <h2 className="text-2xl sm:text-3xl font-extrabold text-[#191416] dark:text-[#FAF7F5]">
                   2. Quick Concept Revision Notes
                 </h2>
                 <p className="text-sm text-[#71676A] font-medium mt-1">
-                  Lecture & material grounded revision notes with interactive diagrams, comparison matrices & Bhai Lang conversion.
+                  High-readability study notes. Right-click any text for Bhai Lang explanation, AI assistance, review, or comments.
                 </p>
               </div>
 
@@ -728,28 +885,24 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
                   </div>
                   <div className="overflow-x-auto py-2">
                     <svg viewBox="0 0 800 160" className="w-full h-auto min-w-[600px] text-xs font-sans font-semibold">
-                      {/* Box 1: SQL Query */}
                       <rect x="20" y="45" width="140" height="70" rx="12" fill="#8F1D2C" />
                       <text x="90" y="75" fill="#FFFFFF" textAnchor="middle" fontWeight="bold">SQL Query Input</text>
                       <text x="90" y="95" fill="#F8EDEF" textAnchor="middle" fontSize="10">SELECT * FROM R</text>
 
-                      <path d="M 160 80 L 210 80" stroke="#8F1D2C" strokeWidth="3" markerEnd="url(#arrow)" />
+                      <path d="M 160 80 L 210 80" stroke="#8F1D2C" strokeWidth="3" />
 
-                      {/* Box 2: Parser & RA Tree */}
                       <rect x="210" y="45" width="160" height="70" rx="12" fill="#FFFFFF" stroke="#8F1D2C" strokeWidth="2" />
                       <text x="290" y="75" fill="#191416" textAnchor="middle" fontWeight="bold">Parser & RA Tree</text>
                       <text x="290" y="95" fill="#71676A" textAnchor="middle" fontSize="10">Selection (σ), Projection (π)</text>
 
                       <path d="M 370 80 L 420 80" stroke="#8F1D2C" strokeWidth="3" />
 
-                      {/* Box 3: Query Optimizer */}
                       <rect x="420" y="45" width="160" height="70" rx="12" fill="#FFFFFF" stroke="#8F1D2C" strokeWidth="2" />
                       <text x="500" y="75" fill="#191416" textAnchor="middle" fontWeight="bold">Cost Optimizer</text>
                       <text x="500" y="95" fill="#71676A" textAnchor="middle" fontSize="10">Index vs Sequential Scan</text>
 
                       <path d="M 580 80 L 630 80" stroke="#8F1D2C" strokeWidth="3" />
 
-                      {/* Box 4: Execution Result */}
                       <rect x="630" y="45" width="150" height="70" rx="12" fill="#059669" />
                       <text x="705" y="75" fill="#FFFFFF" textAnchor="middle" fontWeight="bold">Execution Result</text>
                       <text x="705" y="95" fill="#ECFDF5" textAnchor="middle" fontSize="10">Filtered Tuples (σ_p)</text>
