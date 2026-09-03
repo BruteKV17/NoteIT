@@ -199,6 +199,26 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
     return () => document.removeEventListener('fullscreenchange', handleFsChange);
   }, []);
 
+  // REAL-TIME SESSION PROGRESS PERSISTENCE
+  useEffect(() => {
+    if (!config) return;
+    const progressPercent = Math.min(100, Math.max(15, Math.round((Object.keys(completedSections).length / 7) * 100)));
+    const sessionToSave = {
+      id: `rush-${config.subject.subjectId || Date.now()}`,
+      subjectName: config.subject.canonicalName,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timeLabel: config.timeLabel,
+      progressPercent,
+      config,
+      completedSections
+    };
+    try {
+      localStorage.setItem('noteit_recent_exam_rush_session', JSON.stringify(sessionToSave));
+    } catch (e) {
+      console.warn('Failed to save session progress', e);
+    }
+  }, [config, completedSections]);
+
   // AUTOMATIC CLEANUP ON TAB SWITCHING
   const handleTabChange = (newTab: any) => {
     setActiveTab(newTab);

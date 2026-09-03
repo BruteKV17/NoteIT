@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Zap, 
   Clock, 
@@ -83,6 +83,30 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
   const [isLaunching, setIsLaunching] = useState(false);
   const [launchStep, setLaunchStep] = useState('');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Recent Exam Rush Session State
+  const [recentSession, setRecentSession] = useState<{
+    id: string;
+    subjectName: string;
+    timestamp: string;
+    timeLabel: string;
+    progressPercent: number;
+    config: ExamRushConfig;
+  } | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('noteit_recent_exam_rush_session');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed.config && parsed.subjectName) {
+          setRecentSession(parsed);
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load recent session', e);
+    }
+  }, []);
 
   const subjectResults = searchCanonicalSubjects(subjectQuery, selectedCategory);
 
@@ -273,11 +297,20 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
       intensity
     };
 
-    // Save config to sessionStorage so a newly opened tab can read it
+    // Save recent session to localStorage
     try {
+      const initialSession = {
+        id: `rush-${finalSubject.subjectId || Date.now()}`,
+        subjectName: finalSubject.canonicalName,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        timeLabel: finalLabel,
+        progressPercent: 15,
+        config
+      };
+      localStorage.setItem('noteit_recent_exam_rush_session', JSON.stringify(initialSession));
       sessionStorage.setItem('noteit_exam_rush_active_config', JSON.stringify(config));
     } catch (e) {
-      console.warn('Failed to save exam rush config to sessionStorage', e);
+      console.warn('Failed to save exam rush config to storage', e);
     }
 
     // Attempt native browser fullscreen request
@@ -320,6 +353,57 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
           </p>
         </div>
       </div>
+
+      {/* RECENT EXAM RUSH SESSION BANNER CARD */}
+      {recentSession && (
+        <div className="p-6 sm:p-7 rounded-3xl border border-[#8F1D2C]/40 bg-[#F8EDEF] dark:bg-[#2D1B20] text-[#191416] dark:text-[#FAF7F5] shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 animate-fade-in">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 bg-[#8F1D2C] text-white text-[11px] font-bold rounded-md uppercase tracking-wide">
+                Recent Environment
+              </span>
+              <span className="text-xs font-semibold text-[#71676A]">
+                Last active {recentSession.timestamp}
+              </span>
+            </div>
+            <h3 className="text-xl font-extrabold text-[#191416] dark:text-[#FAF7F5]">
+              {recentSession.subjectName}
+            </h3>
+            <div className="flex items-center gap-4 text-xs font-medium text-[#71676A] pt-1">
+              <span>⏱ Timeline: <strong className="text-[#191416] dark:text-[#FAF7F5]">{recentSession.timeLabel}</strong></span>
+              <span>•</span>
+              <div className="flex items-center gap-2">
+                <span>Progress Rate:</span>
+                <div className="w-28 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                  <div className="h-full bg-[#8F1D2C] transition-all duration-300" style={{ width: `${recentSession.progressPercent}%` }} />
+                </div>
+                <span className="font-bold text-[#8F1D2C] text-sm">{recentSession.progressPercent}%</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 shrink-0 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={() => onStartExamRush(recentSession.config)}
+              className="flex-1 sm:flex-initial px-6 py-3.5 rounded-2xl bg-[#8F1D2C] hover:bg-[#651522] text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <span>RESUME RUSH ENVIRONMENT →</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                localStorage.removeItem('noteit_recent_exam_rush_session');
+                setRecentSession(null);
+              }}
+              className="p-3.5 rounded-2xl border border-[#E5D7D9] dark:border-[#3D282C] bg-white dark:bg-[#191416] text-[#71676A] hover:text-red-600 cursor-pointer shadow-xs"
+              title="Clear Saved Recent Session"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* SETUP CARD FORM */}
       <div className="p-6 sm:p-8 rounded-3xl border border-[#E5D7D9] dark:border-[#3D282C] bg-white dark:bg-[#191416] shadow-sm space-y-6">
