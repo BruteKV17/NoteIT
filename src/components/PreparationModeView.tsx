@@ -53,7 +53,7 @@ export default function PreparationModeView({
 
   if (activeExamConfig) {
     return (
-      <div className="fixed inset-0 z-[999999] h-screen w-screen overflow-y-auto bg-[#FAF9F6] dark:bg-[#0B0F17]">
+      <div className="fixed inset-0 z-[999999] h-screen w-screen overflow-y-auto bg-[#FAF7F5] dark:bg-[#120F10]">
         <ExamRushWorkspace
           config={activeExamConfig}
           lectures={lectures}
@@ -71,18 +71,18 @@ export default function PreparationModeView({
   }
 
   return (
-    <div className="space-y-6 text-left">
+    <div className="space-y-6 text-left font-sans">
       
-      {/* MODE TOGGLE SWITCHER */}
+      {/* MODE TOGGLE SWITCHER - CALM ACADEMIC DEEP RED */}
       <div className="flex items-center justify-center">
-        <div className="p-1 bg-[#111111] rounded-2xl border-2 border-black shadow-paper-sm flex items-center gap-1">
+        <div className="p-1.5 bg-[#191416] rounded-2xl border border-[#3D282C] shadow-sm flex items-center gap-1.5 font-sans">
           <button
             type="button"
             onClick={() => setActiveMode('exam_rush')}
-            className={`px-5 py-2.5 rounded-xl font-mono text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
               activeMode === 'exam_rush'
-                ? 'bg-[#FF4D4D] text-white shadow-sm'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-[#8F1D2C] text-white shadow-sm font-extrabold'
+                : 'text-[#A3989B] hover:text-white'
             }`}
           >
             <Flame className="h-4 w-4 fill-current" />
@@ -92,10 +92,10 @@ export default function PreparationModeView({
           <button
             type="button"
             onClick={() => setActiveMode('practice_blitz')}
-            className={`px-5 py-2.5 rounded-xl font-mono text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
               activeMode === 'practice_blitz'
-                ? 'bg-[#2563EB] text-white shadow-sm'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-[#8F1D2C] text-white shadow-sm font-extrabold'
+                : 'text-[#A3989B] hover:text-white'
             }`}
           >
             <Zap className="h-4 w-4 fill-current" />

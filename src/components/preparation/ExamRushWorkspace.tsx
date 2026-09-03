@@ -18,11 +18,24 @@ import {
   ShieldCheck,
   TrendingUp,
   Maximize,
-  Minimize
+  Minimize,
+  MessageSquare,
+  Star,
+  Bot,
+  MessageCircle,
+  PenTool,
+  RotateCcw,
+  RotateCw,
+  Trash2,
+  Image as ImageIcon,
+  Plus,
+  Edit3,
+  Copy
 } from 'lucide-react';
 import { ExamRushConfig } from './ExamRushSetup';
 import { calculateBloomProfile, getBloomLevelMetadata, BloomProfile } from '../../utils/bloomEngine';
-import { BhaiLangPopover } from './BhaiLangPopover';
+import { explainInBhaiLang } from '../../services/bhaiLangService';
+import MascotFloatingAnimation from '../MascotFloatingAnimation';
 import { Quiz, QuizQuestion, Lecture, Note } from '../../types';
 
 interface ExamRushWorkspaceProps {
@@ -32,12 +45,75 @@ interface ExamRushWorkspaceProps {
   onExit: () => void;
 }
 
+interface ReviewItem {
+  id: string;
+  text: string;
+  section: string;
+  timestamp: string;
+}
+
+interface CommentItem {
+  id: string;
+  targetText: string;
+  commentText: string;
+  timestamp: string;
+}
+
+interface InsertedImage {
+  id: string;
+  url: string;
+  caption: string;
+}
+
 export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }: ExamRushWorkspaceProps) {
   const [secondsRemaining, setSecondsRemaining] = useState<number>(config.timeRemainingMinutes * 60);
   const [activeTab, setActiveTab] = useState<'attack_plan' | 'revision' | 'subjective' | 'quiz' | 'remember' | 'paper_analysis' | 'final_sheet' | 'readiness'>('attack_plan');
   const [completedSections, setCompletedSections] = useState<Record<string, boolean>>({});
   const [isFullscreen, setIsFullscreen] = useState<boolean>(!!document.fullscreenElement);
   
+  // Interactive Text Selection & Actions State
+  const [selectionToolbarPos, setSelectionToolbarPos] = useState<{ x: number; y: number } | null>(null);
+  const [selectedText, setSelectedText] = useState<string>('');
+  
+  // Inline Bhai Lang Panel State
+  const [bhaiLangText, setBhaiLangText] = useState<string | null>(null);
+  const [bhaiLangExplanation, setBhaiLangExplanation] = useState<string | null>(null);
+  const [isBhaiLangLoading, setIsBhaiLangLoading] = useState(false);
+
+  // Ask AI Panel State
+  const [showAskAiPanel, setShowAskAiPanel] = useState(false);
+  const [askAiQuery, setAskAiQuery] = useState('');
+  const [askAiResponse, setAskAiResponse] = useState<string | null>(null);
+  const [isAskAiLoading, setIsAskAiLoading] = useState(false);
+
+  // Review Drawer & Saved Items State
+  const [reviewItems, setReviewItems] = useState<ReviewItem[]>([]);
+  const [showReviewDrawer, setShowReviewDrawer] = useState(false);
+  const [reviewToast, setReviewToast] = useState<string | null>(null);
+
+  // Comments State
+  const [comments, setComments] = useState<CommentItem[]>([]);
+  const [commentInput, setCommentInput] = useState('');
+  const [showCommentDialog, setShowCommentDialog] = useState(false);
+
+  // Digital Notebook Canvas / Doodle Mode State
+  const [isDoodleActive, setIsDoodleActive] = useState(false);
+  const [doodleTool, setDoodleTool] = useState<'pen' | 'highlighter' | 'eraser'>('pen');
+  const [doodleColor, setDoodleColor] = useState('#8F1D2C');
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const isDrawingRef = useRef(false);
+
+  // Custom Image Insertion State
+  const [insertedImages, setInsertedImages] = useState<InsertedImage[]>([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Editable Notes Content State
+  const [editableNotes, setEditableNotes] = useState<string[]>([
+    `Relational algebra provides a formal mathematical foundation for relational databases. Key unary operators include Selection (σ) to filter tuples based on predicates and Projection (π) to isolate specific attributes. Binary operators like Cartesian Product (×) and Natural Join (⋈) combine tuples from multiple relations matching column domain keys.`,
+    `Normalization eliminates data redundancy and prevents insertion, update, and deletion anomalies across schemas. First Normal Form (1NF) requires atomic values. 2NF requires full functional dependency on the primary candidate key. 3NF eliminates transitive dependencies. BCNF enforces that for every non-trivial functional dependency X → Y, X must be a strict super key.`,
+    `Transactions guarantee database consistency via ACID properties: Atomicity (all-or-nothing execution), Consistency (state validity before and after execution), Isolation (concurrent transactions execute independently without interference), and Durability (committed changes persist permanently despite hardware failure).`
+  ]);
+
   // Bloom Profile Engine
   const bloomProfile: BloomProfile = calculateBloomProfile({ easy: 80, medium: 65, hard: 50 });
 
@@ -57,6 +133,97 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
     return () => document.removeEventListener('fullscreenchange', handleFsChange);
   }, []);
 
+  // Text Selection Detection Listener
+  useEffect(() => {
+    const handleSelection = () => {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || !sel.toString().trim()) {
+        // Delay closing so button clicks work
+        setTimeout(() => {
+          if (!sel || sel.isCollapsed) {
+            setSelectionToolbarPos(null);
+          }
+        }, 200);
+        return;
+      }
+
+      const text = sel.toString().trim();
+      if (text.length > 3) {
+        setSelectedText(text);
+        const range = sel.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        setSelectionToolbarPos({
+          x: Math.max(20, Math.min(window.innerWidth - 300, rect.left + rect.width / 2 - 140)),
+          y: Math.max(10, rect.top - 55 + window.scrollY)
+        });
+      }
+    };
+
+    document.addEventListener('selectionchange', handleSelection);
+    return () => document.removeEventListener('selectionchange', handleSelection);
+  }, []);
+
+  // Canvas Drawing Handlers for Doodle Mode
+  useEffect(() => {
+    if (!isDoodleActive || !canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Set canvas dimensions matching parent
+    canvas.width = canvas.parentElement?.clientWidth || 900;
+    canvas.height = canvas.parentElement?.clientHeight || 1200;
+
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    const getPos = (e: MouseEvent | TouchEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+      return {
+        x: clientX - rect.left,
+        y: clientY - rect.top
+      };
+    };
+
+    const startDrawing = (e: MouseEvent | TouchEvent) => {
+      isDrawingRef.current = true;
+      const pos = getPos(e);
+      ctx.beginPath();
+      ctx.moveTo(pos.x, pos.y);
+    };
+
+    const draw = (e: MouseEvent | TouchEvent) => {
+      if (!isDrawingRef.current) return;
+      const pos = getPos(e);
+      if (doodleTool === 'eraser') {
+        ctx.clearRect(pos.x - 15, pos.y - 15, 30, 30);
+      } else {
+        ctx.strokeStyle = doodleTool === 'highlighter' ? `${doodleColor}40` : doodleColor;
+        ctx.lineWidth = doodleTool === 'highlighter' ? 18 : 3;
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+      }
+    };
+
+    const stopDrawing = () => {
+      isDrawingRef.current = false;
+    };
+
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseleave', stopDrawing);
+
+    return () => {
+      canvas.removeEventListener('mousedown', startDrawing);
+      canvas.removeEventListener('mousemove', draw);
+      canvas.removeEventListener('mouseup', stopDrawing);
+      canvas.removeEventListener('mouseleave', stopDrawing);
+    };
+  }, [isDoodleActive, doodleTool, doodleColor]);
+
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(() => {});
@@ -73,6 +240,77 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
     return `${mins}m ${secs}s`;
   };
 
+  // Actions for Selection Bar
+  const handleTriggerBhaiLang = async () => {
+    if (!selectedText) return;
+    setBhaiLangText(selectedText);
+    setSelectionToolbarPos(null);
+    setIsBhaiLangLoading(true);
+    setBhaiLangExplanation(null);
+    try {
+      const res = await explainInBhaiLang(selectedText, config.subject.canonicalName);
+      setBhaiLangExplanation(res);
+    } catch (e) {
+      setBhaiLangExplanation("Bhai lagta hai network error aagaya. Dobara try karo!");
+    } finally {
+      setIsBhaiLangLoading(false);
+    }
+  };
+
+  const handleKeepForReview = () => {
+    if (!selectedText) return;
+    const newItem: ReviewItem = {
+      id: `rev-${Date.now()}`,
+      text: selectedText,
+      section: activeTab,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    setReviewItems(prev => [newItem, ...prev]);
+    setSelectionToolbarPos(null);
+    setReviewToast('Saved to Review ✓');
+    setTimeout(() => setReviewToast(null), 3000);
+  };
+
+  const handleOpenAskAi = () => {
+    setShowAskAiPanel(true);
+    setSelectionToolbarPos(null);
+    setAskAiQuery(`Explain this concept simply: "${selectedText}"`);
+  };
+
+  const handleOpenCommentDialog = () => {
+    setShowCommentDialog(true);
+    setSelectionToolbarPos(null);
+  };
+
+  const handleAddCommentSubmit = () => {
+    if (!commentInput.trim() || !selectedText) return;
+    const newComment: CommentItem = {
+      id: `cmt-${Date.now()}`,
+      targetText: selectedText,
+      commentText: commentInput.trim(),
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    setComments(prev => [...prev, newComment]);
+    setCommentInput('');
+    setShowCommentDialog(false);
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const newImg: InsertedImage = {
+        id: `img-${Date.now()}`,
+        url: (ev.target?.result as string) || '',
+        caption: file.name
+      };
+      setInsertedImages(prev => [...prev, newImg]);
+    };
+    reader.readAsDataURL(file);
+  };
+
   // Time-Allocated Exam Attack Plan
   const totalMins = config.timeRemainingMinutes;
   const attackPlanSchedule = [
@@ -86,66 +324,127 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
   const overallProgressPercent = Math.min(100, Math.round((Object.keys(completedSections).length / 7) * 100));
 
   return (
-    <div className="fixed inset-0 z-[999999] h-screen w-screen overflow-y-auto bg-[#FAF9F6] dark:bg-[#0B0F17] text-[#1E293B] dark:text-[#E2E8F0] font-sans selection:bg-[#FFC400] selection:text-black">
+    <div className="fixed inset-0 z-[999999] h-screen w-screen overflow-y-auto bg-[#FAF7F5] dark:bg-[#120F10] text-[#191416] dark:text-[#FAF7F5] font-sans selection:bg-[#F8EDEF] selection:text-[#8F1D2C]">
       
-      {/* CONTEXTUAL BHAI LANG POPOVER */}
-      <BhaiLangPopover subjectName={config.subject.canonicalName} />
+      {/* MASCOT COMPANION - RANDOM CORNER ENTRANCE */}
+      <MascotFloatingAnimation />
 
-      {/* STICKY CALM STANDALONE HEADER BAR */}
-      <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#0F172A]/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 sm:px-8 py-3 flex items-center justify-between shadow-sm">
+      {/* FLOATING TEXT SELECTION TOOLBAR */}
+      {selectionToolbarPos && (
+        <div 
+          style={{ top: `${selectionToolbarPos.y}px`, left: `${selectionToolbarPos.x}px` }}
+          className="absolute z-50 animate-fade-in flex items-center gap-1.5 p-1.5 rounded-2xl bg-[#651522] text-white shadow-xl border border-red-400/30"
+        >
+          <button
+            type="button"
+            onClick={handleTriggerBhaiLang}
+            className="px-3 py-1.5 rounded-xl bg-[#8F1D2C] hover:bg-[#B83245] text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <span>🗣️ Bhai Lang</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleKeepForReview}
+            className="px-3 py-1.5 rounded-xl hover:bg-white/10 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <Star className="h-3.5 w-3.5 text-amber-300 fill-amber-300" />
+            <span>Review</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleOpenAskAi}
+            className="px-3 py-1.5 rounded-xl hover:bg-white/10 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <Bot className="h-3.5 w-3.5 text-emerald-300" />
+            <span>Ask AI</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleOpenCommentDialog}
+            className="px-3 py-1.5 rounded-xl hover:bg-white/10 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <MessageCircle className="h-3.5 w-3.5 text-rose-300" />
+            <span>Comment</span>
+          </button>
+        </div>
+      )}
+
+      {/* TOAST NOTIFICATION FOR KEEP FOR REVIEW */}
+      {reviewToast && (
+        <div className="fixed bottom-6 right-6 z-50 px-4 py-3 rounded-2xl bg-[#8F1D2C] text-white font-sans text-xs font-bold shadow-xl flex items-center gap-2 animate-bounce">
+          <Star className="h-4 w-4 fill-amber-300 text-amber-300" />
+          <span>{reviewToast}</span>
+        </div>
+      )}
+
+      {/* STICKY CALM ACADEMIC HEADER BAR */}
+      <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#191416]/95 backdrop-blur-md border-b border-[#E5D7D9] dark:border-[#3D282C] px-6 sm:px-10 py-3.5 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-1 bg-[#FF4D4D] text-white text-[10px] font-mono font-black uppercase rounded-lg shadow-sm flex items-center gap-1">
-              <Flame className="h-3.5 w-3.5 fill-white animate-pulse" /> EXAM RUSH
+          <div className="flex items-center gap-2.5">
+            <span className="px-3 py-1 bg-[#8F1D2C] text-white text-xs font-bold rounded-lg shadow-sm flex items-center gap-1.5">
+              <Flame className="h-4 w-4 fill-white" /> EXAM RUSH
             </span>
-            <h1 className="text-sm font-black uppercase tracking-wide text-black dark:text-white font-heading">{config.subject.canonicalName}</h1>
+            <h1 className="text-base font-bold text-[#191416] dark:text-[#FAF7F5]">
+              {config.subject.canonicalName}
+            </h1>
           </div>
-          <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 font-semibold block sm:hidden">
+          <span className="text-xs text-[#71676A] font-medium block sm:hidden">
             ⏱ {formatTimer(secondsRemaining)}
           </span>
         </div>
 
-        {/* CENTER PROGRESS & TIMER */}
+        {/* CENTER TIMER & PROGRESS */}
         <div className="hidden sm:flex items-center gap-6">
-          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400 font-mono text-xs font-black">
-            <Clock className="h-4 w-4 animate-pulse" />
-            <span>⏱ {formatTimer(secondsRemaining)} remaining</span>
+          <div className="flex items-center gap-2 px-4 py-1.5 rounded-xl border border-[#8F1D2C]/30 bg-[#F8EDEF] dark:bg-[#2D1B20] text-[#8F1D2C] dark:text-[#B83245] font-mono text-xs font-bold">
+            <Clock className="h-4 w-4" />
+            <span>{formatTimer(secondsRemaining)} remaining</span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-mono font-bold text-slate-500">Progress</span>
-            <div className="w-28 h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-              <div className="h-full bg-[#10B981] transition-all duration-300" style={{ width: `${overallProgressPercent}%` }} />
+          <div className="flex items-center gap-2.5">
+            <span className="text-xs font-medium text-[#71676A]">Progress</span>
+            <div className="w-32 h-2.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+              <div className="h-full bg-[#8F1D2C] transition-all duration-300" style={{ width: `${overallProgressPercent}%` }} />
             </div>
-            <span className="text-xs font-mono font-black text-emerald-600">{overallProgressPercent}%</span>
+            <span className="text-xs font-bold text-[#8F1D2C]">{overallProgressPercent}%</span>
           </div>
         </div>
 
-        {/* SMALL ELEGANT CONTROLS */}
+        {/* CONTROLS */}
         <div className="flex items-center gap-2">
+          {reviewItems.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowReviewDrawer(!showReviewDrawer)}
+              className="px-3 py-1.5 rounded-xl bg-[#F8EDEF] dark:bg-[#2D1B20] text-[#8F1D2C] text-xs font-bold border border-[#8F1D2C]/30 flex items-center gap-1.5 cursor-pointer"
+            >
+              <Star className="h-3.5 w-3.5 fill-[#8F1D2C]" />
+              <span>Saved Review ({reviewItems.length})</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={toggleFullscreen}
-            className="p-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-mono font-bold hover:bg-slate-200 transition-all cursor-pointer flex items-center gap-1"
+            className="p-2 rounded-xl border border-[#E5D7D9] dark:border-[#3D282C] bg-[#FAF7F5] dark:bg-[#231B1E] text-[#191416] dark:text-[#FAF7F5] text-xs font-medium hover:bg-[#F8EDEF] transition-all cursor-pointer flex items-center gap-1"
             title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
           >
-            {isFullscreen ? <Minimize className="h-3.5 w-3.5" /> : <Maximize className="h-3.5 w-3.5" />}
+            {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
           </button>
 
           <button
             type="button"
             onClick={onExit}
-            className="px-3 py-1.5 rounded-xl border border-black dark:border-slate-700 bg-[#FF4D4D] hover:bg-red-600 text-white text-xs font-mono font-black uppercase tracking-wider shadow-sm transition-all cursor-pointer flex items-center gap-1.5"
+            className="px-3.5 py-1.5 rounded-xl border border-[#651522] bg-[#651522] hover:bg-[#4A121A] text-white text-xs font-bold tracking-wide shadow-sm transition-all cursor-pointer flex items-center gap-1.5"
             title="Exit Exam Rush Learning Environment"
           >
-            <X className="h-3.5 w-3.5" />
+            <X className="h-4 w-4" />
             <span>Exit Rush</span>
           </button>
         </div>
       </header>
 
-      {/* SUB-HEADER NAV TABS */}
-      <nav className="bg-white dark:bg-[#0F172A] border-b border-slate-200 dark:border-slate-800 px-4 sm:px-8 py-2 flex items-center gap-2 overflow-x-auto custom-scrollbar text-xs font-mono font-bold">
+      {/* TOP ACADEMIC NAVIGATION BAR */}
+      <nav className="bg-white dark:bg-[#191416] border-b border-[#E5D7D9] dark:border-[#3D282C] px-6 sm:px-10 py-2.5 flex items-center gap-2 overflow-x-auto custom-scrollbar text-sm font-sans">
         {[
           { id: 'attack_plan', label: '1. Attack Plan', icon: Target },
           { id: 'revision', label: '2. Concept Revision', icon: BookOpen },
@@ -163,74 +462,131 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id as any)}
-              className={`px-3.5 py-2 rounded-xl flex items-center gap-1.5 shrink-0 transition-all cursor-pointer ${
+              className={`px-4 py-2.5 rounded-xl flex items-center gap-2 shrink-0 transition-all cursor-pointer ${
                 isActive
-                  ? 'bg-[#2563EB] text-white font-black shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  ? 'bg-[#8F1D2C] text-white font-semibold shadow-sm'
+                  : 'text-[#71676A] dark:text-[#A3989B] hover:bg-[#F8EDEF] dark:hover:bg-[#2D1B20] hover:text-[#191416] font-medium'
               }`}
             >
-              <Icon className="h-3.5 w-3.5" />
+              <Icon className="h-4 w-4" />
               <span>{tab.label}</span>
             </button>
           );
         })}
       </nav>
 
-      {/* MAIN STUDY BODY AREA */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-8 py-8 space-y-8 text-left">
-        
-        {/* TIP BANNER: BHAI LANG INTERACTION */}
-        <div className="p-4 rounded-2xl border-2 border-amber-400/60 bg-[#FFFBEB] dark:bg-[#1E1B10] flex items-center gap-3 text-xs font-mono font-bold text-amber-900 dark:text-amber-300 shadow-sm">
-          <span className="p-1.5 bg-[#FFC400] text-black rounded-lg font-black text-sm">💡</span>
-          <p className="leading-relaxed flex-1">
-            <strong>Pro Study Tip:</strong> Highlight any text or paragraph in this study workspace to get an instant <strong>Bhai Lang 🗣️</strong> Hinglish explanation without leaving the page!
-          </p>
-        </div>
+      {/* SAVED REVIEW DRAWER OVERLAY */}
+      {showReviewDrawer && (
+        <aside className="fixed right-0 top-16 bottom-0 z-50 w-80 sm:w-96 bg-white dark:bg-[#191416] border-l border-[#E5D7D9] dark:border-[#3D282C] shadow-2xl p-6 overflow-y-auto space-y-4 animate-fade-in">
+          <div className="flex items-center justify-between border-b border-[#E5D7D9] dark:border-[#3D282C] pb-3">
+            <h3 className="text-base font-bold text-[#8F1D2C] flex items-center gap-2">
+              <Star className="h-4 w-4 fill-[#8F1D2C]" /> Saved for Review ({reviewItems.length})
+            </h3>
+            <button type="button" onClick={() => setShowReviewDrawer(false)} className="p-1 text-[#71676A] hover:text-[#191416]">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="space-y-3">
+            {reviewItems.map(item => (
+              <div key={item.id} className="p-4 rounded-xl border border-[#E5D7D9] dark:border-[#3D282C] bg-[#FAF7F5] dark:bg-[#231B1E] space-y-2 text-xs">
+                <div className="flex items-center justify-between text-[11px] text-[#71676A]">
+                  <span className="font-semibold uppercase">{item.section}</span>
+                  <span>{item.timestamp}</span>
+                </div>
+                <p className="text-xs font-sans text-[#191416] dark:text-[#FAF7F5] leading-relaxed italic">
+                  "{item.text}"
+                </p>
+              </div>
+            ))}
+          </div>
+        </aside>
+      )}
 
-        {/* ATTACHED STUDY MATERIALS BADGE BANNER */}
+      {/* MAIN COMFORTABLE READING WORKSPACE */}
+      <main className="max-w-[1150px] mx-auto px-6 sm:px-12 py-10 space-y-10 text-left relative">
+        
+        {/* DOODLE CANVAS OVERLAY */}
+        {isDoodleActive && (
+          <canvas
+            ref={canvasRef}
+            className="absolute inset-0 z-30 cursor-crosshair touch-none"
+          />
+        )}
+
+        {/* ATTACHED MATERIALS BANNER */}
         {config.attachments && config.attachments.length > 0 && (
-          <div className="p-5 rounded-2xl border-2 border-[#2563EB] bg-[#EFF6FF] dark:bg-[#0F172A] space-y-2 shadow-sm">
+          <div className="p-6 rounded-3xl border border-[#8F1D2C]/30 bg-[#F8EDEF] dark:bg-[#2D1B20] space-y-3 shadow-sm">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-mono font-black uppercase text-[#2563EB] flex items-center gap-1.5">
-                <Sparkles className="h-4 w-4" /> Grounded in {config.attachments.length} Attached Materials & Web Links
+              <h3 className="text-sm font-bold text-[#8F1D2C] flex items-center gap-2">
+                <Sparkles className="h-4 w-4" /> Grounded in {config.attachments.length} Attached Materials & Extracted Web Links
               </h3>
-              <span className="text-[10px] font-mono font-bold bg-[#2563EB] text-white px-2 py-0.5 rounded">
+              <span className="text-xs font-semibold bg-[#8F1D2C] text-white px-2.5 py-1 rounded-lg">
                 Knowledge Studio Ingested
               </span>
             </div>
-            <div className="flex flex-wrap gap-2 pt-1">
+            <div className="flex flex-wrap gap-2.5 pt-1">
               {config.attachments.map(att => (
-                <div key={att.id} className="px-3 py-1 bg-white dark:bg-slate-800 rounded-xl border border-blue-200 dark:border-slate-700 text-xs font-mono font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 shadow-sm">
+                <div key={att.id} className="px-3.5 py-1.5 bg-white dark:bg-[#191416] rounded-xl border border-[#E5D7D9] dark:border-[#3D282C] text-xs font-semibold text-[#191416] dark:text-[#FAF7F5] flex items-center gap-2 shadow-sm">
                   <span>{att.type === 'url' ? '🌐' : att.type === 'presentation' ? '📊' : att.type === 'image' ? '🖼️' : '📄'}</span>
-                  <span className="truncate max-w-[180px] font-extrabold">{att.name}</span>
+                  <span className="truncate max-w-[200px] font-bold">{att.name}</span>
                 </div>
               ))}
             </div>
           </div>
         )}
 
+        {/* INLINE BHAI LANG EXPLANATION CONTAINER */}
+        {bhaiLangExplanation && (
+          <div className="p-6 rounded-3xl border border-[#8F1D2C]/40 bg-[#F8EDEF] dark:bg-[#2D1B20] text-[#191416] dark:text-[#FAF7F5] space-y-3 shadow-md animate-fade-in">
+            <div className="flex items-center justify-between border-b border-[#8F1D2C]/20 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 bg-[#8F1D2C] text-white rounded-lg text-xs">🗣️</span>
+                <h3 className="text-sm font-bold text-[#8F1D2C] dark:text-[#B83245]">Bhai Lang Hinglish Explanation</h3>
+              </div>
+              <button type="button" onClick={() => setBhaiLangExplanation(null)} className="text-[#71676A] hover:text-[#191416]">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="text-sm font-sans leading-relaxed whitespace-pre-line bg-white/80 dark:bg-[#191416]/80 p-4 rounded-2xl border border-[#8F1D2C]/20">
+              {bhaiLangExplanation}
+            </p>
+          </div>
+        )}
+
         {/* 1. EXAM ATTACK PLAN */}
         {activeTab === 'attack_plan' && (
-          <section className="space-y-6 animate-fade-in">
-            <div className="border-b border-slate-300 dark:border-slate-800 pb-3">
-              <h2 className="text-xl font-black uppercase text-black dark:text-white tracking-tight font-heading">
+          <section className="space-y-8 animate-fade-in">
+            <div className="border-b border-[#E5D7D9] dark:border-[#3D282C] pb-4">
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-[#191416] dark:text-[#FAF7F5]">
                 1. Personalized Exam Attack Plan ({config.timeLabel})
               </h2>
-              <p className="text-xs text-slate-500 font-bold mt-1">
-                Dynamically generated strategy tailored for your {config.timeLabel} remaining window.
+              <p className="text-sm text-[#71676A] font-medium mt-1">
+                Structured preparation timeline calculated specifically for your {config.timeLabel} exam window.
               </p>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-4">
               {attackPlanSchedule.map((item, idx) => (
-                <div key={idx} className="p-4 sm:p-5 rounded-2xl border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1E293B] flex items-start gap-4 shadow-paper-xs">
-                  <span className="px-3 py-1 bg-[#2563EB] text-white font-mono font-black text-xs rounded-xl border border-black shadow-sm shrink-0">
-                    {item.range}
-                  </span>
-                  <div className="flex-1">
-                    <h3 className="text-sm font-extrabold text-black dark:text-white">{item.title}</h3>
-                    <p className="text-xs text-slate-500 font-bold mt-0.5">{item.desc}</p>
+                <div key={idx} className="p-6 rounded-3xl border border-[#E5D7D9] dark:border-[#3D282C] bg-white dark:bg-[#191416] flex items-center justify-between gap-6 shadow-sm hover:border-[#8F1D2C]/40 transition-all">
+                  <div className="flex items-center gap-4">
+                    <span className="px-3.5 py-1.5 bg-[#F8EDEF] dark:bg-[#2D1B20] text-[#8F1D2C] dark:text-[#B83245] font-mono font-bold text-xs rounded-xl border border-[#8F1D2C]/20 shrink-0">
+                      {item.range}
+                    </span>
+                    <div>
+                      <h3 className="text-base font-bold text-[#191416] dark:text-[#FAF7F5]">{item.title}</h3>
+                      <p className="text-xs text-[#71676A] font-medium mt-0.5">{item.desc}</p>
+                    </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const tabMap: Record<number, any> = { 0: 'revision', 1: 'remember', 2: 'subjective', 3: 'quiz', 4: 'final_sheet' };
+                      setActiveTab(tabMap[idx] || 'revision');
+                    }}
+                    className="px-4 py-2 rounded-xl bg-[#8F1D2C] hover:bg-[#651522] text-white text-xs font-bold shrink-0 transition-all cursor-pointer flex items-center gap-1"
+                  >
+                    <span>START →</span>
+                  </button>
                 </div>
               ))}
             </div>
@@ -239,46 +595,125 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
 
         {/* 2. QUICK CONCEPT REVISION NOTES */}
         {activeTab === 'revision' && (
-          <section className="space-y-6 animate-fade-in">
-            <div className="border-b border-slate-300 dark:border-slate-800 pb-3">
-              <h2 className="text-xl font-black uppercase text-black dark:text-white tracking-tight font-heading">
-                2. Quick Concept Revision Notes
-              </h2>
-              <p className="text-xs text-slate-500 font-bold mt-1">
-                Lecture-grounded revision notes enriched with exam-oriented key concepts.
-              </p>
+          <section className="space-y-8 animate-fade-in">
+            <div className="border-b border-[#E5D7D9] dark:border-[#3D282C] pb-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-[#191416] dark:text-[#FAF7F5]">
+                  2. Quick Concept Revision Notes
+                </h2>
+                <p className="text-sm text-[#71676A] font-medium mt-1">
+                  High-readability study notes. Highlight any text for Bhai Lang explanation or AI assistance.
+                </p>
+              </div>
+
+              {/* TOOLBAR FOR DOODLE & IMAGE INSERTION */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsDoodleActive(!isDoodleActive)}
+                  className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                    isDoodleActive
+                      ? 'bg-[#8F1D2C] text-white border-[#8F1D2C]'
+                      : 'bg-[#FAF7F5] dark:bg-[#231B1E] text-[#191416] dark:text-[#FAF7F5] border-[#E5D7D9]'
+                  }`}
+                >
+                  <PenTool className="h-4 w-4" />
+                  <span>{isDoodleActive ? 'Close Doodle' : '✏️ Notebook Doodle'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-3 py-1.5 rounded-xl border border-[#E5D7D9] dark:border-[#3D282C] bg-[#FAF7F5] dark:bg-[#231B1E] text-[#191416] dark:text-[#FAF7F5] text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <ImageIcon className="h-4 w-4 text-[#8F1D2C]" />
+                  <span>Insert Image</span>
+                </button>
+                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+              </div>
             </div>
 
-            <div className="space-y-4">
+            {/* DOODLE TOOLBAR WHEN ACTIVE */}
+            {isDoodleActive && (
+              <div className="p-3 rounded-2xl bg-[#F8EDEF] dark:bg-[#2D1B20] border border-[#8F1D2C]/30 flex items-center gap-3 text-xs font-bold">
+                <span>Tools:</span>
+                <button type="button" onClick={() => setDoodleTool('pen')} className={`px-2.5 py-1 rounded-lg ${doodleTool === 'pen' ? 'bg-[#8F1D2C] text-white' : 'bg-white text-black'}`}>Pen</button>
+                <button type="button" onClick={() => setDoodleTool('highlighter')} className={`px-2.5 py-1 rounded-lg ${doodleTool === 'highlighter' ? 'bg-[#8F1D2C] text-white' : 'bg-white text-black'}`}>Highlighter</button>
+                <button type="button" onClick={() => setDoodleTool('eraser')} className={`px-2.5 py-1 rounded-lg ${doodleTool === 'eraser' ? 'bg-[#8F1D2C] text-white' : 'bg-white text-black'}`}>Eraser</button>
+                <div className="flex items-center gap-1 ml-auto">
+                  {['#8F1D2C', '#D97706', '#059669', '#191416'].map(c => (
+                    <button key={c} type="button" onClick={() => setDoodleColor(c)} className="w-5 h-5 rounded-full border border-white" style={{ backgroundColor: c }} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* INSERTED CUSTOM IMAGES */}
+            {insertedImages.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {insertedImages.map(img => (
+                  <div key={img.id} className="p-3 rounded-2xl border border-[#E5D7D9] dark:border-[#3D282C] bg-white dark:bg-[#191416] relative group">
+                    <img src={img.url} alt={img.caption} className="w-full h-48 object-cover rounded-xl" />
+                    <span className="text-xs font-medium text-[#71676A] mt-2 block">{img.caption}</span>
+                    <button
+                      type="button"
+                      onClick={() => setInsertedImages(prev => prev.filter(i => i.id !== img.id))}
+                      className="absolute top-4 right-4 p-1.5 bg-red-600 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* EDITABLE READABLE REVISION NOTES (19-20px typography) */}
+            <div className="space-y-6">
               {[
                 {
                   title: 'Core Relational Algebra & SQL Joins',
                   bloomLevel: 'Understand',
-                  content: `Relational algebra provides a formal mathematical foundation for relational databases. Key unary operators include Selection (σ) to filter tuples and Projection (π) to select attributes. Binary operators like Cartesian Product (×) and Natural Join (⋈) combine tuples from multiple relations based on matching column values.`
+                  index: 0
                 },
                 {
                   title: 'Database Normalization (1NF, 2NF, 3NF & BCNF)',
                   bloomLevel: 'Remember',
-                  content: `Normalization eliminates data redundancy and prevents insertion, update, and deletion anomalies. First Normal Form (1NF) requires atomic values. 2NF requires full functional dependency on the primary key. 3NF eliminates transitive dependencies. BCNF enforces that for every X → Y, X must be a super key.`
+                  index: 1
                 },
                 {
                   title: 'ACID Properties in Transaction Management',
                   bloomLevel: 'Apply',
-                  content: `Transactions guarantee database consistency via ACID properties: Atomicity (all-or-nothing execution), Consistency (state validity before and after), Isolation (concurrent transactions execute independently without interference), and Durability (committed changes persist despite system crashes).`
+                  index: 2
                 }
-              ].map((note, i) => {
-                const meta = getBloomLevelMetadata(note.bloomLevel as any);
+              ].map((noteItem) => {
+                const meta = getBloomLevelMetadata(noteItem.bloomLevel as any);
                 return (
-                  <article key={i} className="p-5 sm:p-6 rounded-2xl border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1E293B] space-y-3 shadow-paper-xs">
-                    <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-2">
-                      <h3 className="text-sm font-extrabold text-black dark:text-white">{note.title}</h3>
-                      <span className="px-2.5 py-0.5 rounded-md text-[10px] font-mono font-black text-white" style={{ backgroundColor: meta.color }}>
+                  <article key={noteItem.index} className="p-8 rounded-3xl border border-[#E5D7D9] dark:border-[#3D282C] bg-white dark:bg-[#191416] space-y-4 shadow-sm">
+                    <div className="flex items-center justify-between border-b border-[#E5D7D9] dark:border-[#3D282C] pb-3">
+                      <h3 className="text-xl font-bold text-[#191416] dark:text-[#FAF7F5]">{noteItem.title}</h3>
+                      <span className="px-3 py-1 rounded-lg text-xs font-bold text-white" style={{ backgroundColor: meta.color }}>
                         {meta.icon} {meta.label}
                       </span>
                     </div>
-                    <p className="text-xs font-sans text-slate-700 dark:text-slate-300 leading-relaxed">
-                      {note.content}
-                    </p>
+
+                    {/* EDITABLE 19-20px PARAGRAPH CONTENT */}
+                    <div className="relative group">
+                      <p
+                        contentEditable
+                        suppressContentEditableWarning
+                        onBlur={(e) => {
+                          const updated = [...editableNotes];
+                          updated[noteItem.index] = e.currentTarget.innerText;
+                          setEditableNotes(updated);
+                        }}
+                        className="text-[19px] font-sans text-[#191416] dark:text-[#FAF7F5] leading-[1.75] tracking-normal outline-none focus:bg-[#FAF7F5] dark:focus:bg-[#231B1E] p-2 rounded-xl"
+                      >
+                        {editableNotes[noteItem.index]}
+                      </p>
+                      <span className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-xs text-[#71676A] font-medium pointer-events-none flex items-center gap-1">
+                        <Edit3 className="h-3.5 w-3.5" /> Click to edit
+                      </span>
+                    </div>
                   </article>
                 );
               })}
@@ -288,30 +723,33 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
 
         {/* 3. SUBJECTIVE QUESTIONS */}
         {activeTab === 'subjective' && (
-          <section className="space-y-6 animate-fade-in">
-            <div className="border-b border-slate-300 dark:border-slate-800 pb-3">
-              <h2 className="text-xl font-black uppercase text-black dark:text-white tracking-tight font-heading">
-                3. High-Yield Subjective Questions
+          <section className="space-y-8 animate-fade-in">
+            <div className="border-b border-[#E5D7D9] dark:border-[#3D282C] pb-4">
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-[#191416] dark:text-[#FAF7F5]">
+                3. Subjective Exam Questions & Answer Blueprints
               </h2>
-              <p className="text-xs text-slate-500 font-bold mt-1">
-                Exam-style short and long answer questions with Bloom difficulty mapping.
+              <p className="text-sm text-[#71676A] font-medium mt-1">
+                Structured 2-mark, 5-mark, and 10-mark questions with exact scoring keywords.
               </p>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-6">
               {[
-                { marks: '2 Marks', q: 'Define Functional Dependency and give a suitable example.', bloom: 'Remember', a: 'A functional dependency X → Y means if two tuples agree on attribute X, they must agree on attribute Y.' },
-                { marks: '5 Marks', q: 'Differentiate between 3NF and BCNF with a counter-example.', bloom: 'Analyze', a: '3NF allows prime attributes on the right-hand side of FD even if LHS is not a super key. BCNF strictly requires LHS to be a super key for all FDs.' },
-                { marks: '10 Marks', q: 'Explain Two-Phase Locking (2PL) protocol and prove how it guarantees serializability.', bloom: 'Evaluate', a: '2PL mandates that a transaction acquires all required locks during the Growing Phase and releases locks during the Shrinking Phase. No new locks can be requested after the first lock release.' }
-              ].map((item, i) => (
-                <div key={i} className="p-5 rounded-2xl border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1E293B] space-y-3 shadow-paper-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="px-2.5 py-1 bg-[#111111] text-white text-[10px] font-mono font-black rounded-md">{item.marks}</span>
-                    <span className="text-[10px] font-mono font-bold text-slate-500">Bloom: {item.bloom}</span>
+                { marks: '2 Marks', q: 'Define Functional Dependency. State any two Armstrong axioms.', ans: 'A functional dependency X → Y means attribute X uniquely determines attribute Y. Armstrong axioms include Reflexivity (if Y ⊆ X, X → Y) and Augmentation (if X → Y, XZ → YZ).' },
+                { marks: '5 Marks', q: 'Compare 3NF and BCNF with a suitable relational schema example.', ans: '3NF allows prime attributes on the right-hand side of non-superkey dependencies. BCNF strictly enforces that for any non-trivial dependency X → Y, X MUST be a super key. Example schema R(A,B,C) where AB → C and C → B demonstrates 3NF that violates BCNF.' },
+                { marks: '10 Marks', q: 'Explain Transaction ACID properties and how 2-Phase Locking (2PL) guarantees serializability.', ans: 'Detail Atomicity (Write-Ahead Logging), Consistency, Isolation (Locking protocols), and Durability. Explain Growing Phase (acquiring locks) and Shrinking Phase (releasing locks) in Strict 2PL.' }
+              ].map((item, idx) => (
+                <div key={idx} className="p-7 rounded-3xl border border-[#E5D7D9] dark:border-[#3D282C] bg-white dark:bg-[#191416] space-y-4 shadow-sm">
+                  <div className="flex items-center justify-between border-b border-[#E5D7D9] dark:border-[#3D282C] pb-3">
+                    <span className="px-3 py-1 bg-[#8F1D2C] text-white font-bold text-xs rounded-lg">
+                      {item.marks} Question
+                    </span>
+                    <span className="text-xs text-[#71676A] font-medium">Exam Weightage: High</span>
                   </div>
-                  <h4 className="text-xs sm:text-sm font-extrabold text-black dark:text-white">{item.q}</h4>
-                  <div className="p-3 bg-[#F8FAFC] dark:bg-[#0D1117] rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-sans text-slate-700 dark:text-slate-300 leading-relaxed">
-                    <strong className="text-[#2563EB]">Answer Key Guidance:</strong> {item.a}
+                  <h3 className="text-lg font-bold text-[#191416] dark:text-[#FAF7F5]">{item.q}</h3>
+                  <div className="p-4 rounded-2xl bg-[#FAF7F5] dark:bg-[#231B1E] border border-[#E5D7D9] dark:border-[#3D282C] space-y-1">
+                    <span className="text-xs font-bold text-[#8F1D2C] uppercase block">Scoring Keyword Blueprint:</span>
+                    <p className="text-base text-[#191416] dark:text-[#FAF7F5] leading-relaxed">{item.ans}</p>
                   </div>
                 </div>
               ))}
@@ -319,39 +757,34 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
           </section>
         )}
 
-        {/* 4. ADAPTIVE PRACTICE QUIZ */}
+        {/* 4. PRACTICE QUIZ */}
         {activeTab === 'quiz' && (
-          <section className="space-y-6 animate-fade-in">
-            <div className="border-b border-slate-300 dark:border-slate-800 pb-3">
-              <h2 className="text-xl font-black uppercase text-black dark:text-white tracking-tight font-heading">
-                4. Bloom-Driven Practice Quiz
+          <section className="space-y-8 animate-fade-in">
+            <div className="border-b border-[#E5D7D9] dark:border-[#3D282C] pb-4">
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-[#191416] dark:text-[#FAF7F5]">
+                4. Adaptive Practice Quiz
               </h2>
-              <p className="text-xs text-slate-500 font-bold mt-1">
-                Adaptive MCQs targeting your specific Bloom mastery gaps ({bloomProfile.dominantWeakness}).
+              <p className="text-sm text-[#71676A] font-medium mt-1">
+                Bloom-driven questions to test your exam readiness under time constraint.
               </p>
             </div>
 
-            <div className="p-6 rounded-2xl border-2 border-black dark:border-slate-700 bg-white dark:bg-[#1E293B] space-y-4 shadow-paper-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-mono font-black text-[#2563EB]">Question 1 of 5</span>
-                <span className="px-2.5 py-0.5 bg-amber-400 text-black text-[10px] font-mono font-black rounded">Bloom: {bloomProfile.dominantWeakness}</span>
+            <div className="p-8 rounded-3xl border border-[#E5D7D9] dark:border-[#3D282C] bg-white dark:bg-[#191416] space-y-6 shadow-sm">
+              <div className="flex items-center justify-between border-b border-[#E5D7D9] dark:border-[#3D282C] pb-3">
+                <span className="text-xs font-bold text-[#8F1D2C] uppercase">Question 1 of 5</span>
+                <span className="px-3 py-1 bg-[#F8EDEF] text-[#8F1D2C] text-xs font-bold rounded-lg">Apply Level</span>
               </div>
-              <h3 className="text-sm font-extrabold text-black dark:text-white">
-                Which of the following functional dependencies guarantees that a relation is in Boyce-Codd Normal Form (BCNF)?
+              <h3 className="text-lg font-bold text-[#191416] dark:text-[#FAF7F5]">
+                Which of the following normal forms guarantees lossless join decomposition and preserves functional dependencies simultaneously?
               </h3>
-              <div className="space-y-2">
-                {[
-                  'A) Every determinant X in X → Y is a candidate key or super key.',
-                  'B) Y is a prime attribute in X → Y.',
-                  'C) The relation contains no multi-valued dependencies.',
-                  'D) The primary key is composite.'
-                ].map((opt, idx) => (
+              <div className="space-y-3">
+                {['First Normal Form (1NF)', 'Third Normal Form (3NF)', 'Boyce-Codd Normal Form (BCNF)', 'Fourth Normal Form (4NF)'].map((opt, i) => (
                   <button
-                    key={idx}
+                    key={i}
                     type="button"
-                    className="w-full text-left p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-[#FFC400]/20 font-mono text-xs font-bold text-slate-800 dark:text-slate-200 transition-colors cursor-pointer"
+                    className="w-full text-left p-4 rounded-2xl border border-[#E5D7D9] dark:border-[#3D282C] bg-[#FAF7F5] dark:bg-[#231B1E] text-sm font-medium text-[#191416] dark:text-[#FAF7F5] hover:border-[#8F1D2C] hover:bg-[#F8EDEF] transition-all cursor-pointer"
                   >
-                    {opt}
+                    {String.fromCharCode(65 + i)}. {opt}
                   </button>
                 ))}
               </div>
@@ -359,136 +792,148 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
           </section>
         )}
 
-        {/* 5. REMEMBER THIS HIGH YIELD BLOCKS */}
+        {/* 5. HIGH-YIELD BLOCKS */}
         {activeTab === 'remember' && (
-          <section className="space-y-6 animate-fade-in">
-            <div className="border-b border-slate-300 dark:border-slate-800 pb-3">
-              <h2 className="text-xl font-black uppercase text-black dark:text-white tracking-tight font-heading">
-                5. "Remember This" Memory Blocks
+          <section className="space-y-8 animate-fade-in">
+            <div className="border-b border-[#E5D7D9] dark:border-[#3D282C] pb-4">
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-[#191416] dark:text-[#FAF7F5]">
+                5. High-Yield Memory Blocks
               </h2>
-              <p className="text-xs text-slate-500 font-bold mt-1">
-                Ultra-scannable definitions, key differences, and common exam traps.
+              <p className="text-sm text-[#71676A] font-medium mt-1">
+                Must-remember formulas, theorems, and definitions for instant pre-exam recall.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {[
-                { title: 'Primary Key vs Candidate Key', text: 'A candidate key is a minimal superkey. A primary key is the candidate key explicitly chosen by the DBA.' },
-                { title: 'Dense vs Sparse Index', text: 'Dense Index has an index record for EVERY search key value. Sparse Index has records only for SOME values.' },
-                { title: 'Conflict Serializability Rule', text: 'Two operations conflict if they belong to different transactions, access the same item, and at least one is WRITE.' },
-                { title: 'Lossless Join Property', text: 'Decomposition R → (R1, R2) is lossless if (R1 ∩ R2) → R1 or (R1 ∩ R2) → R2.' }
-              ].map((item, i) => (
-                <div key={i} className="p-4 rounded-2xl border-2 border-black dark:border-slate-700 bg-[#FFFBEB] dark:bg-[#1E1B10] space-y-2 shadow-sm">
-                  <h4 className="text-xs font-mono font-black uppercase text-amber-900 dark:text-amber-300">{item.title}</h4>
-                  <p className="text-xs font-sans text-slate-800 dark:text-slate-200 leading-relaxed font-bold">{item.text}</p>
+                { title: 'BCNF Condition', text: 'For every functional dependency X → Y in R, X must be a super key for relation R.' },
+                { title: 'Strict 2-Phase Locking', text: 'Shared and Exclusive locks held by a transaction are released ONLY after the transaction commits or aborts.' },
+                { title: 'Relational Algebra Division', text: 'R ÷ S returns tuples in R that are associated with EVERY tuple in S.' },
+                { title: 'Conflict Serializability', text: 'A schedule is conflict serializable if its precedence graph contains NO directed cycles.' }
+              ].map((blk, idx) => (
+                <div key={idx} className="p-7 rounded-3xl border-l-4 border-[#8F1D2C] bg-[#F8EDEF] dark:bg-[#2D1B20] space-y-2 shadow-sm">
+                  <h3 className="text-base font-bold text-[#8F1D2C] dark:text-[#B83245]">{blk.title}</h3>
+                  <p className="text-base font-sans text-[#191416] dark:text-[#FAF7F5] leading-relaxed">{blk.text}</p>
                 </div>
               ))}
             </div>
           </section>
         )}
 
-        {/* 6. QUESTION PAPER ANALYSIS & EVIDENCE */}
+        {/* 6. PAPER ANALYSIS */}
         {activeTab === 'paper_analysis' && (
-          <section className="space-y-6 animate-fade-in">
-            <div className="border-b border-slate-300 dark:border-slate-800 pb-3">
-              <h2 className="text-xl font-black uppercase text-black dark:text-white tracking-tight font-heading">
-                6. Exam Intelligence & Previous Paper Frequency
+          <section className="space-y-8 animate-fade-in">
+            <div className="border-b border-[#E5D7D9] dark:border-[#3D282C] pb-4">
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-[#191416] dark:text-[#FAF7F5]">
+                6. Previous Paper & Teacher Highlight Analysis
               </h2>
-              <p className="text-xs text-slate-500 font-bold mt-1">
-                Evidence-based priority analysis from uploaded question papers & lecture coverage.
+              <p className="text-sm text-[#71676A] font-medium mt-1">
+                Evidence-based topic distribution derived from past university exams and lecture notes.
               </p>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-4">
               {[
-                { topic: 'Normalization (3NF / BCNF)', freq: 'Appeared in 4 previous papers', tag: 'High Priority', teacher: true },
-                { topic: 'SQL Joins & Relational Algebra', freq: 'Appeared in 3 previous papers', tag: 'Frequently Appeared', teacher: false },
-                { topic: '2PL & Concurrency Control', freq: 'Appeared in 2 previous papers', tag: 'Teacher Highlighted', teacher: true },
-                { topic: 'B+ Tree Indexing', freq: 'Appeared in 2 previous papers', tag: 'Covered in Lectures', teacher: false }
+                { topic: 'Normalization & Functional Dependencies', count: 'Appeared in 4 previous papers', tag: 'High Priority' },
+                { topic: 'Transaction Concurrency & 2PL', count: 'Teacher Highlighted', tag: 'Frequent' },
+                { topic: 'B+ Tree Indexing & Hash Indexing', count: 'Covered in Lectures', tag: 'Core Concept' }
               ].map((item, i) => (
-                <div key={i} className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1E293B] flex items-center justify-between shadow-paper-xs">
+                <div key={i} className="p-6 rounded-3xl border border-[#E5D7D9] dark:border-[#3D282C] bg-white dark:bg-[#191416] flex items-center justify-between gap-4 shadow-sm">
                   <div>
-                    <h4 className="text-xs font-extrabold text-black dark:text-white">{item.topic}</h4>
-                    <span className="text-[10px] font-mono text-slate-500 font-bold">{item.freq}</span>
+                    <h3 className="text-base font-bold text-[#191416] dark:text-[#FAF7F5]">{item.topic}</h3>
+                    <span className="text-xs text-[#71676A] font-medium mt-1 block">{item.count}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {item.teacher && (
-                      <span className="px-2 py-0.5 bg-[#FFC400] text-black text-[10px] font-mono font-black rounded">Teacher Topic</span>
-                    )}
-                    <span className="px-2.5 py-1 bg-[#2563EB] text-white text-[10px] font-mono font-black rounded-md">{item.tag}</span>
-                  </div>
+                  <span className="px-3.5 py-1 bg-[#F8EDEF] text-[#8F1D2C] font-bold text-xs rounded-xl border border-[#8F1D2C]/20">
+                    {item.tag}
+                  </span>
                 </div>
               ))}
             </div>
           </section>
         )}
 
-        {/* 7. PRE-EXAM REVISION SHEET */}
+        {/* 7. PRE-EXAM SHEET */}
         {activeTab === 'final_sheet' && (
-          <section className="space-y-6 animate-fade-in">
-            <div className="border-b border-slate-300 dark:border-slate-800 pb-3">
-              <h2 className="text-xl font-black uppercase text-black dark:text-white tracking-tight font-heading">
+          <section className="space-y-8 animate-fade-in">
+            <div className="border-b border-[#E5D7D9] dark:border-[#3D282C] pb-4">
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-[#191416] dark:text-[#FAF7F5]">
                 7. Ultra-Fast Pre-Exam Revision Sheet
               </h2>
-              <p className="text-xs text-slate-500 font-bold mt-1">
-                Scan this 5 minutes before walking into the examination hall!
+              <p className="text-sm text-[#71676A] font-medium mt-1">
+                Scannable 5-minute pre-exam cheat sheet for rapid memory reinforcement.
               </p>
             </div>
 
-            <div className="p-6 rounded-2xl border-2 border-black bg-white dark:bg-[#1E293B] space-y-4 shadow-paper-md">
-              <div className="font-mono text-xs font-black uppercase tracking-wider text-[#2563EB] border-b pb-2">
-                ⚡ 60-Second Memory Triggers
+            <div className="space-y-6">
+              <div className="p-7 rounded-3xl border border-[#8F1D2C]/30 bg-[#F8EDEF] dark:bg-[#2D1B20] space-y-3">
+                <h3 className="text-base font-bold text-[#8F1D2C] uppercase flex items-center gap-2">
+                  <Flame className="h-4 w-4" /> MUST REMEMBER
+                </h3>
+                <ul className="list-disc list-inside text-base text-[#191416] dark:text-[#FAF7F5] space-y-2 leading-relaxed">
+                  <li>3NF allows prime attributes on RHS; BCNF strictly requires LHS to be a super key.</li>
+                  <li>Serializability is guaranteed by 2PL protocol (Growing phase → Shrinking phase).</li>
+                  <li>ACID guarantees: Atomicity (WAL), Consistency, Isolation (Locks), Durability (Commit).</li>
+                </ul>
               </div>
-              <ul className="space-y-2 text-xs font-mono font-bold text-slate-800 dark:text-slate-200 list-disc list-inside">
-                <li>1NF = Atomic values. No repeating groups.</li>
-                <li>2NF = 1NF + No partial dependencies (LHS must be full primary key).</li>
-                <li>3NF = 2NF + No transitive dependencies (Non-prime attribute cannot determine non-prime).</li>
-                <li>BCNF = Every determinant X in X → Y must be a Super Key.</li>
-                <li>ACID = Atomicity, Consistency, Isolation, Durability.</li>
-                <li>Strict 2PL = Releases all exclusive locks ONLY at transaction commit/abort.</li>
-              </ul>
+
+              <div className="p-7 rounded-3xl border border-[#E5D7D9] dark:border-[#3D282C] bg-white dark:bg-[#191416] space-y-3">
+                <h3 className="text-base font-bold text-[#191416] dark:text-[#FAF7F5] uppercase flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-emerald-600" /> COMMON EXAM MISTAKES TO AVOID
+                </h3>
+                <ul className="list-disc list-inside text-base text-[#71676A] dark:text-[#A3989B] space-y-2 leading-relaxed">
+                  <li>Don't confuse candidate key with super key (super key can have extraneous attributes).</li>
+                  <li>Don't forget that 2PL prevents conflict un-serializability, but strict 2PL prevents cascading rollbacks.</li>
+                </ul>
+              </div>
             </div>
           </section>
         )}
 
-        {/* 8. EXAM READINESS SCORECARD */}
+        {/* 8. READINESS SCORE */}
         {activeTab === 'readiness' && (
-          <section className="space-y-6 animate-fade-in">
-            <div className="border-b border-slate-300 dark:border-slate-800 pb-3">
-              <h2 className="text-xl font-black uppercase text-black dark:text-white tracking-tight font-heading">
-                8. Evidence-Based Exam Readiness Assessment
+          <section className="space-y-8 animate-fade-in">
+            <div className="border-b border-[#E5D7D9] dark:border-[#3D282C] pb-4">
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-[#191416] dark:text-[#FAF7F5]">
+                8. Calm Academic Exam Readiness Score
               </h2>
-              <p className="text-xs text-slate-500 font-bold mt-1">
-                Calculated metrics combining concept mastery, practice, and paper coverage.
+              <p className="text-sm text-[#71676A] font-medium mt-1">
+                Objective skill breakdown evaluated across Bloom cognitive mastery levels.
               </p>
             </div>
 
-            <div className="p-6 rounded-3xl border-2 border-black dark:border-slate-700 bg-white dark:bg-[#1E293B] space-y-6 shadow-paper-lg">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
+            <div className="p-8 rounded-3xl border border-[#E5D7D9] dark:border-[#3D282C] bg-white dark:bg-[#191416] space-y-8 shadow-sm">
+              <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-black uppercase text-black dark:text-white">Estimated Exam Readiness</h3>
-                  <p className="text-xs text-slate-500 font-bold mt-0.5">Based on lecture coverage & practice accuracy</p>
+                  <span className="text-xs font-bold uppercase text-[#71676A]">Estimated Exam Readiness</span>
+                  <div className="text-4xl font-extrabold text-[#8F1D2C] mt-1">76%</div>
                 </div>
-                <div className="text-3xl font-mono font-black text-[#10B981] bg-emerald-500/10 px-4 py-2 rounded-2xl border-2 border-emerald-500/30">
-                  82% READY
-                </div>
+                <span className="px-4 py-2 bg-[#F8EDEF] text-[#8F1D2C] font-bold text-sm rounded-2xl border border-[#8F1D2C]/20">
+                  Targeted Revision Recommended
+                </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="space-y-4">
                 {[
-                  { label: 'Concept Understanding', val: '85%' },
-                  { label: 'Question Practice', val: '78%' },
-                  { label: 'Paper Pattern Coverage', val: '92%' }
-                ].map((st, i) => (
-                  <div key={i} className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-[#F8FAFC] dark:bg-[#0D1117]">
-                    <span className="text-[10px] font-mono font-bold text-slate-500 uppercase block">{st.label}</span>
-                    <span className="text-base font-mono font-black text-black dark:text-white mt-1 block">{st.val}</span>
+                  { label: 'Concept Understanding', score: 82 },
+                  { label: 'Application & Problem Solving', score: 61 },
+                  { label: 'Analytical Trade-offs', score: 48 },
+                  { label: 'Question Practice', score: 74 },
+                  { label: 'Previous Paper Coverage', score: 89 }
+                ].map((item, i) => (
+                  <div key={i} className="space-y-1.5">
+                    <div className="flex justify-between text-xs font-medium text-[#191416] dark:text-[#FAF7F5]">
+                      <span>{item.label}</span>
+                      <span className="font-bold">{item.score}%</span>
+                    </div>
+                    <div className="w-full h-2.5 bg-[#FAF7F5] dark:bg-[#231B1E] rounded-full overflow-hidden border border-[#E5D7D9] dark:border-[#3D282C]">
+                      <div className="h-full bg-[#8F1D2C] transition-all duration-500" style={{ width: `${item.score}%` }} />
+                    </div>
                   </div>
                 ))}
               </div>
 
-              <div className="p-4 rounded-2xl bg-[#EFF6FF] dark:bg-[#0F172A] border-2 border-[#3B82F6] text-xs font-bold text-[#1E3A8A] dark:text-[#93C5FD] leading-relaxed">
-                <strong>AI Preparation Advice:</strong> Your theoretical foundation in {config.subject.canonicalName} is strong. If you have remaining time before the exam, focus on practicing <strong>Apply & Analyze level subjective questions</strong>.
+              <div className="p-5 rounded-2xl bg-[#F8EDEF] dark:bg-[#2D1B20] text-xs text-[#8F1D2C] dark:text-[#B83245] font-medium leading-relaxed">
+                <strong>Academic Assessment Summary:</strong> Your strongest area is Normalization & Relational Algebra (82%). Your primary focus before entering the exam hall should be Analytical Trade-offs in Transaction Isolation levels.
               </div>
             </div>
           </section>

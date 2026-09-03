@@ -258,40 +258,42 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 text-left animate-fade-in">
+    <div className="max-w-[1150px] mx-auto space-y-6 text-left animate-fade-in font-sans">
       
-      {/* HEADER BANNER */}
-      <div className="p-6 sm:p-8 rounded-3xl border-2 border-black dark:border-slate-700 bg-gradient-to-r from-[#111111] via-[#1E293B] to-[#0F172A] text-white shadow-2xl relative overflow-hidden">
-        <div className="relative z-10 space-y-2">
+      {/* HEADER BANNER - CALM ACADEMIC DEEP RED */}
+      <div className="p-6 sm:p-8 rounded-3xl border border-[#8F1D2C]/30 bg-gradient-to-r from-[#651522] via-[#8F1D2C] to-[#2D0B10] text-white shadow-lg relative overflow-hidden">
+        <div className="relative z-10 space-y-3">
           <div className="flex items-center gap-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#FF4D4D] text-white border border-black rounded-lg text-xs font-mono font-black uppercase tracking-wider shadow-sm">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#8F1D2C] text-white border border-red-400/30 rounded-lg text-xs font-semibold uppercase tracking-wider shadow-sm">
               <Flame className="h-4 w-4 fill-white" />
               <span>EXAM RUSH MODE</span>
             </div>
-            <span className="px-2.5 py-1 bg-amber-400 text-black rounded-lg text-[10px] font-mono font-black uppercase">
+            <span className="px-3 py-1 bg-[#F8EDEF] text-[#8F1D2C] rounded-lg text-xs font-semibold">
               115 College Subjects Available
             </span>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-white font-heading">
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white font-sans">
             Targeted Exam Survival & Rapid Mastery
           </h2>
-          <p className="text-xs sm:text-sm text-slate-300 font-bold max-w-2xl leading-relaxed">
-            Select from 115+ official university subjects across B.Tech, BBA, BCA, and B.Sc branches. NoteIT will launch a full-screen, distraction-free study environment tailored to your exam timeline.
+          <p className="text-sm text-red-100/90 font-medium max-w-2xl leading-relaxed">
+            Select from 115+ official university subjects across B.Tech, BBA, BCA, and B.Sc branches. NoteIT will launch a full-screen, calm academic study environment tailored to your timeline.
           </p>
         </div>
       </div>
 
       {/* SETUP CARD FORM */}
-      <div className="p-6 sm:p-8 rounded-3xl border-2 border-black dark:border-slate-700 bg-white dark:bg-[#1E293B] shadow-paper-lg space-y-6">
+      <div className="p-6 sm:p-8 rounded-3xl border border-[#E5D7D9] dark:border-[#3D282C] bg-white dark:bg-[#191416] shadow-sm space-y-6">
         
         {/* 1. CANONICAL SUBJECT AUTOCOMPLETE & BRANCH FILTER */}
         <div className="space-y-3 relative">
           <div className="flex items-center justify-between">
-            <label className="text-xs font-mono font-black uppercase tracking-wider text-black dark:text-slate-200">
-              1. Select Subject (115 Available for B.Tech, BBA, BCA, B.Sc) *
+            <label className="text-sm font-bold text-[#191416] dark:text-[#FAF7F5]">
+              1. Select Subject (115 Available across B.Tech, BBA, BCA, B.Sc) *
             </label>
             {selectedSubject && (
-              <span className="text-[10px] text-[#2563EB] dark:text-[#60A5FA] font-bold">ID: {selectedSubject.subjectId} ({selectedSubject.category})</span>
+              <span className="text-xs text-[#8F1D2C] dark:text-[#B83245] font-semibold">
+                ID: {selectedSubject.subjectId} ({selectedSubject.category})
+              </span>
             )}
           </div>
 
@@ -305,10 +307,10 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
                   setSelectedCategory(cat.id);
                   setIsSubjectDropdownOpen(true);
                 }}
-                className={`px-3 py-1.5 rounded-xl text-[11px] font-mono font-bold shrink-0 transition-all cursor-pointer border ${
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all cursor-pointer border ${
                   selectedCategory === cat.id
-                    ? 'bg-[#2563EB] text-white border-black shadow-sm font-black'
-                    : 'bg-[#F8FAFC] dark:bg-[#0D1117] text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:bg-slate-200'
+                    ? 'bg-[#8F1D2C] text-white border-[#8F1D2C] shadow-sm font-bold'
+                    : 'bg-[#FAF7F5] dark:bg-[#231B1E] text-[#71676A] dark:text-[#A3989B] border-[#E5D7D9] dark:border-[#3D282C] hover:bg-[#F8EDEF]'
                 }`}
               >
                 {cat.label}
@@ -318,7 +320,7 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
 
           <div className="relative">
             <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#71676A]" />
               <input
                 type="text"
                 value={subjectQuery}
@@ -328,26 +330,26 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
                   setSelectedSubject(null);
                   setIsSubjectDropdownOpen(true);
                 }}
-                placeholder="Type or search 115+ subjects (e.g. DBMS, Thermodynamics, Financial Accounting, Organic Chemistry...)"
-                className="w-full rounded-2xl border-2 border-black dark:border-slate-600 bg-[#F8FAFC] dark:bg-[#0D1117] pl-11 pr-4 py-3.5 text-xs font-extrabold text-black dark:text-white placeholder-slate-400 outline-none focus:border-[#2563EB] shadow-sm transition-all"
+                placeholder="Search 115+ subjects (e.g. DBMS, Thermodynamics, Financial Accounting, Organic Chemistry...)"
+                className="w-full rounded-2xl border border-[#E5D7D9] dark:border-[#3D282C] bg-[#FAF7F5] dark:bg-[#231B1E] pl-11 pr-4 py-3.5 text-sm font-medium text-[#191416] dark:text-[#FAF7F5] placeholder-[#71676A] outline-none focus:border-[#8F1D2C] shadow-sm transition-all"
               />
             </div>
 
             {isSubjectDropdownOpen && (
-              <div className="absolute z-50 mt-2 w-full rounded-2xl border-2 border-black bg-white dark:bg-[#0D1117] shadow-2xl p-2.5 space-y-1 max-h-64 overflow-y-auto custom-scrollbar">
+              <div className="absolute z-50 mt-2 w-full rounded-2xl border border-[#E5D7D9] dark:border-[#3D282C] bg-white dark:bg-[#231B1E] shadow-xl p-2 space-y-1 max-h-64 overflow-y-auto custom-scrollbar">
                 {subjectResults.length > 0 ? (
                   subjectResults.map((subj) => (
                     <button
                       key={subj.subjectId}
                       type="button"
                       onClick={() => handleSelectSubject(subj)}
-                      className="w-full text-left px-3.5 py-2.5 rounded-xl text-xs flex items-center justify-between cursor-pointer hover:bg-[#FFC400]/20 dark:hover:bg-slate-800 transition-colors"
+                      className="w-full text-left px-3.5 py-2.5 rounded-xl text-xs flex items-center justify-between cursor-pointer hover:bg-[#F8EDEF] dark:hover:bg-[#3D282C] transition-colors"
                     >
                       <div>
-                        <span className="font-extrabold text-black dark:text-white block">{subj.canonicalName}</span>
+                        <span className="font-bold text-[#191416] dark:text-[#FAF7F5] block text-sm">{subj.canonicalName}</span>
                         <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-[10px] text-slate-500 font-mono font-bold">Aliases: {subj.aliases.slice(0, 3).join(', ')}</span>
-                          <span className="text-[9px] px-1.5 py-0.2 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-mono font-bold rounded">
+                          <span className="text-[11px] text-[#71676A] font-medium">Aliases: {subj.aliases.slice(0, 3).join(', ')}</span>
+                          <span className="text-[10px] px-1.5 py-0.2 bg-[#F8EDEF] text-[#8F1D2C] font-semibold rounded">
                             {subj.category}
                           </span>
                         </div>
@@ -358,7 +360,7 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
                     </button>
                   ))
                 ) : (
-                  <div className="p-4 text-center text-xs text-slate-500 font-mono font-bold">
+                  <div className="p-4 text-center text-xs text-[#71676A] font-medium">
                     No matching subject found. Type to use custom subject name!
                   </div>
                 )}
@@ -368,9 +370,9 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
         </div>
 
         {/* 2. TIME REMAINING SELECTOR */}
-        <div className="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-700">
-          <label className="text-xs font-mono font-black uppercase tracking-wider text-black dark:text-slate-200 flex items-center gap-2">
-            <Clock className="h-4 w-4 text-[#2563EB]" />
+        <div className="space-y-3 pt-4 border-t border-[#E5D7D9] dark:border-[#3D282C]">
+          <label className="text-sm font-bold text-[#191416] dark:text-[#FAF7F5] flex items-center gap-2">
+            <Clock className="h-4 w-4 text-[#8F1D2C]" />
             <span>2. How Much Time Is Left Before Exam? *</span>
           </label>
 
@@ -385,10 +387,10 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
                     setUseCustomTime(false);
                     setSelectedDuration(opt);
                   }}
-                  className={`py-3 px-3 rounded-2xl border-2 text-xs font-mono font-black transition-all cursor-pointer shadow-paper-xs ${
+                  className={`py-3 px-3 rounded-2xl border text-xs font-bold transition-all cursor-pointer shadow-sm ${
                     isSelected
-                      ? 'border-black bg-[#2563EB] text-white shadow-paper'
-                      : 'border-black dark:border-slate-700 bg-[#F8FAFC] dark:bg-[#0D1117] text-black dark:text-slate-200 hover:bg-slate-100'
+                      ? 'border-[#8F1D2C] bg-[#8F1D2C] text-white shadow-md'
+                      : 'border-[#E5D7D9] dark:border-[#3D282C] bg-[#FAF7F5] dark:bg-[#231B1E] text-[#191416] dark:text-[#FAF7F5] hover:bg-[#F8EDEF]'
                   }`}
                 >
                   {opt.label}
@@ -401,7 +403,7 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
             <button
               type="button"
               onClick={() => setUseCustomTime(!useCustomTime)}
-              className={`text-xs font-mono font-bold underline cursor-pointer ${useCustomTime ? 'text-[#2563EB]' : 'text-slate-500'}`}
+              className={`text-xs font-semibold underline cursor-pointer ${useCustomTime ? 'text-[#8F1D2C]' : 'text-[#71676A]'}`}
             >
               {useCustomTime ? 'Use preset time options' : 'Enter custom time (in minutes)'}
             </button>
@@ -411,19 +413,19 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
                 value={customMinutes}
                 onChange={(e) => setCustomMinutes(e.target.value)}
                 placeholder="e.g. 45"
-                className="w-32 rounded-xl border-2 border-black bg-[#F8FAFC] dark:bg-[#0D1117] px-3 py-1.5 text-xs font-mono font-bold text-black dark:text-white outline-none"
+                className="w-32 rounded-xl border border-[#E5D7D9] dark:border-[#3D282C] bg-[#FAF7F5] dark:bg-[#231B1E] px-3 py-1.5 text-xs font-bold text-[#191416] dark:text-[#FAF7F5] outline-none focus:border-[#8F1D2C]"
               />
             )}
           </div>
         </div>
 
         {/* 3. TEACHER KEY TOPICS & EXAM MATERIALS (OPTIONAL) */}
-        <div className="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+        <div className="space-y-3 pt-4 border-t border-[#E5D7D9] dark:border-[#3D282C]">
           <div className="flex items-center justify-between">
-            <label className="text-xs font-mono font-black uppercase tracking-wider text-black dark:text-slate-200 flex items-center gap-2">
+            <label className="text-sm font-bold text-[#191416] dark:text-[#FAF7F5] flex items-center gap-2">
               <span>3. Teacher Key Topics & Materials (Optional)</span>
-              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1">
-                <Sparkles className="h-3 w-3" /> Priority Boost
+              <span className="text-xs text-[#8F1D2C] dark:text-[#B83245] font-semibold flex items-center gap-1">
+                <Sparkles className="h-3.5 w-3.5" /> Priority Boost
               </span>
             </label>
 
@@ -432,28 +434,28 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
               <button
                 type="button"
                 onClick={() => setIsAttachMenuOpen(!isAttachMenuOpen)}
-                className="px-2.5 py-1.5 rounded-xl border-2 border-black dark:border-slate-600 bg-[#FFC400] hover:bg-amber-400 text-black text-xs font-mono font-black flex items-center gap-1.5 shadow-paper-xs transition-all cursor-pointer"
+                className="px-3 py-1.5 rounded-xl border border-[#8F1D2C] bg-[#8F1D2C] hover:bg-[#651522] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
                 title="Upload PPT, PDF, Word, Image or Add Web Link"
               >
                 <Plus className="h-4 w-4" />
-                <span className="text-[11px] font-black uppercase">Attach Material</span>
+                <span>Attach Material</span>
               </button>
 
               {/* DROPDOWN ATTACHMENT OPTIONS */}
               {isAttachMenuOpen && (
-                <div className="absolute right-0 z-50 mt-2 w-64 rounded-2xl border-2 border-black bg-white dark:bg-[#0D1117] shadow-2xl p-2 space-y-1 animate-fade-in">
+                <div className="absolute right-0 z-50 mt-2 w-64 rounded-2xl border border-[#E5D7D9] dark:border-[#3D282C] bg-white dark:bg-[#231B1E] shadow-xl p-2 space-y-1 animate-fade-in">
                   <button
                     type="button"
                     onClick={() => {
                       fileInputRef.current?.click();
                       setIsAttachMenuOpen(false);
                     }}
-                    className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-mono font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2.5 transition-colors cursor-pointer"
+                    className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-medium text-[#191416] dark:text-[#FAF7F5] hover:bg-[#F8EDEF] dark:hover:bg-[#3D282C] flex items-center gap-2.5 transition-colors cursor-pointer"
                   >
-                    <Upload className="h-4 w-4 text-[#2563EB]" />
+                    <Upload className="h-4 w-4 text-[#8F1D2C]" />
                     <div>
-                      <div className="font-extrabold text-black dark:text-white">Upload File</div>
-                      <div className="text-[9px] text-slate-500 font-bold">PPT, PDF, Word (.docx), Image, TXT</div>
+                      <div className="font-bold">Upload File</div>
+                      <div className="text-[10px] text-[#71676A]">PPT, PDF, Word (.docx), Image, TXT</div>
                     </div>
                   </button>
 
@@ -463,12 +465,12 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
                       setShowUrlDialog(true);
                       setIsAttachMenuOpen(false);
                     }}
-                    className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-mono font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2.5 transition-colors cursor-pointer"
+                    className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-medium text-[#191416] dark:text-[#FAF7F5] hover:bg-[#F8EDEF] dark:hover:bg-[#3D282C] flex items-center gap-2.5 transition-colors cursor-pointer"
                   >
-                    <Globe className="h-4 w-4 text-emerald-500" />
+                    <Globe className="h-4 w-4 text-emerald-600" />
                     <div>
-                      <div className="font-extrabold text-black dark:text-white">Add Web / YouTube Link</div>
-                      <div className="text-[9px] text-slate-500 font-bold">Extracts content from web URL</div>
+                      <div className="font-bold">Add Web / YouTube Link</div>
+                      <div className="text-[10px] text-[#71676A]">Extracts content from web URL</div>
                     </div>
                   </button>
                 </div>
@@ -493,10 +495,10 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
               onChange={(e) => handleTeacherTopicsChange(e.target.value)}
               placeholder="Type key topics (e.g. Trees, AVL, Normalization...) or paste any web/YouTube link..."
               rows={2}
-              className="w-full rounded-2xl border-2 border-black dark:border-slate-600 bg-[#F8FAFC] dark:bg-[#0D1117] p-3.5 text-xs font-mono font-bold text-black dark:text-white placeholder-slate-400 outline-none focus:border-[#2563EB] custom-scrollbar"
+              className="w-full rounded-2xl border border-[#E5D7D9] dark:border-[#3D282C] bg-[#FAF7F5] dark:bg-[#231B1E] p-3.5 text-sm font-medium text-[#191416] dark:text-[#FAF7F5] placeholder-[#71676A] outline-none focus:border-[#8F1D2C] custom-scrollbar"
             />
             {isExtractingUrl && (
-              <div className="absolute bottom-3 right-3 px-2.5 py-1 bg-[#2563EB] text-white text-[10px] font-mono font-bold rounded-lg flex items-center gap-1.5 animate-pulse shadow-sm">
+              <div className="absolute bottom-3 right-3 px-2.5 py-1 bg-[#8F1D2C] text-white text-[10px] font-bold rounded-lg flex items-center gap-1.5 animate-pulse shadow-sm">
                 <Loader2 className="h-3 w-3 animate-spin" />
                 <span>Extracting link info...</span>
               </div>
@@ -505,12 +507,12 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
 
           {/* MANUAL URL INPUT DIALOG */}
           {showUrlDialog && (
-            <div className="p-4 rounded-2xl border-2 border-black bg-blue-50 dark:bg-slate-800 space-y-3 animate-fade-in">
+            <div className="p-4 rounded-2xl border border-[#8F1D2C]/30 bg-[#F8EDEF] dark:bg-[#2A171B] space-y-3 animate-fade-in">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-mono font-black uppercase text-[#2563EB] flex items-center gap-1.5">
+                <span className="text-xs font-bold text-[#8F1D2C] dark:text-[#B83245] flex items-center gap-1.5">
                   <Globe className="h-4 w-4" /> Import Knowledge from Web or YouTube URL
                 </span>
-                <button type="button" onClick={() => setShowUrlDialog(false)} className="text-slate-500 hover:text-black">
+                <button type="button" onClick={() => setShowUrlDialog(false)} className="text-[#71676A] hover:text-[#191416]">
                   <X className="h-4 w-4" />
                 </button>
               </div>
@@ -520,13 +522,13 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
                   value={customUrlInput}
                   onChange={(e) => setCustomUrlInput(e.target.value)}
                   placeholder="Paste URL (e.g. https://wikipedia.org/... or YouTube video link)"
-                  className="flex-1 rounded-xl border-2 border-black dark:border-slate-600 bg-white dark:bg-[#0D1117] px-3 py-2 text-xs font-mono font-bold text-black dark:text-white outline-none"
+                  className="flex-1 rounded-xl border border-[#E5D7D9] dark:border-[#3D282C] bg-white dark:bg-[#191416] px-3 py-2 text-xs font-medium text-[#191416] dark:text-[#FAF7F5] outline-none focus:border-[#8F1D2C]"
                 />
                 <button
                   type="button"
                   onClick={handleManualUrlSubmit}
                   disabled={isExtractingUrl || !customUrlInput.trim()}
-                  className="px-4 py-2 rounded-xl border-2 border-black bg-[#2563EB] hover:bg-blue-700 text-white font-mono text-xs font-black uppercase disabled:opacity-50 cursor-pointer shadow-paper-xs"
+                  className="px-4 py-2 rounded-xl bg-[#8F1D2C] hover:bg-[#651522] text-white font-bold text-xs disabled:opacity-50 cursor-pointer shadow-sm"
                 >
                   {isExtractingUrl ? 'Extracting...' : 'Gather Info'}
                 </button>
@@ -537,14 +539,14 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
           {/* ATTACHED MATERIALS BADGES LIST */}
           {attachments.length > 0 && (
             <div className="space-y-1.5 pt-1">
-              <div className="text-[10px] font-mono font-bold uppercase text-slate-500 flex items-center gap-1">
-                <Paperclip className="h-3 w-3" /> Attached Study Materials & Links ({attachments.length}):
+              <div className="text-xs font-bold uppercase text-[#71676A] flex items-center gap-1">
+                <Paperclip className="h-3.5 w-3.5 text-[#8F1D2C]" /> Attached Study Materials & Links ({attachments.length}):
               </div>
               <div className="flex flex-wrap gap-2">
                 {attachments.map((att) => (
                   <div
                     key={att.id}
-                    className="px-3 py-1.5 rounded-xl border-2 border-black dark:border-slate-700 bg-amber-400/20 dark:bg-amber-400/10 text-xs font-mono font-bold text-black dark:text-white flex items-center gap-2 shadow-paper-xs"
+                    className="px-3 py-1.5 rounded-xl border border-[#E5D7D9] dark:border-[#3D282C] bg-[#F8EDEF] dark:bg-[#2D1B20] text-xs font-medium text-[#191416] dark:text-[#FAF7F5] flex items-center gap-2 shadow-sm"
                   >
                     {att.type === 'presentation' && <FileSpreadsheet className="h-3.5 w-3.5 text-amber-600" />}
                     {att.type === 'document' && <FileText className="h-3.5 w-3.5 text-blue-600" />}
@@ -552,8 +554,8 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
                     {att.type === 'url' && <Globe className="h-3.5 w-3.5 text-emerald-600" />}
                     
                     <div className="max-w-[200px] truncate">
-                      <span className="truncate block font-extrabold">{att.name}</span>
-                      <span className="text-[9px] text-slate-500 font-bold block">
+                      <span className="truncate block font-bold">{att.name}</span>
+                      <span className="text-[10px] text-[#71676A] block">
                         {att.type === 'url' ? 'Web Ingested' : att.sizeLabel || `${Math.round(att.textContent.length)} chars`}
                       </span>
                     </div>
@@ -561,7 +563,7 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
                     <button
                       type="button"
                       onClick={() => removeAttachment(att.id)}
-                      className="p-1 hover:bg-red-500/20 rounded-md text-red-600 transition-colors cursor-pointer"
+                      className="p-1 hover:bg-red-500/20 rounded-md text-[#8F1D2C] transition-colors cursor-pointer"
                       title="Remove material"
                     >
                       <X className="h-3.5 w-3.5" />
@@ -574,8 +576,8 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
         </div>
 
         {/* 4. PREPARATION STYLE */}
-        <div className="space-y-2 pt-4 border-t border-slate-200 dark:border-slate-700">
-          <label className="text-xs font-mono font-black uppercase tracking-wider text-black dark:text-slate-200 block">
+        <div className="space-y-2 pt-4 border-t border-[#E5D7D9] dark:border-[#3D282C]">
+          <label className="text-sm font-bold text-[#191416] dark:text-[#FAF7F5] block">
             4. Preparation Style
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -588,25 +590,25 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
                 key={item.id}
                 type="button"
                 onClick={() => setIntensity(item.id as any)}
-                className={`p-3.5 rounded-2xl border-2 text-left transition-all cursor-pointer ${
+                className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
                   intensity === item.id
-                    ? 'border-black bg-[#FFC400]/20 dark:bg-amber-400/10 border-2 border-black dark:border-amber-400 shadow-paper-xs'
-                    : 'border-slate-300 dark:border-slate-700 bg-[#F8FAFC] dark:bg-[#0D1117]'
+                    ? 'border-[#8F1D2C] bg-[#F8EDEF] dark:bg-[#2D1B20] text-[#191416] dark:text-[#FAF7F5] shadow-sm font-bold'
+                    : 'border-[#E5D7D9] dark:border-[#3D282C] bg-[#FAF7F5] dark:bg-[#231B1E] hover:bg-[#F8EDEF]'
                 }`}
               >
-                <div className="text-xs font-extrabold text-black dark:text-white block">{item.label}</div>
-                <div className="text-[10px] text-slate-500 font-bold mt-1 leading-normal">{item.desc}</div>
+                <div className="text-sm font-bold text-[#191416] dark:text-[#FAF7F5] block">{item.label}</div>
+                <div className="text-xs text-[#71676A] font-medium mt-1 leading-relaxed">{item.desc}</div>
               </button>
             ))}
           </div>
         </div>
 
         {/* START CTA BUTTON */}
-        <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
+        <div className="pt-4 border-t border-[#E5D7D9] dark:border-[#3D282C]">
           <button
             type="button"
             onClick={handleStart}
-            className="w-full py-4 px-6 rounded-2xl border-2 border-black bg-[#FF4D4D] hover:bg-red-600 text-white font-heading text-sm font-black uppercase tracking-wider shadow-paper hover:shadow-paper-lg transition-all active:scale-98 cursor-pointer flex items-center justify-center gap-2"
+            className="w-full py-4 px-6 rounded-2xl bg-[#8F1D2C] hover:bg-[#651522] text-white font-sans text-base font-bold tracking-wide shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
           >
             <Flame className="h-5 w-5 fill-white" />
             <span>START EXAM RUSH ENVIRONMENT (FULLSCREEN NEW TAB)</span>
