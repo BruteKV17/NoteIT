@@ -46,8 +46,8 @@ export default function DashboardView({
   onOpenLecture,
   theme,
   notes = [],
-  totalXp = 2450,
-  currentStreak = 6
+  totalXp = 0,
+  currentStreak = 0
 }: DashboardViewProps) {
   const [weekendChallenge, setWeekendChallenge] = React.useState<WeekendChallengeData | null>(null);
   const [showQuizModal, setShowQuizModal] = React.useState<boolean>(false);
@@ -218,10 +218,10 @@ export default function DashboardView({
             </div>
             <div className="text-2xl font-extrabold font-heading text-[#FFC400] mt-1 flex items-center gap-1.5">
               <Zap className="h-5 w-5 fill-[#FFC400]" />
-              <span>{(totalXp || 2450).toLocaleString()} XP</span>
+              <span>{(totalXp ?? 0).toLocaleString()} XP</span>
             </div>
           </div>
-          <Badge variant="yellow" size="sm">LEVEL {Math.floor((totalXp || 2450) / 1000) + 1}</Badge>
+          <Badge variant="yellow" size="sm">LEVEL {Math.floor((totalXp ?? 0) / 1000) + 1}</Badge>
         </div>
 
         {/* Stat Card 2: Current Streak */}

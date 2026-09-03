@@ -2,6 +2,7 @@ import { initializeApp, cert } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import fs from 'fs';
+import path from 'path';
 
 const potentialPaths = [
   path.resolve('noteit-ai-fd7eb-firebase-adminsdk-fbsvc-f3061dd986.json'),

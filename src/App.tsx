@@ -44,6 +44,7 @@ import DashboardView from './components/DashboardView';
 import ResearchHubView from './components/ResearchHubView';
 import LibraryView from './components/LibraryView';
 import QuizView from './components/QuizView';
+import PreparationModeView from './components/PreparationModeView';
 import KnowledgeStudioView from './components/KnowledgeStudioView';
 import NotificationsView from './components/NotificationsView';
 import SettingsView from './components/SettingsView';
@@ -874,7 +875,7 @@ export default function App() {
         );
       case 'quiz-mode':
         return (
-          <QuizView
+          <PreparationModeView
             quizzes={quizzes}
             selectedQuizId={selectedQuizId}
             setSelectedQuizId={setSelectedQuizId}

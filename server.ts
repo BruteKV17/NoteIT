@@ -863,6 +863,39 @@ app.post(['/api/lectures/:lectureId/generate-resources', '/api/lectures/generate
   }
 });
 
+// Dedicated endpoint for Bhai Lang contextual text explanations
+app.post('/api/ai/explain-bhailang', async (req, res) => {
+  try {
+    const { text, subjectName } = req.body;
+    if (!text || !text.trim()) {
+      return res.status(400).json({ error: 'Text selection is required.' });
+    }
+
+    const prompt = `You are NoteIT AI's friendly, genius engineering senior/mentor.
+Explain the following concept or text snippet in natural, ultra-intuitive Indian student Hinglish (Bhai Lang format).
+
+RULES:
+1. Start with "Bhai simple bolu toh:" or similar natural greeting.
+2. Explain the concept using a relatable real-world example or everyday analogy.
+3. Preserve 100% of technical accuracy and core formulas/terms.
+4. Use casual, clear, friendly Hinglish (mix of natural Hindi + English technical terms).
+5. Keep it concise, engaging, and easy to memorize for an exam!
+
+Subject: ${subjectName || 'Engineering'}
+Text snippet to explain:
+"${text.trim().slice(0, 1500)}"`;
+
+    const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || '';
+    const providerInstance = ProviderFactory.getProvider('gemini', apiKey);
+    const explanation = await providerInstance.generateText(prompt, 'gemini-3.6-flash');
+
+    res.json({ explanation });
+  } catch (err: any) {
+    console.error('[BHAI-LANG] Error generating explanation:', err);
+    res.status(500).json({ error: formatUserFriendlyErrorMessage(err, 'Failed to generate Bhai Lang explanation') });
+  }
+});
+
 // Dedicated endpoint to manually trigger or re-run OpenRouter preprocessing
 app.post('/api/lectures/:lectureId/preprocess', authenticateFirebaseUser, async (req, res) => {
   const user = req.body.user;

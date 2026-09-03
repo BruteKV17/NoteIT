@@ -19,7 +19,8 @@ import {
   LogOut,
   User,
   ExternalLink,
-  HelpCircle
+  HelpCircle,
+  Target
 } from 'lucide-react';
 import { PageId, UserSettings } from '../types';
 import AILogo from './AILogo';
@@ -56,7 +57,7 @@ export default function Sidebar({
     { id: 'lecture-capture', label: 'Capture Live', icon: Mic, badge: 'REC' },
     { id: 'knowledge-studio', label: 'Knowledge Studio', icon: Compass },
     { id: 'academic-library', label: 'Academic Library', icon: BookMarked },
-    { id: 'quiz-mode', label: 'Quiz Mode', icon: GraduationCap },
+    { id: 'quiz-mode', label: 'Preparation Mode', icon: Target },
     { id: 'rewards', label: 'Rewards & XP', icon: Trophy, badge: 'XP' }
   ];
 
