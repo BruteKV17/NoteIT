@@ -105,12 +105,14 @@ export default function LectureProcessingView({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isGeminiBusy, setIsGeminiBusy] = useState<boolean>(false);
   const [retryTrigger, setRetryTrigger] = useState(0);
+  const [savedTranscript, setSavedTranscript] = useState<string | null>(null);
+  const [copiedTranscriptToast, setCopiedTranscriptToast] = useState<boolean>(false);
 
   const steps = documentFile ? DOCUMENT_COMPILATION_STEPS : COMPILATION_STEPS;
 
   useEffect(() => {
-    if (!lectureId || (!audioBlob && !documentFile)) {
-      setErrorMsg("Missing lecture reference or file payload. Please try again.");
+    if (!lectureId) {
+      setErrorMsg("Missing lecture reference. Please try again.");
       setUploadStatus('failed');
       return;
     }
@@ -125,8 +127,59 @@ export default function LectureProcessingView({
         const lectureSnap = await getDoc(lectureRef);
         const existingData = lectureSnap.exists() ? lectureSnap.data() : null;
 
+        const existingTranscript = existingData?.cleanTranscript || existingData?.transcript || '';
+        if (existingTranscript) {
+          setSavedTranscript(existingTranscript);
+        }
+
         let audioUrl = existingData?.audioUrl || '';
         let blobPath = existingData?.blobPath || '';
+
+        // RECOVERY ROUTE: If transcript ALREADY exists in Firestore, skip upload & transcription!
+        if (existingTranscript && existingTranscript.trim().length > 20) {
+          console.log('[LectureProcessingView] Found saved transcript in Firestore. Fast-tracking to resource generation...');
+          setUploadStatus('analyzing');
+          setCurrentStepIndex(3);
+
+          try {
+            await generateResourcesFromTranscript(lectureId, existingTranscript, { mode: 'academic', modeType: 'all' });
+            
+            await updateLecture(lectureId, {
+              resourceGenerationStatus: 'completed',
+              status: 'generated',
+              generationFinishedAt: serverTimestamp(),
+              processingCompletedAt: serverTimestamp()
+            });
+
+            if (!isSubscribed) return;
+            setUploadStatus('completed');
+            setCurrentStepIndex(steps.length);
+
+            if (setActiveLectureId && lectureId) {
+              setActiveLectureId(lectureId);
+            }
+            setTimeout(() => {
+              if (isSubscribed) {
+                setActivePage('lecture-capture');
+              }
+            }, 2000);
+            return;
+          } catch (resErr: any) {
+            console.error("Resource generation stage failed from saved transcript:", resErr);
+            if (isSubscribed) {
+              setErrorMsg(formatUserFriendlyErrorMessage(resErr, "AI resource generation failed"));
+              setUploadStatus('failed');
+            }
+            return;
+          }
+        }
+
+        // If no saved transcript exists AND no file payload is provided, error out
+        if (!audioBlob && !documentFile) {
+          setErrorMsg("Missing lecture reference or file payload. Please try again.");
+          setUploadStatus('failed');
+          return;
+        }
 
         if (documentFile) {
           if (!uploadLectureDocument) {
@@ -217,6 +270,8 @@ export default function LectureProcessingView({
 
           // Save Stage 1 and Stage 2 results immediately to Firestore
           const transcriptText = aiData.cleanTranscript || aiData.transcript || '';
+          setSavedTranscript(transcriptText);
+
           const transcriptWordCount = transcriptText.trim().split(/\s+/).length;
 
           const resolvedDocTitle = determineLectureTitle(existingData?.title, aiData);
@@ -390,6 +445,9 @@ export default function LectureProcessingView({
 
           const resolvedTitle = determineLectureTitle(existingData?.title, aiData);
 
+          const transcriptText = aiData.cleanTranscript || aiData.transcript || '';
+          setSavedTranscript(transcriptText);
+
           await updateLecture(lectureId, {
             title: resolvedTitle,
             recordingStatus: 'uploaded',
@@ -448,7 +506,7 @@ export default function LectureProcessingView({
                 taskId: 'task_03',
                 xpAmount: 30,
                 resourceId: lectureId,
-                reason: 'Generated AI study notes & resources'
+                reason: 'Generated AI lecture notes and summary'
               }).catch(console.error);
             }
 
@@ -467,15 +525,15 @@ export default function LectureProcessingView({
           } catch (resErr: any) {
             console.error("Resource generation stage failed:", resErr);
             if (isSubscribed) {
-              setErrorMsg(resErr.message || "AI resource generation failed. Your transcript and audio are safe.");
+              setErrorMsg(formatUserFriendlyErrorMessage(resErr, "AI resource generation failed"));
               setUploadStatus('failed');
             }
           }
         }
       } catch (err: any) {
-        console.error("Lecture compilation pipeline failed:", err);
+        console.error("Lecture compilation sequence failed:", err);
         if (isSubscribed) {
-          setErrorMsg(err.message || "An unexpected error occurred during synthesis.");
+          setErrorMsg(formatUserFriendlyErrorMessage(err, "Lecture processing failed"));
           setUploadStatus('failed');
         }
       }
@@ -486,16 +544,16 @@ export default function LectureProcessingView({
     return () => {
       isSubscribed = false;
     };
-  }, [lectureId, audioBlob, documentFile, userId, retryTrigger]);
+  }, [lectureId, retryTrigger]);
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8 pb-16 pt-4 md:pt-8 select-none text-[#111111]">
+    <div className="max-w-4xl mx-auto space-y-6 text-left p-4 sm:p-6">
       
-      {/* Premium Header */}
-      <div className="rounded-[6px] border-2 border-[#111111] bg-white p-6.5 relative overflow-hidden shadow-paper-lg">
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
-          <div className="space-y-2">
-            <span className="rounded-[4px] bg-[#FFC400] border-2 border-[#111111] px-2.5 py-1 text-[10px] font-mono font-extrabold text-[#111111] inline-flex items-center gap-1 shadow-paper-sm uppercase">
+      {/* Header Card */}
+      <div className="rounded-[6px] border-2 border-[#111111] bg-white p-6.5 shadow-paper-lg">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <span className="inline-flex items-center gap-1.5 rounded-[4px] bg-[#FFC400] border-2 border-[#111111] px-2.5 py-1 text-[10px] font-mono font-extrabold uppercase text-[#111111]">
               <CloudLightning className="h-3.5 w-3.5" />
               <span>COGNITIVE SYNTHESIS GATEWAY</span>
             </span>
@@ -614,20 +672,54 @@ export default function LectureProcessingView({
               <span>Your lecture recording and transcript are safe.</span>
             </div>
             <p className="text-xs font-mono font-bold text-[#666666] leading-relaxed max-w-md mx-auto">{errorMsg}</p>
+
+            {/* RECORDED TRANSCRIPT RECOVERY & COPY BOX */}
+            {savedTranscript && (
+              <div className="p-4 rounded-[6px] border-2 border-[#111111] bg-white text-left space-y-2 shadow-paper-sm max-w-xl mx-auto">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono font-extrabold uppercase text-[#111111] flex items-center gap-1.5">
+                    <FileText className="h-4 w-4 text-[#2563EB]" />
+                    Recorded Transcript (Saved in Database)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(savedTranscript);
+                      setCopiedTranscriptToast(true);
+                      setTimeout(() => setCopiedTranscriptToast(false), 2500);
+                    }}
+                    className="px-3 py-1 rounded-[4px] border-2 border-[#111111] bg-[#FFC400] text-[#111111] text-[10px] font-mono font-extrabold uppercase hover:bg-[#ffe066] cursor-pointer"
+                  >
+                    {copiedTranscriptToast ? '✓ Copied!' : 'Copy Transcript'}
+                  </button>
+                </div>
+                <div className="max-h-48 overflow-y-auto p-3 rounded bg-[#F6F2EA] border border-[#111111] text-xs font-mono font-bold text-[#111111] whitespace-pre-line leading-relaxed select-text">
+                  {savedTranscript}
+                </div>
+              </div>
+            )}
+
             <div className="flex flex-wrap justify-center gap-3 pt-2">
               <button
+                type="button"
                 onClick={async () => {
                   if (!lectureId) return;
                   setErrorMsg(null);
                   setUploadStatus('analyzing');
                   try {
-                    await generateResourcesFromTranscript(lectureId, undefined, { mode: 'academic', modeType: 'missing' });
+                    await generateResourcesFromTranscript(lectureId, savedTranscript || undefined, { mode: 'academic', modeType: 'all' });
+                    await updateLecture(lectureId, {
+                      resourceGenerationStatus: 'completed',
+                      status: 'generated',
+                      generationFinishedAt: serverTimestamp(),
+                      processingCompletedAt: serverTimestamp()
+                    });
                     setUploadStatus('completed');
                     if (setActiveLectureId) setActiveLectureId(lectureId);
                     setTimeout(() => setActivePage('lecture-capture'), 1500);
                   } catch (err: any) {
                     console.error("Retry failed:", err);
-                    setErrorMsg(err.message || "Retry failed. Please check your provider key in Settings.");
+                    setErrorMsg(formatUserFriendlyErrorMessage(err, "AI resource generation failed"));
                     setUploadStatus('failed');
                   }
                 }}
@@ -637,6 +729,7 @@ export default function LectureProcessingView({
                 <span>RETRY AI GENERATION</span>
               </button>
               <button
+                type="button"
                 onClick={() => setActivePage('settings')}
                 className="inline-flex items-center gap-2 rounded-[6px] border-2 border-[#111111] bg-[#FFC400] text-[#111111] px-5 py-3 text-xs font-mono font-extrabold uppercase hover:bg-[#ffe066] transition-all shadow-paper-sm cursor-pointer"
               >
@@ -644,10 +737,16 @@ export default function LectureProcessingView({
                 <span>CHANGE AI PROVIDER</span>
               </button>
               <button
-                onClick={() => setActivePage('academic-library')}
+                type="button"
+                onClick={() => {
+                  if (setActiveLectureId && lectureId) {
+                    setActiveLectureId(lectureId);
+                  }
+                  setActivePage('lecture-capture');
+                }}
                 className="inline-flex items-center gap-2 rounded-[6px] border-2 border-[#111111] bg-white text-[#111111] px-5 py-3 text-xs font-mono font-extrabold uppercase hover:bg-[#F6F2EA] transition-all shadow-paper-sm cursor-pointer"
               >
-                <span>RETURN TO LIBRARY</span>
+                <span>OPEN WORKSPACE</span>
               </button>
             </div>
           </div>
