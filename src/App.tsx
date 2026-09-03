@@ -72,7 +72,7 @@ import { generateAdditionalQuizQuestions } from './services/gemini';
 import FloatingRecordingWidget from './components/FloatingRecordingWidget';
 import GuidedTour from './components/GuidedTour';
 import NotificationPermissionBanner from './components/NotificationPermissionBanner';
-import { setupForegroundMessageListener } from './services/notificationService';
+import { setupForegroundMessageListener, requestNotificationPermission } from './services/notificationService';
 
 // Faculty Portal & Ask Doubt Imports
 import { subscribeFacultyDoubts, generateTeacherCode } from './services/teacherDoubtService';
@@ -159,6 +159,15 @@ export default function App() {
       unsubForeground();
     };
   }, []);
+
+  // Auto-sync real FCM token when user is authenticated & notification permission is granted
+  useEffect(() => {
+    if (sessionUser?.uid && typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+      requestNotificationPermission(sessionUser.uid).catch((err) => {
+        console.warn('[App] Auto FCM token sync warning:', err);
+      });
+    }
+  }, [sessionUser?.uid]);
 
   // Listen for manual Guided Tour start triggers
   useEffect(() => {
