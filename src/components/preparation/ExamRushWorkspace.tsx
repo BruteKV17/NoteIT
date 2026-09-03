@@ -16,7 +16,9 @@ import {
   X,
   Lightbulb,
   ShieldCheck,
-  TrendingUp
+  TrendingUp,
+  Maximize,
+  Minimize
 } from 'lucide-react';
 import { ExamRushConfig } from './ExamRushSetup';
 import { calculateBloomProfile, getBloomLevelMetadata, BloomProfile } from '../../utils/bloomEngine';
@@ -34,6 +36,7 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
   const [secondsRemaining, setSecondsRemaining] = useState<number>(config.timeRemainingMinutes * 60);
   const [activeTab, setActiveTab] = useState<'attack_plan' | 'revision' | 'subjective' | 'quiz' | 'remember' | 'paper_analysis' | 'final_sheet' | 'readiness'>('attack_plan');
   const [completedSections, setCompletedSections] = useState<Record<string, boolean>>({});
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(!!document.fullscreenElement);
   
   // Bloom Profile Engine
   const bloomProfile: BloomProfile = calculateBloomProfile({ easy: 80, medium: 65, hard: 50 });
@@ -45,6 +48,22 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+    return () => document.removeEventListener('fullscreenchange', handleFsChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  };
 
   const formatTimer = (totalSeconds: number) => {
     const hrs = Math.floor(totalSeconds / 3600);
@@ -111,13 +130,25 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={onExit}
-          className="px-3.5 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-mono font-bold hover:bg-slate-100 cursor-pointer"
-        >
-          Exit
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={toggleFullscreen}
+            className="p-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-mono font-bold hover:bg-slate-100 cursor-pointer flex items-center gap-1.5"
+            title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+          >
+            {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+            <span className="hidden sm:inline">{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={onExit}
+            className="px-3.5 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-mono font-bold hover:bg-slate-100 cursor-pointer"
+          >
+            Exit
+          </button>
+        </div>
       </header>
 
       {/* SUB-HEADER NAV TABS */}

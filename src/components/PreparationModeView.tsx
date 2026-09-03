@@ -31,13 +31,39 @@ export default function PreparationModeView({
   const [activeMode, setActiveMode] = useState<'exam_rush' | 'practice_blitz'>('exam_rush');
   const [activeExamConfig, setActiveExamConfig] = useState<ExamRushConfig | null>(null);
 
+  // Auto-launch fullscreen exam rush environment if opened via new tab URL
+  React.useEffect(() => {
+    const isFullscreenMode = window.location.search.includes('mode=exam-rush-fullscreen');
+    const savedConfigStr = sessionStorage.getItem('noteit_exam_rush_active_config');
+    
+    if (savedConfigStr && (isFullscreenMode || !activeExamConfig)) {
+      try {
+        const parsedConfig = JSON.parse(savedConfigStr);
+        setActiveExamConfig(parsedConfig);
+        
+        // Trigger fullscreen mode
+        if (document.documentElement.requestFullscreen) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        }
+      } catch (e) {
+        console.error('Failed to parse saved exam rush config', e);
+      }
+    }
+  }, []);
+
   if (activeExamConfig) {
     return (
       <ExamRushWorkspace
         config={activeExamConfig}
         lectures={lectures}
         notes={notes}
-        onExit={() => setActiveExamConfig(null)}
+        onExit={() => {
+          sessionStorage.removeItem('noteit_exam_rush_active_config');
+          setActiveExamConfig(null);
+          if (document.fullscreenElement && document.exitFullscreen) {
+            document.exitFullscreen().catch(() => {});
+          }
+        }}
       />
     );
   }

@@ -39,6 +39,7 @@ const DURATION_OPTIONS = [
 ];
 
 export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetupProps) {
+  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [subjectQuery, setSubjectQuery] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<CanonicalSubject | null>(null);
   const [isSubjectDropdownOpen, setIsSubjectDropdownOpen] = useState(false);
@@ -50,7 +51,19 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
   const [teacherTopicsInput, setTeacherTopicsInput] = useState('');
   const [intensity, setIntensity] = useState<'quick_survival' | 'balanced' | 'deep_preparation'>('balanced');
 
-  const subjectResults = searchCanonicalSubjects(subjectQuery);
+  const subjectResults = searchCanonicalSubjects(subjectQuery, selectedCategory);
+
+  const BRANCH_CATEGORIES = [
+    { id: 'ALL', label: 'All Branches (115)' },
+    { id: 'Computer Science & IT', label: '💻 B.Tech CSE/IT' },
+    { id: 'Electronics & Electrical', label: '⚡ ECE & EEE' },
+    { id: 'Mechanical & Civil', label: '⚙️ Mechanical & Civil' },
+    { id: 'Biotechnology & Chemical', label: '🧬 Biotech & Chem' },
+    { id: 'BBA & Management', label: '📊 BBA & Management' },
+    { id: 'BCA & Applications', label: '📱 BCA & Applications' },
+    { id: 'B.Sc Sciences', label: '🔬 B.Sc Sciences' },
+    { id: 'Mathematics & Statistics', label: '📐 Maths & Stats' }
+  ];
 
   const handleSelectSubject = (subj: CanonicalSubject) => {
     setSelectedSubject(subj);
@@ -68,13 +81,35 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
       .map(t => t.trim())
       .filter(t => t.length > 0);
 
-    onStartExamRush({
+    const config: ExamRushConfig = {
       subject: finalSubject,
       timeRemainingMinutes: finalMinutes,
       timeLabel: finalLabel,
       teacherTopics,
       intensity
-    });
+    };
+
+    // Save config to sessionStorage so a newly opened tab can read it
+    try {
+      sessionStorage.setItem('noteit_exam_rush_active_config', JSON.stringify(config));
+    } catch (e) {
+      console.warn('Failed to save exam rush config to sessionStorage', e);
+    }
+
+    // Attempt native browser fullscreen request
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+
+    // Open a new tab in fullscreen mode
+    const fullscreenUrl = `${window.location.origin}${window.location.pathname}?mode=exam-rush-fullscreen`;
+    const newTab = window.open(fullscreenUrl, '_blank');
+    if (newTab) {
+      newTab.focus();
+    }
+
+    // Trigger local state handler as well
+    onStartExamRush(config);
   };
 
   return (
@@ -83,15 +118,20 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
       {/* HEADER BANNER */}
       <div className="p-6 sm:p-8 rounded-3xl border-2 border-black dark:border-slate-700 bg-gradient-to-r from-[#111111] via-[#1E293B] to-[#0F172A] text-white shadow-2xl relative overflow-hidden">
         <div className="relative z-10 space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#FF4D4D] text-white border border-black rounded-lg text-xs font-mono font-black uppercase tracking-wider shadow-sm">
-            <Flame className="h-4 w-4 fill-white" />
-            <span>EXAM RUSH MODE</span>
+          <div className="flex items-center gap-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#FF4D4D] text-white border border-black rounded-lg text-xs font-mono font-black uppercase tracking-wider shadow-sm">
+              <Flame className="h-4 w-4 fill-white" />
+              <span>EXAM RUSH MODE</span>
+            </div>
+            <span className="px-2.5 py-1 bg-amber-400 text-black rounded-lg text-[10px] font-mono font-black uppercase">
+              115 College Subjects Available
+            </span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-white font-heading">
             Targeted Exam Survival & Rapid Mastery
           </h2>
           <p className="text-xs sm:text-sm text-slate-300 font-bold max-w-2xl leading-relaxed">
-            Tell NoteIT your subject and remaining time. Our adaptive AI will construct a time-bound study ecosystem, high-priority revision sheet, previous paper analysis, and readiness score.
+            Select from 115+ official university subjects across B.Tech, BBA, BCA, and B.Sc branches. NoteIT will launch a full-screen, distraction-free study environment tailored to your exam timeline.
           </p>
         </div>
       </div>
@@ -99,14 +139,38 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
       {/* SETUP CARD FORM */}
       <div className="p-6 sm:p-8 rounded-3xl border-2 border-black dark:border-slate-700 bg-white dark:bg-[#1E293B] shadow-paper-lg space-y-6">
         
-        {/* 1. CANONICAL SUBJECT AUTOCOMPLETE */}
-        <div className="space-y-2 relative">
-          <label className="text-xs font-mono font-black uppercase tracking-wider text-black dark:text-slate-200 flex items-center justify-between">
-            <span>1. Select Canonical Subject *</span>
+        {/* 1. CANONICAL SUBJECT AUTOCOMPLETE & BRANCH FILTER */}
+        <div className="space-y-3 relative">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-mono font-black uppercase tracking-wider text-black dark:text-slate-200">
+              1. Select Subject (115 Available for B.Tech, BBA, BCA, B.Sc) *
+            </label>
             {selectedSubject && (
-              <span className="text-[10px] text-[#2563EB] dark:text-[#60A5FA] font-bold">ID: {selectedSubject.subjectId}</span>
+              <span className="text-[10px] text-[#2563EB] dark:text-[#60A5FA] font-bold">ID: {selectedSubject.subjectId} ({selectedSubject.category})</span>
             )}
-          </label>
+          </div>
+
+          {/* BRANCH CATEGORY PILLS */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-2 custom-scrollbar">
+            {BRANCH_CATEGORIES.map(cat => (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => {
+                  setSelectedCategory(cat.id);
+                  setIsSubjectDropdownOpen(true);
+                }}
+                className={`px-3 py-1.5 rounded-xl text-[11px] font-mono font-bold shrink-0 transition-all cursor-pointer border ${
+                  selectedCategory === cat.id
+                    ? 'bg-[#2563EB] text-white border-black shadow-sm font-black'
+                    : 'bg-[#F8FAFC] dark:bg-[#0D1117] text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+
           <div className="relative">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -119,29 +183,40 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
                   setSelectedSubject(null);
                   setIsSubjectDropdownOpen(true);
                 }}
-                placeholder="Type subject (e.g. Database Management Systems, DBMS, Data Structures...)"
+                placeholder="Type or search 115+ subjects (e.g. DBMS, Thermodynamics, Financial Accounting, Organic Chemistry...)"
                 className="w-full rounded-2xl border-2 border-black dark:border-slate-600 bg-[#F8FAFC] dark:bg-[#0D1117] pl-11 pr-4 py-3.5 text-xs font-extrabold text-black dark:text-white placeholder-slate-400 outline-none focus:border-[#2563EB] shadow-sm transition-all"
               />
             </div>
 
             {isSubjectDropdownOpen && (
-              <div className="absolute z-50 mt-2 w-full rounded-2xl border-2 border-black bg-white dark:bg-[#0D1117] shadow-2xl p-2.5 space-y-1 max-h-56 overflow-y-auto custom-scrollbar">
-                {subjectResults.map((subj) => (
-                  <button
-                    key={subj.subjectId}
-                    type="button"
-                    onClick={() => handleSelectSubject(subj)}
-                    className="w-full text-left px-3.5 py-2.5 rounded-xl text-xs flex items-center justify-between cursor-pointer hover:bg-[#FFC400]/20 dark:hover:bg-slate-800 transition-colors"
-                  >
-                    <div>
-                      <span className="font-extrabold text-black dark:text-white block">{subj.canonicalName}</span>
-                      <span className="text-[10px] text-slate-500 font-mono font-bold">Aliases: {subj.aliases.slice(0, 3).join(', ')}</span>
-                    </div>
-                    <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-mono font-bold rounded border border-slate-300 dark:border-slate-700">
-                      {subj.subjectId}
-                    </span>
-                  </button>
-                ))}
+              <div className="absolute z-50 mt-2 w-full rounded-2xl border-2 border-black bg-white dark:bg-[#0D1117] shadow-2xl p-2.5 space-y-1 max-h-64 overflow-y-auto custom-scrollbar">
+                {subjectResults.length > 0 ? (
+                  subjectResults.map((subj) => (
+                    <button
+                      key={subj.subjectId}
+                      type="button"
+                      onClick={() => handleSelectSubject(subj)}
+                      className="w-full text-left px-3.5 py-2.5 rounded-xl text-xs flex items-center justify-between cursor-pointer hover:bg-[#FFC400]/20 dark:hover:bg-slate-800 transition-colors"
+                    >
+                      <div>
+                        <span className="font-extrabold text-black dark:text-white block">{subj.canonicalName}</span>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-[10px] text-slate-500 font-mono font-bold">Aliases: {subj.aliases.slice(0, 3).join(', ')}</span>
+                          <span className="text-[9px] px-1.5 py-0.2 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-mono font-bold rounded">
+                            {subj.category}
+                          </span>
+                        </div>
+                      </div>
+                      <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-mono font-bold rounded border border-slate-300 dark:border-slate-700 shrink-0">
+                        {subj.subjectId}
+                      </span>
+                    </button>
+                  ))
+                ) : (
+                  <div className="p-4 text-center text-xs text-slate-500 font-mono font-bold">
+                    No matching subject found. Type to use custom subject name!
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -248,7 +323,7 @@ export function ExamRushSetup({ onStartExamRush, theme = 'light' }: ExamRushSetu
             className="w-full py-4 px-6 rounded-2xl border-2 border-black bg-[#FF4D4D] hover:bg-red-600 text-white font-heading text-sm font-black uppercase tracking-wider shadow-paper hover:shadow-paper-lg transition-all active:scale-98 cursor-pointer flex items-center justify-center gap-2"
           >
             <Flame className="h-5 w-5 fill-white" />
-            <span>START EXAM RUSH ENVIRONMENT</span>
+            <span>START EXAM RUSH ENVIRONMENT (FULLSCREEN NEW TAB)</span>
             <ArrowRight className="h-5 w-5" />
           </button>
         </div>
