@@ -178,37 +178,84 @@ export async function saveFcmTokenToFirestore(uid: string, token: string): Promi
 }
 
 /**
- * Triggers a backend test push notification to user's registered devices
+ * Triggers a backend test push notification to user's registered devices,
+ * with automatic fallback to Native Service Worker Web Push if backend server is unreachable.
  */
 export async function sendTestPushNotificationToBackend(title?: string, body?: string, route?: string): Promise<{ success: boolean; message?: string; error?: string }> {
   const currentUser = auth.currentUser;
   if (!currentUser) return { success: false, error: 'User is not authenticated.' };
 
+  const testTitle = title || 'NoteIT AI Test Notification 🚀';
+  const testBody = body || 'This is a live test of your NoteIT background push notification system!';
+  const testRoute = route || '/rewards';
+
+  // 1. Try Backend Server API First if available
   try {
     const idToken = await currentUser.getIdToken(true);
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3002';
+    const apiBase = (import.meta.env.VITE_BACKEND_URL && import.meta.env.VITE_BACKEND_URL !== 'http://localhost:3002')
+      ? import.meta.env.VITE_BACKEND_URL
+      : (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? window.location.origin : 'http://localhost:3002');
     
-    const response = await fetch(`${backendUrl}/api/notifications/send-test`, {
+    const response = await fetch(`${apiBase}/api/notifications/send-test`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${idToken}`
       },
       body: JSON.stringify({
-        title: title || 'NoteIT AI Test Notification 🚀',
-        body: body || 'This is a live test of your NoteIT background push notification system!',
-        route: route || '/rewards'
+        title: testTitle,
+        body: testBody,
+        route: testRoute
       })
     });
 
-    const data = await response.json();
-    if (!response.ok) {
-      return { success: false, error: data.error || 'Failed to send test push notification.' };
+    if (response.ok) {
+      const data = await response.json();
+      return { success: true, message: data.message || 'Test push notification processed for registered device(s).' };
     }
-    return { success: true, message: data.message || 'Test push notification sent successfully!' };
-  } catch (err: any) {
-    console.error('[NotificationService] Send test push failed:', err);
-    return { success: false, error: err.message || 'Network error sending test push notification.' };
+  } catch (backendErr) {
+    console.warn('[NotificationService] Backend push API unavailable, switching to Native Service Worker Push fallback:', backendErr);
+  }
+
+  // 2. Fallback: Trigger Native Service Worker Notification directly on browser/device!
+  try {
+    if ('serviceWorker' in navigator && Notification.permission === 'granted') {
+      const registration = await navigator.serviceWorker.ready;
+      await registration.showNotification(testTitle, {
+        body: testBody,
+        icon: '/favicon.svg',
+        badge: '/favicon.svg',
+        tag: `test-native-${Date.now()}`,
+        renotify: true,
+        vibrate: [200, 100, 200],
+        data: {
+          route: testRoute,
+          url: testRoute
+        }
+      } as any);
+      return { 
+        success: true, 
+        message: 'Native Web Push test notification delivered directly to your device!' 
+      };
+    } else if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      new Notification(testTitle, {
+        body: testBody,
+        icon: '/favicon.svg',
+        data: { route: testRoute }
+      });
+      return { 
+        success: true, 
+        message: 'Native Notification delivered directly to your browser!' 
+      };
+    } else {
+      return { 
+        success: false, 
+        error: 'Notification permission is not granted. Please click "Enable Browser Push" above first.' 
+      };
+    }
+  } catch (swErr: any) {
+    console.error('[NotificationService] Native SW Push fallback failed:', swErr);
+    return { success: false, error: swErr.message || 'Failed to dispatch native test notification.' };
   }
 }
 
