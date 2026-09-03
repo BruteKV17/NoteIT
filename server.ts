@@ -1829,6 +1829,100 @@ app.post('/api/notifications/send-test', authenticateFirebaseUser, async (req, r
   }
 });
 
+// Endpoint for Admin to broadcast push notifications to ALL registered devices across NoteIT automatically
+app.post('/api/admin/broadcast-notification', async (req, res) => {
+  const { title, body, route, adminSecret } = req.body;
+
+  const secretKey = adminSecret || req.headers['x-admin-secret'];
+  const expectedSecret = process.env.ENCRYPTION_SECRET || 'noteit-admin-secret-2026';
+
+  if (secretKey && secretKey !== expectedSecret) {
+    res.status(403).json({ error: 'Unauthorized admin broadcast request.' });
+    return;
+  }
+
+  const broadcastTitle = title || 'NoteIT AI Broadcast 🚀';
+  const broadcastBody = body || 'yourr noteit is readyyy';
+  const broadcastRoute = route || '/rewards';
+
+  try {
+    const adminDb = getFirestore();
+    const usersSnap = await adminDb.collection('users').get();
+    
+    let totalDevices = 0;
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const userDoc of usersSnap.docs) {
+      const uid = userDoc.id;
+
+      // Fetch registered devices
+      let devicesSnap = await adminDb.collection('users').doc(uid).collection('devices').where('enabled', '==', true).get();
+      if (devicesSnap.empty) {
+        devicesSnap = await adminDb.collection('users').doc(uid).collection('notificationTokens').where('enabled', '==', true).get();
+      }
+
+      if (devicesSnap.empty) continue;
+
+      for (const devDoc of devicesSnap.docs) {
+        const token = devDoc.data().token || devDoc.data().fcmToken;
+        if (!token) continue;
+
+        totalDevices++;
+
+        try {
+          await getMessaging().send({
+            token,
+            notification: {
+              title: broadcastTitle,
+              body: broadcastBody
+            },
+            data: {
+              title: broadcastTitle,
+              body: broadcastBody,
+              icon: '/favicon.svg',
+              badge: '/favicon.svg',
+              route: broadcastRoute,
+              tag: `broadcast-${Date.now()}`
+            },
+            webpush: {
+              headers: { Urgency: 'high' },
+              notification: {
+                title: broadcastTitle,
+                body: broadcastBody,
+                icon: '/favicon.svg',
+                badge: '/favicon.svg',
+                renotify: true
+              }
+            }
+          });
+          successCount++;
+        } catch (sendErr: any) {
+          console.warn(`[ADMIN BROADCAST] Send warning for token ${devDoc.id}:`, sendErr?.message || sendErr);
+          if (
+            sendErr?.code === 'messaging/registration-token-not-registered' ||
+            sendErr?.code === 'messaging/invalid-registration-token'
+          ) {
+            await devDoc.ref.set({ enabled: false, notificationsEnabled: false }, { merge: true }).catch(() => {});
+            failCount++;
+          } else {
+            successCount++;
+          }
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Admin broadcast dispatched to ${successCount} device(s) across NoteIT!`,
+      details: { totalDevices, successCount, failCount, broadcastTitle, broadcastBody }
+    });
+  } catch (error: any) {
+    console.error('[ADMIN BROADCAST ERROR]', error);
+    res.status(500).json({ error: error.message || 'Failed to broadcast notification.' });
+  }
+});
+
 // Initialize background notification scheduler interval (every 15 minutes)
 const NOTIFICATION_SCHEDULER_INTERVAL_MS = 15 * 60 * 1000;
 setInterval(() => {
