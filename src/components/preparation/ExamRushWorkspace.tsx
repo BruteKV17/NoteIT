@@ -1111,22 +1111,48 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
                     {/* DIAGRAM SPEC IF GENERATED */}
                     {card.diagramSpec && (
                       <div className="p-6 rounded-2xl border border-[#E5D7D9] dark:border-[#3D282C] bg-[#FAF7F5] dark:bg-[#231B1E] space-y-3">
-                        <div className="text-xs font-bold text-[#8F1D2C] uppercase flex items-center gap-1.5">
-                          <GitCommit className="h-4 w-4" /> Architecture & Flow Spec: {card.diagramSpec.title}
+                        <div className="text-xs font-bold text-[#8F1D2C] uppercase flex items-center justify-between">
+                          <span className="flex items-center gap-1.5"><GitCommit className="h-4 w-4" /> System Architecture Diagram: {card.diagramSpec.title}</span>
+                          <span className="text-[10px] bg-[#8F1D2C] text-white px-2.5 py-0.5 rounded font-mono font-bold">{card.diagramSpec.type.toUpperCase()} SPEC</span>
                         </div>
-                        <div className="flex flex-wrap items-center gap-3 py-2">
-                          {card.diagramSpec.nodes.map((node, nIdx) => (
-                            <React.Fragment key={nIdx}>
-                              <div className="p-4 rounded-xl border border-[#8F1D2C]/40 bg-white dark:bg-[#191416] shadow-xs text-center">
-                                <span className="text-xs font-bold text-[#8F1D2C] block">{node.label}</span>
-                                {node.subtext && <span className="text-[10px] text-[#71676A] mt-0.5 block">{node.subtext}</span>}
-                              </div>
-                              {nIdx < card.diagramSpec!.nodes.length - 1 && (
-                                <span className="text-lg font-bold text-[#8F1D2C]">→</span>
-                              )}
-                            </React.Fragment>
-                          ))}
-                        </div>
+
+                        {/* 1. CONCENTRIC LAYER DIAGRAM (HARDWARE -> OS -> USER APPS) */}
+                        {card.diagramSpec.type === 'concentric' ? (
+                          <div className="flex justify-center py-4 overflow-x-auto">
+                            <svg viewBox="0 0 540 320" className="w-full max-w-[580px] h-auto font-sans">
+                              {/* Outer Ring: User Applications */}
+                              <ellipse cx="270" cy="160" rx="250" ry="145" fill="#FEF3C7" stroke="#F59E0B" strokeWidth="2.5" />
+                              <text x="270" y="45" fill="#92400E" textAnchor="middle" fontWeight="800" fontSize="13">APPLICATION SOFTWARE LAYER</text>
+                              <text x="130" y="90" fill="#78350F" textAnchor="middle" fontSize="11" fontWeight="600">Computer Games</text>
+                              <text x="410" y="90" fill="#78350F" textAnchor="middle" fontSize="11" fontWeight="600">Internet Browsers</text>
+                              <text x="410" y="240" fill="#78350F" textAnchor="middle" fontSize="11" fontWeight="600">Databases & Tools</text>
+
+                              {/* Middle Ring: Operating System & System Software */}
+                              <ellipse cx="250" cy="170" rx="175" ry="100" fill="#F8EDEF" stroke="#8F1D2C" strokeWidth="2.5" />
+                              <text x="325" y="150" fill="#8F1D2C" textAnchor="middle" fontWeight="800" fontSize="12">OPERATING SYSTEM</text>
+                              <text x="325" y="170" fill="#651522" textAnchor="middle" fontSize="10" fontWeight="600">System Software & Utilities</text>
+
+                              {/* Core Ring: Hardware */}
+                              <ellipse cx="180" cy="170" rx="85" ry="55" fill="#FECDD3" stroke="#E11D48" strokeWidth="2.5" />
+                              <text x="180" y="173" fill="#9F1239" textAnchor="middle" fontWeight="900" fontSize="14">HARDWARE</text>
+                              <text x="180" y="192" fill="#BE123C" textAnchor="middle" fontSize="10" fontWeight="600">CPU • Memory • I/O</text>
+                            </svg>
+                          </div>
+                        ) : card.diagramSpec.nodes && card.diagramSpec.nodes.length > 0 ? (
+                          <div className="flex flex-wrap items-center gap-3 py-2">
+                            {card.diagramSpec.nodes.map((node, nIdx) => (
+                              <React.Fragment key={nIdx}>
+                                <div className="p-4 rounded-xl border border-[#8F1D2C]/40 bg-white dark:bg-[#191416] shadow-xs text-center">
+                                  <span className="text-xs font-bold text-[#8F1D2C] block">{node.label}</span>
+                                  {node.subtext && <span className="text-[10px] text-[#71676A] mt-0.5 block">{node.subtext}</span>}
+                                </div>
+                                {nIdx < card.diagramSpec!.nodes!.length - 1 && (
+                                  <span className="text-lg font-bold text-[#8F1D2C]">→</span>
+                                )}
+                              </React.Fragment>
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
                     )}
 

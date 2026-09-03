@@ -20,8 +20,10 @@ export interface AcademicConceptCard {
   };
   diagramSpec?: {
     title: string;
-    type: 'pipeline' | 'tree' | 'state_machine' | 'grid';
-    nodes: { label: string; subtext?: string; color?: string }[];
+    type: 'concentric' | 'layered' | 'pipeline' | 'tree' | 'state_machine';
+    centerLabel?: string;
+    layers?: { name: string; items: string[]; color?: string }[];
+    nodes?: { label: string; subtext?: string; color?: string }[];
   };
 }
 
@@ -98,11 +100,15 @@ CRITICAL MANDATORY INSTRUCTIONS:
    - Include complete technical definitions, mathematical or algorithmic steps, structural mechanisms, edge case handling, and real-world engineering applications.
    - Do NOT write brief 2-sentence summaries. Students need complete, detailed study notes!
 
-3. COMPLETE MULTI-PAGE COVERAGE:
+3. MANDATORY ARCHITECTURE & SYSTEM DIAGRAM SPECS:
+   - For every topic involving system architecture, operating system layers, interface components, or multi-tier structures (e.g. Operating System between Hardware and Applications), YOU MUST generate a \`diagramSpec\` with \`type: 'concentric'\` or \`type: 'layered'\`.
+   - Provide concentric \`layers\` array: Inner Core (Hardware), Middle Layer (OS Kernel & System Software), Outer Layer (Application Software like Games, Browsers, Databases).
+
+4. COMPLETE MULTI-PAGE COVERAGE:
    - Cover EVERY single chapter and unit present across all pages (from Page 1 to Page 14+).
    - Incorporate teacher focus topics if provided: ${teacherTopics.length > 0 ? teacherTopics.join(', ') : 'None'}.
 
-4. FORMAT OUTPUT AS STRICT JSON matching this schema:
+5. FORMAT OUTPUT AS STRICT JSON matching this schema:
 {
   "subjectName": "${subjectName}",
   "conceptCards": [
@@ -126,12 +132,13 @@ CRITICAL MANDATORY INSTRUCTIONS:
         ]
       },
       "diagramSpec": {
-        "title": "Architecture or Execution Flowchart",
-        "type": "pipeline",
-        "nodes": [
-          {"label": "Input Stage", "subtext": "Specification"},
-          {"label": "Processing Core", "subtext": "Transformation"},
-          {"label": "Output Result", "subtext": "Validated State"}
+        "title": "Operating System Architecture & User Interface Layers",
+        "type": "concentric",
+        "centerLabel": "Hardware (CPU, Memory, I/O)",
+        "layers": [
+          { "name": "Hardware Core", "color": "#F87171", "items": ["CPU", "RAM", "Hard Disk"] },
+          { "name": "Operating System Kernel", "color": "#8F1D2C", "items": ["Utilities", "System Software", "OS Kernel"] },
+          { "name": "Application & User Software", "color": "#FBBF24", "items": ["Internet Browsers", "Databases", "Computer Games"] }
         ]
       }
     }
