@@ -35,8 +35,7 @@ import {
   GitCommit,
   Table,
   Send,
-  Loader2,
-  Sparkle
+  Loader2
 } from 'lucide-react';
 import { ExamRushConfig } from './ExamRushSetup';
 import { calculateBloomProfile, getBloomLevelMetadata, BloomProfile } from '../../utils/bloomEngine';
@@ -202,16 +201,15 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
     };
   }, [contextMenuPos]);
 
-  // Canvas Drawing Handlers for Doodle Mode
+  // FULL-VIEWPORT DOODLE CANVAS DRAWING HANDLER (Z-80)
   useEffect(() => {
     if (!isDoodleActive || !canvasRef.current) return;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const parent = canvas.parentElement;
-    canvas.width = parent ? parent.clientWidth : window.innerWidth;
-    canvas.height = parent ? parent.clientHeight : 1400;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -237,10 +235,10 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
       if (!isDrawingRef.current) return;
       const pos = getPos(e);
       if (doodleTool === 'eraser') {
-        ctx.clearRect(pos.x - 15, pos.y - 15, 30, 30);
+        ctx.clearRect(pos.x - 20, pos.y - 20, 40, 40);
       } else {
-        ctx.strokeStyle = doodleTool === 'highlighter' ? `${doodleColor}40` : doodleColor;
-        ctx.lineWidth = doodleTool === 'highlighter' ? 20 : 3.5;
+        ctx.strokeStyle = doodleTool === 'highlighter' ? `${doodleColor}50` : doodleColor;
+        ctx.lineWidth = doodleTool === 'highlighter' ? 24 : 4;
         ctx.lineTo(pos.x, pos.y);
         ctx.stroke();
       }
@@ -255,13 +253,29 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
     canvas.addEventListener('mouseup', stopDrawing);
     canvas.addEventListener('mouseleave', stopDrawing);
 
+    canvas.addEventListener('touchstart', startDrawing, { passive: true });
+    canvas.addEventListener('touchmove', draw, { passive: true });
+    canvas.addEventListener('touchend', stopDrawing);
+
     return () => {
       canvas.removeEventListener('mousedown', startDrawing);
       canvas.removeEventListener('mousemove', draw);
       canvas.removeEventListener('mouseup', stopDrawing);
       canvas.removeEventListener('mouseleave', stopDrawing);
+      canvas.removeEventListener('touchstart', startDrawing);
+      canvas.removeEventListener('touchmove', draw);
+      canvas.removeEventListener('touchend', stopDrawing);
     };
   }, [isDoodleActive, doodleTool, doodleColor]);
+
+  const handleClearCanvas = () => {
+    if (canvasRef.current) {
+      const ctx = canvasRef.current.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      }
+    }
+  };
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -415,6 +429,49 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
   return (
     <div className="fixed inset-0 z-[999999] h-screen w-screen overflow-y-auto bg-[#FAF7F5] dark:bg-[#120F10] text-[#191416] dark:text-[#FAF7F5] font-sans selection:bg-[#F8EDEF] selection:text-[#8F1D2C]">
       
+      {/* FULL-SCREEN DOODLE CANVAS OVERLAY (Z-80) */}
+      {isDoodleActive && (
+        <canvas
+          ref={canvasRef}
+          className="fixed inset-0 z-[80] cursor-crosshair touch-none bg-black/5"
+        />
+      )}
+
+      {/* FLOATING DOODLE TOOLBAR CONTROL (Z-90) */}
+      {isDoodleActive && (
+        <div className="fixed top-20 right-8 z-[90] p-3 rounded-2xl bg-[#651522] text-white border border-red-400/40 flex items-center gap-3 text-xs font-bold shadow-2xl animate-fade-in">
+          <span className="text-red-200 flex items-center gap-1">
+            <PenTool className="h-4 w-4" /> Notebook Doodle:
+          </span>
+          <button type="button" onClick={() => setDoodleTool('pen')} className={`px-3 py-1.5 rounded-xl cursor-pointer transition-colors ${doodleTool === 'pen' ? 'bg-[#8F1D2C] text-white ring-2 ring-red-300' : 'bg-white/10 hover:bg-white/20 text-white'}`}>Pen</button>
+          <button type="button" onClick={() => setDoodleTool('highlighter')} className={`px-3 py-1.5 rounded-xl cursor-pointer transition-colors ${doodleTool === 'highlighter' ? 'bg-[#8F1D2C] text-white ring-2 ring-red-300' : 'bg-white/10 hover:bg-white/20 text-white'}`}>Highlighter</button>
+          <button type="button" onClick={() => setDoodleTool('eraser')} className={`px-3 py-1.5 rounded-xl cursor-pointer transition-colors ${doodleTool === 'eraser' ? 'bg-[#8F1D2C] text-white ring-2 ring-red-300' : 'bg-white/10 hover:bg-white/20 text-white'}`}>Eraser</button>
+          
+          <div className="flex items-center gap-1.5 ml-2 border-l border-white/20 pl-3">
+            {['#8F1D2C', '#D97706', '#059669', '#2563EB', '#191416'].map(c => (
+              <button key={c} type="button" onClick={() => setDoodleColor(c)} className="w-5 h-5 rounded-full border-2 border-white cursor-pointer hover:scale-110 transition-transform" style={{ backgroundColor: c }} />
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={handleClearCanvas}
+            className="px-2.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold cursor-pointer"
+            title="Clear all drawings on screen"
+          >
+            Clear Screen
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsDoodleActive(false)}
+            className="ml-2 px-3 py-1.5 bg-red-600 text-white rounded-xl text-xs font-bold cursor-pointer hover:bg-red-700 flex items-center gap-1"
+          >
+            <X className="h-4 w-4" /> Exit Doodle
+          </button>
+        </div>
+      )}
+
       {/* RIGHT-CLICK CONTEXT MENU (Z-100) */}
       {contextMenuPos && (
         <div 
@@ -745,14 +802,6 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
       {/* MAIN COMFORTABLE READING WORKSPACE */}
       <main className="max-w-[1150px] mx-auto px-6 sm:px-12 py-10 space-y-10 text-left relative min-h-[900px]">
         
-        {/* DOODLE CANVAS OVERLAY (Z-20 to sit below controls) */}
-        {isDoodleActive && (
-          <canvas
-            ref={canvasRef}
-            className="absolute inset-0 z-20 cursor-crosshair touch-none"
-          />
-        )}
-
         {/* ATTACHED MATERIALS BANNER */}
         {config.attachments && config.attachments.length > 0 && (
           <div className="p-6 rounded-3xl border border-[#8F1D2C]/30 bg-[#F8EDEF] dark:bg-[#2D1B20] space-y-3 shadow-sm relative z-30">
@@ -900,29 +949,6 @@ export function ExamRushWorkspace({ config, lectures = [], notes = [], onExit }:
                 <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
               </div>
             </div>
-
-            {/* DOODLE TOOLBAR WHEN ACTIVE (Z-50) */}
-            {isDoodleActive && (
-              <div className="p-3 rounded-2xl bg-[#F8EDEF] dark:bg-[#2D1B20] border border-[#8F1D2C]/40 flex items-center gap-3 text-xs font-bold relative z-50 shadow-md">
-                <span className="text-[#8F1D2C]">Drawing Tools:</span>
-                <button type="button" onClick={() => setDoodleTool('pen')} className={`px-3 py-1 rounded-lg cursor-pointer ${doodleTool === 'pen' ? 'bg-[#8F1D2C] text-white' : 'bg-white text-black'}`}>Pen</button>
-                <button type="button" onClick={() => setDoodleTool('highlighter')} className={`px-3 py-1 rounded-lg cursor-pointer ${doodleTool === 'highlighter' ? 'bg-[#8F1D2C] text-white' : 'bg-white text-black'}`}>Highlighter</button>
-                <button type="button" onClick={() => setDoodleTool('eraser')} className={`px-3 py-1 rounded-lg cursor-pointer ${doodleTool === 'eraser' ? 'bg-[#8F1D2C] text-white' : 'bg-white text-black'}`}>Eraser</button>
-                
-                <div className="flex items-center gap-1.5 ml-auto">
-                  {['#8F1D2C', '#D97706', '#059669', '#191416'].map(c => (
-                    <button key={c} type="button" onClick={() => setDoodleColor(c)} className="w-5 h-5 rounded-full border border-white cursor-pointer" style={{ backgroundColor: c }} />
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => setIsDoodleActive(false)}
-                    className="ml-2 px-3 py-1 bg-red-600 text-white rounded-lg text-xs font-bold cursor-pointer hover:bg-red-700"
-                  >
-                    ✕ Exit Doodle
-                  </button>
-                </div>
-              </div>
-            )}
 
             {/* INSERTED CUSTOM IMAGES */}
             {insertedImages.length > 0 && (
