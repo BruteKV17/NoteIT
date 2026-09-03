@@ -989,9 +989,52 @@ export default function SettingsView({
                 {/* Replace Key Form */}
                 {showReplaceForm && (
                   <form onSubmit={handleSaveNewKey} className="p-5 rounded-[6px] border-2 border-[#111111] bg-white space-y-4 shadow-paper-md text-left">
-                    <div>
-                      <h4 className="text-xs font-heading font-extrabold uppercase text-[#111111]">Configure AI Provider Connection</h4>
-                      <p className="text-[10px] font-mono font-bold text-[#666666] mt-0.5">Your key is decrypted only during model requests and is encrypted server-side.</p>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b-2 border-[#111111]">
+                      <div>
+                        <h4 className="text-xs font-heading font-extrabold uppercase text-[#111111]">Configure AI Provider Connection</h4>
+                        <p className="text-[10px] font-mono font-bold text-[#666666] mt-0.5">Your key is decrypted only during model requests and is encrypted server-side.</p>
+                      </div>
+
+                      {/* DIRECT BUTTON TO GOOGLE AI STUDIO / PROVIDER API KEY PORTAL */}
+                      {PROVIDER_METADATA[aiProvider]?.getKeyLink && (
+                        <a
+                          href={PROVIDER_METADATA[aiProvider].getKeyLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-[6px] border-2 border-[#111111] bg-[#2563EB] text-white text-xs font-mono font-extrabold uppercase hover:bg-blue-700 transition-all shadow-paper-sm shrink-0 cursor-pointer"
+                        >
+                          <Key className="h-3.5 w-3.5" />
+                          <span>Get {PROVIDER_METADATA[aiProvider].name} API Key</span>
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      )}
+                    </div>
+
+                    {/* DIRECT HELP BANNER FOR GETTING API KEY */}
+                    <div className="p-3.5 rounded-[6px] border-2 border-[#111111] bg-[#EFF6FF] dark:bg-[#1E293B] flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-2 rounded-md bg-[#2563EB] text-white shrink-0">
+                          <Key className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <h5 className="text-xs font-mono font-extrabold uppercase text-[#111111] dark:text-white">
+                            Need an API Key for {PROVIDER_METADATA[aiProvider]?.name || 'Google Gemini'}?
+                          </h5>
+                          <p className="text-[10px] font-mono font-bold text-[#475569] dark:text-slate-300">
+                            Click to open {PROVIDER_METADATA[aiProvider]?.name || 'Google AI Studio'} directly in a new tab and create your free key.
+                          </p>
+                        </div>
+                      </div>
+                      {PROVIDER_METADATA[aiProvider]?.getKeyLink && (
+                        <a
+                          href={PROVIDER_METADATA[aiProvider].getKeyLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-[4px] border-2 border-[#111111] bg-[#FFC400] text-[#111111] text-[11px] font-mono font-extrabold uppercase hover:bg-[#ffe066] transition-all shadow-paper-xs shrink-0 cursor-pointer"
+                        >
+                          <span>Open Site ↗</span>
+                        </a>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -1063,7 +1106,19 @@ export default function SettingsView({
 
                       {/* API Key */}
                       <div className="space-y-1.5">
-                        <label className="text-[9px] font-mono font-extrabold uppercase text-[#111111] dark:text-slate-300 block">New API Key *</label>
+                        <div className="flex items-center justify-between">
+                          <label className="text-[9px] font-mono font-extrabold uppercase text-[#111111] dark:text-slate-300 block">New API Key *</label>
+                          {PROVIDER_METADATA[aiProvider]?.getKeyLink && (
+                            <a
+                              href={PROVIDER_METADATA[aiProvider].getKeyLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[10px] font-mono font-extrabold text-[#2563EB] hover:text-blue-700 hover:underline flex items-center gap-1"
+                            >
+                              <span>Get Key ↗</span>
+                            </a>
+                          )}
+                        </div>
                         <div className="relative flex items-center">
                           <input
                             type={showNewKeyPassword ? "text" : "password"}
