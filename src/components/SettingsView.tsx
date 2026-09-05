@@ -58,6 +58,15 @@ const PROVIDER_METADATA: Record<string, {
     models: ['gemini-3.6-flash'],
     endpoint: 'generativelanguage.googleapis.com'
   },
+  notion: {
+    name: 'Notion AI / Notion API',
+    description: 'Integrate Notion AI & Workspace API key for note synthesis and smart study tools.',
+    defaultModel: 'notion-ai-v1',
+    docLink: 'https://developers.notion.com/docs',
+    getKeyLink: 'https://www.notion.so/my-integrations',
+    models: ['notion-ai-v1', 'notion-workspace-v1'],
+    endpoint: 'api.notion.com/v1'
+  },
   groq: {
     name: 'Groq',
     description: 'Ultra-low latency open models. Excellent for speedy revision synthesis.',
@@ -129,15 +138,6 @@ const PROVIDER_METADATA: Record<string, {
     getKeyLink: 'https://build.nvidia.com/',
     models: ['z-ai/glm-5.2'],
     endpoint: 'integrate.api.nvidia.com/v1'
-  },
-  notion: {
-    name: 'Notion AI / Notion API',
-    description: 'Integrate Notion AI & Workspace API key for note synthesis and smart study tools.',
-    defaultModel: 'notion-ai-v1',
-    docLink: 'https://developers.notion.com/docs',
-    getKeyLink: 'https://www.notion.so/my-integrations',
-    models: ['notion-ai-v1', 'notion-workspace-v1'],
-    endpoint: 'api.notion.com/v1'
   }
 };
 
@@ -1056,7 +1056,10 @@ export default function SettingsView({
                         <div className="relative">
                           <button
                             type="button"
-                            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                            onClick={() => {
+                              setIsDropdownOpen((prev) => !prev);
+                              setSearchQuery('');
+                            }}
                             className="w-full flex items-center justify-between rounded-[6px] border-2 border-[#111111] bg-[#F6F2EA] p-2.5 text-xs font-mono font-bold text-[#111111] outline-none shadow-paper-sm cursor-pointer"
                           >
                             <span>{PROVIDER_METADATA[aiProvider]?.name || 'Select...'}</span>
@@ -1064,40 +1067,65 @@ export default function SettingsView({
                           </button>
 
                           {isDropdownOpen && (
-                            <div className="absolute z-50 mt-1.5 w-full rounded-[6px] border-2 border-[#111111] bg-white shadow-paper-lg p-2.5 space-y-2 text-[#111111]">
-                              <div className="relative">
-                                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#111111]" />
-                                <input
-                                  type="text"
-                                  value={searchQuery}
-                                  onChange={(e) => setSearchQuery(e.target.value)}
-                                  placeholder="Search providers..."
-                                  className="w-full rounded-[4px] border-2 border-[#111111] bg-[#F6F2EA] pl-8 pr-3 py-1 text-[11px] font-mono font-bold outline-none"
-                                />
-                              </div>
-                              <div className="max-h-40 overflow-y-auto space-y-0.5">
-                                {Object.entries(PROVIDER_METADATA)
-                                  .filter(([_, meta]) => meta.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                                  .map(([key, meta]) => (
+                            <>
+                              <div
+                                className="fixed inset-0 z-40"
+                                onClick={() => {
+                                  setIsDropdownOpen(false);
+                                  setSearchQuery('');
+                                }}
+                              />
+                              <div className="absolute z-50 mt-1.5 w-full rounded-[6px] border-2 border-[#111111] bg-white shadow-paper-lg p-2.5 space-y-2 text-[#111111]">
+                                <div className="relative">
+                                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#111111]" />
+                                  <input
+                                    type="text"
+                                    name="search_ai_provider_settings_no_autofill"
+                                    id="search_ai_provider_settings_no_autofill"
+                                    autoComplete="off"
+                                    autoCorrect="off"
+                                    autoCapitalize="off"
+                                    spellCheck={false}
+                                    aria-autocomplete="none"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Search providers..."
+                                    className="w-full rounded-[4px] border-2 border-[#111111] bg-[#F6F2EA] pl-8 pr-7 py-1 text-[11px] font-mono font-bold outline-none"
+                                  />
+                                  {searchQuery && (
                                     <button
-                                      key={key}
                                       type="button"
-                                      onClick={() => {
-                                        setAiProvider(key);
-                                        setSelectedModel(meta.defaultModel);
-                                        setIsDropdownOpen(false);
-                                        setSearchQuery('');
-                                      }}
-                                      className={`w-full text-left px-2 py-1.5 rounded text-xs font-mono font-bold flex items-center justify-between cursor-pointer hover:bg-[#FFC400] transition-colors ${
-                                        aiProvider === key ? 'bg-[#FFC400]' : ''
-                                      }`}
+                                      onClick={() => setSearchQuery('')}
+                                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-black font-bold text-xs p-0.5"
                                     >
-                                      <span>{meta.name}</span>
-                                      {aiProvider === key && <Check className="h-3 w-3" />}
+                                      ✕
                                     </button>
-                                  ))}
+                                  )}
+                                </div>
+                                <div className="max-h-40 overflow-y-auto space-y-0.5">
+                                  {Object.entries(PROVIDER_METADATA)
+                                    .filter(([_, meta]) => meta.name.toLowerCase().includes(searchQuery.toLowerCase().trim()))
+                                    .map(([key, meta]) => (
+                                      <button
+                                        key={key}
+                                        type="button"
+                                        onClick={() => {
+                                          setAiProvider(key);
+                                          setSelectedModel(meta.defaultModel);
+                                          setIsDropdownOpen(false);
+                                          setSearchQuery('');
+                                        }}
+                                        className={`w-full text-left px-2 py-1.5 rounded text-xs font-mono font-bold flex items-center justify-between cursor-pointer hover:bg-[#FFC400] transition-colors ${
+                                          aiProvider === key ? 'bg-[#FFC400]' : ''
+                                        }`}
+                                      >
+                                        <span>{meta.name}</span>
+                                        {aiProvider === key && <Check className="h-3 w-3" />}
+                                      </button>
+                                    ))}
+                                </div>
                               </div>
-                            </div>
+                            </>
                           )}
                         </div>
                       </div>

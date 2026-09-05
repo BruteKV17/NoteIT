@@ -41,6 +41,14 @@ const PROVIDER_METADATA: Record<string, {
     getKeyLink: 'https://aistudio.google.com/apikey',
     models: ['gemini-3.6-flash']
   },
+  notion: {
+    name: 'Notion AI / Notion API',
+    description: 'Integrate Notion AI & Workspace API key for note synthesis and smart study tools.',
+    defaultModel: 'notion-ai-v1',
+    docLink: 'https://developers.notion.com/docs',
+    getKeyLink: 'https://www.notion.so/my-integrations',
+    models: ['notion-ai-v1', 'notion-workspace-v1']
+  },
   groq: {
     name: 'Groq',
     description: 'Ultra-low latency open models. Excellent for speedy revision synthesis.',
@@ -104,14 +112,6 @@ const PROVIDER_METADATA: Record<string, {
     docLink: 'https://build.nvidia.com/z-ai/glm-5.2',
     getKeyLink: 'https://build.nvidia.com/',
     models: ['z-ai/glm-5.2']
-  },
-  notion: {
-    name: 'Notion AI / Notion API',
-    description: 'Integrate Notion AI & Workspace API key for note synthesis and smart study tools.',
-    defaultModel: 'notion-ai-v1',
-    docLink: 'https://developers.notion.com/docs',
-    getKeyLink: 'https://www.notion.so/my-integrations',
-    models: ['notion-ai-v1', 'notion-workspace-v1']
   }
 };
 
@@ -640,7 +640,10 @@ export default function OnboardingView({
                       <div className="relative">
                         <button
                           type="button"
-                          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                          onClick={() => {
+                            setIsDropdownOpen((prev) => !prev);
+                            setSearchQuery('');
+                          }}
                           className="w-full flex items-center justify-between rounded-xl border-2 border-[#111111] bg-[#F8FAFC] dark:bg-[#0D1117] px-4 py-3 text-xs font-bold text-[#111111] dark:text-white shadow-paper-xs outline-none cursor-pointer transition-all hover:bg-white"
                         >
                           <span className="font-extrabold">{PROVIDER_METADATA[selectedProvider]?.name || 'Choose Provider...'}</span>
@@ -648,42 +651,67 @@ export default function OnboardingView({
                         </button>
 
                         {isDropdownOpen && (
-                          <div className="absolute z-50 mt-1.5 w-full rounded-xl border-2 border-[#111111] bg-white text-[#111111] shadow-2xl p-2.5 space-y-2">
-                            <div className="relative">
-                              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#555555]" />
-                              <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search providers..."
-                                className="w-full rounded-lg border-2 border-[#111111] bg-[#F9F9F9] pl-8 pr-3 py-1.5 text-xs font-medium text-[#111111] placeholder-[#666666] outline-none"
-                              />
-                            </div>
-                            <div className="max-h-48 overflow-y-auto space-y-0.5">
-                              {Object.entries(PROVIDER_METADATA)
-                                .filter(([_, meta]) => meta.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                                .map(([key, meta]) => (
+                          <>
+                            <div
+                              className="fixed inset-0 z-40"
+                              onClick={() => {
+                                setIsDropdownOpen(false);
+                                setSearchQuery('');
+                              }}
+                            />
+                            <div className="absolute z-50 mt-1.5 w-full rounded-xl border-2 border-[#111111] bg-white text-[#111111] shadow-2xl p-2.5 space-y-2">
+                              <div className="relative">
+                                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#555555]" />
+                                <input
+                                  type="text"
+                                  name="search_ai_provider_no_autofill"
+                                  id="search_ai_provider_no_autofill"
+                                  autoComplete="off"
+                                  autoCorrect="off"
+                                  autoCapitalize="off"
+                                  spellCheck={false}
+                                  aria-autocomplete="none"
+                                  value={searchQuery}
+                                  onChange={(e) => setSearchQuery(e.target.value)}
+                                  placeholder="Search providers..."
+                                  className="w-full rounded-lg border-2 border-[#111111] bg-[#F9F9F9] pl-8 pr-7 py-1.5 text-xs font-medium text-[#111111] placeholder-[#666666] outline-none"
+                                />
+                                {searchQuery && (
                                   <button
-                                    key={key}
                                     type="button"
-                                    onClick={() => {
-                                      setSelectedProvider(key);
-                                      setSelectedModel(meta.defaultModel);
-                                      setIsDropdownOpen(false);
-                                      setSearchQuery('');
-                                    }}
-                                    className={`w-full text-left px-3 py-2 rounded-lg text-xs flex items-center justify-between cursor-pointer transition-colors ${
-                                      selectedProvider === key
-                                        ? 'bg-[#FFC400]/25 text-[#111111] font-black border border-[#111111]'
-                                        : 'text-[#111111] hover:bg-[#F6F2EA] font-semibold'
-                                    }`}
+                                    onClick={() => setSearchQuery('')}
+                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-black font-bold text-xs p-0.5"
                                   >
-                                    <span>{meta.name}</span>
-                                    {selectedProvider === key && <Check className="h-3.5 w-3.5 stroke-[3] text-[#111111]" />}
+                                    ✕
                                   </button>
-                                ))}
+                                )}
+                              </div>
+                              <div className="max-h-48 overflow-y-auto space-y-0.5">
+                                {Object.entries(PROVIDER_METADATA)
+                                  .filter(([_, meta]) => meta.name.toLowerCase().includes(searchQuery.toLowerCase().trim()))
+                                  .map(([key, meta]) => (
+                                    <button
+                                      key={key}
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedProvider(key);
+                                        setSelectedModel(meta.defaultModel);
+                                        setIsDropdownOpen(false);
+                                        setSearchQuery('');
+                                      }}
+                                      className={`w-full text-left px-3 py-2 rounded-lg text-xs flex items-center justify-between cursor-pointer transition-colors ${
+                                        selectedProvider === key
+                                          ? 'bg-[#FFC400]/25 text-[#111111] font-black border border-[#111111]'
+                                          : 'text-[#111111] hover:bg-[#F6F2EA] font-semibold'
+                                      }`}
+                                    >
+                                      <span>{meta.name}</span>
+                                      {selectedProvider === key && <Check className="h-3.5 w-3.5 stroke-[3] text-[#111111]" />}
+                                    </button>
+                                  ))}
+                              </div>
                             </div>
-                          </div>
+                          </>
                         )}
                       </div>
                     </div>
