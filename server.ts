@@ -152,6 +152,8 @@ app.post('/api/ai/validate-key', authenticateFirebaseUser, async (req, res) => {
     activeProvider = 'anthropic';
   } else if (activeProvider === 'nvidia' || activeProvider === 'glm' || activeProvider === 'nvidia nim') {
     activeProvider = 'nvidia';
+  } else if (activeProvider === 'notion' || activeProvider === 'notion ai' || activeProvider === 'notion api' || activeProvider === 'notion-ai') {
+    activeProvider = 'notion';
   }
 
   try {

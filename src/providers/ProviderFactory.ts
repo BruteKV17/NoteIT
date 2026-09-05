@@ -8,6 +8,7 @@ import { OpenRouterProvider } from './OpenRouterProvider';
 import { MistralProvider } from './MistralProvider';
 import { GrokProvider } from './GrokProvider';
 import { NvidiaProvider } from './NvidiaProvider';
+import { NotionProvider } from './NotionProvider';
 
 export class ProviderFactory {
   static getProvider(provider: string, apiKey: string): AIProvider {
@@ -38,6 +39,11 @@ export class ProviderFactory {
       case 'glm':
       case 'nvidia nim':
         return new NvidiaProvider(apiKey);
+      case 'notion':
+      case 'notion ai':
+      case 'notion api':
+      case 'notion-ai':
+        return new NotionProvider(apiKey);
       default:
         throw new Error(`Unsupported AI provider: ${provider}`);
     }

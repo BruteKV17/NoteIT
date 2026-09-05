@@ -336,6 +336,41 @@ export class GroqAdapter implements ValidationAdapter {
   }
 }
 
+export class NotionAdapter implements ValidationAdapter {
+  async validate(apiKey: string, model?: string): Promise<void> {
+    if (!apiKey || apiKey.trim().length < 8) {
+      throw new ProviderValidationError('Invalid API key format. Key is too short.', 401);
+    }
+    try {
+      const response = await fetchWithTimeout('https://api.notion.com/v1/users/me', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Notion-Version': '2022-06-28'
+        }
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        const status = response.status;
+        if (status === 401 || status === 403) {
+          throw new ProviderValidationError('Invalid or unauthorized API key. Please check your Notion API key.', 401);
+        } else if (status === 404) {
+          throw new ProviderValidationError('Invalid API endpoint', 404);
+        } else if (status === 429) {
+          throw new ProviderValidationError('Rate limit/quota exceeded for Notion API', 429);
+        } else if (status >= 500) {
+          throw new ProviderValidationError('Notion service is temporarily unavailable', 503);
+        } else {
+          throw new ProviderValidationError(`Notion key validation failed: ${text}`, status);
+        }
+      }
+    } catch (err: any) {
+      if (err instanceof ProviderValidationError) throw err;
+      throw new ProviderValidationError(`Provider unavailable: ${err.message || 'network timeout or connection failure'}`, 504);
+    }
+  }
+}
+
 export class ValidationAdapterFactory {
   static getAdapter(provider: string): ValidationAdapter {
     switch (provider.toLowerCase()) {
@@ -365,6 +400,11 @@ export class ValidationAdapterFactory {
         return new NvidiaAdapter();
       case 'groq':
         return new GroqAdapter();
+      case 'notion':
+      case 'notion ai':
+      case 'notion api':
+      case 'notion-ai':
+        return new NotionAdapter();
       default:
         throw new ProviderValidationError(`Unsupported AI provider validation: ${provider}`, 400);
     }

@@ -38,17 +38,20 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const getAIConfig = () => {
   const isBrowser = typeof window !== 'undefined';
-  const provider = isBrowser ? (localStorage.getItem('noteit_ai_provider') || 'gemini') : 'gemini';
+  const provider = isBrowser ? (localStorage.getItem('noteit_active_ai_provider') || localStorage.getItem('noteit_ai_provider') || 'gemini') : 'gemini';
   const customGeminiKey = isBrowser ? (localStorage.getItem('noteit_gemini_api_key') || '') : '';
   const customOpenAiKey = isBrowser ? (localStorage.getItem('noteit_openai_api_key') || '') : '';
+  const customNotionKey = isBrowser ? (localStorage.getItem('noteit_notion_api_key') || '') : '';
   
   const envGeminiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
   const envOpenAiKey = import.meta.env.VITE_OPENAI_API_KEY || '';
+  const envNotionKey = import.meta.env.VITE_NOTION_API_KEY || '';
   
   return {
     provider,
     geminiKey: customGeminiKey || envGeminiKey,
-    openaiKey: customOpenAiKey || envOpenAiKey
+    openaiKey: customOpenAiKey || envOpenAiKey,
+    notionKey: customNotionKey || envNotionKey
   };
 };
 

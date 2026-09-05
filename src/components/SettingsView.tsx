@@ -129,6 +129,15 @@ const PROVIDER_METADATA: Record<string, {
     getKeyLink: 'https://build.nvidia.com/',
     models: ['z-ai/glm-5.2'],
     endpoint: 'integrate.api.nvidia.com/v1'
+  },
+  notion: {
+    name: 'Notion AI / Notion API',
+    description: 'Integrate Notion AI & Workspace API key for note synthesis and smart study tools.',
+    defaultModel: 'notion-ai-v1',
+    docLink: 'https://developers.notion.com/docs',
+    getKeyLink: 'https://www.notion.so/my-integrations',
+    models: ['notion-ai-v1', 'notion-workspace-v1'],
+    endpoint: 'api.notion.com/v1'
   }
 };
 
@@ -141,7 +150,8 @@ const PROVIDER_COSTS: Record<string, { input: number; output: number }> = {
   openrouter: { input: 0.10, output: 0.40 },
   mistral: { input: 2.00, output: 6.00 },
   xai: { input: 2.00, output: 10.00 },
-  nvidia: { input: 0.55, output: 0.55 }
+  nvidia: { input: 0.55, output: 0.55 },
+  notion: { input: 0.50, output: 1.50 }
 };
 
 
@@ -329,6 +339,8 @@ export default function SettingsView({
             normalized = 'anthropic';
           } else if (normalized.includes('nvidia') || normalized.includes('glm')) {
             normalized = 'nvidia';
+          } else if (normalized.includes('notion')) {
+            normalized = 'notion';
           }
           setAiProvider(normalized);
           setSelectedModel(data.selectedModel || PROVIDER_METADATA[normalized]?.defaultModel || '');

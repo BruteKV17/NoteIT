@@ -9,3 +9,5 @@ coverage/
 *-firebase-adminsdk-*.json
 .antigravity/
 uploads/
+scratch/teacher-s-portal/
+scratch/teachers-LMS-portal/

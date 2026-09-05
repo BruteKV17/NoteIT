@@ -104,6 +104,14 @@ const PROVIDER_METADATA: Record<string, {
     docLink: 'https://build.nvidia.com/z-ai/glm-5.2',
     getKeyLink: 'https://build.nvidia.com/',
     models: ['z-ai/glm-5.2']
+  },
+  notion: {
+    name: 'Notion AI / Notion API',
+    description: 'Integrate Notion AI & Workspace API key for note synthesis and smart study tools.',
+    defaultModel: 'notion-ai-v1',
+    docLink: 'https://developers.notion.com/docs',
+    getKeyLink: 'https://www.notion.so/my-integrations',
+    models: ['notion-ai-v1', 'notion-workspace-v1']
   }
 };
 

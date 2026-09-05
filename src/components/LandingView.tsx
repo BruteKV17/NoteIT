@@ -62,7 +62,7 @@ export default function LandingView({
     },
     {
       q: "What is Bring Your Own Key (BYOK) mode?",
-      a: "BYOK allows scholars to input their personal API keys (Google Gemini, Groq, OpenAI, Anthropic, DeepSeek, OpenRouter, Mistral, xAI, NVIDIA) to run unlimited AI note synthesis and quizzes at 0 extra platform markup."
+      a: "BYOK allows scholars to input their personal API keys (Google Gemini, Groq, OpenAI, Anthropic, DeepSeek, OpenRouter, Mistral, xAI, NVIDIA, Notion AI) to run unlimited AI note synthesis and quizzes at 0 extra platform markup."
     },
     {
       q: "Can I export my notes and presentation slides?",
